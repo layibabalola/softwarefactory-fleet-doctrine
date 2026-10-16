@@ -145,9 +145,10 @@ class Census(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------------------------------
-# v2: sidecar map, judgement/record kinds, fences, wired-invocation proof, anchors and fan-in, distinct ids,
-# fail-closed requirement, git-hook placement, rising floor, emit-map. Round 2 added the negatives for each
-# reviewer finding (comment-only mention, namesake file, own unit test, unwired hook, fan-in, duplicates).
+# v2: sidecar map, judgement/record kinds, fences, command-position invocation proof, location-keyed anchors
+# and fan-in, distinct ids, fail-closed requirement, git-hook placement, rising floor with checked-only backing,
+# emit-map. Rounds 2 and 3 added the negatives for each reviewer finding (comment-only mention, namesake file,
+# own unit test, unwired hook, fan-in by overlapping anchors, echo/heredoc/exit mentions, unchecked floor backing).
 
 MAPDOC = """# Project
 
@@ -164,6 +165,7 @@ BETA = "**Beta.** A reviewer decides this one."
 GAMMA = "**Gamma.** History as written."
 DELTA = "**Delta.** Plain prose rule."
 HOOK = [".githooks/*"]
+ANC = "ANCHOR_MAIN"
 
 
 def hashlib_id(text):
@@ -171,7 +173,7 @@ def hashlib_id(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
 
 
-def enf(path, anchor="ANCHOR"):
+def enf(path, anchor=ANC):
     return {"kind": "enforced", "enforcer": path, "anchor": anchor}
 
 
@@ -189,14 +191,16 @@ class V2(unittest.TestCase):
         self.root = os.path.join(self.tmp, "proj")
         for d in ("tools", ".githooks", ".github/workflows", "factory", "legacy"):
             os.makedirs(os.path.join(self.root, d))
-        for p in ("tools/gate.py", "tools/orphan.py", "legacy/gate.py"):
-            self.put(p, "ANCHOR = 1\n")
+        os.makedirs(os.path.join(self.tmp, "outside"))
+        for p in ("tools/gate.py", "tools/orphan.py", "legacy/gate.py", "tools/pre-commit.py"):
+            self.put(p, ANC + " = 1\n")
+        self.put("../outside/gate.py", ANC + " = 1\n")
         self.proj = {"name": "p", "root": self.root, "rule_map": "factory/rule-map.json",
                      "files": [{"path": "RULES.md", "section": "## Rules", "bullet": "^- "}]}
         self.doc(MAPDOC)
 
     def put(self, rel, text):
-        full = os.path.join(self.root, rel)
+        full = os.path.normpath(os.path.join(self.root, rel))
         os.makedirs(os.path.dirname(full), exist_ok=True)
         with open(full, "w", encoding="utf-8", newline="\n") as fh:
             fh.write(text)
@@ -234,7 +238,7 @@ class V2(unittest.TestCase):
     def git(self, *args):
         subprocess.run(["git", "-C", self.root, *args], check=True, capture_output=True)
 
-    def map_alpha(self, enforcer="tools/gate.py", anchor="ANCHOR"):
+    def map_alpha(self, enforcer="tools/gate.py", anchor=ANC):
         self.mapfile({self.rid(ALPHA): enf(enforcer, anchor)})
 
     # ---- id
@@ -322,7 +326,7 @@ class V2(unittest.TestCase):
         rc, out, _ = self.run_cli("--report", rule_map=None)
         self.assertNotIn("WARNING", out)
 
-    # ---- fences (items 3, 7 and the surviving mutants)
+    # ---- fences
     def test_heading_inside_a_fence_does_not_cut_the_section(self):
         self.doc("## Rules\n- before\n\n```\n# NEVER a heading\n## Rules2\n```\n\n- after the fence\n\n## Next\n- outside\n")
         self.assertEqual(self.counts(rule_map=None)["bullets"], 2)
@@ -337,11 +341,27 @@ class V2(unittest.TestCase):
         self.assertEqual(j["counts"]["bullets"], 3)
         self.assertNotIn("code line", json.dumps(j))
 
-    def test_unclosed_fence_warns(self):
+    def test_a_fence_never_closed_is_not_a_fence_and_the_rules_after_it_count(self):
         self.doc("## Rules\n- one\n```\n- swallowed\n")
         rc, out, _ = self.run_cli("--report", rule_map=None)
-        self.assertIn("unclosed code fence", out)
-        self.assertIn("1 rules", out)
+        self.assertIn("never closed", out)
+        self.assertIn("2 rules", out)                     # one and the "swallowed" rule: counted, not hidden
+        self.assertIn("treated as NOT a fence", out)
+
+    def test_a_fence_inside_a_list_item_that_ends_first_does_not_hide_the_next_top_level_rule(self):
+        # Codex round-2 repro: an unclosed fence in a list item must not swallow the rule after the list item
+        self.doc("## Rules\n- keep [prose]\n\n  ```text\n  sample\n\n- untagged outside list\n")
+        j = self.census_json(rule_map=None)
+        self.assertEqual((j["counts"]["bullets"], j["counts"]["untagged"]), (2, 1))
+        self.assertTrue(any("never closed" in w for w in j["warnings"]))
+        rc, out, _ = self.run_cli(rule_map=None)
+        self.assertEqual(rc, 1, out)                       # the lost rule is now visible and fatal
+        self.assertIn("UNTAGGED p RULES.md:7", out)
+
+    def test_a_closed_fence_inside_a_list_item_still_masks_its_contents(self):
+        self.doc("## Rules\n- keep [prose]\n\n  ```text\n  - fake\n  ## Not a heading\n  ```\n- two [prose]\n")
+        c = self.counts(rule_map=None)
+        self.assertEqual((c["bullets"], c["prose"]), (2, 2))
 
     def test_closing_fence_with_trailing_text_does_not_close(self):
         self.doc("## Rules\n- one\n```\n- x\n``` not a closer\n- y\n```\n- two\n- three\n")
@@ -354,21 +374,38 @@ class V2(unittest.TestCase):
         self.assertEqual(self.counts(rule_map=None)["bullets"], 2)          # a tilde fence may carry a backtick
 
     def test_fence_indented_four_spaces_is_code_not_a_fence(self):
-        # a 4-space indented block that merely shows ``` must not mask every later rule (CommonMark: 0-3 spaces)
         self.doc("## Rules\n- keep [prose]\n\n    ```\n\n- lost untagged rule\n")
         j = self.census_json(rule_map=None)
-        self.assertEqual(j["counts"]["bullets"], 2)
-        self.assertEqual(j["counts"]["untagged"], 1)
-        self.assertNotIn("unclosed", "\n".join(j["warnings"]))
+        self.assertEqual((j["counts"]["bullets"], j["counts"]["untagged"]), (2, 1))
         self.doc("## Rules\n- keep [prose]\n\n   ```\n   code\n   ```\n- two [prose]\n")      # 3 spaces still opens
         self.assertEqual(self.counts(rule_map=None)["bullets"], 2)
         self.doc("## Rules\n- a [prose]\n```\n- x\n    ```\n- y\n```\n- z [prose]\n")        # 4 spaces cannot close
         self.assertEqual(self.counts(rule_map=None)["bullets"], 2)
 
-    # ---- item 1: invoked means wired, not mentioned
+    # ---- comments (round 3): block comments and docstrings anywhere
+    def test_code_lines_strip_block_comments_and_docstrings_anywhere(self):
+        def code(text):
+            return [l.strip() for _n, l in crt.code_lines(text)]
+        self.assertEqual(code("const x = 1; /* tools/gate.py */"), ["const x = 1;"])
+        self.assertEqual(code("const x = 1; /*\n tools/gate.py\n*/ y"), ["const x = 1;", "y"])
+        self.assertEqual(code("a <# b #> c"), ["a   c"])
+        self.assertEqual(code("x = 1  <!-- c --> y"), ["x = 1    y"])
+        self.assertEqual(code('def f():\n    """tools/gate.py"""\n    return 1'), ["def f():", "return 1"])
+        self.assertEqual(code("x = '''\ntools/gate.py\n''' + y"), ["x =", "+ y"])
+        self.assertEqual(code("rm -rf tmp/*\nls tools/**"), ["rm -rf tmp/*", "ls tools/**"])    # a glob is not a comment
+        self.assertEqual(code("http://x/y # note"), ["http://x/y"])
+        self.assertEqual(code("REM c\n:: c\nrem\nreal"), ["real"])
+        self.assertEqual(code("ok $# ${#a}"), ["ok $# ${#a}"])
+
+    # ---- invocation: a command in executable position, not a mention
     def invoked(self, enforcer="tools/gate.py", surfaces=HOOK, **over):
         self.map_alpha(enforcer)
         return self.counts(invocation_surfaces=surfaces, **over)
+
+    def backed_by(self, rel, text, enforcer="tools/gate.py", **over):
+        """1 if a surface file `rel` holding `text` invokes the enforcer, else 0."""
+        self.put(rel, text)
+        return self.invoked(enforcer, surfaces=[rel], **over)["backed"]
 
     def test_existing_but_never_invoked_enforcer_is_not_backed(self):
         self.put(".githooks/pre-commit", "python tools/gate.py\n")        # invokes gate.py, not orphan.py
@@ -379,83 +416,153 @@ class V2(unittest.TestCase):
         self.assertIn("ENFORCED-UNINVOKED p RULES.md:", out)
         self.assertIn("coverage 0/4", out)
 
-    def test_invoked_by_repo_path_is_backed_and_near_misses_are_not(self):
-        self.put(".githooks/pre-commit", "python tools/gate.py\n")
-        self.assertEqual(self.invoked()["backed"], 1)
-        self.put("tools/gate.py.disabled", "ANCHOR\n")
-        self.put(".githooks/pre-commit", "python tools/gate.pyc and xgate.py and tools/gate.py.disabled\n")
-        self.assertEqual(self.invoked()["backed"], 0)
+    def test_command_forms_that_invoke(self):
+        for i, text in enumerate((
+                "python tools/gate.py\n", "python3 ./tools/gate.py --flag\n", "py -3 tools/gate.py\n",
+                "exec python tools/gate.py\n", "FOO=1 BAR=2 python tools/gate.py\n", "if python tools/gate.py; then\n  :\nfi\n",
+                "set -e\ntools/gate.py\n", "bash tools/gate.py\n", ". tools/gate.py\n", "source tools/gate.py\n",
+                "echo start && python tools/gate.py\n", "false || python tools/gate.py\n", "x=$(python tools/gate.py)\n",
+                "node --check tools/gate.py\n", "pwsh -NoProfile -File tools/gate.py -Run\n", "python tools/gate.py 2>&1 | tee log\n",
+                'python "tools/gate.py"\n', "python 'tools/gate.py'\n", "cd . && python tools/gate.py > out.txt\n",
+                "  python tools/gate.py\n", "python tools/gate.py \\\n   --more\n", "python \\\n   tools/gate.py\n")):
+            self.assertEqual(self.backed_by(f".githooks/c{i}.sh", text), 1, text)
+
+    def test_mentions_and_non_command_positions_do_not_invoke(self):
+        for i, text in enumerate((
+                "echo python tools/gate.py\n", "echo tools/gate.py\n", "printf '%s\\n' tools/gate.py\n", "X=tools/gate.py\n",
+                "export X=tools/gate.py\n", "Y=tools/gate.py echo hi\n", "python tools/other.py tools/gate.py\n",
+                "python -m pytest tools/gate.py\n", "dotnet test tools/gate.py\n", "cat tools/gate.py\n", "grep x tools/gate.py\n",
+                "ls tools/gate.py\n", "[ -f tools/gate.py ] && echo ok\n", "test -x tools/gate.py\n", "echo hi > tools/gate.py.log\n",
+                "see also tools/gate.py\n", "# python tools/gate.py\n", "python tools/gate.pyc\n", "python xgate.py\n",
+                "python tools/gate.py.disabled\n")):
+            self.put("tools/gate.py.disabled", ANC + "\n")
+            self.assertEqual(self.backed_by(f".githooks/m{i}.sh", text), 0, text)
+        self.put(".githooks/ps.ps1", "Write-Host tools/gate.py\nWrite-Output 'python tools/gate.py'\n")
+        self.assertEqual(self.invoked(surfaces=[".githooks/ps.ps1"])["backed"], 0)
+        self.put(".githooks/ps.ps1", "Write-Host hi\n& tools/gate.py\n")
+        self.assertEqual(self.invoked(surfaces=[".githooks/ps.ps1"])["backed"], 1)
+
+    def test_heredoc_bodies_never_count(self):
+        for i, text in enumerate(("cat <<EOF\npython tools/gate.py\nEOF\n", ": <<'EOF'\npython tools/gate.py\nEOF\n",
+                                  "cat <<-DOC\n\tpython tools/gate.py\n\tDOC\n", ": <<\"X\"\ntools/gate.py\nX\n")):
+            self.assertEqual(self.backed_by(f".githooks/h{i}.sh", text), 0, text)
+        self.assertEqual(self.backed_by(".githooks/h9.sh", "cat <<EOF\ntext\nEOF\npython tools/gate.py\n"), 1)     # after the body
+        self.assertEqual(self.backed_by(".githooks/h8.sh", "# cat <<EOF\npython tools/gate.py\n"), 1)            # a comment opens none
+        self.assertEqual(self.backed_by(".githooks/h7.sh", "cat <<< word\npython tools/gate.py\n"), 1)            # here-string, no body
+
+    def test_nothing_after_an_unconditional_top_level_exit_counts(self):
+        self.assertEqual(self.backed_by(".githooks/e1.sh", "exit 0\npython tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/e2.sh", "echo x\nexit\npython tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/e3.sh", "python tools/gate.py\nexit 0\n"), 1)              # before the exit
+        self.assertEqual(self.backed_by(".githooks/e4.sh", 'if [ -n "$X" ]; then\n  exit 0\nfi\npython tools/gate.py\n'), 1)
+        self.assertEqual(self.backed_by(".githooks/e5.sh", '[ -z "$X" ] && exit 0\npython tools/gate.py\n'), 1)
+        self.assertEqual(self.backed_by(".githooks/e6.sh", "f() {\n  exit 1\n}\npython tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/e7.sh", "for a in 1; do\n  exit 1\ndone\npython tools/gate.py\n"), 1)
+
+    def test_only_script_surfaces_are_read_and_yaml_only_through_run(self):
+        self.assertEqual(self.backed_by(".githooks/README.md", "python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/notes.txt", "python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/x.py", "python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/x.cs", 'Run("python tools/gate.py");\n'), 0)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "steps:\n  - name: python tools/gate.py\n    uses: x\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "steps:\n  - env:\n      X: python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "steps:\n  - run: echo hi # python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "steps:\n  - run: python tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "steps:\n  - run: |\n      echo hi\n      python tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "steps:\n  - run: |\n      echo python tools/gate.py\n"), 0)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "jobs:\n  a:\n    steps:\n      - name: x\n        run: >\n          python tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/w.yml", "steps:\n  - run: |\n      echo hi\n  - name: python tools/gate.py\n"), 0)
 
     def test_namesake_in_another_directory_does_not_back_the_enforcer(self):
-        self.put(".githooks/pre-commit", "python legacy/gate.py\n")        # legacy/gate.py exists; tools/gate.py is cited
-        c = self.invoked()
-        self.assertEqual((c["backed"], c["uninvoked"]), (0, 1))
-        self.put(".githooks/pre-commit", "cd tools && python gate.py\n")   # gate.py resolves beside the hook, not tools/
-        self.assertEqual(self.invoked()["backed"], 0)
+        self.assertEqual(self.backed_by(".githooks/n1.sh", "python legacy/gate.py\n"), 0)         # legacy/gate.py exists
+        self.assertEqual(self.backed_by(".githooks/n2.sh", "cd tools && python gate.py\n"), 0)   # resolves beside the hook
+        self.assertEqual(self.backed_by(".githooks/n3.sh", "python ../outside/gate.py\n"), 0)
 
-    def test_reference_relative_to_the_surface_directory_counts(self):
-        self.put("tools/run.sh", "python gate.py\n")
-        self.assertEqual(self.invoked(surfaces=["tools/*.sh"])["backed"], 1)
-        self.put(".githooks/pre-commit", 'python "$(dirname "$0")/../tools/gate.py"\n')
-        self.assertEqual(self.invoked()["backed"], 1)
-        self.put(".githooks/pre-commit", 'python "$ROOT/tools/gate.py"\n')
-        self.assertEqual(self.invoked()["backed"], 1)
-        self.put(".githooks/pre-commit", "python --file=tools/gate.py\n")
-        self.assertEqual(self.invoked()["backed"], 1)
+    def test_paths_relative_to_the_surface_and_to_the_root_resolve(self):
+        self.assertEqual(self.backed_by("tools/run.sh", "python gate.py\n"), 1)                  # beside the surface
+        self.assertEqual(self.backed_by(".githooks/p1.sh", "python ../tools/gate.py\n"), 1)
+        self.assertEqual(self.backed_by(".githooks/p2.sh", "python tools\\gate.py\n"), 1)         # backslashes
+        absolute = self.root.replace("\\", "/") + "/tools/gate.py"
+        self.assertEqual(self.backed_by(".githooks/p3.sh", f"python {absolute}\n"), 1)           # absolute, inside the repo
+        outside = os.path.join(self.tmp, "outside", "gate.py").replace("\\", "/")
+        self.assertEqual(self.backed_by(".githooks/p4.sh", f"python {outside}\n"), 0)            # absolute, outside the repo
+        self.assertEqual(self.backed_by(".githooks/p5.sh", "python /tools/gate.py\n"), 0)        # not repo-relative: absolute
+
+    def test_variable_prefixes_resolve_only_from_the_allowlist(self):
+        for i, text in enumerate(('python "$ROOT/tools/gate.py"', 'python "${ROOT}/tools/gate.py"',
+                                  'python "$(git rev-parse --show-toplevel)/tools/gate.py"',
+                                  'python "$GITHUB_WORKSPACE/tools/gate.py"', 'python "${{ github.workspace }}/tools/gate.py"')):
+            self.assertEqual(self.backed_by(f".githooks/v{i}.sh", text + "\n"), 1, text)
+        self.assertEqual(self.backed_by("tools/run2.sh", 'python "$PSScriptRoot/../tools/gate.py"\n'), 1)     # surface dir's parent
+        for i, text in enumerate(('python "$UNSET/tools/gate.py"', 'python $HOME/tools/gate.py', 'python "$(dirname "$0")/../tools/gate.py"',
+                                  'python "%ROOT%\\tools\\gate.py"', 'python "${OTHER}/tools/gate.py"', "python ~/tools/gate.py")):
+            self.assertEqual(self.backed_by(f".githooks/u{i}.sh", text + "\n"), 0, text)
+        # root_vars narrows or widens the allowlist
+        self.put(".githooks/r.sh", 'python "$REPO/tools/gate.py"\n')
+        self.assertEqual(self.invoked(surfaces=[".githooks/r.sh"])["backed"], 0)
+        self.assertEqual(self.invoked(surfaces=[".githooks/r.sh"], root_vars=["$REPO"])["backed"], 1)
+        self.put(".githooks/r.sh", 'python "$ROOT/tools/gate.py"\n')
+        self.assertEqual(self.invoked(surfaces=[".githooks/r.sh"], root_vars=["$REPO"])["backed"], 0)
 
     def test_a_comment_only_mention_is_not_an_invocation(self):
-        cases = {".githooks/a.sh": "# TODO call tools/gate.py\n", ".githooks/b.cs": "// tools/gate.py\n",
-                 ".githooks/c.cmd": "REM tools/gate.py\n", ".githooks/d.cmd": ":: tools/gate.py\n",
-                 ".githooks/e.yml": "steps:\n  - run: echo hi # tools/gate.py\n",
-                 ".githooks/f.ps1": "<#\nrun tools/gate.py\n#>\n", ".githooks/g.js": "/* tools/gate.py */\n",
-                 ".githooks/h.js": "/*\n tools/gate.py\n*/\n", ".githooks/i.sh": "   #!/bin/sh tools/gate.py\n"}
-        live = {".githooks/a.sh": "python tools/gate.py # run it\n", ".githooks/b.cs": "Run(\"tools/gate.py\"); // ok\n",
-                ".githooks/c.cmd": "REMOTE tools/gate.py\n", ".githooks/d.cmd": "call tools/gate.py\n",
-                ".githooks/e.yml": "steps:\n  - run: python tools/gate.py\n",
-                ".githooks/f.ps1": "<#\nnote\n#>\npython tools/gate.py\n", ".githooks/g.js": "/* c */ run('tools/gate.py')\n",
-                ".githooks/h.js": "/*\n c\n*/\nrun('tools/gate.py')\n", ".githooks/i.sh": "python tools/gate.py\n"}
-        for rel, text in cases.items():
-            self.put(rel, text)
-            self.assertEqual(self.invoked(surfaces=[rel])["backed"], 0, (rel, text))
-            self.put(rel, live[rel])                                        # positive control: the same file, uncommented
-            self.assertEqual(self.invoked(surfaces=[rel])["backed"], 1, (rel, live[rel]))
+        cases = {".githooks/a.sh": ("# TODO call tools/gate.py\n", "python tools/gate.py # run it\n"),
+                 ".githooks/b.sh": ("   #!/bin/sh tools/gate.py\n", "python tools/gate.py\n"),
+                 ".githooks/c.cmd": ("REM python tools/gate.py\n", "call tools/gate.py\n"),
+                 ".githooks/d.cmd": (":: python tools/gate.py\n", "python tools/gate.py\n"),
+                 ".githooks/e.yml": ("steps:\n  - run: echo hi # tools/gate.py\n", "steps:\n  - run: python tools/gate.py\n"),
+                 ".githooks/f.ps1": ("<#\npython tools/gate.py\n#>\n", "<#\nnote\n#>\npython tools/gate.py\n"),
+                 ".githooks/g.sh": ("echo ok; /* python tools/gate.py */\n", "echo ok; /* c */ python tools/gate.py\n"),
+                 ".githooks/h.sh": ("echo ok; /*\npython tools/gate.py\n*/\n", "echo ok; /*\nc\n*/ python tools/gate.py\n"),
+                 ".githooks/i.sh": ('x=1 """\npython tools/gate.py\n"""\n', '"""\ndoc\n"""\npython tools/gate.py\n'),
+                 ".githooks/j.sh": ("true <# python tools/gate.py #>\n", "true <# c #> ; python tools/gate.py\n")}
+        for rel, (dead, live) in cases.items():
+            self.assertEqual(self.backed_by(rel, dead), 0, (rel, dead))
+            self.assertEqual(self.backed_by(rel, live), 1, (rel, live))                  # positive control: uncommented
 
     def test_the_enforcers_own_unit_test_is_not_its_invoker(self):
-        for name in ("gate.tests.py", "gate.test.py", "test_gate.py", "gate_test.py", "GateTests.py", "gate-tests.py"):
-            self.put("tools/" + name, "python tools/gate.py\n")
-            self.assertEqual(self.invoked(surfaces=["tools/" + name])["backed"], 0, name)
-        self.put("tools/other.tests.py", "python tools/gate.py\n")          # a different checker's test still counts
-        self.assertEqual(self.invoked(surfaces=["tools/other.tests.py"])["backed"], 1)
+        for name in ("gate.tests.sh", "gate.test.ps1", "test_gate.sh", "gate_test.cmd", "Gate.Tests.ps1"):
+            self.assertEqual(self.backed_by("tools/" + name, "python tools/gate.py\n"), 0, name)
+        self.assertEqual(self.backed_by("tools/other.tests.sh", "python tools/gate.py\n"), 1)     # another checker's test still counts
+        # round-3 finding N5/N6: a NON-test surface sharing the enforcer's stem is a legitimate invoker
+        self.assertEqual(self.backed_by(".github/workflows/gate.yml", "steps:\n  - run: python tools/gate.py\n"), 1)
+        self.put("tools/pre-commit.py", ANC + " = 1\n")
+        self.assertEqual(self.backed_by(".githooks/pre-commit", "python tools/pre-commit.py\n", "tools/pre-commit.py"), 1)
+        # a different test file's mention of the enforcer's TEST file is not a command either
+        self.put("tools/gate.tests.py", "x\n")
+        self.assertEqual(self.backed_by("tools/cli.tests.sh", "see also gate.tests.py\n", "tools/gate.tests.py"), 0)
 
-    def test_test_stem_unit(self):
+    def test_is_test_file_and_test_stem_unit(self):
+        for name in ("foo.tests.sh", "foo.test.ps1", "test_foo.sh", "foo_test.cmd", "FooTests.cs", "Foo.Tests.ps1"):
+            self.assertTrue(crt.is_test_file(name), name)
+        for name in ("gate.yml", "pre-commit", "gate.sh", "latest.sh", "Contests.cs", "attest.sh", "testing.sh", "protest.ps1"):
+            self.assertFalse(crt.is_test_file(name), name)
         for name, stem in (("foo.tests.py", "foo"), ("FooTests.cs", "foo"), ("test_foo.py", "foo"), ("foo-test.sh", "foo"),
                            ("foo.py", "foo"), ("latest.py", "latest"), ("Contest.cs", "contest")):
             self.assertEqual(crt.test_stem(name), stem, name)
 
     def test_enforcer_never_invokes_itself_and_excluded_surfaces_are_ignored(self):
-        self.put("tools/gate.py", "ANCHOR = 'tools/gate.py'\n")
-        self.assertEqual(self.invoked(surfaces=["tools/*.py"])["uninvoked"], 1)
-        self.put(".githooks/pre-commit.frozen-20260905", "python tools/gate.py\n")
+        self.put("tools/gate.sh", ANC + "=1\ntools/gate.sh\n")
+        self.assertEqual(self.invoked("tools/gate.sh", surfaces=["tools/*.sh"])["uninvoked"], 1)
+        self.put(".githooks/x.frozen-1.sh", "python tools/gate.py\n")
         self.assertEqual(self.invoked()["uninvoked"], 0)
         self.assertEqual(self.invoked(invocation_exclude=["*.frozen-*"])["uninvoked"], 1)
 
     def test_a_reference_outside_every_surface_does_not_count(self):
-        self.put("NOTES.md", "run tools/gate.py sometimes\n")
+        self.put("NOTES.md", "python tools/gate.py\n")
         self.assertEqual(self.invoked()["uninvoked"], 1)
-        self.put(".github/workflows/ci.yml", "run: python tools/gate.py\n")
+        self.put(".github/workflows/ci.yml", "steps:\n  - run: python tools/gate.py\n")
         self.assertEqual(self.invoked(surfaces=[".githooks/*", ".github/workflows/*.yml"])["backed"], 1)
 
     @unittest.skipUnless(os.name == "nt", "case-insensitive filesystem")
     def test_windows_path_comparison_is_case_insensitive(self):
-        self.put(".githooks/pre-commit", "python TOOLS\\GATE.PY\n")
-        self.assertEqual(self.invoked()["backed"], 1)
+        self.assertEqual(self.backed_by(".githooks/w.sh", "python TOOLS\\GATE.PY\n"), 1)
 
-    # ---- items 2 and 3: the requirement covers inline tags and fails closed
+    # ---- the requirement covers inline tags and fails closed
     def test_inline_tags_obey_the_requirement_by_default_when_surfaces_are_configured(self):
         self.doc("## Rules\n- a [enforced: tools/orphan.py]\n")
         self.put(".githooks/pre-commit", "python tools/gate.py\n")
         surf = {"invocation_surfaces": HOOK, "rule_map": None}
-        self.assertEqual(self.counts(**surf)["uninvoked"], 1)                          # default is now all
+        self.assertEqual(self.counts(**surf)["uninvoked"], 1)                          # default is all
         self.assertEqual(self.counts("--require-invoked", **surf)["uninvoked"], 1)     # bare flag = all
         self.assertEqual(self.counts("--require-invoked", "all", **surf)["uninvoked"], 1)
         self.assertEqual(self.counts("--require-invoked", "map", **surf)["backed"], 1)  # map-only mode skips inline
@@ -471,6 +578,14 @@ class V2(unittest.TestCase):
         self.assertEqual(rc, 1, out)
         self.assertIn("BELOW FLOOR", out)
 
+    def test_echo_of_the_enforcer_cannot_meet_a_floor(self):
+        # Codex round-2 repro: `echo tools/gate.py` is a mention, not a run
+        self.put(".githooks/pre-commit", "echo tools/gate.py\n")
+        self.doc("## Rules\n- a [enforced: tools/gate.py]\n")
+        rc, out, _ = self.run_cli("--check", "--today", "2026-10-16", rule_map=None, invocation_surfaces=HOOK,
+                                  floor_schedule=[{"date": "2026-10-16", "backed": 1}])
+        self.assertEqual(rc, 1, out)
+
     def test_require_invoked_off_lifts_map_entries_too(self):
         self.map_alpha("tools/orphan.py")
         self.assertEqual(self.counts(invocation_surfaces=HOOK)["uninvoked"], 1)
@@ -482,16 +597,14 @@ class V2(unittest.TestCase):
         rc, out, _ = self.run_cli("--report")
         self.assertIn("INVOCATION UNCHECKED p:", out)
         self.assertEqual(self.counts()["backed"], 1)          # existence alone backs it, as in v1
-        self.assertEqual(self.run_cli("--check")[0], 0)
+        self.assertEqual(self.run_cli("--check")[0], 0)       # no floor configured: nothing to miss
         rc, out, _ = self.run_cli("--report", invocation_surfaces=HOOK)
         self.assertNotIn("INVOCATION UNCHECKED", out)
 
     def test_explicit_requirement_without_surfaces_fails_closed(self):
         self.doc("## Rules\n- a [enforced: tools/gate.py]\n")
-        for mode in (("--require-invoked",), ("--require-invoked", "all"), ("--require-invoked", "map")):
+        for mode in (("--require-invoked",), ("--require-invoked", "all")):
             for surfaces in (None, []):
-                if mode[-1] == "map":
-                    continue                                     # map mode never checks inline tags
                 c = self.counts(*mode, rule_map=None, invocation_surfaces=surfaces)
                 self.assertEqual((c["backed"], c["uninvoked"]), (0, 1), (mode, surfaces))
                 rc, out, _ = self.run_cli("--check", *mode, rule_map=None, invocation_surfaces=surfaces)
@@ -502,22 +615,50 @@ class V2(unittest.TestCase):
         rc, out, _ = self.run_cli("--check", "--require-invoked", "map")
         self.assertEqual(rc, 1, out)
         self.assertEqual(self.counts("--require-invoked", "map")["backed"], 0)
-        # even a project with zero enforced rules cannot pass a requirement it cannot evaluate
-        self.doc("## Rules\n- a [prose]\n")
+        self.doc("## Rules\n- a [prose]\n")                      # zero enforced rules cannot pass a requirement it cannot evaluate
         self.assertEqual(self.run_cli("--check", "--require-invoked", rule_map=None)[0], 1)
-        # negative control: the same project without the explicit flag is the legacy regime and passes
-        self.doc("## Rules\n- a [enforced: tools/gate.py]\n")
+        self.doc("## Rules\n- a [enforced: tools/gate.py]\n")    # negative control: no explicit flag = legacy regime
         self.assertEqual(self.run_cli("--check", rule_map=None)[0], 0)
         self.assertEqual(self.counts(rule_map=None)["backed"], 1)
 
-    # ---- item 4: git-hook placement is verified against the effective hooks directory
-    def hook_case(self, hooks_path):
+    # ---- unchecked backing never counts toward a floor (round 3, item 3)
+    def test_unchecked_backing_never_counts_toward_a_floor(self):
+        floor = [{"date": "2026-10-16", "backed": 1}]
+        self.doc("## Rules\n- a [enforced: README.md]\n")
+        self.put("README.md", "x\n")
+        self.put(".githooks/pre-commit", "python tools/gate.py\n")
+        for label, extra, over in (("no surfaces", (), {}), ("off", ("--require-invoked", "off"), {"invocation_surfaces": HOOK}),
+                                   ("map mode inline", ("--require-invoked", "map"), {"invocation_surfaces": HOOK})):
+            rc, out, _ = self.run_cli("--check", "--today", "2026-10-16", *extra, rule_map=None, floor_schedule=floor, **over)
+            self.assertEqual(rc, 1, (label, out))
+            self.assertIn("FLOOR-UNCHECKED-BACKING p: 1 backed rule(s)", out)
+            self.assertIn("BELOW FLOOR", out)
+            self.assertEqual(self.counts(*extra, rule_map=None, floor_schedule=floor, **over)["backed"], 1, label)   # still reported as backed
+        # the message is informational when the floor is met by checked backing
+        self.doc("## Rules\n- a [enforced: README.md]\n- b [enforced: tools/gate.py]\n")
+        rc, out, _ = self.run_cli("--check", "--today", "2026-10-16", "--require-invoked", "map", rule_map=None,
+                                  floor_schedule=floor, invocation_surfaces=HOOK)
+        self.assertEqual(rc, 1, out)                 # map mode checks only map entries: both inline tags are unchecked
+        # negative control: invocation-checked backing meets the floor and prints no warning
+        self.doc("## Rules\n- b [enforced: tools/gate.py]\n")
+        rc, out, _ = self.run_cli("--check", "--today", "2026-10-16", rule_map=None, floor_schedule=floor, invocation_surfaces=HOOK)
+        self.assertEqual(rc, 0, out)
+        self.assertNotIn("FLOOR-UNCHECKED-BACKING", out)
+        # map entries are checked in map mode, so they still count there
+        self.doc(MAPDOC)
+        self.map_alpha()
+        rc, out, _ = self.run_cli("--check", "--today", "2026-10-16", "--require-invoked", "map", floor_schedule=floor,
+                                  invocation_surfaces=HOOK)
+        self.assertEqual(rc, 0, out)
+
+    # ---- git-hook placement is verified against the effective hooks directory
+    def hook_case(self, hooks_path, name="pre-commit"):
         self.git("init", "-q")
         if hooks_path:
             self.git("config", "core.hooksPath", hooks_path)
-        self.put(".githooks/pre-commit", "#!/bin/sh\necho ANCHOR\n")
-        self.map_alpha(".githooks/pre-commit")
-        return self.run_cli("--report", invocation_surfaces=HOOK, placement_invoked=[".githooks/pre-commit"])
+        self.put(f".githooks/{name}", "#!/bin/sh\necho ANCHOR_MAIN\n")
+        self.map_alpha(f".githooks/{name}")
+        return self.run_cli("--report", invocation_surfaces=HOOK, placement_invoked=[f".githooks/{name}"])
 
     def test_placement_is_backed_only_when_git_runs_that_directory(self):
         rc, out, _ = self.hook_case(".githooks")
@@ -535,7 +676,7 @@ class V2(unittest.TestCase):
         self.assertIn("PLACEMENT UNWIRED", out)
 
     def test_placement_in_a_directory_that_is_not_a_git_repo_is_not_wired(self):
-        self.put(".githooks/pre-commit", "#!/bin/sh\necho ANCHOR\n")
+        self.put(".githooks/pre-commit", "#!/bin/sh\necho ANCHOR_MAIN\n")
         self.map_alpha(".githooks/pre-commit")
         rc, out, _ = self.run_cli("--report", invocation_surfaces=HOOK, placement_invoked=[".githooks/pre-commit"])
         self.assertIn("coverage 0/4", out)
@@ -543,7 +684,7 @@ class V2(unittest.TestCase):
     def test_placement_is_not_fooled_by_a_git_config_environment_override(self):
         self.git("init", "-q")
         self.git("config", "core.hooksPath", ".githooks")
-        self.put(".githooks/pre-commit", "#!/bin/sh\necho ANCHOR\n")
+        self.put(".githooks/pre-commit", "#!/bin/sh\necho ANCHOR_MAIN\n")
         self.map_alpha(".githooks/pre-commit")
         over = {"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "core.hooksPath", "GIT_CONFIG_VALUE_0": ".review-disabled-hooks"}
         with mock.patch.dict(os.environ, over):
@@ -557,7 +698,18 @@ class V2(unittest.TestCase):
         rc, out, _ = self.run_cli("--report", invocation_surfaces=HOOK, placement_invoked=["tools/gate.py"])
         self.assertIn("coverage 0/4", out)
 
-    # ---- item 5: anchors and fan-in
+    def test_only_real_git_hook_names_can_be_placement_invoked(self):
+        rc, out, _ = self.hook_case(".githooks", name="notahook.sh")          # wired directory, but not a hook name
+        self.assertIn("coverage 0/4", out)
+        for name in ("pre-push", "commit-msg", "post-commit", "update", "reference-transaction"):
+            self.assertIn(name, crt.GIT_HOOKS)
+        for name in ("notahook.sh", "pre-commit.sample", "README", "pre-commit.frozen-1"):
+            self.assertNotIn(name, crt.GIT_HOOKS)
+        shutil.rmtree(os.path.join(self.root, ".git"), ignore_errors=True)
+        rc, out, _ = self.hook_case(".githooks", name="pre-push")             # positive control: another real hook name
+        self.assertIn("coverage 1/4", out)
+
+    # ---- anchors: claims keyed by enforcement LOCATION
     def test_checked_map_entry_without_an_anchor_is_exit_2(self):
         self.mapfile({self.rid(ALPHA): {"kind": "enforced", "enforcer": "tools/gate.py"}})
         self.put(".githooks/pre-commit", "python tools/gate.py\n")
@@ -567,60 +719,116 @@ class V2(unittest.TestCase):
 
     def test_anchor_must_occur_on_a_non_comment_line_of_the_enforcer(self):
         self.put(".githooks/pre-commit", "python tools/gate.py\n")
-        self.put("tools/gate.py", "# ANCHOR_ONLY_IN_A_COMMENT\nx = 1  # ANCHOR_TRAILING\nANCHOR_REAL = 1\n")
-        for anchor, backed in (("ANCHOR_REAL", 1), ("ANCHOR_ONLY_IN_A_COMMENT", 0), ("ANCHOR_TRAILING", 0), ("ABSENT", 0)):
+        self.put("tools/gate.py", "# ANCHOR_ONLY_IN_A_COMMENT\nx = 1  # ANCHOR_TRAILING\nANCHOR_REAL = 1\n"
+                                  "'''\nANCHOR_IN_DOCSTRING\n'''\n/* ANCHOR_IN_BLOCK */\n")
+        for anchor, backed in (("ANCHOR_REAL", 1), ("ANCHOR_ONLY_IN_A_COMMENT", 0), ("ANCHOR_TRAILING", 0),
+                               ("ANCHOR_IN_DOCSTRING", 0), ("ANCHOR_IN_BLOCK", 0), ("ABSENT_ANCHOR", 0)):
             self.map_alpha(anchor=anchor)
             c = self.counts(invocation_surfaces=HOOK)
             self.assertEqual((c["backed"], c["dangling"]), (backed, 1 - backed), anchor)
 
+    def test_anchor_must_be_on_exactly_one_line_and_at_least_eight_chars(self):
+        self.put(".githooks/pre-commit", "python tools/gate.py\n")
+        self.put("tools/gate.py", "ANCHOR_TWICE = 1\ny = ANCHOR_TWICE\nSHORT7 = 1\nEIGHT888 = 1\n")
+        self.map_alpha(anchor="ANCHOR_TWICE")
+        c = self.counts(invocation_surfaces=HOOK)
+        self.assertEqual((c["backed"], c["ambiguous"], c["dangling"]), (0, 1, 0))
+        rc, out, _ = self.run_cli(invocation_surfaces=HOOK)
+        self.assertEqual(rc, 1)
+        self.assertIn("ANCHOR-AMBIGUOUS p RULES.md:", out)
+        self.assertIn("lines 1, 2", out)
+        self.map_alpha(anchor="SHORT7")                                  # 6 non-space chars
+        self.assertEqual(self.counts(invocation_surfaces=HOOK)["dangling"], 1)
+        self.map_alpha(anchor="SHORT7 =")                                # 7 non-space chars even with a space
+        self.assertEqual(self.counts(invocation_surfaces=HOOK)["backed"], 0)
+        self.map_alpha(anchor="EIGHT888")                                # exactly 8
+        self.assertEqual(self.counts(invocation_surfaces=HOOK)["backed"], 1)
+        self.map_alpha(anchor="  x  ")
+        self.assertEqual(self.counts(invocation_surfaces=HOOK)["backed"], 0)
+
     def test_one_enforcer_cannot_back_many_rules_with_one_anchor(self):
         self.put(".githooks/pre-commit", "python tools/gate.py\n")
-        self.put("tools/gate.py", "A1 = 1\nA2 = 2\n")
-        self.mapfile({self.rid(ALPHA): enf("tools/gate.py", "A1"), self.rid(BETA): enf("tools/gate.py", "A1"),
-                      self.rid(GAMMA): enf("tools/gate.py", "A2"), self.rid(DELTA): enf("tools/gate.py", "A1")})
+        self.put("tools/gate.py", "ANCHOR_ONE = 1\nANCHOR_TWO = 2\n")
+        self.mapfile({self.rid(ALPHA): enf("tools/gate.py", "ANCHOR_ONE"), self.rid(BETA): enf("tools/gate.py", "ANCHOR_ONE"),
+                      self.rid(GAMMA): enf("tools/gate.py", "ANCHOR_TWO"), self.rid(DELTA): enf("tools/gate.py", "ANCHOR_ONE")})
         j = self.census_json(invocation_surfaces=HOOK)
         self.assertEqual((j["counts"]["backed"], j["counts"]["dup_anchor"]), (2, 2))     # Alpha and Gamma; Beta, Delta duplicate
-        self.assertEqual(j["fanin"], {"tools/gate.py": {"backed": 2, "anchors": ["A1", "A2"]}})
+        self.assertEqual(j["fanin"], {"tools/gate.py": {"backed": 2, "anchors": ["ANCHOR_ONE@1", "ANCHOR_TWO@2"]}})
         rc, out, _ = self.run_cli(invocation_surfaces=HOOK)
         self.assertEqual(rc, 1)
         self.assertIn("ANCHOR-DUPLICATE p RULES.md:", out)
-        self.assertIn("fan-in p: tools/gate.py backs 2 rule(s): A1 | A2", out)
+        self.assertIn("fan-in p: tools/gate.py backs 2 rule(s): ANCHOR_ONE@1 | ANCHOR_TWO@2", out)
 
-    def test_fan_in_cannot_meet_a_floor(self):
+    def test_overlapping_anchors_on_one_line_back_exactly_one_rule(self):
+        # Opus F2: substrings of ONE hook line, each a different string, each unique on that line
         self.put(".githooks/pre-commit", "python tools/gate.py\n")
+        self.put("tools/gate.py", "GATE_REFUSED_TEXT = 'exit 1 refused'\nOTHER_LINE_HERE = 2\n")
+        names = ["GATE_REFUSED_TEXT", "GATE_REFUSED", "REFUSED_TEXT", "exit 1 refused", "TEXT = 'exit"]
         self.doc("## Rules\n" + "".join(f"- rule {i}\n" for i in range(5)))
-        self.mapfile({self.rid(f"rule {i}"): enf("tools/gate.py", "ANCHOR") for i in range(5)})
+        self.mapfile({self.rid(f"rule {i}"): enf("tools/gate.py", a) for i, a in enumerate(names)})
+        j = self.census_json(invocation_surfaces=HOOK)
+        self.assertEqual((j["counts"]["backed"], j["counts"]["dup_anchor"]), (1, 4))
         rc, out, _ = self.run_cli("--check", "--today", "2026-10-16", invocation_surfaces=HOOK,
                                   floor_schedule=[{"date": "2026-10-16", "backed": 5}])
         self.assertEqual(rc, 1, out)
-        self.assertEqual(self.counts(invocation_surfaces=HOOK)["backed"], 1)
+
+    def test_near_duplicate_rule_texts_cannot_share_a_line(self):
+        # Opus G2: a one-character rewording gets a new id, but not a new enforcement location
+        self.put(".githooks/pre-commit", "python tools/gate.py\n")
+        self.put("tools/gate.py", "echo gate refused!\n")
+        self.doc("## Rules\n- rule b\n- rule b.\n")
+        self.mapfile({self.rid("rule b"): enf("tools/gate.py", "gate refused"), self.rid("rule b."): enf("tools/gate.py", "e refused!")})
+        c = self.counts(invocation_surfaces=HOOK)
+        self.assertEqual((c["backed"], c["dup_anchor"]), (1, 1))
+        rc, out, _ = self.run_cli("--check", "--today", "2026-10-16", invocation_surfaces=HOOK,
+                                  floor_schedule=[{"date": "2026-10-16", "backed": 2}])
+        self.assertEqual(rc, 1, out)
+
+    def test_prefix_anchors_of_one_line_cannot_meet_dng_style_floors(self):
+        # Codex round-2 repro shape: prefixes of one existing line as 46 different anchors
+        line = 'echo "SKIPPED build and test: every staged path is one of the three governing docs"'
+        self.put(".githooks/pre-commit", "python tools/gate.py\n")
+        self.put("tools/gate.py", line + "\nSECOND_LINE_OF_CODE = 1\n")
+        self.doc("## Rules\n" + "".join(f"- rule {i}\n" for i in range(46)))
+        self.mapfile({self.rid(f"rule {i}"): enf("tools/gate.py", line[:12 + i]) for i in range(46)})
+        c = self.counts(invocation_surfaces=HOOK)
+        self.assertEqual((c["backed"], c["dup_anchor"]), (1, 45))
+
+    def test_distinct_lines_each_back_one_rule(self):
+        # negative control for the location key: genuinely different lines are different enforcement points
+        self.put(".githooks/pre-commit", "python tools/gate.py\n")
+        self.put("tools/gate.py", "REFUSE_ALPHA = 1\nREFUSE_BETA = 2\nREFUSE_GAMMA = 3\n")
+        self.mapfile({self.rid(ALPHA): enf("tools/gate.py", "REFUSE_ALPHA"), self.rid(BETA): enf("tools/gate.py", "REFUSE_BETA"),
+                      self.rid(GAMMA): enf("tools/gate.py", "REFUSE_GAMMA")})
+        self.assertEqual(self.counts(invocation_surfaces=HOOK)["backed"], 3)
 
     def test_inline_anchor_syntax_and_the_one_per_enforcer_cap(self):
         self.put(".githooks/pre-commit", "python tools/gate.py\n")
-        self.put("tools/gate.py", "A1 = 1\nA2 = 2\n")
+        self.put("tools/gate.py", "ANCHOR_ONE = 1\nANCHOR_TWO = 2\n")
         surf = {"invocation_surfaces": HOOK, "rule_map": None}
         self.doc("## Rules\n- a [enforced: tools/gate.py]\n- b [enforced: tools/gate.py]\n")      # unanchored: one only
         c = self.counts(**surf)
         self.assertEqual((c["backed"], c["dup_anchor"]), (1, 1))
-        self.doc("## Rules\n- a [enforced: tools/gate.py#A1]\n- b [enforced: tools/gate.py#A2]\n")
+        self.doc("## Rules\n- a [enforced: tools/gate.py#ANCHOR_ONE]\n- b [enforced: tools/gate.py#ANCHOR_TWO]\n")
         self.assertEqual(self.counts(**surf)["backed"], 2)
-        self.doc("## Rules\n- a [enforced: tools/gate.py#A1]\n- b [enforced: tools/gate.py#A1]\n")
+        self.doc("## Rules\n- a [enforced: tools/gate.py#ANCHOR_ONE]\n- b [enforced: tools/gate.py#ANCHOR_ONE]\n")
         self.assertEqual(self.counts(**surf)["dup_anchor"], 1)
-        self.doc("## Rules\n- a [enforced: tools/gate.py#NOPE]\n")
+        self.doc("## Rules\n- a [enforced: tools/gate.py#ANCHOR_NOPE]\n")
         self.assertEqual(self.counts(**surf)["dangling"], 1)
 
     def test_legacy_unchecked_regime_keeps_unanchored_inline_tags_uncapped(self):
         self.doc("## Rules\n- a [enforced: tools/gate.py]\n- b [enforced: tools/gate.py]\n")
         self.assertEqual(self.counts(rule_map=None)["backed"], 2)
 
-    # ---- item 6: distinct ids, duplicates reported
+    # ---- distinct ids, duplicates reported
     def test_twenty_copies_of_one_backed_rule_count_once_and_miss_a_floor_of_twenty(self):
+        self.put(".githooks/pre-commit", "python tools/gate.py\n")
         self.doc("## Rules\n" + "- same rule [enforced: tools/gate.py]\n" * 20)
-        rc, out, _ = self.run_cli("--check", "--today", "2026-10-23", rule_map=None,
+        rc, out, _ = self.run_cli("--check", "--today", "2026-10-23", rule_map=None, invocation_surfaces=HOOK,
                                   floor_schedule=[{"date": "2026-10-23", "backed": 20}])
         self.assertEqual(rc, 1, out)
         self.assertIn("BELOW FLOOR", out)
-        j = self.census_json(rule_map=None)
+        j = self.census_json(rule_map=None, invocation_surfaces=HOOK)
         self.assertEqual((j["counts"]["backed"], j["counts"]["duplicates"], j["counts"]["bullets"]), (1, 19, 20))
         self.assertEqual(len(j["duplicates"]), 19)
         self.assertEqual(j["coverage"], {"backed": 1, "denominator": 1, "pct": 100.0})
@@ -631,12 +839,18 @@ class V2(unittest.TestCase):
         c = self.counts(rule_map=None)
         self.assertEqual((c["bullets"], c["prose"], c["judgement"], c["duplicates"]), (5, 2, 1, 2))
 
-    # ---- item 8: floor
+    # ---- floor
     FLOORS = [{"date": "2026-10-16", "backed": 1}, {"date": "2026-10-23", "backed": 2}, {"date": "2026-11-06", "backed": 3}]
+    LETTERS = "ABCDEFGH"
 
-    def floor_case(self, today, backed_rules):
-        self.doc("## Rules\n" + "".join(f"- r{i} [enforced: tools/gate.py]\n" for i in range(backed_rules)) + "- p [prose]\n")
-        return self.run_cli("--check", "--today", today, rule_map=None, floor_schedule=self.FLOORS)
+    def floor_case(self, today, backed_rules, floors=None):
+        """A project whose invocation is checked: `backed_rules` anchored inline rules plus one prose rule."""
+        self.put(".githooks/pre-commit", "python tools/gate.py\n")
+        self.put("tools/gate.py", "".join(f"RULE_ANCHOR_{self.LETTERS[i]} = {i}\n" for i in range(8)))
+        self.doc("## Rules\n" + "".join(f"- r{i} [enforced: tools/gate.py#RULE_ANCHOR_{self.LETTERS[i]}]\n"
+                                         for i in range(backed_rules)) + "- p [prose]\n")
+        return self.run_cli("--check", "--today", today, rule_map=None, invocation_surfaces=HOOK,
+                            floor_schedule=floors or self.FLOORS)
 
     def test_floor_fails_below_and_passes_at_or_above(self):
         rc, out, _ = self.floor_case("2026-10-23", 1)
@@ -682,10 +896,12 @@ class V2(unittest.TestCase):
                     return real(2026, 10, 23, 1, 0)                           # local clock already on the 23rd
                 return real(2026, 10, 22, 23, 30, tzinfo=tz)                  # UTC is still the 22nd
 
-        self.doc("## Rules\n- p [enforced: tools/gate.py]\n")
         floors = [{"date": "2026-10-22", "backed": 1}, {"date": "2026-10-23", "backed": 5}]
         with mock.patch.object(datetime, "datetime", FakeDT):
-            rc, out, _ = self.run_cli("--check", rule_map=None, floor_schedule=floors)
+            self.put(".githooks/pre-commit", "python tools/gate.py\n")
+            self.put("tools/gate.py", "RULE_ANCHOR_A = 1\n")
+            self.doc("## Rules\n- p [enforced: tools/gate.py#RULE_ANCHOR_A]\n")
+            rc, out, _ = self.run_cli("--check", rule_map=None, invocation_surfaces=HOOK, floor_schedule=floors)
         self.assertEqual(rc, 0, out)
         self.assertIn("required 1 backed (since 2026-10-22)", out)
 
@@ -709,7 +925,7 @@ class V2(unittest.TestCase):
         self.assertEqual(self.run_cli("--report", rule_map=None, floor_schedule=flat)[0], 0)
         self.assertEqual(self.run_cli("--report", rule_map=None, floor_schedule=[{"date": "2026-10-16", "backed": 0}])[0], 0)
 
-    # ---- emit-map, item 9, item 12
+    # ---- emit-map
     def test_emit_map_writes_every_rule_as_prose_and_round_trips(self):
         outp = os.path.join(self.tmp, "emitted.json")
         rc, out, _ = self.run_cli("--emit-map", outp)
@@ -758,7 +974,7 @@ class V2(unittest.TestCase):
         with open(out, encoding="utf-8") as fh:
             self.assertEqual([len(e["text_head"]) for e in json.load(fh)["rules"].values()], [60])
 
-    # ---- item 10: root_candidates then root
+    # ---- root_candidates then root
     def bus_cfg(self, proj):
         bus = os.path.join(self.tmp, "bus")
         os.makedirs(os.path.join(bus, "tools"), exist_ok=True)
@@ -779,30 +995,43 @@ class V2(unittest.TestCase):
         other = os.path.join(self.tmp, "other")
         shutil.copytree(self.root, other)
         base = dict(self.proj, rule_map=None)
-        # candidate exists AND root exists: the candidate wins (the docstring order)
         rc, root = self.run_root(self.bus_cfg(dict(base, root=self.root, root_candidates=[os.path.join(self.tmp, "absent"), "../sibling"])))
         self.assertEqual(os.path.realpath(root), os.path.realpath(sib))
-        # first existing candidate wins over a later one
         rc, root = self.run_root(self.bus_cfg(dict(base, root=self.root, root_candidates=[other, "../sibling"])))
         self.assertEqual(os.path.realpath(root), os.path.realpath(other))
-        # no candidate exists: root is the fallback
         rc, root = self.run_root(self.bus_cfg(dict(base, root=self.root, root_candidates=[os.path.join(self.tmp, "absent2")])))
         self.assertEqual(os.path.realpath(root), os.path.realpath(self.root))
-        # nothing exists: exit 2
         rc, root = self.run_root(self.bus_cfg(dict(base, root=os.path.join(self.tmp, "absent"), root_candidates=[os.path.join(self.tmp, "absent2")])))
         self.assertEqual(rc, 2)
 
-    # ---- item 11: BOM
+    # ---- BOM and encodings
     def test_utf8_bom_before_a_line_one_heading_does_not_hide_the_section(self):
         with open(os.path.join(self.root, "RULES.md"), "wb") as fh:
             fh.write(b"\xef\xbb\xbf## Rules\n- a [prose]\n- b [prose]\n")
         self.assertEqual(self.counts(rule_map=None)["prose"], 2)
-        # a BOM config and map are read too
         cfg = os.path.join(self.tmp, "bom.json")
         with open(cfg, "wb") as fh:
             fh.write(b"\xef\xbb\xbf" + json.dumps({"schema": crt.SCHEMA, "projects": [dict(self.proj, rule_map=None)]}).encode("utf-8"))
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(crt.main(["--config", cfg, "--report"]), 0)
+
+    def test_a_file_that_is_not_utf8_is_exit_2_with_a_message_never_a_traceback(self):
+        with open(os.path.join(self.root, "RULES.md"), "wb") as fh:
+            fh.write(b"## Rules\n- caf\xe9 [prose]\n")                    # latin-1 byte
+        for extra in (("--report",), ("--check",), ("--emit-map",)):
+            rc, out, err = self.run_cli(*extra, rule_map=None)
+            self.assertEqual(rc, 2, (extra, out, err))
+            self.assertIn("not valid UTF-8", err)
+        self.doc(MAPDOC)                                                  # a latin-1 map and config too
+        self.put("factory/rule-map.json", "")
+        with open(os.path.join(self.root, "factory", "rule-map.json"), "wb") as fh:
+            fh.write(b'{"schema": "rule-map.v1", "rules": {"a": {"kind": "prose", "text_head": "caf\xe9"}}}')
+        self.assertEqual(self.run_cli("--report")[0], 2)
+        cfg = os.path.join(self.tmp, "bad.json")
+        with open(cfg, "wb") as fh:
+            fh.write(b'{"schema": "fleet/rule-tags/v1", "x": "\xe9"}')
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(crt.main(["--config", cfg, "--report"]), 2)
 
     # ---- the shipped DNG entry
     def test_shipped_dng_entry_matches_the_spec_and_its_regex_takes_bold_numbered_and_dash_units(self):
@@ -811,7 +1040,6 @@ class V2(unittest.TestCase):
         self.assertEqual([f["path"] for f in dng["files"]], ["docs/14-ORCHESTRATION.md", "AGENTS.md"])
         self.assertEqual(dng["rule_map"], "factory/rule-map.json")
         self.assertEqual(dng["root_candidates"][0], "C:/code/DngAutoProcessor - Claude/DngAutoProcessor")
-        # a test file is a surface only if a hook or CI job runs it: no test globs by default
         self.assertEqual(dng["invocation_surfaces"], [".githooks/*", ".github/workflows/*.yml"])
         self.assertEqual([(f["date"], f["backed"]) for f in dng["floor_schedule"]],
                          [("2026-10-16", 3), ("2026-10-23", 20), ("2026-10-30", 35), ("2026-11-06", 46)])

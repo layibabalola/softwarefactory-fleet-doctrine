@@ -33,32 +33,45 @@ reword changes it. Inline tags in the prose win over the map. A map entry matchi
 STALE: counted and printed, fatal only with --strict-map. A missing map file is exit 2 (never a zero).
 `--emit-map [FILE]` (one --project) writes a skeleton with every current rule as kind `prose`.
 
-INVOKED means wired, not mentioned. An enforcer is invoked only if a file matching the project's
-`invocation_surfaces` globs has a NON-COMMENT line (# // REM :: and YAML comments, trailing comments
-and block comments removed) holding a token that RESOLVES to the same file, repo-relative or relative to the
-surface's own directory (case-insensitive on Windows). A namesake in another directory, `gate.py.disabled`
-and a comment do not count; neither does the enforcer itself, nor a test file of the enforcer (stem match:
-foo.tests.py, FooTests.cs, test_foo.py for foo.*). A test file is a surface only if you list it, so list only
-tests a hook or CI job runs. `invocation_exclude` (globs) drops surface files (frozen copies).
-`placement_invoked` (globs) names git-hook enforcers; they count only if the enforcer's directory is the
-repo's effective hooks directory (`git config core.hooksPath`, else `.git/hooks`; git unavailable = unwired).
-A top-level `**` surface glob walks the whole tree, so anchor your globs.
+INVOKED is a STATIC APPROXIMATION of "a hook or CI job runs this enforcer"; it cannot prove execution, so
+--check also requires every counted backing to be invocation-checked (see FLOOR). An enforcer is invoked only
+if a file matching `invocation_surfaces` (script types only: extensionless, .sh .bash .ps1 .cmd .bat, and
+.yml/.yaml where only `run:` values and blocks count; any other file never invokes anything) has a command
+whose first word, after `exec & call . source`, `if then else do while ! { }`, env assignments and `&& || ; |`
+separators, is the enforcer path, or is an interpreter (python python3 py pwsh powershell node bash sh dotnet
+cmd) whose first non-flag argument is the enforcer path. echo/printf/Write-Host arguments, assignments,
+heredoc bodies (`<<EOF`, `: <<'EOF'`), lines after an unconditional top-level `exit`, comments (`#` `//` `REM`
+`::`, trailing, `/* */`, `<# #>`, `<!-- -->` and python docstrings anywhere on a line and across lines) never
+count. A path is repo-relative or relative to the surface's directory, or absolute (inside the repo only);
+comparison is by resolved file identity, case-insensitive on Windows. A variable prefix resolves only if it is
+in the project's `root_vars` allowlist (default `$ROOT` `${ROOT}` `$PSScriptRoot/..` `$(git rev-parse
+--show-toplevel)` `${{ github.workspace }}` `$GITHUB_WORKSPACE`; `$PSScriptRoot/..` means the surface
+directory's parent, the others the repo root); any other variable makes the path unresolvable = not invoked.
+A namesake in another directory, `gate.py.disabled`, the enforcer itself and the enforcer's own test file
+(a surface named *.tests.* / *.test.* / test_* / *_test.* / *Tests.cs whose stem matches) never invoke it.
+`invocation_exclude` (globs) drops surface files (frozen copies). `placement_invoked` (globs) names git-hook
+enforcers; only a real git hook name (pre-commit, pre-push, commit-msg, ...) can be placement-invoked, and
+only if the enforcer's directory is the repo's effective hooks directory (`git config core.hooksPath`, else
+`.git/hooks`; git unavailable = unwired). A top-level `**` surface glob walks the whole tree.
 --require-invoked: `all` (inline and map tags; the default whenever the project configures
 invocation_surfaces), `map` (map entries only), `off`. With no invocation_surfaces and no explicit mode the
 old behaviour holds and `INVOCATION UNCHECKED` is printed; an EXPLICIT `all`/`map` with no (or empty)
 surfaces fails CLOSED: every enforced rule is `enforced-uninvoked` and --check exits 1.
 
-ANCHORS AND FAN-IN. Where invocation is checked, each map `enforced` entry carries an `anchor` that occurs
-literally on a non-comment line of the enforcer; anchors must be distinct within one enforcer (a later rule
-reusing an anchor is ANCHOR-DUPLICATE and not backed). An inline tag may write `[enforced: path#anchor]`;
-without an anchor an inline tag is capped at ONE backed rule per enforcer. A per-enforcer fan-in table
-is printed so one hook cannot silently back many rules.
+ANCHORS AND FAN-IN. Where invocation is checked, each map `enforced` entry carries an `anchor` (>= 8 non-space
+chars) that occurs on EXACTLY ONE non-comment line of the enforcer (none = DANGLING, several = ANCHOR-AMBIGUOUS).
+Claims are keyed by enforcement location: one (enforcer, line) backs at most ONE rule; a second rule claiming
+the same line is ANCHOR-DUPLICATE and not backed, however its anchor string differs. An inline tag may write
+`[enforced: path#anchor]`; without an anchor an inline tag is capped at ONE backed rule per enforcer. A
+per-enforcer fan-in table (anchor@line) is printed.
 
 RISING FLOOR (a ratchet that requires better, not only forbids worse). Project key
 `floor_schedule: [{"date":"YYYY-MM-DD","backed":N},...]` (integers >= 0, dates strictly increasing, floors
-non-decreasing, else exit 2). `--check` exits 1 if the backed count is below the latest floor whose date <=
-today (UTC; `--today YYYY-MM-DD` overrides), or on a dangling/mixed rule, or on the fail-closed
-misconfiguration above (or a stale map entry with --strict-map). The next floor and its date are printed.
+non-decreasing, else exit 2). `--check` exits 1 if the INVOCATION-CHECKED backed count is below the latest floor
+whose date <= today (UTC; `--today YYYY-MM-DD` overrides). Backing that was not invocation-checked (no
+surfaces, `--require-invoked map` inline tags, `off`) never counts toward a floor: FLOOR-UNCHECKED-BACKING is
+printed and the floor is judged without it. `--check` also exits 1 on a dangling/mixed rule, on the fail-closed
+misconfiguration above and on a stale map entry with --strict-map. The next floor and its date are printed.
 
 Config (JSON, schema fleet/rule-tags/v1; default: rule-tags.config.json beside this script):
   {"projects": [{"name": "...", "root": "C:/path/to/repo", "root_candidates": ["C:/a", "../sibling"],
@@ -68,12 +81,15 @@ Config (JSON, schema fleet/rule-tags/v1; default: rule-tags.config.json beside t
 candidate resolves against the bus clone (the parent of the config's directory). `section` (optional) is the
 exact heading line; the scan runs to the next heading of the same or a higher level. Headings and bullets
 inside ``` / ~~~ fenced code blocks (opener indented 0-3 spaces, CommonMark) are ignored and a fence ends
-any bullet. `bullet` is a regex matched at the start of a line; the bullet's text runs to the next bullet,
-heading or blank line. Files are read as UTF-8 (a BOM is ignored) as DATA (bus Law 1).
+any bullet. A fence never closed by end of file, or opened in an indented (list-item) container whose
+container ends first, is NOT a fence: its lines and every rule after it are counted, with a WARNING (this can
+only raise the rule count). `bullet` is a regex matched at the start of a line; the bullet's text runs to the
+next bullet, heading or blank line. Files are read as UTF-8 (a BOM is ignored) as DATA (bus Law 1); a file
+that is not valid UTF-8 is exit 2.
 
 Exit: 0 every bullet tagged and every cited path present and invoked (or --report; or --check floor met);
-1 an untagged, dangling, mixed, uninvoked or anchor-duplicate bullet (--check: dangling, mixed, below the
-floor, or fail-closed); 2 usage, config or read/write error (the census did not run).
+1 an untagged, dangling, mixed, uninvoked, anchor-duplicate or anchor-ambiguous bullet (--check: dangling,
+mixed, below the floor, or fail-closed); 2 usage, config or read/write error (the census did not run).
 
 Run:  python tools/check-rule-tags.py [--config FILE] [--project NAME] [--root DIR] [--report] [--check]
         [--json] [--rule-map FILE] [--strict-map] [--require-invoked [all|map|off]] [--today YYYY-MM-DD]
@@ -104,17 +120,30 @@ FENCE_RX = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")          # CommonMark: 0-3 s
 MARKER_RX = re.compile(r"^\s*(?:[-+*]\s+|\d+[.)]\s+)")
 CODE_SPAN_RX = re.compile(r"(`+)(?!`).*?(?<!`)\1(?!`)", re.S)
 DATE_RX = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-BAD_STATES = ("untagged", "dangling", "mixed", "uninvoked", "dup_anchor")
-STATE_LABEL = {"uninvoked": "ENFORCED-UNINVOKED", "dup_anchor": "ANCHOR-DUPLICATE"}
+BAD_STATES = ("untagged", "dangling", "mixed", "uninvoked", "dup_anchor", "ambiguous")
+STATE_LABEL = {"uninvoked": "ENFORCED-UNINVOKED", "dup_anchor": "ANCHOR-DUPLICATE", "ambiguous": "ANCHOR-AMBIGUOUS"}
 MAX_SURFACE_BYTES = 4_000_000
+MIN_ANCHOR = 8                                                # non-space characters
 
-FULL_COMMENT_RX = re.compile(r"^\s*(?:#|//|::|rem(?:\s|$))", re.I)
-TRAILING_COMMENT_RX = re.compile(r"\s(?:#|//).*$")
-BLOCK_COMMENTS = (("/*", "*/"), ("<#", "#>"), ("<!--", "-->"))
-TOKEN_RX = re.compile(r"[^\s\"'`(){}<>|;&=,\[\]]+")
-VAR_PREFIX_RX = re.compile(r"^(?:\$\{?[A-Za-z_]\w*\}?|%\w+%)[/\\]")
+GIT_HOOKS = frozenset(
+    "pre-commit pre-push commit-msg prepare-commit-msg pre-merge-commit post-commit post-merge pre-rebase "
+    "post-checkout post-rewrite pre-applypatch applypatch-msg post-applypatch pre-receive update post-receive "
+    "post-update reference-transaction push-to-checkout fsmonitor-watchman sendemail-validate".split())
+INTERPRETERS = frozenset("python python3 py pwsh powershell node bash sh dotnet cmd".split())
+DEFAULT_ROOT_VARS = ["$ROOT", "${ROOT}", "$PSScriptRoot/..", "$(git rev-parse --show-toplevel)",
+                     "${{ github.workspace }}", "$GITHUB_WORKSPACE"]
+SHELL_EXT = frozenset(("", ".sh", ".bash", ".ps1", ".cmd", ".bat"))
+YAML_EXT = frozenset((".yml", ".yaml"))
+LEAD_WORDS = frozenset("if then else elif do while until ! { } exec call & . source command time".split())
+ENV_ASSIGN_RX = re.compile(r"^[A-Za-z_]\w*=")
+HEREDOC_RX = re.compile(r"(?<!<)<<(-?)\s*(['\"]?)([A-Za-z_][\w.]*)\2")
+RUN_RX = re.compile(r"^(\s*)(?:-\s+)?run:\s*(.*)$")
+ROOT_MARK, PARENT_MARK = "\x01", "\x02"
+TEST_FILE_RX = re.compile(r"(?:\.[Tt]ests?\.|^[Tt]est_|_[Tt]est\.|Tests\.cs$)")
 TEST_SUFFIX_RX = re.compile(r"(?:[._-][Tt]ests?|Tests?|[._-]TESTS?)$")
 TEST_PREFIX_RX = re.compile(r"^(?:[Tt]est[._-])")
+BLOCK_OPEN = (("/*", "*/"), ("<#", "#>"), ("<!--", "-->"), ('"""', '"""'), ("'''", "'''"))
+LINE_START_COMMENT_RX = re.compile(r"^\s*(?:::|rem(?:\s|$))", re.I)
 
 
 class ConfigError(Exception):
@@ -129,22 +158,38 @@ def read_text(path: str) -> str:
 
 # ---------------------------------------------------------------- markdown scanning
 
-def fence_mask(lines: list[str]) -> tuple[set[int], bool]:
-    """(0-based indexes of lines that are fence delimiters or inside a fenced code block, fence-left-open).
-    An opener is indented 0-3 spaces; a fence closes on a line of the same character, at least as long,
-    with nothing after it. A backtick opener may not carry a backtick in its info string."""
-    masked, opener = set(), None
-    for i, l in enumerate(lines):
-        m = FENCE_RX.match(l)
-        if opener is None:
-            if m and not (m.group(1)[0] == "`" and "`" in m.group(2)):
-                opener = m.group(1)
-                masked.add(i)
+def fence_mask(lines: list[str]) -> tuple[set[int], list[int]]:
+    """(0-based indexes of lines that are fence delimiters or inside a fenced code block, 1-based line numbers
+    of openers that were NOT treated as fences). An opener is indented 0-3 spaces; a fence closes on a line of
+    the same character, at least as long, with nothing after it; a backtick opener may not carry a backtick in
+    its info string. A fence never closed by end of file, or opened in an indented container (list item) that
+    ends first (a later non-blank line indented less than the opener), is not a fence: nothing is masked."""
+    masked: set[int] = set()
+    unclosed: list[int] = []
+    i, n = 0, len(lines)
+    while i < n:
+        m = FENCE_RX.match(lines[i])
+        if not m or (m.group(1)[0] == "`" and "`" in m.group(2)):
+            i += 1
+            continue
+        opener = m.group(1)
+        indent = len(lines[i]) - len(lines[i].lstrip(" \t"))
+        j, closed = i + 1, False
+        while j < n:
+            mm = FENCE_RX.match(lines[j])
+            if mm and mm.group(1)[0] == opener[0] and len(mm.group(1)) >= len(opener) and not mm.group(2).strip():
+                closed = True
+                break
+            if indent > 0 and lines[j].strip() and len(lines[j]) - len(lines[j].lstrip(" \t")) < indent:
+                break                                   # the list item holding the fence ended first
+            j += 1
+        if closed:
+            masked.update(range(i, j + 1))
+            i = j + 1
         else:
-            masked.add(i)
-            if m and m.group(1)[0] == opener[0] and len(m.group(1)) >= len(opener) and not m.group(2).strip():
-                opener = None
-    return masked, opener is not None
+            unclosed.append(i + 1)
+            i += 1                                      # not a fence: the lines after the opener are ordinary
+    return masked, unclosed
 
 
 def section_lines(lines: list[str], heading: str | None, masked: set[int] | None = None) -> list[tuple[int, str]]:
@@ -195,7 +240,7 @@ def rule_id(text: str) -> str:
     return hashlib.sha256(normalise(text).encode("utf-8")).hexdigest()[:12]
 
 
-# ---------------------------------------------------------------- paths, comments, invocation
+# ---------------------------------------------------------------- paths and comments
 
 def cited_check(root: str, path: str) -> bool:
     """True only for a regular file inside root: an absolute path, a `..` escape or a directory
@@ -216,32 +261,45 @@ def norm(path: str) -> str:
     return os.path.normcase(os.path.realpath(path))
 
 
-def code_lines(text: str) -> list[str]:
-    """The non-comment part of each line: whole-line comments (# // REM ::), block comments that start a
-    line (/* */, <# #>, <!-- -->) and trailing ` # ...` / ` // ...` comments removed."""
-    out, block_end = [], None
-    for line in text.replace("\r\n", "\n").split("\n"):
-        if block_end:
-            k = line.find(block_end)
-            if k < 0:
-                continue
-            line, block_end = line[k + len(block_end):], None
-        while True:                             # block comments that begin a line; code after a closed one is kept
-            stripped = line.lstrip()
-            opened = next(((o, c) for o, c in BLOCK_COMMENTS if stripped.startswith(o)), None)
-            if not opened:
-                break
-            k = stripped.find(opened[1], len(opened[0]))
-            if k < 0:
-                block_end, line = opened[1], ""
-                break
-            line = stripped[k + len(opened[1]):]
-        if FULL_COMMENT_RX.match(line):
+def code_lines(text: str) -> list[tuple[int, str]]:
+    """[(1-based line number, code)] with comments removed: `#` and `//` (at line start or after whitespace),
+    `::` and `REM` at line start, and block comments / python docstrings (/* */, <# #>, <!-- -->, three double
+    or single quotes) ANYWHERE on a line and across lines (/* <# <!-- only at line start or after whitespace, so
+    globs like `tools/**` are not comments). Lines that end up empty are dropped."""
+    out: list[tuple[int, str]] = []
+    closer = None
+    for ln, line in enumerate(text.replace("\r\n", "\n").split("\n"), 1):
+        if closer is None and LINE_START_COMMENT_RX.match(line):
             continue
-        line = TRAILING_COMMENT_RX.sub("", line)
-        if line.strip():
-            out.append(line)
+        buf, i, n = [], 0, len(line)
+        while i < n:
+            if closer is not None:
+                k = line.find(closer, i)
+                if k < 0:
+                    i = n
+                    break
+                i, closer = k + len(closer), None
+                buf.append(" ")
+                continue
+            hit = next(((o, c) for o, c in BLOCK_OPEN
+                        if line.startswith(o, i) and (o[0] in "\"'" or i == 0 or line[i - 1].isspace())), None)
+            if hit:
+                closer = hit[1]
+                i += len(hit[0])
+                continue
+            ch = line[i]
+            if (ch == "#" or line.startswith("//", i)) and (i == 0 or line[i - 1].isspace()):
+                break
+            buf.append(ch)
+            i += 1
+        code = "".join(buf)
+        if code.strip():
+            out.append((ln, code))
     return out
+
+
+def is_test_file(name: str) -> bool:
+    return bool(TEST_FILE_RX.search(name))
 
 
 def test_stem(name: str) -> str:
@@ -250,6 +308,8 @@ def test_stem(name: str) -> str:
     stem = TEST_PREFIX_RX.sub("", stem, count=1)
     return TEST_SUFFIX_RX.sub("", stem, count=1).lower()
 
+
+# ---------------------------------------------------------------- invocation (a static, lexical approximation)
 
 def run_git(root: str, *args: str) -> tuple[int, str]:
     env = {k: v for k, v in os.environ.items()
@@ -279,11 +339,114 @@ def effective_hooks_dir(root: str) -> str | None:
     return gp if os.path.isabs(gp) else os.path.join(root, gp)
 
 
-class Invocation:
-    """Answers: is this enforcer wired in from a configured invocation surface (or git-hook placement)?"""
+def split_commands(line: str) -> list[list[str]]:
+    """Words of each simple command on a shell/PowerShell/cmd line. Quotes are removed, `&& || ; | & ( ) \\``
+    separate commands, redirections (`2>&1`, `> file`) and their targets are dropped."""
+    cmds: list[list[str]] = [[]]
+    word: list[str] = []
+    state = {"has": False, "skip": False}
+    q = None
 
-    def __init__(self, root: str, surfaces: list[str], excludes: list[str], placement: list[str], closed: bool = False):
+    def flush():
+        if state["has"]:
+            w = "".join(word)
+            if state["skip"]:
+                state["skip"] = False
+            else:
+                cmds[-1].append(w)
+        word.clear()
+        state["has"] = False
+
+    i, n = 0, len(line)
+    while i < n:
+        c = line[i]
+        if q:
+            if c == q:
+                q = None
+            else:
+                word.append(c)
+            i += 1
+            continue
+        if c in "'\"":
+            q, state["has"] = c, True
+            i += 1
+            continue
+        if c.isspace():
+            flush()
+            i += 1
+            continue
+        if c in "<>":
+            if state["has"] and "".join(word).isdigit():          # a file-descriptor prefix: 2>&1
+                word.clear()
+                state["has"] = False
+            else:
+                flush()
+            j = i
+            while j < n and line[j] in "<>":
+                j += 1
+            if j < n and line[j] == "&":
+                j += 1
+                while j < n and line[j].isdigit():
+                    j += 1
+            else:
+                state["skip"] = True                              # the redirect target is not a command word
+            i = j
+            continue
+        if c in ";|&()`":
+            flush()
+            state["skip"] = False
+            if line.startswith(("&&", "||"), i):
+                i += 1
+            if cmds[-1]:
+                cmds.append([])
+            i += 1
+            continue
+        word.append(c)
+        state["has"] = True
+        i += 1
+    flush()
+    return [c for c in cmds if c]
+
+
+def strip_heredocs(lines: list[str]) -> list[str]:
+    """Blank the body (and delimiter) of every heredoc; a comment line never opens one."""
+    out, delim, dash = [], None, False
+    for l in lines:
+        if delim is not None:
+            if (l.lstrip("\t") if dash else l).strip() == delim:
+                delim = None
+            out.append("")
+            continue
+        out.append(l)
+        if l.lstrip().startswith("#"):
+            continue
+        m = HEREDOC_RX.search(l)
+        if m:
+            dash, delim = bool(m.group(1)), m.group(3)
+    return out
+
+
+def join_continuations(code: list[tuple[int, str]], cont: str) -> list[str]:
+    out, buf = [], ""
+    for _n, l in code:
+        s = l.rstrip()
+        if cont and s.endswith(cont):
+            buf += s[:-1] + " "
+            continue
+        out.append(buf + l)
+        buf = ""
+    if buf:
+        out.append(buf)
+    return out
+
+
+class Invocation:
+    """Answers: is this enforcer run by a configured invocation surface (or git-hook placement)? Lexical."""
+
+    def __init__(self, root: str, surfaces: list[str], excludes: list[str], placement: list[str],
+                 closed: bool = False, root_vars: list[str] | None = None):
         self.root, self.placement, self.closed = root, placement, closed
+        self.root_vars = sorted(DEFAULT_ROOT_VARS if root_vars is None else root_vars, key=len, reverse=True)
         self.files: list[tuple[str, str]] = []          # (path as globbed, normalised identity)
         self.unwired: dict[str, str] = {}
         seen = set()
@@ -300,31 +463,111 @@ class Invocation:
         self._refs: dict[str, set[str]] = {}
         self._hooks: tuple[str | None] | None = None
 
+    # -- resolving one word to a file identity
+    def resolve(self, word: str, here: str) -> str | None:
+        w = word.replace("\\", "/")
+        if w.startswith(ROOT_MARK):
+            cands = [os.path.join(self.root, w[1:].lstrip("/"))]
+        elif w.startswith(PARENT_MARK):
+            cands = [os.path.join(os.path.dirname(here), w[1:].lstrip("/"))]
+        elif ROOT_MARK in w or PARENT_MARK in w or "$" in w or "%" in w or w.startswith("~"):
+            return None                                   # a variable outside the allowlist: not resolvable
+        elif os.path.isabs(w) or os.path.splitdrive(w)[0]:
+            cands = [w]
+        else:
+            w = w[2:] if w.startswith("./") else w
+            cands = [os.path.join(self.root, w), os.path.join(here, w)]
+        for c in cands:
+            if not os.path.isfile(c):
+                continue
+            ident = norm(c)
+            base = norm(self.root)
+            try:
+                if os.path.commonpath([base, ident]) != base:
+                    continue                              # outside the repo
+            except ValueError:
+                continue
+            return ident
+        return None
+
+    def mark_vars(self, line: str, here: str) -> str:
+        for rv in self.root_vars:
+            marker = PARENT_MARK if "PSScriptRoot" in rv else ROOT_MARK
+            line = re.sub(re.escape(rv) + r"(?=[/\\])", marker, line)
+        return line
+
+    def command_refs(self, line: str, here: str, found: set[str]) -> None:
+        for words in split_commands(self.mark_vars(line, here)):
+            while words and (words[0] in LEAD_WORDS or ENV_ASSIGN_RX.match(words[0])):
+                words = words[1:]
+            if not words:
+                continue
+            ident = self.resolve(words[0], here)
+            if ident:
+                found.add(ident)
+                continue
+            prog = os.path.basename(words[0].replace("\\", "/")).lower()
+            prog = prog[:-4] if prog.endswith(".exe") else prog
+            if prog not in INTERPRETERS:
+                continue
+            for a in words[1:]:
+                if a.startswith("-") or (prog == "cmd" and re.fullmatch(r"/[A-Za-z]", a)):
+                    continue
+                ident = self.resolve(a, here)
+                if ident:
+                    found.add(ident)
+                break                                     # only the first non-flag argument
+
+    def script_refs(self, text: str, here: str, ext: str, found: set[str]) -> None:
+        raw = strip_heredocs(text.replace("\r\n", "\n").split("\n"))
+        cont = {".cmd": "^", ".bat": "^", ".ps1": "`"}.get(ext, "\\")
+        lines = join_continuations(code_lines("\n".join(raw)), cont)
+        depth = 0
+        for line in lines:
+            cmds = split_commands(line)
+            for c in cmds:
+                if c[0] in ("if", "for", "while", "until", "case", "select", "{"):
+                    depth += 1
+                elif c[0] in ("fi", "done", "esac", "}"):
+                    depth -= 1
+            terminal = bool(cmds) and cmds[0][0] == "exit" and depth <= 0 and len(cmds) == 1
+            self.command_refs(line, here, found)
+            if terminal:
+                break                                     # nothing after an unconditional top-level exit runs
+
     def refs(self, hit: str, ident: str) -> set[str]:
-        """Identities of the existing files named by a non-comment line of the surface file."""
+        """Identities of the files the surface file actually invokes (static approximation)."""
         if ident in self._refs:
             return self._refs[ident]
         found: set[str] = set()
+        ext = os.path.splitext(hit)[1].lower()
         try:
             if os.path.getsize(hit) > MAX_SURFACE_BYTES:
                 raise OSError("too large")
             with open(hit, encoding="utf-8", errors="ignore") as fh:
-                lines = code_lines(fh.read())
+                text = fh.read()
         except OSError:
-            lines = []
+            text = ""
         here = os.path.dirname(hit)
-        for line in lines:
-            for tok in TOKEN_RX.findall(line.replace("\\", "/")):
-                tok = VAR_PREFIX_RX.sub("", tok).rstrip(",:;.)")
-                if tok.startswith("./"):
-                    tok = tok[2:]
-                if not tok or ("/" not in tok and "." not in tok):
+        if ext in YAML_EXT:
+            code = code_lines(text)
+            k = 0
+            while k < len(code):
+                m = RUN_RX.match(code[k][1])
+                k += 1
+                if not m:
                     continue
-                cands = [tok] if os.path.isabs(tok) else []
-                cands += [os.path.join(self.root, tok.lstrip("/")), os.path.join(here, tok.lstrip("/"))]
-                for c in cands:
-                    if os.path.isfile(c):
-                        found.add(norm(c))
+                indent, val = len(m.group(1)), m.group(2).strip()
+                if val[:1] in ("|", ">"):
+                    block = []
+                    while k < len(code) and len(code[k][1]) - len(code[k][1].lstrip()) > indent:
+                        block.append(code[k][1])
+                        k += 1
+                    self.script_refs("\n".join(block), here, ".sh", found)
+                elif val:
+                    self.script_refs(val.strip("'\""), here, ".sh", found)
+        elif ext in SHELL_EXT:
+            self.script_refs(text, here, ext, found)
         self._refs[ident] = found
         return found
 
@@ -346,34 +589,37 @@ class Invocation:
         rel = enforcer.replace("\\", "/")
         if rel.startswith("./"):
             rel = rel[2:]
-        if any(fnmatch.fnmatchcase(rel, g) for g in self.placement) and self.hooks_wired(rel):
+        if (os.path.basename(rel) in GIT_HOOKS and any(fnmatch.fnmatchcase(rel, g) for g in self.placement)
+                and self.hooks_wired(rel)):
             return True
         me = norm(os.path.join(self.root, enforcer))
         stem = os.path.splitext(os.path.basename(rel))[0].lower()
         for hit, ident in self.files:
-            if ident == me or test_stem(os.path.basename(hit)) == stem:
+            name = os.path.basename(hit)
+            if ident == me or (is_test_file(name) and test_stem(name) == stem):
                 continue            # a file never invokes itself; a unit test of the enforcer is not its invoker
             if me in self.refs(hit, ident):
                 return True
         return False
 
 
-_ANCHOR_CACHE: dict[tuple, bool] = {}
+_ANCHOR_CACHE: dict[tuple, list[int]] = {}
 
 
-def anchor_present(root: str, path: str, anchor: str) -> bool:
+def anchor_lines(root: str, path: str, anchor: str) -> list[int]:
+    """1-based numbers of the non-comment lines of the enforcer on which `anchor` occurs literally."""
     full = os.path.join(root, path)
     try:
         st = os.stat(full)
         key = (norm(full), anchor, st.st_mtime_ns, st.st_size)
     except OSError:
-        return False
+        return []
     if key not in _ANCHOR_CACHE:
         try:
             with open(full, encoding="utf-8", errors="ignore") as fh:
-                _ANCHOR_CACHE[key] = any(anchor in l for l in code_lines(fh.read()))
+                _ANCHOR_CACHE[key] = [n for n, l in code_lines(fh.read()) if anchor in l]
         except OSError:
-            _ANCHOR_CACHE[key] = False
+            _ANCHOR_CACHE[key] = []
     return _ANCHOR_CACHE[key]
 
 
@@ -383,7 +629,7 @@ def parse_targets(raw: list[str]) -> list[tuple[str, str | None]]:
     out = []
     for r in raw:
         path, sep, anchor = r.partition("#")
-        out.append((path.strip(), anchor.strip() or None if sep else None))
+        out.append((path.strip(), (anchor.strip() or None) if sep else None))
     return out
 
 
@@ -406,25 +652,38 @@ def classify(text: str, entry: dict | None = None) -> tuple[str, list[tuple[str,
 
 
 def judge(root: str, targets, inv: Invocation | None, check_inv: bool, claims: dict | None, rid: str):
-    """State of an enforced claim: dangling / uninvoked / dup_anchor / backed (+ the paths to show)."""
+    """(state, paths to show, [(anchor, line)] locations). State: dangling / uninvoked / ambiguous /
+    dup_anchor / backed. A claim is keyed by enforcement location: (enforcer file, line) backs ONE rule."""
     shown = [p if a is None else f"{p}#{a}" for p, a in targets]
     missing = [p for p, _a in targets if not cited_check(root, p)]
     if missing:
-        return "dangling", missing
+        return "dangling", missing, []
     if inv is not None and check_inv:
         dead = [p for p, _a in targets if not inv.invoked(p)]
         if dead:
-            return "uninvoked", dead
+            return "uninvoked", dead, []
+    locs, keys = [], []
     if claims is not None:
         for p, a in targets:
-            if a is not None and not anchor_present(root, p, a):
-                return "dangling", [f"{p}#{a}"]
-        keys = [(norm(os.path.join(root, p)), a) for p, a in targets]
+            ident = norm(os.path.join(root, p))
+            if a is None:
+                keys.append((ident, None))
+                locs.append((None, None))
+                continue
+            if len("".join(a.split())) < MIN_ANCHOR:
+                return "dangling", [f"{p}#{a} (anchor shorter than {MIN_ANCHOR} non-space chars)"], []
+            lines = anchor_lines(root, p, a)
+            if not lines:
+                return "dangling", [f"{p}#{a} (anchor not on a non-comment line)"], []
+            if len(lines) > 1:
+                return "ambiguous", [f"{p}#{a} (lines {', '.join(map(str, lines))})"], []
+            keys.append((ident, lines[0]))
+            locs.append((a, lines[0]))
         if any(claims.get(k, rid) != rid for k in keys):
-            return "dup_anchor", shown
+            return "dup_anchor", shown, []
         for k in keys:
             claims[k] = rid
-    return "backed", shown
+    return "backed", shown, locs
 
 
 def load_rule_map(path: str, need_anchor: bool) -> dict:
@@ -467,12 +726,14 @@ def scan(project: dict, root: str) -> tuple[list[dict], list[str]]:
         full = os.path.join(root, f["path"])
         try:
             lines = read_text(full).replace("\r\n", "\n").split("\n")
+        except UnicodeDecodeError as e:
+            raise ConfigError(f"{full}: not valid UTF-8 ({e})")
         except OSError as e:
             raise ConfigError(f"{full}: {e}")
-        masked, open_fence = fence_mask(lines)
-        if open_fence:
-            warns.append(f"WARNING {project.get('name')}: {f['path']} ends inside an unclosed code fence; "
-                         "everything after it is ignored")
+        masked, unclosed = fence_mask(lines)
+        for ln in unclosed:
+            warns.append(f"WARNING {project.get('name')}: {f['path']}:{ln} code fence is never closed (or its list item "
+                         "ended first); treated as NOT a fence, so the rules after it are counted")
         units = bullets(section_lines(lines, f.get("section"), masked), re.compile(f["bullet"]))
         out.append({"path": f["path"], "section": f.get("section"), "units": units})
     return out, warns
@@ -489,7 +750,7 @@ def census(project: dict, root_override: str | None = None, base: str | None = N
     inv = None
     if invocation != "unchecked":
         inv = Invocation(root, surfaces, project.get("invocation_exclude") or [], project.get("placement_invoked") or [],
-                         closed=(invocation == "closed"))
+                         closed=(invocation == "closed"), root_vars=project.get("root_vars"))
     entries: dict = {}
     map_path = rule_map_override or project.get("rule_map")
     if map_path:
@@ -500,8 +761,8 @@ def census(project: dict, root_override: str | None = None, base: str | None = N
     claims = {} if inv is not None else None
     res = {"project": name, "root": root, "files": [], "counts": {}, "warnings": warns, "stale": [],
            "duplicates": [], "fanin": {}, "invocation": invocation, "placement_unwired": {}}
-    keys = ("bullets", "backed", "prose", "judgement", "record", "untagged", "dangling", "mixed", "uninvoked",
-            "dup_anchor", "duplicates")
+    keys = ("bullets", "backed", "backed_checked", "prose", "judgement", "record", "untagged", "dangling", "mixed",
+            "uninvoked", "dup_anchor", "ambiguous", "duplicates")
     totals = dict.fromkeys(keys, 0)
     first_seen: dict[str, str] = {}
     fanin: dict[str, list] = {}
@@ -518,10 +779,13 @@ def census(project: dict, root_override: str | None = None, base: str | None = N
             first_seen[rid] = f"{f['path']}:{n}"
             kind, targets, via_map = classify(text, entries.get(rid))
             if kind == "enforced":
-                state, paths = judge(root, targets, inv, via_map or mode == "all", claims, rid)
+                check_inv = via_map or mode == "all"
+                state, paths, locs = judge(root, targets, inv, check_inv, claims, rid)
                 if state == "backed":
-                    for p, a in targets:
-                        fanin.setdefault(p.replace("\\", "/"), []).append(a)
+                    if inv is not None and check_inv:
+                        totals["backed_checked"] += 1       # only invocation-checked backing may count toward a floor
+                    for (p, _a), (anchor, line) in zip(targets, locs or [(None, None)] * len(targets)):
+                        fanin.setdefault(p.replace("\\", "/"), []).append(None if anchor is None else f"{anchor}@{line}")
             else:
                 state, paths = kind, ([p for p, _a in targets] if kind == "mixed" else [])
             totals[state] += 1
@@ -655,14 +919,15 @@ def main(argv=None) -> int:
         for p in projects:
             parse_floors(p)
         results = [census(p, a.root, base, a.rule_map, a.require_invoked) for p in projects]
-        floors = [floor_status(p, r["counts"]["backed"], today) for p, r in zip(projects, results)]
-    except (ConfigError, re.error) as e:
+        floors = [floor_status(p, r["counts"]["backed_checked"], today) for p, r in zip(projects, results)]
+    except (ConfigError, re.error, UnicodeError) as e:
         print(f"check-rule-tags: ERROR {e}", file=sys.stderr)
         return 2
     bad = check_bad = 0
     for r, fl in zip(results, floors):
         c = r["counts"]
         closed = r["invocation"] == "closed"
+        unchecked_backing = c["backed"] - c["backed_checked"]
         stale_bad = c["stale"] if a.strict_map else 0
         bad += sum(c[k] for k in BAD_STATES) + stale_bad + (1 if closed else 0)
         check_bad += c["dangling"] + c["mixed"] + stale_bad + (0 if fl is None or fl["ok"] else 1) + (1 if closed else 0)
@@ -673,8 +938,8 @@ def main(argv=None) -> int:
         for f in r["files"]:
             for b in f["bullets"]:
                 if b["state"] in BAD_STATES:
-                    extra = {"dangling": " missing ", "uninvoked": " not invoked ", "dup_anchor": " anchor already used "
-                             }.get(b["state"], "")
+                    extra = {"dangling": " missing ", "uninvoked": " not invoked ", "dup_anchor": " location already claimed ",
+                             "ambiguous": " "}.get(b["state"], "")
                     extra = f"{extra}{b['paths']}" if extra else ""
                     print(f"{STATE_LABEL.get(b['state'], b['state'].upper())} {r['project']} {f['path']}:{b['line']}{extra} {b['text']}")
         for d in r["duplicates"]:
@@ -697,17 +962,20 @@ def main(argv=None) -> int:
         pct = "n/a" if cov["pct"] is None else f"{cov['pct']}%"
         print(f"rule-tags {r['project']}: coverage {cov['backed']}/{cov['denominator']} = {pct} "
               f"(enforced {c['backed']}, judgement {c['judgement']}, record {c['record']}, prose {c['prose']}; "
-              f"enforced-uninvoked {c['uninvoked']}, anchor-duplicate {c['dup_anchor']}, duplicates {c['duplicates']}, "
-              f"stale-map {c['stale']})")
+              f"enforced-uninvoked {c['uninvoked']}, anchor-duplicate {c['dup_anchor']}, anchor-ambiguous {c['ambiguous']}, "
+              f"duplicates {c['duplicates']}, stale-map {c['stale']})")
         if r["invocation"] != "unchecked":
             for enf, fi in r["fanin"].items():
                 anchors = " | ".join(fi["anchors"]) if fi["anchors"] else "(unanchored)"
                 print(f"fan-in {r['project']}: {enf} backs {fi['backed']} rule(s): {anchors}")
         if fl is not None:
+            if unchecked_backing:
+                print(f"FLOOR-UNCHECKED-BACKING {r['project']}: {unchecked_backing} backed rule(s) were not "
+                      "invocation-checked and do not count toward the floor")
             req = "none due yet" if fl["required"] is None else f"{fl['required']} backed (since {fl['since']})"
             nxt = (f"; next floor {fl['next_backed']} backed on {fl['next_date']}" if fl["next_date"]
                    else "; no later floor")
-            print(f"floor {r['project']}: required {req}, have {c['backed']}: {'OK' if fl['ok'] else 'BELOW FLOOR'}{nxt}")
+            print(f"floor {r['project']}: required {req}, have {c['backed_checked']}: {'OK' if fl['ok'] else 'BELOW FLOOR'}{nxt}")
     if a.report:
         return 0
     return 1 if (check_bad if a.check else bad) else 0
