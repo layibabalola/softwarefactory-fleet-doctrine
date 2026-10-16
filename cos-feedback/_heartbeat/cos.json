@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T19:52:30Z",
+  "last_beat_utc": "2026-10-16T19:54:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #459 pr-pushed r6c tip 3b47d305 (pending-label pin for every re-derivation) not-merge-ready UNCHANGED on gates: legs 0/2, CPU -37.1% venue open, CI running; carried pending-label Improvement ADDRESSED (Python port of the outcome class passes all test assertions); new Improvement (drop-path pending); ACK ask 6223487201."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #468 pr-opened r1 tip 21cf9373 (OUTBOX-SINGLE-SOURCE-1, fleet single-source doctrine outbox) not-merge-ready: pre-push hook installed non-executable so POSIX git skips it (own real-push test fails on Linux), legs 0/2, CI running; 3 Improvements; Prevention (POSIX CI for tests/coordination); ACK ask 6223520229."
 }
