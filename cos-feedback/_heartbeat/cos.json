@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T19:07:57Z",
+  "last_beat_utc": "2026-10-16T19:08:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. agent-bridge #236 pr-opened r1 tip 304db844 (five D1-D3 outbox cards, class A) not-merge-ready: stale AirMyPC coverage figure (3/42 cited, bus says 6/45) and CI queued; numbers otherwise reproduced; ACK ask 6222766115."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #457 pr-pushed r3f tip 2b7bc065 (master merge, PR diff unchanged, conflict resolution verified) not-merge-ready UNCHANGED: r6 keys stale on a46920f5, tip CI running; new export-list hotspot Improvement; ACK ask 6222775989."
 }
