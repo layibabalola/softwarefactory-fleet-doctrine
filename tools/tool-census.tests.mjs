@@ -294,6 +294,9 @@ try {
   const scan2 = JSON.parse(census(['--json', '--config', join(root, 'scan2.json')]).stdout);
   assert.deepEqual([scan2.measuredRoots, scan2.absentRoots], [[], ['ws']], 'a missing scan dir is not a measured zero'); assert.match(scan2.absentWhy.ws, /scan dir\(s\) missing: no-such-dir/); cases++;
 
+  execFileSync('git', ['init', '-q', join(root, 'ws')]);   // the same root as a git checkout: ls-files lists corpus/ too, scan must still limit it
+  assert.deepEqual(fam(JSON.parse(census(['--json', '--config', join(root, 'scan.json')]).stdout), 'checkpoint').copies.map((c) => c.path), ['tools/session-checkpoint.py'], 'scan limits a git root as well'); cases++;
+
   // 20. Configured members that no baseline view lists are named (informational; the verdict is unchanged).
   put('nm.json', JSON.stringify({ families: [{ name: 'checkpoint', names: ['session-checkpoint.py'] }, { name: 'newfam', names: ['newfam.py'] }],
     roots: [{ name: 'bus', path: 'nmbus', kind: 'bus' }, { name: 'newroot', path: 'nmbus', kind: 'project' }] }));
