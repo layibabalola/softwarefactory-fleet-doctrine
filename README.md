@@ -403,7 +403,11 @@ ref>`, optional `path: <dir on that ref>`, optional `commit: <sha>`) and an opti
 file in an evidence directory that is not one of those, an over-cap directory, a missing pointer, and,
 when the pointer resolves locally, any listed blob that is absent or hashes differently; an
 unavailable ref is reported `UNVERIFIED` unless `--require-ref`. A directory holding `SHA256SUMS` is
-an evidence directory wherever it sits. Run `--range origin/master..HEAD` as the refusing gate on new
+an evidence directory wherever it sits. Accepted content-addressed variant (Cloudvore K179):
+`EVIDENCE-REF` = `ref: refs/heads/evidence-store` / `remote: origin` / `objects: objects/<aa>/<sha256>`,
+one orphan branch holding every blob at `objects/<first two hex>/<sha256>`; the checker reads
+`refs/remotes/<remote>/<branch>` first and hashes each object (fixture
+`tools/factory/fixtures/check-evidence-dumps/content-addressed/`). Run `--range origin/master..HEAD` as the refusing gate on new
 work and `--tree` to measure the backlog; start configs are in
 `tools/factory/fixtures/check-evidence-dumps/`. It gates artifact type and size only, never the
 product-share ratio (metrics law 1).

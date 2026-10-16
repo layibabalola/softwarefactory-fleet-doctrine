@@ -249,6 +249,83 @@ class T(unittest.TestCase):
         self.r.commit("shrink")
         self.assertEqual(self.r.run("--range", f"{base}..HEAD")[0], 0)
 
+    # ---- content-addressed variant (Cloudvore K179): orphan branch evidence-store, objects/<aa>/<sha256> ----
+    CA_POINTER = (FIX / "content-addressed" / "EVIDENCE-REF").read_bytes()
+
+    def evidence_store(self, blobs=RAW, remote_only=True):
+        """Orphan branch holding each blob at objects/<aa>/<sha256>; optionally only as origin's tracking ref."""
+        git(self.r.root, "checkout", "-q", "--orphan", "evidence-store")
+        git(self.r.root, "rm", "-rq", "--cached", ".")
+        for v in blobs.values():
+            h = hashlib.sha256(v).hexdigest()
+            self.r.put(f"objects/{h[:2]}/{h}", v)
+        sha = self.r.commit("store")
+        git(self.r.root, "checkout", "-q", "-f", "master")
+        git(self.r.root, "clean", "-qfdx")
+        if remote_only:
+            git(self.r.root, "update-ref", "refs/remotes/origin/evidence-store", sha)
+            git(self.r.root, "branch", "-q", "-D", "evidence-store")
+        return sha
+
+    def crlf_star_sums(self, files):
+        return "".join(f"{hashlib.sha256(v).hexdigest()} *{k}\r\n" for k, v in files.items()).encode()
+
+    def test_content_addressed_store_verified(self):
+        self.assertEqual(self.CA_POINTER.decode().splitlines(),
+                         ["ref: refs/heads/evidence-store", "remote: origin", "objects: objects/<aa>/<sha256>"])
+        self.evidence_store()
+        self.r.put("review/evidence-k/SHA256SUMS", self.crlf_star_sums(RAW))
+        self.r.put("review/evidence-k/EVIDENCE-REF", self.CA_POINTER)
+        self.r.commit("c")
+        rc, out = self.r.run("--tree")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("VERIFIED review/evidence-k/: 2 sums against refs/heads/evidence-store", out)
+
+    def test_content_addressed_remote_tracking_beats_a_stale_local_branch(self):
+        self.evidence_store(remote_only=True)
+        git(self.r.root, "branch", "-q", "evidence-store", "master")  # a stale local branch without the objects
+        self.r.put("review/evidence-k/SHA256SUMS", self.crlf_star_sums(RAW))
+        self.r.put("review/evidence-k/EVIDENCE-REF", self.CA_POINTER)
+        self.r.commit("c")
+        rc, out = self.r.run("--tree")
+        self.assertEqual(rc, 0, out)
+
+    def test_content_addressed_missing_and_tampered_refused(self):
+        self.evidence_store({"run.log": RAW["run.log"]})
+        sums = self.crlf_star_sums(RAW)
+        self.r.put("review/evidence-k/SHA256SUMS", sums)
+        self.r.put("review/evidence-k/EVIDENCE-REF", self.CA_POINTER)
+        self.r.commit("c")
+        rc, out = self.r.run("--tree")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("BLOB_MISSING review/evidence-k/mutants.json", out)
+        # a store object whose bytes do not hash to its name
+        h = hashlib.sha256(RAW["mutants.json"]).hexdigest()
+        git(self.r.root, "checkout", "-q", "-b", "tmp-store", "refs/remotes/origin/evidence-store")
+        self.r.put(f"objects/{h[:2]}/{h}", b"forged\n")
+        sha = self.r.commit("forged")
+        git(self.r.root, "checkout", "-q", "master")
+        git(self.r.root, "update-ref", "refs/remotes/origin/evidence-store", sha)
+        rc, out = self.r.run("--tree")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("SUMS_MISMATCH review/evidence-k/mutants.json", out)
+
+    def test_content_addressed_unavailable_is_unverified(self):
+        self.r.put("review/evidence-k/SHA256SUMS", self.crlf_star_sums(RAW))
+        self.r.put("review/evidence-k/EVIDENCE-REF", self.CA_POINTER)
+        self.r.commit("c")
+        rc, out = self.r.run("--tree")
+        self.assertEqual(rc, 0, out)
+        self.assertIn("UNVERIFIED review/evidence-k/", out)
+
+    def test_objects_template_must_name_the_digest(self):
+        self.r.put("review/evidence-k/SHA256SUMS", sums(RAW))
+        self.r.put("review/evidence-k/EVIDENCE-REF", b"ref: refs/heads/evidence-store\nobjects: objects/all\n")
+        self.r.commit("c")
+        rc, out = self.r.run("--tree")
+        self.assertEqual(rc, 1, out)
+        self.assertIn("BAD_POINTER", out)
+
     def test_bad_config_exit_2(self):
         rc, out = self.r.run("--tree", cfg={"schema": "nope"})
         self.assertEqual(rc, 2, out)

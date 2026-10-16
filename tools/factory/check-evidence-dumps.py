@@ -11,10 +11,24 @@ The convention (one evidence directory, on the main line):
     <dir>/EVIDENCE-REF    "ref: <git ref>"            required: the branch holding the raw files
                           "path: <dir in that ref>"   optional, default <dir>
                           "commit: <sha>"             optional: verify at this commit, not the tip
+                          "remote: <name>"            optional: also look for the ref at
+                                                      refs/remotes/<name>/<branch> (tried first)
+                          "objects: <template>"       optional: CONTENT-ADDRESSED store; each blob is
+                                                      at <template> with <aa> = first two hex of its
+                                                      sha256 and <sha256> = the full digest; path ignored
     <dir>/*.md            optional short summary, under the per-file and per-dir byte caps
 
+Content-addressed variant (Cloudvore K179, an orphan branch holding every project's blobs):
+
+    ref: refs/heads/evidence-store
+    remote: origin
+    objects: objects/<aa>/<sha256>
+
+SHA256SUMS lines may end in CRLF and may carry the '*' binary marker.
+
 When the pointer's ref (or commit) resolves in the local repo, every SHA256SUMS line is verified
-against the blob at <ref>:<path>/<name>; a missing blob or a different hash refuses. When it does
+against the blob at <ref>:<path>/<name> (or <ref>:<objects template>); a missing blob or a
+different hash refuses. When it does
 not resolve the check says UNVERIFIED and passes, unless --require-ref. A missing pointer refuses.
 
 What refuses (exit 1), for paths in `scope` and not in `exclude`:
@@ -148,11 +162,15 @@ def changed_paths(repo: Path, rng: str) -> list[str]:
     return [p for p in out.decode("utf-8", "replace").split("\0") if p]
 
 
-def resolve(repo: Path, ref: str) -> str | None:
-    cands = [ref]
+def resolve(repo: Path, ref: str, remote: str | None = None) -> str | None:
+    """The commit a pointer's ref names here. With `remote`, its remote-tracking ref is tried first: the
+    published copy is what the pointer means, and a stale local branch must not stand in for it."""
+    branch = ref[len("refs/heads/"):] if ref.startswith("refs/heads/") else (None if ref.startswith("refs/") else ref)
+    cands = [f"refs/remotes/{remote}/{branch}"] if remote and branch else []
+    cands.append(ref)
     if ref.startswith("refs/heads/"):
-        cands.append("refs/remotes/origin/" + ref[len("refs/heads/"):])
-    elif not ref.startswith("refs/"):
+        cands.append("refs/remotes/origin/" + branch)
+    elif branch:
         cands += [f"refs/heads/{ref}", f"refs/remotes/origin/{ref}"]
     for c in cands:
         rc, out = git(repo, "rev-parse", "--verify", "-q", f"{c}^{{commit}}")
@@ -168,7 +186,7 @@ def parse_pointer(text: str) -> dict:
         if not line or line.startswith("#"):
             continue
         k, sep, v = line.partition(":")
-        if sep and k.strip().lower() in ("ref", "path", "commit"):
+        if sep and k.strip().lower() in ("ref", "path", "commit", "remote", "objects"):
             p[k.strip().lower()] = v.strip()
     return p
 
@@ -231,6 +249,10 @@ def check_evidence_dir(repo, d, files, cfg, require_ref, out, notes):
     if not ptr.get("ref"):
         out.append(("BAD_POINTER", ptr_p, "no 'ref: <git ref>' line"))
         return
+    tmpl = ptr.get("objects")
+    if tmpl is not None and ("<sha256>" not in tmpl or tmpl.startswith("/") or ".." in tmpl.split("/")):
+        out.append(("BAD_POINTER", ptr_p, "objects: must be a relative template containing <sha256>"))
+        return
     listed, bad = parse_sums(sums_text)
     if bad or not listed:
         out.append(("BAD_SUMS", sums_p, f"unparseable line {bad[0]!r}" if bad else "no entries"))
@@ -240,7 +262,7 @@ def check_evidence_dir(repo, d, files, cfg, require_ref, out, notes):
         rc, o = git(repo, "rev-parse", "--verify", "-q", f"{ptr['commit']}^{{commit}}")
         at = o.strip() if rc == 0 and o.strip() else None
     else:
-        at = resolve(repo, ptr["ref"])
+        at = resolve(repo, ptr["ref"], ptr.get("remote"))
     if not at:
         what = ptr.get("commit") or ptr["ref"]
         if require_ref:
@@ -250,9 +272,10 @@ def check_evidence_dir(repo, d, files, cfg, require_ref, out, notes):
         return
     base = ptr.get("path") or d
     for name, want in sorted(listed.items()):
-        rc, data = git(repo, "cat-file", "blob", f"{at}:{posixpath.join(base, name)}", binary=True)
+        where = tmpl.replace("<aa>", want[:2]).replace("<sha256>", want) if tmpl else posixpath.join(base, name)
+        rc, data = git(repo, "cat-file", "blob", f"{at}:{where}", binary=True)
         if rc != 0:
-            out.append(("BLOB_MISSING", f"{d}/{name}", f"not at {at[:12]}:{posixpath.join(base, name)}"))
+            out.append(("BLOB_MISSING", f"{d}/{name}", f"not at {at[:12]}:{where}"))
             continue
         got = hashlib.sha256(data).hexdigest()
         if got != want:
