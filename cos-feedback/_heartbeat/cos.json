@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T21:05:17Z",
+  "last_beat_utc": "2026-10-16T21:16:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #455 r8 3fc38755: not-merge-ready; r7 probes closed (verified); new Blocker: delete-shape regex misses glued switches and cmd delimiters (master parity, hook CLI verified); legs 0/2; CI in progress. Ask 6224673286."
+  "note": "MLV-App #467 r2 9ef41ec3: not-merge-ready on gates only (legs 0/2, CI in progress); r1 allowlist Improvement and both Nits addressed (CoS verified 40 pass, r1 regex RED 18 fail); two soft Nits. Ask 6224840275."
 }
