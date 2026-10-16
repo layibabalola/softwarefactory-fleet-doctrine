@@ -1,0 +1,27 @@
+{
+  "schema": "fleet/scorecard-config/v1",
+  "name": "cloudvore",
+  "census_root": "cloudvore",
+  "branch": "master",
+  "remote": "origin",
+  "fold": {
+    "marker": ".codex-state/doctrine/last-seen.json"
+  },
+  "evidence_dumps": {
+    "pinned": "check-evidence-dumps",
+    "args": [
+      "--config",
+      "{bus}/tools/factory/fixtures/check-evidence-dumps/cloudvore.config.json",
+      "--repo",
+      "{root}",
+      "--tree",
+      "refs/remotes/origin/master"
+    ],
+    "regex": "REFUSED (\\d+) violation",
+    "zero_regex": "check-evidence-dumps: OK",
+    "ok_exit": [
+      0,
+      1
+    ]
+  }
+}

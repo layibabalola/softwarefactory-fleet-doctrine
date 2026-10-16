@@ -1,0 +1,59 @@
+{
+  "schema": "fleet/scorecard-config/v1",
+  "name": "conjugal",
+  "census_root": "conjugal",
+  "branch": "master",
+  "remote": "origin",
+  "rule_tags": {
+    "project": "conjugal"
+  },
+  "fold": {
+    "marker": ".codex-state/doctrine/last-seen.json",
+    "queue": "coordination/doctrine-folds/queue.jsonl",
+    "status_field": "status",
+    "queued_states": [
+      "QUEUED"
+    ],
+    "pending_states": [
+      "ADOPT-PENDING"
+    ],
+    "queued_field": "queued",
+    "expires_field": "expires"
+  },
+  "outbox": {
+    "argv": [
+      "python",
+      "coordination/tools/doctrine_outbox.py",
+      "debt"
+    ],
+    "regex": "(\\d+) unsent",
+    "zero_regex": "no unsent",
+    "ok_exit": [
+      0,
+      1
+    ]
+  },
+  "kernel": {
+    "ref": "refs/heads/master",
+    "window_hours": 24,
+    "delivered_regex": "^kernel-dogfood: (S\\d+) Outcome - ACCEPTED",
+    "refused_regex": "^kernel-dogfood: (?:subjects ledger - )?(S\\d+) (?:refused|Outcome - REFUSED)"
+  },
+  "evidence_dumps": {
+    "pinned": "check-evidence-dumps",
+    "args": [
+      "--config",
+      "{bus}/tools/factory/fixtures/check-evidence-dumps/conjugal.config.json",
+      "--repo",
+      "{root}",
+      "--tree",
+      "refs/remotes/origin/master"
+    ],
+    "regex": "REFUSED (\\d+) violation",
+    "zero_regex": "check-evidence-dumps: OK",
+    "ok_exit": [
+      0,
+      1
+    ]
+  }
+}

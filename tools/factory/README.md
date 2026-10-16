@@ -11,6 +11,8 @@ is how it falls. One implementation lives here; a project supplies only **data**
 | [`pin-runner.py`](pin-runner.py) | the one generic runner: `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args` |
 | [`check-doc-size.py`](check-doc-size.py) | markdown size budgets; every tier, glob, exemption, scan mode and unit from `--config` |
 | [`fixtures/check-doc-size/`](fixtures/check-doc-size/) | the three projects' tier tables as configs (test fixtures and adoption starting points) |
+| [`check-evidence-dumps.py`](check-evidence-dumps.py) | refuses committed raw evidence; an evidence dir is `SHA256SUMS` + `EVIDENCE-REF` naming the ref that holds the bytes (verified when local) |
+| [`fixtures/check-evidence-dumps/`](fixtures/check-evidence-dumps/) | Cloudvore and Conjugal start configs |
 | [`../../hooks/`](../../hooks/README.md) | generic refusing hooks: ff-only pre-push, exact-path add, optional-locks observers |
 | [`kernel-subjects.py`](kernel-subjects.py) | factory kernel: is a packet a declared kernel subject, declared before its first byte (`check`, `advisory`, `block`) |
 | [`kernel-receipt.py`](kernel-receipt.py) | factory kernel: write or dry-run a landing's kernel receipt; loads kernel-subjects.py and codex-review.py beside itself, so it is pinned as a **group** |
@@ -23,6 +25,7 @@ Tests (stdlib only, Windows and POSIX):
 ```
 python tools/factory/pin-runner.tests.py
 python tools/factory/check-doc-size.tests.py
+python tools/factory/check-evidence-dumps.tests.py
 python hooks/hooks.tests.py
 python tools/factory/kernel-tools.tests.py      # config location, schema = loader, seed project through the runner
 python tools/factory/kernel-suites.tests.py     # the kernel's own suites, staged as a project's tools/ directory

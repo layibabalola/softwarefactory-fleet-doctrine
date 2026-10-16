@@ -328,6 +328,21 @@ Fleet runs are appended to `metrics/product-share-lines.jsonl`.
 Conjugal and Cloudvore joined the classifier on 2026-10-16 (ref `origin/master`; their rows carry
 `classifier_sha256` of the committed LF bytes of `tools/product-throughput-classes.json`).
 
+**Reproducible rows and weekly publication (added 2026-10-16).** A row is re-derivable only when it
+pins its commit and both window edges: `-At <sha>` (or `name=sha` per project) walks that commit
+instead of the configured ref, `-Until <iso>` ends the window (`git log --until`), and `-AsRows`
+prints rows in this file's schema with `until_utc` and the exact `command` that reproduces them,
+always written with `-At <ref_sha> -Since -Until`. Re-run that command at a bus commit whose
+classifier hashes to the row's `classifier_sha256` and the numbers match:
+
+```bash
+pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -AsRows -Project conjugal -At 601b9b7fd8a5fe81b4cdef6738a24a82f513340d -Since 2026-10-02T16:56:44Z -Until 2026-10-16T16:56:44Z
+```
+
+Conjugal's harvest steward publishes the ratio once per ISO week (`harvest_runner.py product-share`):
+it runs the census at a pinned bus commit for every configured root present on its machine and
+appends the rows here. Publication is the point; the rows still gate nothing (metrics law 1).
+
 **Rule tags (`tools/check-rule-tags.py`, added 2026-10-16 for owner defect "most rules are prose").**
 Every rule bullet in a configured markdown section carries `[enforced: <path>]` (a check at that
 project-relative path refuses a breach; the path must exist) or `[prose]` (nothing refuses). Exit 1 on
@@ -358,6 +373,87 @@ bus now ships the canonical tools and refusing hooks; a project installs them **
 4. `verify` before committing pins; `status` reports `*** STALE ***` when the bus moves. Re-pinning is
    a reviewed commit, never automatic (law 1).
 
+**Evidence is hashes plus a branch (`tools/factory/check-evidence-dumps.py`, added 2026-10-16).**
+Owner rule: paperwork shrinks as a rule. Raw evidence (logs, dumps, mutant JSON, large text,
+screenshots) lives on a git ref, not on the main line. An evidence directory on the main line holds
+only `SHA256SUMS` (sha256sum format, names relative to the directory), `EVIDENCE-REF` (`ref: <git
+ref>`, optional `path: <dir on that ref>`, optional `commit: <sha>`) and an optional short summary
+`.md` under the byte caps. The check refuses (exit 1) a raw file anywhere in its configured scope, a
+file in an evidence directory that is not one of those, an over-cap directory, a missing pointer, and,
+when the pointer resolves locally, any listed blob that is absent or hashes differently; an
+unavailable ref is reported `UNVERIFIED` unless `--require-ref`. A directory holding `SHA256SUMS` is
+an evidence directory wherever it sits. Run `--range origin/master..HEAD` as the refusing gate on new
+work and `--tree` to measure the backlog; start configs are in
+`tools/factory/fixtures/check-evidence-dumps/`. It gates artifact type and size only, never the
+product-share ratio (metrics law 1).
+
+```bash
+python tools/factory/check-evidence-dumps.py --config <cfg> --repo . --range origin/master..HEAD
+python tools/factory/check-evidence-dumps.tests.py
+```
+
 Procedure: [`tools/factory/README.md`](tools/factory/README.md) and [`hooks/README.md`](hooks/README.md).
 Candidate: [`ruling-candidates/factory-tool-pin-r1.md`](ruling-candidates/factory-tool-pin-r1.md).
 `tools/tool-census.mjs` counts the copies still standing; the count may only fall.
+
+## Fleet scorecard (`tools/factory/fleet-scorecard.py`, added 2026-10-16)
+
+Owner goal: every fleet project publishes one **mechanical** health row per UTC day (no model calls)
+to `metrics/scorecard-daily.jsonl`, so a weekly fleet-wide review reads trends. It publishes and never
+gates (metrics law 1): no value changes its exit code, and no seat cites a row as authority or grades a
+lane on it. Other bus tools are **called through the project's pins, never reimplemented** (Law 1); an
+unpinned or missing tool is a null field, never a failure. Any project emits its own row from its own
+gate or drain; nothing depends on Conjugal's steward:
+
+```bash
+python factory-pins/pin-runner.py run fleet-scorecard -- --root . --project <name> --publish
+python tools/factory/fleet-scorecard.tests.py      # stdlib; temp fixture repos only, never the host
+```
+
+Publishing appends to `origin/master` through a private temporary worktree of the bus clone (`--bus`,
+`$FACTORY_BUS_CLONE`, or the pins' `bus_clone`; never implied), fast-forward only, re-reading the
+remote on a rejected push; a row whose `(project, date)` is already there is not appended again, so a
+daily caller may run it every tick. Before publishing, each row is screened (addresses, uuids, tokens,
+user-home paths, coordination paths); a match refuses that row (exit 2) and never edits it. Exit 0
+rows produced; 2 config error or a screened row; 3 no bus clone or the push failed.
+
+**Per-project config** (schema [`schemas/fleet-scorecard-config-v1.schema.json`](schemas/fleet-scorecard-config-v1.schema.json),
+default `<root>/factory-pins/fleet-scorecard.config.json`): one project object or `{"projects": [...]}`;
+it declares the project's own fold marker and queue, outbox and evidence commands, kernel subject
+regexes, branch and remote. An entry with `config` defers to a file in that project's root, so a steward
+measuring a sibling reads the sibling's own declarations. Starting configs:
+`tools/factory/fixtures/fleet-scorecard/{conjugal,cloudvore,magic-lantern}.config.json`.
+
+**Row schema `fleet/scorecard-row/v1`** (one JSON object per line):
+
+| key | type | meaning |
+|---|---|---|
+| `schema` | string | `fleet/scorecard-row/v1` |
+| `date` | `YYYY-MM-DD` | UTC day measured; with `project`, the idempotency key |
+| `ts` | ISO-8601 UTC | instant measured |
+| `project` | string | project name (Law 6: every SHA below is that project's) |
+| `project_head` | sha or null | the project checkout's `HEAD` |
+| `bus_commit` | sha or null | the bus clone's `origin/master` when measured |
+| `generator` | `{path, blob}` | this tool and the git blob id that ran (null blob if unknown) |
+| `config_sha256` | hex or null | sha256 of the LF bytes of the config used (null = built-in defaults) |
+| `own_config` | string or null | the project-root config that overrode the entry, if any |
+| `fields` | object | each field below is `{value, cmd, error}` |
+
+Every field: `value` (null when not measured), `cmd` (the command that produced it, machine paths
+replaced by `<root>`, `<bus>`, `<pins>`; a project command that names project-internal paths is cited as
+`fleet-scorecard --field <name>` and is pinned by `config_sha256`), `error` (null, or why the value is
+null or partial: `NOT_CONFIGURED`, `NOT_PINNED`, `ABSENT...`, `FAILED: ...`). Null means "not
+measured", never zero.
+
+| field | value | produced by |
+|---|---|---|
+| `tool_census` | `{project_copies, fleet_total, baseline_total, measured, absent_roots}` | pinned `tool-census --json` (+ `metrics/tool-census-baseline.json` total) |
+| `rule_tags` | `{bullets, backed, prose, untagged, dangling, mixed}` | pinned `check-rule-tags --report --json --project P --root <root>` |
+| `evidence_dumps` | int violations | config source, e.g. pinned `check-evidence-dumps --tree refs/remotes/origin/master` |
+| `product_share` | `{product_share, product_lines_per_week, window_days, measured_at}` | last row for the project in `metrics/product-share-lines.jsonl` |
+| `doctrine_fold` | `{marker_age_hours, queued, oldest_queued_age_days, overdue, adopt_pending}` | config `fold.marker` (`lastSeenAt`) and `fold.queue` (JSONL); overdue = queued past `expires` |
+| `outbox_unsent` | int | config source (Conjugal: its outbox `debt` command) |
+| `commits_no_remote` | int | `git rev-list --count --branches --not --remotes` |
+| `master_vs_origin` | `{ahead, behind}` | `git rev-list --left-right --count refs/heads/B...refs/remotes/R/B` (local refs; no fetch) |
+| `kernel_24h` | `{delivered, refused}` distinct subject ids | `git log` subjects in the last 24 h by author date, matched by config `kernel` regexes |
+| `pin_stale` | int | the project's own `pin-runner.py status`, lines with `*** STALE ***` |

@@ -64,6 +64,25 @@ fleet/product-throughput-classes/v1; pattern rules are documented in the file's 
 .PARAMETER Project
 Line mode: restrict to these project names from the config. Default: all.
 
+.PARAMETER At
+Line mode: walk this commit instead of the project's configured ref, so a published row can be
+re-derived after the branch moves. 'name=sha' entries (one per project, comma-separated or repeated),
+or one bare sha when exactly one project is selected. An unknown project name or an unresolvable sha
+is FAILED (exit 4), never a silent fallback to the configured ref.
+
+.PARAMETER Until
+Line mode window END (default: now, UTC). Same explicit-offset rule as -Since. With -At and -Since,
+it pins a row completely: commits after -Until are excluded by committer date (git log --until).
+
+.PARAMETER AsRows
+Line mode: print one JSON line per measured project in the metrics/product-share-lines.jsonl row
+schema (with until_utc and the exact reproducing `command`), for appending to that file.
+Every row's command carries -At <ref_sha> -Since -Until, whatever the run was given, so re-running
+it at the same classifier_sha256 reproduces the row's numbers.
+
+.PARAMETER RunId
+Line mode -AsRows: the run_id stamped on every row (default product-share-lines-<until>).
+
 .PARAMETER Since
 Line mode window start. MUST carry an explicit offset ('2026-09-27T00:00:00Z' or '...-05:00'):
 a naive timestamp is read as local time and silently moves the window edge (ruling candidate
@@ -74,6 +93,9 @@ pwsh -File tools/Get-ProductThroughput.ps1 -Root C:\repo -ProductPath 'src/' -Ma
 
 .EXAMPLE
 pwsh -File tools/Get-ProductThroughput.ps1 -Lines -WindowDays 14 -AsJson
+
+.EXAMPLE
+pwsh -File tools/Get-ProductThroughput.ps1 -Lines -AsRows -Project conjugal -At <sha> -Since 2026-10-02T16:56:44Z -Until 2026-10-16T16:56:44Z
 
 .OUTPUTS
 Exit 0  MOVING   - a product commit landed inside -MaxAgeDays
@@ -93,14 +115,28 @@ param(
     [switch]$Lines,
     [string]$ClassConfig = (Join-Path $PSScriptRoot 'product-throughput-classes.json'),
     [string[]]$Project = @(),
-    [string]$Since = ''
+    [string]$Since = '',
+    [string[]]$At = @(),
+    [string]$Until = '',
+    [switch]$AsRows,
+    [string]$RunId = ''
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 if ($Lines) {
     $Buckets = @('product', 'tests', 'vendored-copies', 'factory-tooling', 'coordination-paperwork')
-    $nowUtc = (Get-Date).ToUniversalTime()
+    $measuredUtc = (Get-Date).ToUniversalTime()
+    $nowUtc = $measuredUtc
+    if (-not [string]::IsNullOrWhiteSpace($Until)) {
+        if ($Until -notmatch '(Z|[+-]\d\d:?\d\d)$') {
+            Write-Output "FAILED: -Until '$Until' has no explicit UTC offset; refusing to guess the window edge."; exit 4
+        }
+        $nowUtc = ([datetimeoffset]::Parse($Until, [Globalization.CultureInfo]::InvariantCulture)).UtcDateTime
+    }
+    # Whole seconds: the edges are recorded at second precision, so the measured window must be too.
+    $nowUtc = [datetime]::new($nowUtc.Ticks - ($nowUtc.Ticks % [TimeSpan]::TicksPerSecond), [DateTimeKind]::Utc)
+    $untilIso = $nowUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
     if ([string]::IsNullOrWhiteSpace($Since)) {
         $sinceUtc = $nowUtc.AddDays(-$WindowDays)
     } else {
@@ -110,6 +146,8 @@ if ($Lines) {
         $sinceUtc = ([datetimeoffset]::Parse($Since, [Globalization.CultureInfo]::InvariantCulture)).UtcDateTime
     }
     $sinceIso = $sinceUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
+    $sinceUtc = [datetimeoffset]::Parse($sinceIso, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime
+    if ($sinceUtc -ge $nowUtc) { Write-Output "FAILED: -Since $sinceIso is not before -Until $untilIso"; exit 4 }
     $days = [math]::Max(($nowUtc - $sinceUtc).TotalDays, 1e-9)
     if (-not (Test-Path -LiteralPath $ClassConfig -PathType Leaf)) {
         Write-Output "FAILED: class config not found: $ClassConfig"; exit 4
@@ -121,6 +159,23 @@ if ($Lines) {
     $wanted = @($Project | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object { $_.Trim() })
     $projects = @($cfg.projects | Where-Object { $wanted.Count -eq 0 -or $wanted -contains $_.name })
     if ($projects.Count -eq 0) { Write-Output 'FAILED: no matching projects in the class config'; exit 4 }
+    $atMap = @{}
+    foreach ($e in @($At | ForEach-Object { $_ -split ',' } | Where-Object { $_ } | ForEach-Object { $_.Trim() })) {
+        if ($e.Contains('=')) {
+            $k, $v = $e.Split('=', 2)
+            if (@($projects | Where-Object { $_.name -eq $k }).Count -eq 0) { Write-Output "FAILED: -At names '$k', which is not a selected project"; exit 4 }
+            $atMap[$k] = $v
+        } elseif ($projects.Count -eq 1) {
+            $atMap[[string]$projects[0].name] = $e
+        } else {
+            Write-Output "FAILED: a bare -At '$e' needs exactly one -Project; use name=sha"; exit 4
+        }
+    }
+    # classifier identity: sha256 of the LF-normalised bytes (a CRLF checkout hashes as the committed blob)
+    $cfgBytes = [IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $ClassConfig).Path)
+    $lf = [Collections.Generic.List[byte]]::new($cfgBytes.Length)
+    for ($i = 0; $i -lt $cfgBytes.Length; $i++) { if (-not ($cfgBytes[$i] -eq 13 -and $i + 1 -lt $cfgBytes.Length -and $cfgBytes[$i + 1] -eq 10)) { $lf.Add($cfgBytes[$i]) } }
+    $classifierSha = -join ([Security.Cryptography.SHA256]::Create().ComputeHash($lf.ToArray()) | ForEach-Object { $_.ToString('x2') })
 
     # Flatten one project's classes into rules ranked by specificity (non-wildcard chars), then by
     # bucket order. './x' = root-level only. A pattern with '*' uses -like; otherwise prefix/exact.
@@ -167,6 +222,7 @@ if ($Lines) {
         foreach ($pr in $projects) {
             $root = [string]$pr.root
             $ref = if ($pr.PSObject.Properties['ref'] -and $pr.ref) { [string]$pr.ref } else { 'HEAD' }
+            if ($atMap.ContainsKey([string]$pr.name)) { $ref = [string]$atMap[[string]$pr.name] }
             $row = [ordered]@{ project = [string]$pr.name; root = $root; ref = $ref; ref_sha = $null; ref_name = $null; error = $null }
             if (-not (Test-Path -LiteralPath (Join-Path $root '.git'))) {
                 $row.error = 'not a git repository'; $rows.Add([pscustomobject]$row); $failed = $true; continue
@@ -176,12 +232,14 @@ if ($Lines) {
                 $row.error = "ref not found: $ref"; $rows.Add([pscustomobject]$row); $failed = $true; continue
             }
             $row.ref_sha = ([string]$sha).Trim()
-            $row.ref_name = ([string](& git -C $root rev-parse --abbrev-ref $ref 2>$null)).Trim()
+            # A pinned -At sha has no symbolic name: rev-parse --abbrev-ref prints nothing (or the sha); record the input.
+            $abbrev = & git -C $root rev-parse --abbrev-ref $ref 2>$null
+            $row.ref_name = if ($LASTEXITCODE -eq 0 -and $abbrev) { ([string]$abbrev).Trim() } else { $ref }
             try { $rules = Get-Rules $pr.classes }
             catch { $row.error = "bad classes: $($_.Exception.Message)"; $rows.Add([pscustomobject]$row); $failed = $true; continue }
             $sum = [ordered]@{}; foreach ($b in $Buckets + 'unclassified') { $sum[$b] = [int64]0 }
             $unc = @{}; $commits = 0; $binary = 0
-            $raw = & git -c core.quotepath=off -C $root log $row.ref_sha --no-merges "--since=$sinceIso" --numstat '--format=%x00%H' 2>&1
+            $raw = & git -c core.quotepath=off -C $root log $row.ref_sha --no-merges "--since=$sinceIso" "--until=$untilIso" --numstat '--format=%x00%H' 2>&1
             if ($LASTEXITCODE -ne 0) { $row.error = 'git log failed'; $rows.Add([pscustomobject]$row); $failed = $true; continue }
             foreach ($line in $raw) {
                 $l = [string]$line
@@ -199,7 +257,7 @@ if ($Lines) {
                     $unc[$k] = [int64]($(if ($unc.ContainsKey($k)) { $unc[$k] } else { 0 })) + $n
                 }
             }
-            $merges = [int](& git -C $root rev-list --count --merges "--since=$sinceIso" $row.ref_sha)
+            $merges = [int](& git -C $root rev-list --count --merges "--since=$sinceIso" "--until=$untilIso" $row.ref_sha)
             $total = [int64]0; foreach ($v in $sum.Values) { $total += $v }
             $row.commits_counted = $commits
             $row.merges_excluded = $merges
@@ -222,13 +280,31 @@ if ($Lines) {
         [pscustomobject]@{ rank = $rank; project = $_.project; product_lines_per_week = $_.product_lines_per_week
             product_share = $_.product_share; product_lines = $_.lines.product; total_lines = $_.total_lines }
     })
-    if ($AsJson) {
+    if ($AsRows) {
+        $rid = if ($RunId) { $RunId } else { "product-share-lines-$untilIso" }
+        foreach ($r in $ranking) {
+            $p = @($rows | Where-Object { $_.project -eq $r.project })[0]
+            $cmd = "pwsh -NoProfile -File tools/Get-ProductThroughput.ps1 -Lines -AsRows -Project $($p.project) -At $($p.ref_sha) -Since $sinceIso -Until $untilIso"
+            [ordered]@{
+                ts = $measuredUtc.ToString('yyyy-MM-ddTHH:mm:ssZ'); run_id = $rid; schema = 'fleet/product-throughput-lines/v1'
+                project = $p.project; ref = $p.ref; ref_name = $p.ref_name; ref_sha = $p.ref_sha
+                since_utc = $sinceIso; until_utc = $untilIso; window_days = [math]::Round($days, 2)
+                classifier_sha256 = $classifierSha; commits_counted = $p.commits_counted; merges_excluded = $p.merges_excluded
+                binary_files_ignored = $p.binary_files_ignored; lines = $p.lines; total_lines = $p.total_lines
+                product_share = $p.product_share; product_lines_per_week = $p.product_lines_per_week; rank = $r.rank
+                top_unclassified = @($p.top_unclassified); error = $null; command = $cmd
+            } | ConvertTo-Json -Depth 6 -Compress
+        }
+        foreach ($p in @($rows | Where-Object { $_.error })) { [Console]::Error.WriteLine("FAILED {0}: {1}" -f $p.project, $p.error) }
+    } elseif ($AsJson) {
         [pscustomobject]@{
             schema       = 'fleet/product-throughput-lines/v1'
             authority    = 'DIAGNOSTIC_ONLY_NEVER_A_GATE_OR_TARGET'
-            measured_utc = $nowUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
+            measured_utc = $measuredUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
             since_utc    = $sinceIso
+            until_utc    = $untilIso
             window_days  = [math]::Round($days, 2)
+            classifier_sha256 = $classifierSha
             class_config = $ClassConfig
             buckets      = @($Buckets + 'unclassified')
             projects     = @($rows)

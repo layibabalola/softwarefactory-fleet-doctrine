@@ -134,6 +134,46 @@ try {
   assert.equal(cj.product_commits_in_window, 1);
   assert.equal(cj.verdict, 'MOVING');
 
+  // ---- reproducibility: -At pins the commit, -Until pins the window end, -AsRows records the command ----
+  const d = newRepo('d');
+  put(d, 'src/one.c', lines(8, 'd1')); commit(d, 'in window', '2026-03-05T00:00:00Z');
+  put(d, 'docs/p.md', lines(4, 'd2')); commit(d, 'in window 2', '2026-03-06T00:00:00Z');
+  const pinned = git(d, ['rev-parse', 'HEAD']);
+  put(d, 'src/late.c', lines(50, 'late')); commit(d, 'after -Until', '2026-03-09T00:00:00Z');
+  const dcfg = join(root, 'd.json');
+  writeFileSync(dcfg, JSON.stringify({ schema: 'fleet/product-throughput-classes/v1', projects: [
+    { name: 'delta', root: d, ref: 'master', classes }, { name: 'bravo', root: b, ref: 'HEAD', classes } ] }));
+  const win = ['-Since', '2026-03-01T00:00:00Z', '-Until', '2026-03-08T00:00:00Z'];
+  // -Until alone excludes the late commit even at the moving tip
+  const u = run(['-Lines', '-ClassConfig', dcfg, '-Project', 'delta', ...win, '-AsRows']);
+  assert.equal(u.code, 0, u.out);
+  const ur = JSON.parse(u.out.trim());
+  assert.deepEqual([ur.lines.product, ur.lines['coordination-paperwork'], ur.commits_counted], [8, 4, 2]);
+  assert.equal(ur.until_utc, '2026-03-08T00:00:00Z'); assert.equal(ur.window_days, 7);
+  assert.match(ur.classifier_sha256, /^[0-9a-f]{64}$/);
+  // the recorded command pins -At to the walked sha, so the tip moving after the run changes nothing
+  assert.ok(ur.command.includes(`-Project delta -At ${ur.ref_sha} -Since 2026-03-01T00:00:00Z -Until 2026-03-08T00:00:00Z`), ur.command);
+  put(d, 'src/later.c', lines(9, 'x')); commit(d, 'backdated into the window on the tip', '2026-03-07T00:00:00Z');
+  const args = ur.command.split(' ').slice(ur.command.split(' ').indexOf('-Lines'));
+  const again = run([...args, '-ClassConfig', dcfg]);
+  assert.equal(again.code, 0, again.out);
+  const ar = JSON.parse(again.out.trim());
+  assert.deepEqual(ar.lines, ur.lines); assert.equal(ar.ref_sha, ur.ref_sha); assert.equal(ar.command, ur.command);
+  // the moved tip, unpinned, does differ: the pin is what made the row reproducible
+  assert.equal(JSON.parse(run(['-Lines', '-ClassConfig', dcfg, '-Project', 'delta', ...win, '-AsRows']).out.trim()).lines.product, 17);
+  // -At by name=sha among several projects; the pinned sha is the earlier commit
+  const multi = run(['-Lines', '-ClassConfig', dcfg, '-At', `delta=${pinned}`, ...win, '-AsRows', '-RunId', 'fixture-run']);
+  assert.equal(multi.code, 0, multi.out);
+  const mrows = multi.out.trim().split('\n').map((x) => JSON.parse(x));
+  assert.equal(mrows.find((x) => x.project === 'delta').ref_sha, pinned);
+  assert.ok(mrows.every((x) => x.run_id === 'fixture-run'));
+  // fail closed: bare -At with two projects, unknown -At name, unresolvable sha, naive -Until, empty window
+  assert.equal(run(['-Lines', '-ClassConfig', dcfg, '-At', pinned, ...win]).code, 4);
+  assert.equal(run(['-Lines', '-ClassConfig', dcfg, '-At', `nope=${pinned}`, ...win]).code, 4);
+  assert.equal(run(['-Lines', '-ClassConfig', dcfg, '-Project', 'delta', '-At', 'f'.repeat(40), ...win]).code, 4);
+  assert.equal(run(['-Lines', '-ClassConfig', dcfg, '-Project', 'delta', '-Until', '2026-03-08T00:00:00']).code, 4);
+  assert.equal(run(['-Lines', '-ClassConfig', dcfg, '-Project', 'delta', '-Since', '2026-03-08T00:00:00Z', '-Until', '2026-03-01T00:00:00Z']).code, 4);
+
   console.log('PASS Get-ProductThroughput.tests.mjs');
 } finally {
   rmSync(root, { recursive: true, force: true });
