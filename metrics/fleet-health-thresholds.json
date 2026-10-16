@@ -1,0 +1,25 @@
+{
+  "schema": "fleet/health-thresholds/v1",
+  "note": "Read by tools/factory/fleet-scorecard.py (--fleet, and project mode when present) to set each row's health {status, reasons}. DIAGNOSTIC ONLY (metrics/README.md law 1): RED names an OVERDUE duty for the weekly hub review; it never gates a commit, a landing or a lane, and no value changes the tool's exit code. RED when: bus_publish days_since > bus_publish_days (or never published); fold_lag oldest unfolded doctrine commit > fold_oldest_unfolded_hours; kernel_filing days_since > kernel_filing_days (or never filed); tool_census over the baseline schedule max in force AND the project holds a copy or double registration; rule_coverage percent below the project's OWN declared floor. A null measure is UNMEASURED, never GREEN. Changing a threshold is a lead decision recorded in the commit that changes it. projects.<name> entries are scorecard config sections (fleet/scorecard-config/v1) applied under --fleet; a project's own factory-pins/fleet-scorecard.config.json overrides them.",
+  "thresholds": {
+    "bus_publish_days": 3,
+    "fold_oldest_unfolded_hours": 72,
+    "kernel_filing_days": 14
+  },
+  "product_share_window_days": 14,
+  "projects": {
+    "airmypc": {
+      "rule_coverage": {
+        "argv": ["pwsh", "-NoProfile", "-File", "{root}/tools/Get-AudioMileRuleCoverage.ps1", "-Root", "{root}", "-Check"],
+        "regex": "GATED TOTAL.*coverage=([0-9.]+)%",
+        "floor_json": {"file": "tools/doctrine-guards/rule-coverage.json", "path": "baseline.coveragePercent"}
+      }
+    },
+    "mlv-app": {
+      "rule_coverage": {
+        "argv": ["python", "{root}/tools/docs/rule_coverage_census.py", "--repo-root", "{root}", "--json", "--no-list"],
+        "json": "behavioural_percent"
+      }
+    }
+  }
+}

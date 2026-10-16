@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
 const LEGACY_PROTOCOL_SPECS = new Set([
@@ -18,8 +18,16 @@ export function fleetMembers(specPaths) {
 }
 
 function main(argv) {
+  // --stdin: the direct entries of specs/ as newline-separated repo paths (`git ls-tree --name-only
+  // refs/remotes/origin/master specs/`), so a reader in another language applies this one rule to the
+  // committed tree instead of copying it (tools/factory/fleet-scorecard.py --fleet).
+  if (argv.includes('--stdin')) {
+    const paths = readFileSync(0, 'utf8').split(/\r?\n/).filter(Boolean);
+    process.stdout.write(JSON.stringify({ members: fleetMembers(paths) }) + '\n');
+    return;
+  }
   const index = argv.indexOf('--directory');
-  if (index < 0 || !argv[index + 1]) throw new Error('--directory is required');
+  if (index < 0 || !argv[index + 1]) throw new Error('--directory or --stdin is required');
   const directory = argv[index + 1];
   const names = readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.isFile())

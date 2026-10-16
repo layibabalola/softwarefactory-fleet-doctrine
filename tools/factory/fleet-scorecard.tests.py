@@ -22,6 +22,10 @@ sc = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(sc)
 
 NOW = "2026-10-16T12:00:00Z"
+# The publish path commits through the tool's own git calls; a CI runner has no identity configured.
+for _k, _v in (("GIT_AUTHOR_NAME", "t"), ("GIT_AUTHOR_EMAIL", "t@example.invalid"),
+               ("GIT_COMMITTER_NAME", "t"), ("GIT_COMMITTER_EMAIL", "t@example.invalid")):
+    os.environ.setdefault(_k, _v)
 
 FAKE_RUNNER = r'''
 import json, sys
@@ -37,8 +41,9 @@ if tool == "tool-census":
     if any(r.get("path") == "@bus" for r in cfg.get("roots", [])):   # '@bus' under the runner = a temp dir
         sys.exit(9)
     print(json.dumps({"total": 5, "measuredRoots": ["bus", "proj"], "absentRoots": ["far"], "families": [
-        {"name": "x", "copies": [{"root": "proj", "path": "a.py"}, {"root": "bus", "path": "b.py", "canonical": True},
-                                 {"root": "proj", "path": "c.py"}, {"root": "other", "path": "d.py"}]}]}))
+        {"name": "x", "copies": [{"root": "proj", "path": "a.py", "hash": "h1"},
+                                 {"root": "bus", "path": "b.py", "canonical": True, "hash": "h2"},
+                                 {"root": "proj", "path": "c.py", "hash": "h3"}, {"root": "other", "path": "d.py", "hash": "h4"}]}]}))
 elif tool == "check-rule-tags":
     assert "--report" in a and "--json" in a
     print(json.dumps({"project": "proj", "counts": {"bullets": 5, "backed": 2, "prose": 3, "untagged": 0,
@@ -107,7 +112,10 @@ class Fixture(unittest.TestCase):
         git(self.root, "checkout", "-q", "master")
         st = self.root / ".codex-state" / "doctrine"
         st.mkdir(parents=True)
-        (st / "last-seen.json").write_text(json.dumps({"lastSeenAt": "2026-10-16T06:00:00Z"}), encoding="utf-8")
+        self.cursor = git(self.bus, "rev-parse", "refs/remotes/origin/master")
+        (st / "last-seen.json").write_text(json.dumps({"lastSeen": self.cursor, "lastSeenAt": "2026-10-16T06:00:00Z"}),
+                                           encoding="utf-8")
+        (self.root / "cov.py").write_text("print('[cov] GATED TOTAL coverage=12.5%')\n", encoding="utf-8")
         q = self.root / "folds" / "queue.jsonl"
         q.parent.mkdir()
         q.write_text("\n".join(json.dumps(r) for r in [
@@ -128,6 +136,7 @@ class Fixture(unittest.TestCase):
                     "fold": {"queue": "folds/queue.jsonl"},
                     "outbox": {"argv": ["python", "outbox.py"], "regex": r"(\d+) unsent", "zero_regex": "no unsent"},
                     "evidence_dumps": {"pinned": "check-evidence-dumps", "args": ["--root", "{root}"], "json": "violations"},
+                    "rule_coverage": {"argv": ["python", "cov.py"], "regex": r"coverage=([0-9.]+)%", "floor": 10},
                     "kernel": {"ref": "refs/heads/master", "delivered_regex": r"^kernel-dogfood: (S\d+) Outcome - ACCEPTED",
                                "refused_regex": r"^kernel-dogfood: (?:subjects ledger - )?(S\d+) (?:refused|Outcome - REFUSED)"}}
         self.write_cfg()
@@ -298,6 +307,175 @@ class PublishTests(Fixture):
         with redirect_stdout(out), redirect_stderr(err), unittest.mock.patch.dict(os.environ, {"FACTORY_BUS_CLONE": ""}):
             code = sc.main(["--root", str(self.root), "--now", NOW, "--publish"])
         self.assertEqual(code, 3, err.getvalue())
+
+
+THRESHOLDS = {"schema": "fleet/health-thresholds/v1",
+              "thresholds": {"bus_publish_days": 3, "fold_oldest_unfolded_hours": 72, "kernel_filing_days": 14}}
+
+
+class HealthFixture(Fixture):
+    """Bus history after the project's fold cursor (NOW = 2026-10-16T12:00Z)."""
+
+    def setUp(self):
+        super().setUp()
+        self.th = self.tmp / "thresholds.json"
+        self.th.write_text(json.dumps(THRESHOLDS), encoding="utf-8")
+        self.bw = self.tmp / "bus-writer"
+        git(self.tmp, "clone", "-q", str(self.bus_origin), str(self.bw))
+
+    def bus_commit(self, path, msg, when, branch="master"):
+        if branch != "master":
+            git(self.bw, "checkout", "-q", "-B", branch, "origin/master")
+        commit(self.bw, msg, when, path)
+        git(self.bw, "push", "-q", "origin", f"HEAD:refs/heads/{branch}")
+        if branch != "master":
+            git(self.bw, "checkout", "-q", "master")
+        git(self.bus, "fetch", "-q", "origin", "+refs/heads/*:refs/remotes/origin/*")
+
+    def history(self):
+        self.bus_commit("cos-feedback/_heartbeat/cos.json", "cos heartbeat", "2026-10-11T12:00:00Z")  # pulse: never folds
+        self.bus_commit("specs/sib.md", "sib: doctrine", "2026-10-12T12:00:00Z")                        # oldest unfolded
+        self.bus_commit("specs/proj.md", "proj: own spec", "2026-10-13T12:00:00Z")                      # own: publish, no fold
+        self.bus_commit("TRAPS.md", "trap filed by proj: a race", "2026-10-15T12:00:00Z")               # tagged publish
+        self.bus_commit("TRAPS.md", "trap filed by projector", "2026-10-16T06:00:00Z")                  # not a proj token
+        self.bus_commit("adjudications/factory-kernel/proj.dispositions.md", "harvest", "2026-10-15T00:00:00Z")
+        self.bus_commit("adjudications/factory-kernel/PROJ.md", "kernel filing", "2026-10-06T12:00:00Z",
+                        branch="review/proj-kernel-2026-10-06")
+
+    def run_th(self, *extra):
+        return self.run_tool("--thresholds", str(self.th), *extra)
+
+
+class HealthTests(HealthFixture):
+    def test_bus_side_fields(self):
+        self.history()
+        code, rows, err = self.run_th()
+        self.assertEqual(code, 0, err)
+        f = rows[0]["fields"]
+        self.assertEqual(f["bus_publish"]["value"]["days_since"], 1.0)
+        self.assertEqual(f["bus_publish"]["value"]["via"], "subject-tag")
+        fl = f["fold_lag"]["value"]
+        # sib.md + both TRAPS commits; never the heartbeat, the own spec or a dispositions file
+        self.assertEqual((fl["unfolded"], fl["oldest_age_hours"]), (3, 96.0))
+        self.assertEqual(f["kernel_filing"]["value"]["days_since"], 10.0)   # review branch, case-insensitive
+        self.assertEqual(f["rule_coverage"]["value"], {"percent": 12.5, "floor": 10})
+        h = rows[0]["health"]
+        self.assertEqual(h["status"], "RED")
+        self.assertEqual(len(h["reasons"]), 1)
+        self.assertIn("fold lag 3 unfolded, oldest 96.0h > 72h", h["reasons"][0])
+
+    def test_green_when_nothing_is_overdue_and_red_when_never(self):
+        code, rows, _ = self.run_th()
+        h = rows[0]["health"]
+        self.assertEqual(code, 0)
+        self.assertEqual(h["status"], "RED")      # never published, never filed: overdue, not 'fine'
+        self.assertEqual(sorted(h["reasons"]), ["no attributed bus publish", "no kernel filing"])
+        self.bus_commit("specs/proj/cards.md", "cards(proj)", "2026-10-16T00:00:00Z")
+        self.bus_commit("adjudications/factory-kernel/proj-dogfood.md", "k", "2026-10-15T12:00:00Z", branch="review/k")
+        # the cards commit is after the cursor but specs/proj/ is a doctrine surface: parity with doctrine-sync
+        _, rows, _ = self.run_th()
+        self.assertEqual(rows[0]["health"]["status"], "GREEN", rows[0]["health"])
+        self.assertEqual(rows[0]["fields"]["bus_publish"]["value"]["via"], "own-surface")
+
+    def test_coverage_below_own_floor_and_census_over_schedule_are_red(self):
+        self.cfg["rule_coverage"]["floor"] = 20
+        self.write_cfg()
+        (self.bw / "metrics" / "tool-census-baseline.json").write_text(
+            json.dumps({"total": 7, "roots": ["bus", "proj"], "families": {"x": {}},
+                        "views": [{"name": "box", "roots": ["bus", "proj", "far"], "families": ["x"], "total": 9}],
+                        "schedule": [{"by": "2026-10-01", "max": 1}, {"by": "2026-11-01", "max": 0}]}),
+            encoding="utf-8")
+        git(self.bw, "add", "-A")
+        git(self.bw, "commit", "-q", "-m", "schedule")
+        git(self.bw, "push", "-q", "origin", "HEAD:refs/heads/master")
+        git(self.bus, "fetch", "-q", "origin")
+        _, rows, _ = self.run_th()
+        c = rows[0]["fields"]["tool_census"]["value"]
+        self.assertEqual((c["schedule_max"], c["over_schedule"], c["schedule_next"]), (1, True, {"by": "2026-11-01", "max": 0}))
+        # per-view counts: primary over {bus, proj} = 3 distinct - 1; 'box' needs 'far', absent here
+        self.assertEqual(c["views"], [{"name": "primary", "count": 2, "baseline": 7},
+                                      {"name": "box", "count": None, "baseline": 9}])
+        reasons = " | ".join(rows[0]["health"]["reasons"])
+        self.assertIn("rule coverage 12.5% < own floor 20%", reasons)
+        self.assertIn("census primary view 2 > schedule max 1 (2 copies", reasons)
+
+    def test_unreachable_cursor_and_missing_coverage_are_unmeasured_not_green(self):
+        (self.root / ".codex-state" / "doctrine" / "last-seen.json").write_text(
+            json.dumps({"lastSeen": "0" * 40, "lastSeenAt": NOW}), encoding="utf-8")
+        (self.root / "cov.py").write_text("print('nothing')\n", encoding="utf-8")
+        _, rows, _ = self.run_th()
+        self.assertIn("UNREACHABLE", rows[0]["fields"]["fold_lag"]["error"])
+        self.assertIn("fold_lag", rows[0]["health"]["unmeasured"])
+        self.assertIn("coverage", rows[0]["health"]["unmeasured"])
+
+    def test_surfaces_match_doctrine_sync(self):
+        src = (HERE.parent / "doctrine-sync.mjs").read_text(encoding="utf-8")
+        import re
+        m = re.search(r"const BUS_SURFACES = \[([^\]]*)\]", src)
+        self.assertIsNotNone(m)
+        self.assertEqual(tuple(re.findall(r"'([^']+)'", m.group(1))), sc.DOCTRINE_SURFACES)
+
+    def test_live_share_parses_one_throughput_run(self):
+        fake = subprocess.CompletedProcess([], 0, json.dumps({"until_utc": "2026-10-16T12:00:00Z", "projects": [
+            {"project": "airmypc", "error": None, "product_share": 0.08, "product_lines_per_week": 3412.5},
+            {"project": "mlv-app", "error": "bad ref"}]}), "")
+        with unittest.mock.patch.object(sc, "run_cmd", return_value=fake) as rc:
+            got = sc.live_shares(sc.SCRIPT_BUS, ["airmypc", "mlv-app", "not-declared"], 14)
+        argv = rc.call_args[0][0]
+        self.assertIn("-WindowDays", argv)
+        self.assertEqual(argv[argv.index("-Project") + 1], "airmypc,mlv-app")
+        self.assertEqual(got["airmypc"]["value"]["product_share"], 0.08)
+        self.assertEqual(got["airmypc"]["value"]["source"], "live")
+        self.assertIn("FAILED", got["mlv-app"]["error"])
+        self.assertNotIn("not-declared", got)
+
+
+class FleetTests(HealthFixture):
+    def fleet(self, *extra):
+        roots = self.tmp / "roots.json"
+        roots.write_text(json.dumps({"schema": "fleet-roots.v1", "roots": {"proj": str(self.root),
+                                                                              "gone": str(self.tmp / "nope")}}), encoding="utf-8")
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = sc.main(["--fleet", "--bus", str(self.bus), "--roots", str(roots), "--thresholds", str(self.th),
+                            "--share", "row", "--now", NOW, *extra])
+        return code, out.getvalue(), err.getvalue()
+
+    def setUp(self):
+        super().setUp()
+        for name in ("proj", "gone", "far", "fleet-x"):
+            self.bus_commit(f"specs/{name}.md", f"{name}: spec", "2026-10-15T12:00:00Z")
+
+    def test_every_member_has_a_row_absent_ones_unmeasured(self):
+        code, out, err = self.fleet("--dry-run")
+        self.assertEqual(code, 0, err)
+        rows = [json.loads(l) for l in out.splitlines() if l.startswith("{")]
+        by = {r["project"]: r for r in rows}
+        self.assertEqual(sorted(by), ["far", "gone", "proj"])        # fleet-x is not a member (shared classifier)
+        self.assertEqual(by["gone"]["health"]["status"], "UNMEASURED")
+        self.assertEqual(by["far"]["fields"], {})
+        self.assertIn(by["proj"]["health"]["status"], ("GREEN", "RED"))
+        self.assertIsNotNone(by["proj"]["fields"]["tool_census"]["value"])   # bus tool ran from the checkout
+        self.assertIn("<bus-checkout>", by["proj"]["fields"]["tool_census"]["cmd"])
+
+    def test_print_table_and_dry_run_writes_nothing(self):
+        out_file = self.tmp / "rows.jsonl"
+        code, out, err = self.fleet("--dry-run", "--print", "--out", str(out_file), "--publish")
+        self.assertEqual(code, 0, err)
+        self.assertIn("project", out.splitlines()[0])
+        self.assertIn("UNMEASURED (2, no local clone", out)
+        self.assertFalse(out_file.exists())
+        self.assertEqual(self.published(), [])
+
+    def test_publish_sends_measured_rows_only(self):
+        out_file = self.tmp / "rows.jsonl"
+        code, _, err = self.fleet("--publish", "--out", str(out_file))
+        self.assertEqual(code, 0, err)
+        self.assertEqual([r["project"] for r in self.published()], ["proj"])
+        self.assertEqual(len(out_file.read_text(encoding="utf-8").splitlines()), 3)  # the local file keeps all
+        code, _, err = self.fleet("--publish")
+        self.assertIn("already published", err)
+        self.assertEqual(len(self.published()), 1)
 
 
 if __name__ == "__main__":

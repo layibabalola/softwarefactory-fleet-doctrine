@@ -18,6 +18,7 @@ on:
       - 'hooks/**'
       - 'metrics/tool-census-baseline.json'
       - 'metrics/tool-census-rulings.json'
+      - 'metrics/fleet-health-thresholds.json'
       # every census family basename, anywhere: a new copy on the bus is judged by the 'bus' view
       - '**/session-checkpoint.py'
       - '**/session_checkpoint.py'
@@ -64,6 +65,7 @@ on:
       - 'hooks/**'
       - 'metrics/tool-census-baseline.json'
       - 'metrics/tool-census-rulings.json'
+      - 'metrics/fleet-health-thresholds.json'
       # every census family basename, anywhere: a new copy on the bus is judged by the 'bus' view
       - '**/session-checkpoint.py'
       - '**/session_checkpoint.py'
@@ -126,11 +128,12 @@ jobs:
         run: node tools/traps-index.tests.mjs
       - name: Shared-tool census fixtures (versions, marker sections, double registration, ratchet)
         run: node tools/tool-census.tests.mjs
-      - name: Factory tools and refusing hooks (pin runner, check-doc-size tier tables, hooks)
+      - name: Factory tools and refusing hooks (pin runner, check-doc-size tier tables, fleet scorecard + health, hooks)
         run: |
           python3 tools/factory/pin-runner.tests.py
           python3 tools/factory/check-doc-size.tests.py
           python3 tools/factory/session-start-auth.tests.py
+          python3 tools/factory/fleet-scorecard.tests.py
           python3 hooks/hooks.tests.py
       - name: Shared-tool census - every view this runner can see (the 'bus' view always; fleet views UNMEASURED)
         # tools/tool-census.mjs rule 7: the baseline holds one count per root set. The 'bus' view counts

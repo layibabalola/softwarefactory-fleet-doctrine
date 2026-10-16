@@ -408,11 +408,21 @@ gate or drain; nothing depends on Conjugal's steward:
 ```bash
 python factory-pins/pin-runner.py run fleet-scorecard -- --root . --project <name> --publish
 python tools/factory/fleet-scorecard.tests.py      # stdlib; temp fixture repos only, never the host
+# fleet health, as the bus (every member cloned on this machine; the rest UNMEASURED), daily per machine:
+python tools/factory/fleet-scorecard.py --fleet --bus <bus clone> --publish     # --dry-run --print to look
 ```
+
+`--fleet` (added 2026-10-16, owner request for regular fleet self-improvement health checks) derives the
+members from `specs/` on origin/master through `tools/fleet-membership.mjs --stdin`, reads clone paths from
+the machine-local `~/.fleet-roots.json` (`--roots`; the map `fleet-sweep.mjs` reads), runs the bus tools in
+`BUS_TOOLS` from the checkout that holds the script (it runs AS the bus, like CI; project mode keeps pins),
+and adds a `health` block judged by `metrics/fleet-health-thresholds.json` (`--thresholds`). Absent members
+are UNMEASURED rows: printed and written with `--out`, never published. `--print` is a human table,
+`--json` the rows, `--dry-run` writes nothing. Diagnostic: the exit code never depends on a value.
 
 Publishing appends to `origin/master` through a private temporary worktree of the bus clone (`--bus`,
 `$FACTORY_BUS_CLONE`, or the pins' `bus_clone`; never implied), fast-forward only, re-reading the
-remote on a rejected push; a row whose `(project, date)` is already there is not appended again, so a
+remote on a rejected push; a row whose `(project, date, machine)` is already there is not appended again, so a
 daily caller may run it every tick. Before publishing, each row is screened (addresses, uuids, tokens,
 user-home paths, coordination paths); a match refuses that row (exit 2) and never edits it. Exit 0
 rows produced; 2 config error or a screened row; 3 no bus clone or the push failed.
@@ -459,3 +469,13 @@ measured", never zero.
 | `master_vs_origin` | `{ahead, behind}` | `git rev-list --left-right --count refs/heads/B...refs/remotes/R/B` (local refs; no fetch) |
 | `kernel_24h` | `{delivered, refused}` distinct subject ids | `git log` subjects in the last 24 h by author date, matched by config `kernel` regexes |
 | `pin_stale` | int | the project's own `pin-runner.py status`, lines with `*** STALE ***` |
+| `rule_coverage` | `{percent, floor}` | config `rule_coverage` source (the project's OWN coverage census) + `floor` or `floor_json {file, path}` |
+| `bus_publish` | `{days_since, commit, via}` | newest origin/master commit touching `specs/<p>.md`, `specs/<p>/`, `metrics/<p>/` (`own-surface`), or to TRAPS/RECEIPTS/RULINGS/DISCOVERIES with `<p>` as a subject token (`subject-tag`); `days_since` null = never |
+| `fold_lag` | `{cursor, unfolded, oldest_age_hours}` | `git log <fold marker lastSeen>..origin/master` commits touching doctrine-sync's surfaces (not `specs/<p>.md`, not `cos-feedback/_heartbeat/`) |
+| `kernel_filing` | `{days_since, commit}` | newest commit on origin/master or `origin/review/*` touching `adjudications/factory-kernel/<p>.md` or `<p>-*.md` (case-insensitive; never `*.dispositions.md`) |
+
+Row keys added 2026-10-16: `machine` (the measuring host; part of the idempotency key) and, when a
+thresholds file is present, `health {status, reasons, unmeasured, thresholds_sha256}`: RED lists every
+overdue duty, GREEN means none and at least one measured, UNMEASURED means nothing judgeable was measured.
+`tool_census` also carries `project_doubles`, `schedule_max` (in force today), `schedule_next` and
+`over_schedule`; `product_share` carries `source` (`live` or `row`).
