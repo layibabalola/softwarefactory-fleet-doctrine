@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T17:46:56Z",
+  "last_beat_utc": "2026-10-16T18:15:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #459 pr-pushed tip 7fd574e1 not-merge-ready unchanged: master conflict cleared, r5 Improvements addressed, legs 0/2, CPU windowed finding open, CI running; ACK ask 6221354993."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #466 pr-pushed r1c tip 09ddcefd not-merge-ready (changed from merge-when-ci-green): both prior CoS Improvements addressed; sol/opus r1 CHANGES_REQUESTED findings reproduced (stale-leg check, dropped parser gate design); legs 0/2 on tip; CI pending; ACK ask 6221867082."
 }
