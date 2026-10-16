@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T16:58:00Z",
+  "last_beat_utc": "2026-10-16T16:58:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. Muse log reconcile 16:58Z: MLV-App #461/#462 merge-ready (2/2 tip legs, CI green); #464 Factory Bridge flake; agent-bridge #235 CI green."
+  "note": "Written on every CoS bus commit per Amendment 4 r2 / SEAT-DUTIES \u00a77. MLV-App #457 r3e tip a46920f5 not-merge-ready (legs 0/2 + CI pending); prior Improvements addressed."
 }
