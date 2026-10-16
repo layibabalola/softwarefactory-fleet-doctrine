@@ -468,7 +468,12 @@ class Install(unittest.TestCase):
         else:
             (shim / "git.cmd").write_bytes(('@echo off\r\nif not "%~3"=="show" goto passthru\r\n"%REAL_GIT%" %*\r\n'
                                             'echo ' + self.TAMPER + '\r\nexit /b 0\r\n:passthru\r\n"%REAL_GIT%" %*\r\nexit /b %errorlevel%\r\n').encode())
-        return {**os.environ, "REAL_GIT": real, "PATH": str(shim) + os.pathsep + os.environ["PATH"], "PYTHON": sys.executable}
+        for f in shim.iterdir():
+            f.chmod(0o755)  # POSIX skips a non-executable file on PATH: without this the shim is silently bypassed (CI 2026-10-16)
+        env = {**os.environ, "REAL_GIT": real, "PATH": str(shim) + os.pathsep + os.environ["PATH"], "PYTHON": sys.executable}
+        found = shutil.which("git", path=env["PATH"])  # the shim must really be what `git` resolves to, or the test proves nothing
+        self.assertTrue(found and Path(found).resolve().parent == shim.resolve(), f"the git shim is not first on PATH: {found}")
+        return env
 
     def _check_bootstrap(self, argv: list, tamper_env: dict, clean_env: dict):
         script_args = [str(self.bus), self.c1, "echo", "tester", "fixture", str(self.proj)]
