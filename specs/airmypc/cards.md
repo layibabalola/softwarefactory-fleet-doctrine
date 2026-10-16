@@ -64,8 +64,8 @@ evidence: measured
 
 ## airmypc/d1-d3-not-resolved-20261016
 rule: a defect closes when a mechanism requires its number to fall by a date and an owner carries it; measuring it, ratcheting it or filing an unowned card is not a fix. Until then report it NOT RESOLVED, with the number.
-mechanism: owner defects D1-D3 (2026-10-11) were measured, ratcheted and carded, then treated as handled. Adjudicated 2026-10-16, all NOT RESOLVED: D1 tool census 11 = baseline 11; D2 AirMyPC rule coverage 6/45 = 13.33% (tools\Get-AudioMileRuleCoverage.ps1 -Check); D3 AirMyPC 14-day product share 7.97% (Get-ProductThroughput.ps1 -Lines; diagnostic only, metrics law 1). Anti-pattern: measure and call it fixed; ratchets forbid worse, never require better; cards with no owner.
-  Adopted: a census deadline (metrics/tool-census-baseline.json schedule, 11 -> 7 by 2026-10-23 -> 0 by 2026-11-06, enforced by --check); an AirMyPC rule-coverage rising floor; the retire-shared-tool-copies cards turned into owned AirMyPC queue items. The last two are AirMyPC-side and owed.
+mechanism: owner defects D1-D3 (2026-10-11) were measured, ratcheted and carded, then treated as handled. Adjudicated 2026-10-16, all NOT RESOLVED: D1 tool census 12 (11 before ee843be added the bus canonical check-doc-size); D2 AirMyPC rule coverage 6/45 = 13.33% (Get-AudioMileRuleCoverage.ps1 -Check); D3 AirMyPC 14-day product share 7.97% (rows in 7329451; diagnostic only, metrics law 1). Anti-pattern: measure and call it fixed; ratchets forbid worse, never require better; cards with no owner.
+  In flight: D1 distribution mechanism ee843be (tools/factory/pin-runner.py; candidate factory-tool-pin-r1). Adopted: census deadline 12 -> 8 by 2026-10-23 -> 3 by 11-06 -> 0 by 11-20, enforced by --check; an AirMyPC rule-coverage rising floor and owned AirMyPC queue items for the retire cards (both AirMyPC-side, owed).
 check: in the bus clone on a fleet box, node tools/tool-census.mjs --check exits 0 (1 = rose or over the current deadline, naming the families; 3 = UNMEASURED)
 supersedes: none
 evidence: measured
