@@ -1,7 +1,7 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: efe89ac1a9fda52e2b02fbb8053ad735aa575195
+source_commit: 4740ff94f8601bee0a0d0e22611e19b8f4162f05
 
-**Machine:** ULTRAMAGNUS (personal box). **Project root:** `C:\code\DngAutoProcessor - Claude`.
+**Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
 keyframe-ramp workflow. **Rewritten wholesale at doctrine seams; artifacts live in
 `dng-auto-processor/` in this repo (standards + receipts, byte-anchored in its `EXPORTS.md`).**
@@ -114,6 +114,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   clause names no writer and no checker**, so by the test this same file exports — *for every field a protocol
   requires, name the writer that can set it* — it is a contract clause and not a gate, and a board adopting it
   inherits that gap rather than a guarantee.
+- **An executor's technical `BLOCKED` is relaunched once, and a second convenes the swarm** (§3): a `BLOCKED` that is
+  not a decline is relaunched at the same phase and attempt, in the kept worktree, with a brief re-shaped to name the
+  cause it reports, and spends no ceiling, because only a real REVISE or BLOCKER verdict does (§4). A second one
+  from that phase in that attempt is a blocker, so the bounded UNBLOCK swarm convenes before the card parks (WORK.md
+  rule 5; docs/12 §1a).
 - **A brief carries its card INLINED, never only its path** (docs/13 P-COP Step 3, B-APPROACH, C-COMMIT): a card
   opened in a tick is untracked until that tick's commit, and a worktree cut from master does not contain it, so a
   seat told only the path reads a file its tree does not hold; the launch record's brief hash then pins the card
@@ -179,6 +184,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   seat that may open cards — routing it to the design owner, who may not, parks the disposition on the one seat
   that cannot perform it, which is the remedy that cannot make its own condition false wearing the shape of a
   correct escalation.
+- **The build a landing must pass is CI's, not the hook's** (§4): before the fast-forward the landing seat runs the
+  command of CI's `Release build` step exactly as the workflow reads at the landed sha, in the subject's worktree and
+  under the load interlock, and a non-zero exit is no landing: the card goes back READY with the build log, a finding
+  of the subject. A hook that builds the same solution with fewer flags is a product path aligned by a card; once
+  it carries every flag the step passes, its green run discharges this.
 - **Inert-commit rebase states the closed PRODUCT set and derives inert as its complement** (§4): a clause that
   says "never listed" and then lists is decided by whichever half is read first. It voids only when the
   intervening range touches the subject's own `binding.json` paths (absent or unparseable fails closed); the
@@ -204,7 +214,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   queue sees no job that holds no ticket — a key's or an author's build takes none — and the hook builds directly,
   unordered, when the queue is missing or fails, so the process and build-output terms below are asked whenever a card
   is RUNNING, exactly as written, and not otherwise; with none RUNNING the seat commits and its hook waits its turn.
-  The tree sensor, both hook-rejection rules and the rule that a test RED is never load bind on every commit.
+  The tree sensor, both hook-rejection rules and the rule that a test RED is never load bind on every commit, save a
+  commit staging only the three governing docs: its hook runs no build or test, so neither the interlock nor the tree sensor
+  reaches it, while the hook still refuses a governing doc staged beside `WORK*.md` or `packets/` (§0, §4, USER).
 - **Quiet before a hook build is a closed-set question answered with named negatives** (§4): no live suite,
   build or decode the commit would corrupt, judged by rates across consecutive windows, `bin/`/`obj/` writes and
   what each RUNNING card's own clauses name, never by process presence or a load gauge. Every process in those
@@ -233,7 +245,8 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   repro that starves the thread pool says otherwise (adopted from this bus). A card's MEASUREMENT is different: its
   own gate decides and records the foreign jobs it saw, and only the owner of those runners can give it a
   machine-wide quiet window. **A process sensor cannot see a peer's uncommitted BYTES, so the tree is
-  read too**: take every path that is EITHER tracked-and-modified OR untracked with an extension the build
+  read too**: take every path that is EITHER tracked-and-modified, save the work ledger and the card files, which no
+  build or test reads, OR untracked with an extension the build
   compiles, AND newer — by the later of its write time and its creation time — than the newest `commit` or
   `commit (amend)` entry of this checkout's own HEAD reflog, AND not one this seat is about to stage by name; if
   any remains, defer and name each with both times.
@@ -385,6 +398,14 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   the removing seat's own ancestry whose command line names the worktree holds it as well, **the command line read
   with any PowerShell encoded-command argument decoded first**, because agent tools launch a shell that way and a
   raw match misses a path that sits only in base64 (§10 "Task worktrees"; adopted from this bus).
+- **Every Codex seat's model is resolved at launch, never pinned in a document** (§10 "Model currency"; fleet R16,
+  adopted): the id is the highest-versioned slug of the seat's tier that the CLI's own model cache lists as visible
+  with high among its reasoning levels, from a cache at most 7 days old, its fetch time read as UTC. When none
+  resolves, the launch uses the tier's last good id, that of its newest launch that returned output, and records why;
+  with none, the tier is dark for that launch. Every launch records its tier beside the resolved id, a resumed
+  instrument run keeps the id it recorded, and every seat start names its effort, because a CLI's default effort is
+  not high, and a pinned id never moves on its own.
+  Claude seats launch by alias; the Fable pin stays the USER's.
 - **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
   isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
   a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,
@@ -425,14 +446,16 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   implementing author or its committer — commits that work to the card's own `item/<card>` branch without a live
   instruction each time; it lets no seat land, merge or push, or commit on master or another card's branch, and both
   keys still gate landing. This board's seats run at high effort and swarm lanes at medium, a seat's effort read
-  from its own session record, never from the setting. The exact model ids `claude-fable-5-1` and `gpt-5.6-sol`
-  are the USER's choice (fleet R13.3), re-pinned only on the USER's word — a ruling on those two and no other pin.
+  from its own session record, never from the setting. The exact model id `claude-fable-5-1` is the USER's choice
+  (fleet R13.3), re-pinned only on the USER's word; the USER's word on the Sol pin is fleet R16, so docs/12-14 pin no
+  Codex id and every Codex tier is resolved at launch (§0, §10 "Model currency").
 - **Layout**: the git root is the nested `DngAutoProcessor/` repo (run `git -C` on it); evidence lives OUTSIDE every git tree, in a
   per-seat ledger the procedure names (docs/13 P-COP "Layout"; §5). The root is not written here: it holds
   hundreds of per-subject ledgers and is two directory reads from dispositions carrying both reviewers'
   findings verbatim, and bus law 4 bars a path that LOCATES in-flight review reasoning as firmly as it bars
   the bytes.
-- **Doctrine loop** (a USER unfreeze in §0; docs/13 P-STEWARD step 7): the steward folds other boards'
+- **Doctrine loop** (a USER unfreeze in §0; docs/13 P-STEWARD step 7), never deferred by load, because it writes no
+  board tree and starts no build (§0, USER): the steward folds other boards'
   ruling-candidates/, adoption/, TRAPS.md, RULINGS.md and RECEIPTS.md commits, adjudications that name this board,
   and any change to the revision of the kernel spec or of this board's profile, as data (ADOPT, DISTINGUISH or
   NOT-APPLICABLE, one reason each), then takes a CENSUS of what this board recorded since its last census line — closed tokens, card
