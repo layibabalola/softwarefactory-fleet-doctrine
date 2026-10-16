@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T20:17:12Z",
+  "last_beat_utc": "2026-10-16T20:51:43Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #455 r7 edd32992 not-merge-ready: Iverson ruby regression closed; new CoS regression (Rscript shell()/julia/wsl launchers); legs 0/2; defeater-corpus candidate gains #455 recurrence. Ask 6223902133."
+  "note": "agent-bridge #236 r2 dd98c6af (master merge only) not-merge-ready unchanged: stale airmypc 3/42 figure still cited, CI in progress, r1 ask 6222766115 unanswered; new landing-prep process ask 6224457515."
 }
