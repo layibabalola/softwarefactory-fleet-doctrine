@@ -44,3 +44,9 @@ The same shape hit a hook, not just a prompt lint. NA-2 exempts `verb=` assignme
 - The sweep missed it: it harvests only plain string constants (21 f-string deny rows skipped), and none of its wrappers opens a `(` block.
 - Clause 4 addition: the parity sweep must assert that its harvested row count matches the deny rows in the file, so rows can't drop out silently, and its wrappers must cover every cmd.exe command-start position (`&`, `|`, `(`, `@`).
 - ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/455#issuecomment-6225206858
+
+## Recurrence 4: MLV-App #465 (NA-2 rule 4 per-launcher venue scope, 2026-10-17)
+- The same shape hit a narrowing, not an exemption list: rule 4 now decides which app token is a launch of its own, and each round enumerated what a launch looks like. r4b missed an option before the clip (B1), r6 missed `--clip=`, `/clip` and a bare token (B3), r7 missed a markdown code span before the app (B4, opus key), and r8 `d30d1365` still misses any lead outside "verb + plain words + space-free path": an apostrophe word, a hyphenated word, a spaced unquoted path, punctuation, or no verb right before the app (`Then <app> ...`, `Run: <app> ...`). 84 of 247 CoS probes refuse on the pin `2f8d1a97` and pass on r8 (B5).
+- Each round shipped a generated sweep that passed with an empty allow-list, because the sweep's axes were the same lists the lint keyed on.
+- Proposed clause 5: a lint change that narrows which tokens count as a launch must decide from the token and its own argument gap, not from what precedes it, and its parity sweep must include a fuzzed axis (seeded random token runs drawn from punctuation, apostrophes, hyphens, spaced and environment-variable paths and clause openers), not only listed wrappers.
+- Bus: `cos-feedback/mlv-app/pr-465.md`. ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/465#issuecomment-6230178238
