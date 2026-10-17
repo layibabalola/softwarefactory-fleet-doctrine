@@ -66,6 +66,8 @@ on:
       - '**/codex_review.py'
       - '**/kernel-config.py'
       - '**/kernel_config.py'
+      - '**/pre-push-bus-tests.py'
+      - '**/pre_push_bus_tests.py'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   pull_request:
@@ -133,6 +135,8 @@ on:
       - '**/codex_review.py'
       - '**/kernel-config.py'
       - '**/kernel_config.py'
+      - '**/pre-push-bus-tests.py'
+      - '**/pre_push_bus_tests.py'
       - 'TRAPS-INDEX.md'
       - '.github/workflows/doctrine-sync.yml'
   workflow_dispatch:

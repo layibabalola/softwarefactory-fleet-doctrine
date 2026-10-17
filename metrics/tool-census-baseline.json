@@ -92,7 +92,8 @@
         "kernel-subjects",
         "kernel-receipt",
         "codex-review",
-        "kernel-config"
+        "kernel-config",
+        "bus-tests"
       ],
       "total": 0,
       "measuredAt": "2026-10-16T20:01:55.046Z"

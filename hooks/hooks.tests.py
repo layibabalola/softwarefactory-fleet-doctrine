@@ -453,5 +453,142 @@ class FfOnlyLayerSnippet(unittest.TestCase):
         self.assertIn("OBSERVED", p.stderr)
 
 
+BT = HERE / "pre-push-bus-tests.py"
+# A suite the fixture repo carries: passes unless the TESTED tree holds FAIL, and proves no GIT_DIR leaked in.
+FAKE_SUITE = """import os, unittest
+from pathlib import Path
+class T(unittest.TestCase):
+    def test_a(self):
+        self.assertFalse(Path("FAIL").exists(), "FAIL marker in the tested tree")
+    def test_b(self):
+        self.assertNotIn("GIT_DIR", os.environ)
+    def test_c(self):
+        pass
+    def test_d(self):
+        pass
+"""
+
+
+class BusTests(unittest.TestCase):
+    """The bus writers' pre-push layer runs the configured suites on the PUSHED tip and refuses on failure."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        t = Path(self._tmp.name)
+        self.remote, self.repo = str(t / "remote.git"), str(t / "work")
+        subprocess.run(["git", "init", "-q", "--bare", "-b", "master", self.remote], check=True)
+        subprocess.run(["git", "init", "-q", "-b", "master", self.repo], check=True)
+        _g(self.repo, "remote", "add", "origin", self.remote)
+        self.write("t/fake.tests.py", FAKE_SUITE)
+        self.write("hooks/x.py", "x = 1\n")
+        self.write("cos-feedback/a.md", "a\n")
+        self.commit("base")
+        _g(self.repo, "push", "-q", "origin", "master")
+        self.base = _g(self.repo, "rev-parse", "HEAD")
+        self.cfg = t / "bus-tests.json"
+        self.cfg.write_text(json.dumps({"trigger": ["hooks/", "t/"], "suites": [
+            {"name": "fake", "argv": ["{python}", "t/fake.tests.py"], "shard": True}]}), encoding="utf-8")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def write(self, rel: str, body: str):
+        p = Path(self.repo) / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body, encoding="utf-8", newline="\n")
+
+    def commit(self, msg: str) -> str:
+        _g(self.repo, "add", "-A", ".")
+        _g(self.repo, "commit", "-q", "-m", msg)
+        return _g(self.repo, "rev-parse", "HEAD")
+
+    def judge(self, line: str | None = None, *extra: str) -> subprocess.CompletedProcess:
+        head = _g(self.repo, "rev-parse", "HEAD")
+        line = line or f"refs/heads/master {head} refs/heads/master {self.base}"
+        return subprocess.run([sys.executable, str(BT), "origin", self.remote, "--repo", self.repo,
+                               "--config", str(self.cfg), "--shards", "2", *extra],
+                              input=line + "\n", capture_output=True, text=True)
+
+    def worktrees(self) -> int:
+        return len([l for l in _g(self.repo, "worktree", "list", "--porcelain").splitlines() if l.startswith("worktree ")])
+
+    def test_untriggered_push_runs_nothing(self):
+        self.write("cos-feedback/a.md", "b\n")
+        self.commit("feedback only")
+        r = self.judge()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("no suite run", r.stderr)
+
+    def test_triggered_green_tip_passes_sharded_and_cleans_up(self):
+        self.write("hooks/x.py", "x = 2\n")
+        self.commit("hook edit")
+        r = self.judge()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("ok   fake shard 1/2", r.stderr)
+        self.assertIn("ok   fake shard 2/2", r.stderr)
+        self.assertEqual(self.worktrees(), 1, "the temporary worktree is removed")
+
+    def test_red_tip_refuses_and_the_pushed_bytes_are_tested_not_the_worktree(self):
+        self.write("hooks/x.py", "x = 3\n")
+        self.commit("hook edit")
+        self.write("FAIL", "uncommitted\n")            # dirty worktree: not what is pushed
+        self.assertEqual(self.judge().returncode, 0)
+        self.commit("commit the failure")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("[bus-tests] PUSH REFUSED", r.stderr)
+        self.assertIn("FAIL marker in the tested tree", r.stderr)
+        self.assertEqual(self.worktrees(), 1)
+
+    def test_unprotected_ref_and_deletion_are_not_judged(self):
+        self.write("hooks/x.py", "x = 4\n")
+        self.write("FAIL", "x\n")
+        head = self.commit("red")
+        self.assertEqual(self.judge(f"refs/heads/side {head} refs/heads/side {Z}").returncode, 0)
+        self.assertEqual(self.judge(f"(delete) {Z} refs/heads/master {self.base}").returncode, 0)
+        self.assertEqual(self.judge(f"refs/heads/side {head} refs/heads/side {Z}", "--protect", "side").returncode, 1)
+
+    def test_unknown_base_runs_everything_and_all_flag_forces(self):
+        self.write("cos-feedback/a.md", "c\n")
+        self.write("FAIL", "x\n")
+        head = self.commit("red but untriggered")
+        self.assertEqual(self.judge().returncode, 0)
+        self.assertEqual(self.judge(None, "--all").returncode, 1)
+        self.assertEqual(self.judge(f"refs/heads/master {head} refs/heads/master {'1' * 40}").returncode, 1)
+
+    def test_missing_interpreter_and_bad_lines_refuse(self):
+        self.cfg.write_text(json.dumps({"suites": [{"name": "n", "argv": ["no-such-interpreter-xyz", "a"]}]}),
+                            encoding="utf-8")
+        r = self.judge(None, "--all")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("interpreter not found", r.stderr)
+        self.assertEqual(self.judge("garbage").returncode, 2)
+
+    def test_real_push_from_a_linked_worktree(self):
+        # git exports GIT_DIR to a hook run from a linked worktree; the suite must not inherit it.
+        hooks = Path(_g(self.repo, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "hooks"
+        hooks.mkdir(exist_ok=True)
+        py = Path(sys.executable).as_posix()
+        (hooks / "pre-push").write_text(
+            f'#!/bin/sh\nexec "{py}" "{BT.as_posix()}" --config "{self.cfg.as_posix()}" --shards 2 "$@"\n',
+            encoding="utf-8", newline="\n")
+        os.chmod(hooks / "pre-push", 0o755)
+        wt = str(Path(self._tmp.name) / "linked")
+        _g(self.repo, "worktree", "add", "-q", "-b", "wt", wt, "master")
+        Path(wt, "hooks", "x.py").write_text("x = 5\n", encoding="utf-8")
+        _g(wt, "add", "--", "hooks/x.py")
+        _g(wt, "commit", "-q", "-m", "green")
+        ok = subprocess.run(["git", "-C", wt, "push", "-q", "origin", "HEAD:refs/heads/master"], capture_output=True, text=True)
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        Path(wt, "FAIL").write_text("x\n", encoding="utf-8")
+        _g(wt, "add", "--", "FAIL")
+        Path(wt, "hooks", "x.py").write_text("x = 6\n", encoding="utf-8")
+        _g(wt, "add", "--", "hooks/x.py")
+        _g(wt, "commit", "-q", "-m", "red")
+        bad = subprocess.run(["git", "-C", wt, "push", "-q", "origin", "HEAD:refs/heads/master"], capture_output=True, text=True)
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertIn("[bus-tests] PUSH REFUSED", bad.stderr)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

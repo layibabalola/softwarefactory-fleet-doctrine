@@ -59,6 +59,7 @@ CANONICAL = {   # ships from the bus: refuse add AND modify
     "kernel-receipt": ("kernel-receipt.py", "kernel_receipt.py"),
     "codex-review": ("codex-review.py", "codex_review.py"),
     "kernel-config": ("kernel-config.py", "kernel_config.py"),
+    "bus-tests": ("pre-push-bus-tests.py", "pre_push_bus_tests.py"),
 }
 CENSUS = {      # counted, no bus canonical yet: refuse a NEW copy only
     "session-checkpoint": ("session-checkpoint.py", "session_checkpoint.py"),

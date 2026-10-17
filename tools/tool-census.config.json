@@ -20,7 +20,8 @@
     { "name": "kernel-subjects", "names": ["kernel-subjects.py", "kernel_subjects.py"], "canonical": "tools/factory/kernel-subjects.py" },
     { "name": "kernel-receipt", "names": ["kernel-receipt.py", "kernel_receipt.py"], "canonical": "tools/factory/kernel-receipt.py" },
     { "name": "codex-review", "names": ["codex-review.py", "codex_review.py"], "canonical": "tools/factory/codex-review.py" },
-    { "name": "kernel-config", "names": ["kernel-config.py", "kernel_config.py"], "canonical": "tools/factory/kernel-config.py" }
+    { "name": "kernel-config", "names": ["kernel-config.py", "kernel_config.py"], "canonical": "tools/factory/kernel-config.py" },
+    { "name": "bus-tests", "names": ["pre-push-bus-tests.py", "pre_push_bus_tests.py"], "canonical": "hooks/pre-push-bus-tests.py" }
   ],
   "roots": [
     { "name": "bus", "path": "@bus", "kind": "bus" },

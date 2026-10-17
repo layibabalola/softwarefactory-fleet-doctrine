@@ -11,6 +11,7 @@ file, exits non-zero to refuse, and names no project path. Like every factory to
 |---|---|---|
 | [`pre-push-ff-only.py`](pre-push-ff-only.py) | git `pre-push` (ref lines on stdin) | exit 1 when a protected ref is deleted, or its remote tip is not an ancestor of the pushed tip, or ancestry cannot be proven. Protected: `--protect <name>` / `--config <json>` `{"protected": [...]}`; default `master`, `main` |
 | [`pre-push-no-unpinned-tool.py`](pre-push-no-unpinned-tool.py) | git `pre-push` (ref lines on stdin) | exit 1 when the pushed commits add or modify a file named like a bus factory tool (tools/factory/*, hooks/*: any add or edit) or add a NEW copy of a census family (session-checkpoint, doctrine-outbox, doctrine-triage, resumability-check). Exempt: the vendored runner when it equals its pinned blob, and paths in `factory-pins/no-unpinned-tool.json` (read from the pushed tip) with a reason and an expiry at most 120 days out; an expired entry refuses. Families are kept equal to `tools/tool-census.config.json` by the tests |
+| [`pre-push-bus-tests.py`](pre-push-bus-tests.py) | git `pre-push` in a **bus clone** (ref lines on stdin) | exit 1 when a push to a protected ref (default `master`, `main`) changes `hooks/`, `tools/factory/`, `tools/tool-census*`, `metrics/tool-census*`, `factory-pins/` or the doctrine-sync workflow and the fast bus suites (`hooks/hooks.tests.py`, `tools/factory/pin-runner.tests.py`, `tools/tool-census.tests.mjs`) fail on the PUSHED tip, checked out into a temporary worktree; a missing interpreter or a timeout also refuses. Any other push runs nothing |
 | [`claude/exact-path-add.py`](claude/exact-path-add.py) | Claude Code `PreToolUse` on `Bash\|PowerShell` | exit 2 on `git add -A/--all/-u/--update/.`/`:/`, `git commit -a/--all` (clusters such as `-am` included), `git commit .` |
 | [`claude/git-optional-locks.py`](claude/git-optional-locks.py) | Claude Code `PreToolUse` on `Bash\|PowerShell` | exit 2 on `git status/diff/log/show/rev-list` without the global `--no-optional-locks` or `GIT_OPTIONAL_LOCKS=0`. Mutation commands are never judged -- `run git-optional-locks -- --observe-only` (opt-in per project, for runbooks that still say plain `git status`) prints the finding as OBSERVED and exits 0 |
 
@@ -93,3 +94,41 @@ Tests: `python hooks/hooks.tests.py`.
 
    Put it ahead of any layer that consumes stdin. Any non-zero, including an unavailable pin,
    refuses the push: a push is rare and recoverable, a forced rewrite of a shared branch is not.
+
+## Bus writers: `pre-push-bus-tests`
+
+The bus lands on master by direct push from many automated writers, and its CI runs only after the
+push. On 2026-10-16 two writers each pushed a side that passed alone; the merge failed
+`hooks.tests.py` on master (f4918600, b2cd2244) and stayed red until someone looked. This layer runs
+the same fast suites before the push leaves the writer's bus clone.
+
+1. Pin it in the project that hosts the writer (a review decision, Law 1):
+
+   ```
+   python factory-pins/pin-runner.py pin bus-tests --commit <bus-sha> --path hooks/pre-push-bus-tests.py --reviewer <who> --reason <why>
+   ```
+
+2. Chain it into the **bus clone's** `.git/hooks/pre-push`, ahead of any layer that consumes stdin, with
+   the ref lines restored for the next layer:
+
+   ```sh
+   # factory-bus-tests
+   BT_REFS=$(cat)
+   BT_PINS="<consumer root>/factory-pins/pin-runner.py"   # the project whose pins reviewed this hook
+   printf '%s\n' "$BT_REFS" | python -I "$BT_PINS" run bus-tests -- "$@" \
+     || { echo "[bus-tests] PUSH REFUSED" >&2; exit 1; }
+   exec 0<<BT_REFS_EOF
+   $BT_REFS
+   BT_REFS_EOF
+   ```
+
+   The suites themselves are the bytes being pushed: a bus writer tests its own commit, exactly as CI
+   would after the push. The pinned hook decides which suites run and whether the push may go.
+
+Cost (measured 2026-10-17, XPS 17, 20 logical CPUs, Windows, other agents running): a push that
+touches none of the trigger paths (outbox, heartbeat, cos-feedback, specs, adjudications) runs
+nothing and took 0.6 s. A push that touches them checks out the tip and runs all three
+suites, python suites sharded over half the CPUs: 56 s end to end on that box (the slowest pin-runner shard
+bounds it; serially the three suites took about 220 s there, and about 30 s on a Linux CI runner).
+`--shards N`, `--timeout S` (per shard, default 300), `--all` (run whatever changed) and
+`--config <json>` (`protected`, `trigger`, `suites`) tune it. Tests: `BusTests` in `hooks.tests.py`.
