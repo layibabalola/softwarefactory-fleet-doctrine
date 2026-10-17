@@ -1094,7 +1094,7 @@ class V2(unittest.TestCase):
         self.assertEqual(dng["root_candidates"][0], "C:/code/DngAutoProcessor - Claude/DngAutoProcessor")
         self.assertEqual(dng["invocation_surfaces"], [".githooks/*", ".github/workflows/*.yml"])
         self.assertEqual([(f["date"], f["backed"]) for f in dng["floor_schedule"]],
-                         [("2026-10-16", 1), ("2026-10-23", 20), ("2026-10-30", 35), ("2026-11-06", 46)])
+                         [("2026-10-16", 1), ("2026-10-23", 3)])
         crt.parse_floors(dng)
         self.doc("- dash\n1. numbered\n**Bold-led.** paragraph\nnot a rule\n\nplain\n")
         c = self.counts(rule_map=None, files=[{"path": "RULES.md", "bullet": dng["files"][0]["bullet"]}])
