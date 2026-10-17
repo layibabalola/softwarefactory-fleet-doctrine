@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T02:31:29Z",
+  "last_beat_utc": "2026-10-17T02:39:00Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "adobe-ingester #3 r1 6eefc9c2 not-merge-ready (B1 open-ask selector false positives, repro MLV-App #457; I1, I2); ask 6228532654. Also repaired conflict markers left in this file by 001816f."
+  "note": "agent-bridge #238 r2 4d5128e2 not-merge-ready (gates; I1 widened by #237 merge); ask 6228528061. #237 merged with asks open and FWO-ACK-1 hold in force; post-merge asks 6228528179 and 6228528351. #240 r1 65afe658 not-merge-ready; ask 6228528183. Repairs conflict markers left in 001816f."
 }
