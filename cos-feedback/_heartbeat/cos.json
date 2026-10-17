@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:33:12Z",
+  "last_beat_utc": "2026-10-17T03:33:59Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "conjugal #6 r3 ad17a5ba not-merge-ready (self-authored; r2 B1/B2 moot, I1-I3/N2 addressed); new B1 legacy answered asks flagged OPEN (7/15 on MLV-App), B2 CLOSED line hides same-comment ask; ask 6229083497; r2 ask closed 6229084992."
+  "note": "context-ultra-salesforce #109 r3 be987dd7 not-merge-ready (self-review); r1 B1/I1/I2/I3 addressed; new B1 quoted no-reply phrase drops asks, B2 CLOSED+CoS-ASK in one body drops the ask (same script as doctrine #87, adobe #3); I1 legacy re-surfacing, I2 closed-PR order, I3 canonical pointers 404 until #87, I4 hub-tick API cost; ask cus-109-r3 (6229092540); r1 ask 6228539273 CLOSED."
 }
