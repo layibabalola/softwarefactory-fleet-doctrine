@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T04:45:39Z",
+  "last_beat_utc": "2026-10-17T05:02:07Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "mlv-app #471 r5 2efd71b2 not-merge-ready (gates only); I5 addressed (verified, Python port + 9 mutants); P1 publish gate verified; new P2 off-plan sol key, P3 read-only key cannot reach complete verification; ask 6229783199; heartbeat."
+  "note": "agent-bridge #239 r3 17a32046 not-merge-ready unchanged (master e05388d0 merge only, tree 1ed815e3 reproduced, 72 pass); new process ask 6229923642: fifth landing-prep push with asks open, 11 min after #238 merged through draft hold; heartbeat."
 }
