@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:34:31Z",
+  "last_beat_utc": "2026-10-17T03:34:39Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "cloudvore #7 r3 762ca1d3 not-merge-ready (self-review); r1 B1/I1/I4/N1/N2 addressed; new B1 quoted no-reply drops asks, B2 CLOSED+CoS-ASK drops ask (same script doctrine #87 / adobe-ingester #3 / ab #240); I1 legacy resurfacing, I2 closed order, I3 operating-contract, I4 ACK(correction); ask cloudvore-7-r3 (6229099208)."
+  "note": "doctrine #87 r3 e7481339 not-merge-ready (r2 B3 addressed; new B4 commit-comment scan failure swallowed by || true); I8-I11, N5-N8; ask 6229099864 (CoS-ASK doctrine-87-r3)."
 }
