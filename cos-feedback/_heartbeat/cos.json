@@ -2,9 +2,17 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
+<<<<<<< HEAD
   "last_beat_utc": "2026-10-17T02:30:44Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
   "note": "Reviewed fleet-doctrine #87 r1 4e3d0344 (consumer-template CoS response duty): not-merge-ready, B1 marker rule, B2 unpaginated check command; ask 6228528126."
+=======
+  "last_beat_utc": "2026-10-17T02:36:30Z",
+  "mode": "normal",
+  "seat": "cos",
+  "handoffs": [],
+  "note": "agent-bridge #238 r2 4d5128e2 not-merge-ready (gates; I1 widened by #237 merge); ask 6228528061. #237 merged with asks open and FWO-ACK-1 hold in force; post-merge ask 6228528179."
+>>>>>>> c005c56 (cos-feedback(agent-bridge): #238 r2 4d5128e2 not-merge-ready (gates; I1 widened); ask 6228528061; #237 merged with asks open, post-merge ask 6228528179; heartbeat)
 }
