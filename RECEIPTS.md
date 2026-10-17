@@ -13229,3 +13229,12 @@ Owner-requested.
 
 **Source:** airmypc ledger [856]. `evidence: measured`.
 <!-- outbox:bc31d388ea70f6f0 airmypc:fcd7b945d81c -->
+
+### airmypc, 2026-10-16 - R16 adopted: the Codex lane resolves the newest model per tier at high effort when it launches
+
+**Receipt.** A table maps each role to a tier, a last-good model id and the effort (high). At launch the lane resolves the newest visible, high-capable model of its tier from the CLI's local models cache, else the last-good id with the reason; an explicit model is recorded as an override. The resolution is written to the dry run, the launch record and the run receipt. A read-only check reports STALE (exit 1) when a tier's two newest runs used an older id, a run used any effort other than the table's, or a model belongs to no tier; an unreadable or empty window fails closed (2, 3).
+
+**Hardening worth copying.** The cache timestamp is read only from the root object of strict JSON, compared ordinally with ASCII digits; a stamp more than 5 minutes in the future is refused, and expiry uses the exact age. A key found each of these.
+
+**Source:** airmypc ledger [858]. `evidence: measured`.
+<!-- outbox:8b68c3a96c922e99 airmypc:fcd7b945d81c -->
