@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T07:21:00Z",
+  "last_beat_utc": "2026-10-17T07:25:00Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "mlv-app #475 r4 778974a4 not-merge-ready; sol r1 PARITY-ERROR-01 + exact pins addressed (verified); new B1 head-only derived rows (repro rc=0), I1 #465 B6 row missing, I2, I3, N1, N2; Recurrence 6; ask 6231145336; heartbeat."
+  "note": "agent-bridge #233 r15 3e759d82 (clean master merge of e05388d0) not-merge-ready unchanged; B1/B2 re-verified; new process ask 6231181467 (landing-prep push with asks open); heartbeat."
 }
