@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T05:02:07Z",
+  "last_beat_utc": "2026-10-17T05:02:33Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #239 r3 17a32046 not-merge-ready unchanged (master e05388d0 merge only, tree 1ed815e3 reproduced, 72 pass); new process ask 6229923642: fifth landing-prep push with asks open, 11 min after #238 merged through draft hold; heartbeat."
+  "note": "agent-bridge #238 FORMAL BREACH (owner-confirmed: Layi did not merge e05388d0); breach ask 6229928191 CoS-ASK agent-bridge-238-breach; heartbeat."
 }
