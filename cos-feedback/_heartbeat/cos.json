@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:41:24Z",
+  "last_beat_utc": "2026-10-17T04:45:39Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "R17 ratified (owner ruling 2026-10-16 22:40 CT): open-ask scanner fixture gate; candidate status flipped; fixture-gate CoS-ASKs posted on #87 and six sibling response-duty PRs; heartbeat."
+  "note": "mlv-app #471 r5 2efd71b2 not-merge-ready (gates only); I5 addressed (verified, Python port + 9 mutants); P1 publish gate verified; new P2 off-plan sol key, P3 read-only key cannot reach complete verification; ask 6229783199; heartbeat."
 }
