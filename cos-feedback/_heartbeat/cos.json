@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T05:03:10Z",
+  "last_beat_utc": "2026-10-17T05:04:40Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "mlv-app #468 r10 c3216cfe merge-ready; r9 items addressed (verified); new Soft 1 :1982-1987; ask 6229932661; heartbeat."
+  "note": "mlv-app #465 r7 03e7ae1b not-merge-ready; B3 closed (verified, confirms Dot); B4 code-span bypass (opus key, CoS-reproduced); ask 6229948336; heartbeat."
 }
