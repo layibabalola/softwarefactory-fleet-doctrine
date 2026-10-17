@@ -150,4 +150,70 @@ A real-git run on a scratch commit admitted an append to `specs/dng-auto-process
 `REJECT(<merge>)`.
 
 **Not covered.** The r45 `README.md` pin (`MANIFEST_SUBJECT_MISMATCH`) has the same treadmill shape and is not
-changed here. A new top-level `specs/*.md` is still `PROJECT_CLOSED_SET_MISMATCH` by design.
+changed here (see A3). A new top-level `specs/*.md` is still `PROJECT_CLOSED_SET_MISMATCH` by design.
+
+## Addendum A3: the r45 README.md binding made claim-scoped, 2026-10-17 (NOT ratified; zero authority)
+
+Written by a Conjugal implementer session (Claude Opus 5.5). It records a measurement, the change built from
+it, and its evidence. It ratifies nothing and grants no adoption, launch or runtime permission. Status stays
+PROPOSED until the owner rules.
+
+**Decision proposed.** Apply B's structure to the r45 `README.md` binding, which A2 left uncovered. Built at
+bus `20e04a52`. Keep A′ and the drift alarm unchanged as defence in depth.
+
+**What the binding is for.** `manifests/universal-provider-control-reconciliation-r45.json` binds seven
+review subjects. Six are the control itself: the spec, schema, runtime, checker, tests and `RECONCILIATION.md`.
+`README.md` is the seventh. It is the bus's shared index, and the binding reads one claim from it: the
+universal-provider-control candidate is listed and described under "Proposed amendments (not ratified)" and
+never as ratified (`test_r2_13`, and the R45 review subject). No stated reason binds the rest of the index.
+`docs/active-universal-manifest.md` says a changed bound document must not silently inherit the old hashes,
+and that still holds for the bound claim.
+
+**Measured** on bus `origin/master` at `89aceb31`, from the R45 proof `0da4a20f` onward:
+
+| Covered file | Commits | Changed what the binding reads |
+|---|---|---|
+| `README.md` | 28 | 1: merge `17fee014` (2026-09-02) added two disclaimer lines to the universal-provider-control entry, refreshed under review in `a7545b36` |
+| Spec, tests, checker | 2, 1, 1 | All of them: these files are the control itself, so they stay exact |
+| `RECONCILIATION.md`, schema, runtime | 0 | n/a |
+
+The other 27 README commits touched only unrelated index sections. The five README-only hand re-pins
+(`22640ede`, `13de12a6`, `6d444b72`, `158a072e`, `9b08e709`) and the README half of `73915eee` each moved no
+claim. The projection used for this count is the one the checker now runs.
+
+**What the checker does now** (`tools/check_universal_manifest.py`, active layer only):
+
+- The README binding stays exact at its own base. The base is the last commit that wrote the active manifest,
+  and it must carry the pinned blob: OID, bytes and sha256.
+- A later README blob passes only if `_r45_readme_claims` is unchanged. That projection covers every entry and
+  line mentioning universal-provider control, each with its section heading, and the count of the
+  proposed-amendments heading.
+- Every other subject, every frozen layer (R26 to R44), and a manifest that differs between the index and
+  HEAD keep the exact-blob pin. The error token is still `MANIFEST_SUBJECT_MISMATCH`, so the drift alarm, the
+  pre-push layer and the printed refresh are unchanged when they fire. Neither pinned tool needed an edit.
+
+**Tests.** The new `tests/test_universal_manifest_readme_claim.py` runs as its own CI step and covers:
+
+- 4 admit shapes and a staged index edit.
+- Refuse cases:
+  - bound-entry prose changed
+  - a continuation line added or removed
+  - the entry moved under the ratified heading, or removed
+  - a new mention anywhere
+  - the proposed heading renamed or duplicated
+  - the base binding not exact (sha256, bytes or OID)
+  - OID tampering on an unchanged README
+  - a change to another subject
+  - a frozen-layer or default call
+  - an uncommitted manifest
+- A real clone of the bus: a scratch README commit passes the full checker, and an edit to the bound entry
+  fails it.
+
+The pre-amendment checker at `89aceb31` refuses all 4 admit shapes. Seven mutations of the new code are each
+killed: base exactness dropped, constant projection, mentions ignored, heading count ignored, index guard
+dropped, any subject admitted, and claim scoping on for frozen layers.
+
+**Procedure.** The checker is itself an R45 subject, so the same commit re-pins the manifest through
+`tools/refresh_current_universal_manifest.py`. The changed binding is `tools/check_universal_manifest.py` only;
+`README.md` was already current at `9b08e709`. No intake-epoch control changed, because the universal
+checker is outside `adoption/current-intake-epoch-r1.json`.
