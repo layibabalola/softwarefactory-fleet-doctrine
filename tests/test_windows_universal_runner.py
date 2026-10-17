@@ -304,6 +304,119 @@ class ReceiptTests(unittest.TestCase):
             discover.assert_not_called()
 
 
+class SchemaCheckMemoTests(unittest.TestCase):
+    """The worker memo may skip only a repeat of an exact schema that already PASSED."""
+
+    @staticmethod
+    def fake_validator():
+        calls = []
+
+        class Validator:
+            @classmethod
+            def check_schema(cls, schema, format_checker=None):
+                calls.append(json.dumps(schema, sort_keys=True) if type(schema) is dict else repr(schema))
+                if type(schema) is not dict or schema.get("type") == "nonsense":
+                    raise ValueError("SchemaError")
+                return None
+
+        return Validator, calls
+
+    def test_repeat_of_passed_schema_is_skipped_and_returns_none(self):
+        Validator, calls = self.fake_validator()
+        passed = runner.install_schema_check_memo(Validator)
+        schema = {"type": "object", "properties": {"a": {"type": "integer"}}}
+        self.assertIsNone(Validator.check_schema(schema))
+        self.assertIsNone(Validator.check_schema(copy.deepcopy(schema)))
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(passed), 1)
+
+    def test_failures_are_never_cached_and_always_rechecked(self):
+        Validator, calls = self.fake_validator()
+        passed = runner.install_schema_check_memo(Validator)
+        for _ in range(3):
+            with self.assertRaises(ValueError):
+                Validator.check_schema({"type": "nonsense"})
+        self.assertEqual(len(calls), 3)
+        self.assertEqual(passed, set())
+
+    def test_mutation_after_a_pass_is_rechecked_and_refused(self):
+        Validator, calls = self.fake_validator()
+        runner.install_schema_check_memo(Validator)
+        schema = {"type": "object"}
+        Validator.check_schema(schema)
+        schema["type"] = "nonsense"
+        with self.assertRaises(ValueError):
+            Validator.check_schema(schema)
+        self.assertEqual(len(calls), 2)
+
+    def test_type_distinctions_are_exact(self):
+        Validator, calls = self.fake_validator()
+        runner.install_schema_check_memo(Validator)
+        for schema in ({"minimum": 1}, {"minimum": True}, {"minimum": 1.0}, {"minimum": "1"}):
+            Validator.check_schema(schema)
+        self.assertEqual(len(calls), 4)
+        self.assertIsNone(runner._exact_json_key({"a": (1, 2)}))
+        self.assertIsNone(runner._exact_json_key({1: "non-string key"}))
+        self.assertIsNone(runner._exact_json_key({"a": object()}))
+        deep = []
+        for _ in range(300):
+            deep = [deep]
+        self.assertIsNone(runner._exact_json_key(deep))
+
+    def test_non_json_explicit_arguments_subclass_and_full_memo_run_the_real_check(self):
+        Validator, calls = self.fake_validator()
+        passed = runner.install_schema_check_memo(Validator, limit=1)
+
+        class Sub(Validator):
+            pass
+
+        schema = {"type": "object"}
+        Validator.check_schema(schema)
+        Validator.check_schema(schema, format_checker=object())
+        Validator.check_schema(schema, None)
+        Sub.check_schema(schema)
+        Sub.check_schema(schema)
+        Validator.check_schema({"type": "string"})
+        Validator.check_schema({"type": "string"})
+        Validator.check_schema({"type": "object", "items": (1,)})
+        Validator.check_schema({"type": "object", "items": (1,)})
+        self.assertEqual(len(calls), 9)
+        self.assertEqual(len(passed), 1)
+
+    def test_target_must_be_a_classmethod(self):
+        class NotClassmethod:
+            def check_schema(self, schema):
+                return None
+
+        with self.assertRaisesRegex(runner.Refused, "SCHEMA_CHECK_MEMO_TARGET_INVALID"):
+            runner.install_schema_check_memo(NotClassmethod)
+
+    def test_real_jsonschema_verdicts_are_unchanged(self):
+        try:
+            import jsonschema
+        except ImportError:
+            self.skipTest("jsonschema not installed")
+        with mock.patch.object(jsonschema.Draft202012Validator, "check_schema",
+                               jsonschema.Draft202012Validator.__dict__["check_schema"]):
+            runner.install_schema_check_memo(jsonschema.Draft202012Validator)
+            good = {"type": "object", "properties": {"a": {"type": "integer"}}}
+            bad = {"type": "nonsense"}
+            for _ in range(2):
+                self.assertIsNone(jsonschema.Draft202012Validator.check_schema(good))
+                with self.assertRaises(jsonschema.SchemaError):
+                    jsonschema.Draft202012Validator.check_schema(bad)
+            good["properties"]["a"]["type"] = 7
+            with self.assertRaises(jsonschema.SchemaError):
+                jsonschema.Draft202012Validator.check_schema(good)
+
+    def test_memo_is_installed_only_after_the_containment_handshake(self):
+        with mock.patch.object(sys, "stdin", io.StringIO("")), \
+             mock.patch.object(runner, "install_schema_check_memo") as install:
+            with self.assertRaisesRegex(runner.Refused, "HANDSHAKE"):
+                runner.worker(Path("unused"), 0)
+            install.assert_not_called()
+
+
 class ObjectReadTransportTests(unittest.TestCase):
     """Batched `git cat-file` transport must issue the same reads and refuse the same way."""
 

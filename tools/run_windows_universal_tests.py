@@ -221,11 +221,75 @@ class RecordingResult(unittest.TextTestResult):
         super().addSuccess(test)
 
 
+SCHEMA_CHECK_MEMO_LIMIT = 4096
+
+
+def _exact_json_key(value):
+    """Exact JSON bytes of a pure-JSON tree, or None when the value is anything else.
+
+    Exact types only (a bool is not an int, a tuple is not a list), string keys only,
+    insertion order kept. None means "do not memoise": the real check runs."""
+    def exact(item, depth):
+        if depth > 256:
+            return False
+        kind = type(item)
+        if kind is dict:
+            return all(type(key) is str and exact(child, depth + 1) for key, child in item.items())
+        if kind is list:
+            return all(exact(child, depth + 1) for child in item)
+        return kind in (str, int, float, bool, type(None))
+    try:
+        if not exact(value, 0):
+            return None
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=True)
+    except Exception:
+        return None
+
+
+def install_schema_check_memo(validator_class, limit=SCHEMA_CHECK_MEMO_LIMIT):
+    """Memoise SUCCESSFUL metaschema checks of byte-identical schemas in this worker.
+
+    Measured 2026-10-17 (Windows, Python 3.14, jsonschema 4.25.1): 61% of the two isolated R29
+    history tests is `Draft202012Validator.check_schema`, called 9,746 times on a handful of
+    distinct, unchanged repository schemas (frozen R43 runtime and current runtime alike).
+    `check_schema` is a pure function of the schema and the validator class: a schema whose exact
+    JSON bytes already passed passes again. Only a normal return is remembered. A raise is never
+    cached, so an invalid or mutated schema is re-checked on every call, and an explicit
+    `format_checker`, a subclass, a non-JSON value, or a full memo always runs the real check.
+    Every call site still calls check_schema; no assertion, schema or runtime byte changes."""
+    real = validator_class.__dict__["check_schema"]
+    if not isinstance(real, classmethod):
+        raise Refused("SCHEMA_CHECK_MEMO_TARGET_INVALID")
+    real_function = real.__func__
+    passed = set()
+
+    def check_schema(cls, schema, *args, **kwargs):
+        key = None
+        if cls is validator_class and not args and not kwargs:
+            key = _exact_json_key(schema)
+            if key is not None and key in passed:
+                return None
+        result = real_function(cls, schema, *args, **kwargs)
+        if key is not None and len(passed) < limit:
+            passed.add(key)
+        return result
+
+    check_schema.__wrapped__ = real_function
+    validator_class.check_schema = classmethod(check_schema)
+    return passed
+
+
 def worker(output, index):
     # No project imports, tests or grandchildren before the parent attaches us
     # to the kill-on-close Job Object. EOF also refuses execution.
     if sys.stdin.readline() != "GO\n":
         raise Refused("CONTAINMENT_HANDSHAKE_MISSING")
+    try:
+        import jsonschema
+    except ImportError:
+        pass  # The runtime refuses SCHEMA_VALIDATOR_UNAVAILABLE itself; nothing to memoise.
+    else:
+        install_schema_check_memo(jsonschema.Draft202012Validator)
     plan = read_json(output / "plan.json")
     cases = discover()
     source = snapshot()

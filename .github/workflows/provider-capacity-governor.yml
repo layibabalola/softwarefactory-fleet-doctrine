@@ -1,15 +1,14 @@
 name: Provider capacity governor contracts
 
 on:
+  # The append-only shared logs (RECEIPTS.md, RULINGS.md, TRAPS.md) are read by no step of this
+  # workflow (measured 2026-10-17 over every test and tool it runs), so they do not trigger it.
   pull_request:
     paths:
       - ".github/workflows/provider-capacity-governor.yml"
       - "README.md"
       - "CI-COST-CONTROL.md"
-      - "RECEIPTS.md"
       - "RECONCILIATION.md"
-      - "RULINGS.md"
-      - "TRAPS.md"
       - "capacity-control/**"
       - "examples/**"
       - "manifests/universal-provider-control-reconciliation-*.json"
@@ -37,10 +36,7 @@ on:
       - ".github/workflows/provider-capacity-governor.yml"
       - "README.md"
       - "CI-COST-CONTROL.md"
-      - "RECEIPTS.md"
       - "RECONCILIATION.md"
-      - "RULINGS.md"
-      - "TRAPS.md"
       - "capacity-control/**"
       - "examples/**"
       - "manifests/universal-provider-control-reconciliation-*.json"
