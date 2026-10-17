@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T06:33:00Z",
+  "last_beat_utc": "2026-10-17T06:36:00Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "mlv-app #465 r9 96cdd148 not-merge-ready; B5 and quote-class addressed (verified, 22 passed); new B6 semicolon-split launch (bisected to r2); Recurrence 5; ask 6230713095; heartbeat."
+  "note": "mlv-app #470 r3 7c5b5a27 not-merge-ready (gates only); SHARED BLOCKER I5, N2, I-iv1 addressed (verified, 56 passed, RED 11); new I6 indented-code gate regression, I7, I8; ask 6230745224; heartbeat."
 }
