@@ -1107,6 +1107,42 @@ def _verify_adopt_disposition_artifacts(
     )
 
 
+def _spec_claims(spec_bytes: bytes) -> tuple[frozenset[tuple[str, str]], bool, bool]:
+    # Everything a non-ADOPT current row reads from its spec bytes: the
+    # disposition markers (DISTINGUISH/REJECT and ADOPT lines) and whether the
+    # candidate and merge bindings appear. Candidate-table rows are checked by
+    # _verify_project_candidate separately.
+    return (
+        frozenset(_dispositions(spec_bytes)),
+        EXPECTED_CANDIDATE.encode("ascii") in spec_bytes,
+        EXPECTED_MERGE.encode("ascii") in spec_bytes,
+    )
+
+
+def _verify_spec_claims_unchanged(
+    evidence_bytes: bytes,
+    current_bytes: bytes,
+    *,
+    project_id: str,
+    project_candidate: Any,
+) -> None:
+    # A member's routine append (receipts, addenda, posture prose) moves the
+    # blob but not the census claims; refusing it reddened bus intake on every
+    # member push from a clone without the pre-push drift layer. Any change to
+    # a claim is still PROJECT_SPEC_DRIFT: the approved refresh, or review.
+    if _spec_claims(current_bytes) != _spec_claims(evidence_bytes):
+        raise LedgerError("PROJECT_SPEC_DRIFT")
+    if project_candidate is not None:
+        try:
+            _verify_project_candidate(
+                project_candidate,
+                project_id=project_id,
+                spec_bytes=current_bytes,
+            )
+        except LedgerError as exc:
+            raise LedgerError("PROJECT_SPEC_DRIFT") from exc
+
+
 def _verify_project(
     project: Any,
     *,
@@ -1151,9 +1187,22 @@ def _verify_project(
         raise LedgerError("PROJECT_EVIDENCE_NOT_LATEST_AT_CENSUS")
     if _oid(evidence_commit, path) != evidence_blob_oid:
         raise LedgerError("PROJECT_EVIDENCE_COMMIT_BLOB_MISMATCH")
-    if _oid(base_commit, path) != evidence_blob_oid or _oid(treeish, path) != evidence_blob_oid:
+    if _oid(base_commit, path) != evidence_blob_oid:
         raise LedgerError("PROJECT_SPEC_DRIFT")
     evidence_bytes = _blob(evidence_commit, path)
+    if _oid(treeish, path) != evidence_blob_oid:
+        # The census is exact at its base: evidence commit and blob above are
+        # unchanged. A later member edit to its own spec drifts only if it
+        # changes a claim this census reads from those pinned bytes. Historical
+        # verification and every ADOPT row keep the exact-blob pin.
+        if not current or status == "ADOPT":
+            raise LedgerError("PROJECT_SPEC_DRIFT")
+        _verify_spec_claims_unchanged(
+            evidence_bytes,
+            _blob(treeish, path),
+            project_id=project_id,
+            project_candidate=evidence["projectCandidate"],
+        )
     project_candidate = evidence["projectCandidate"]
     if project_id in PROJECT_CANDIDATE_IDS and (not current or project_candidate is not None):
         if status != "DISTINGUISH" or project_candidate is None:

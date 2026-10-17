@@ -43,17 +43,121 @@ class CurrentAdoptionLedgerTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_CLOSED_SET_MISMATCH"):
                 self.verify()
 
-    def test_spec_append_requires_a_new_current_census(self):
+    def head_spec(self, project_id, rewrite):
+        # Simulate a member commit on top of the census base that changes only
+        # HEAD's copy of one spec; the pinned evidence commit and base stay exact.
+        row = next(row for row in self.ledger["projects"] if row["projectId"] == project_id)
+        path = row["specPath"]
+        original_oid, original_blob = MODULE._oid, MODULE._blob
+
+        def oid(treeish, p):
+            if treeish == "HEAD" and p == path:
+                return "f" * 40
+            return original_oid(treeish, p)
+
+        def blob(treeish, p):
+            if treeish == "HEAD" and p == path:
+                return rewrite(original_blob(row["evidence"]["commit"], path))
+            return original_blob(treeish, p)
+
+        return oid, blob
+
+    def verify_with_head_spec(self, project_id, rewrite, ledger=None):
+        oid, blob = self.head_spec(project_id, rewrite)
+        with mock.patch.object(MODULE, "_oid", side_effect=oid), mock.patch.object(MODULE, "_blob", side_effect=blob):
+            self.verify(ledger)
+
+    def test_member_append_that_keeps_every_claim_is_admitted(self):
+        # Bus 16ef646c, 80a5873d, 76394aad: member receipts, addenda and posture
+        # edits to their own specs reddened intake each time; none changed a claim.
+        for project_id in ("conjugal", "adversarialllm", "dng-auto-processor", "context-ultra-salesforce"):
+            with self.subTest(project_id=project_id):
+                self.verify_with_head_spec(project_id, lambda b: b + b"\n## Addendum\n\nRoutine receipt.\n")
+
+    def test_member_in_place_prose_edit_that_keeps_every_claim_is_admitted(self):
+        def rewrite(spec):
+            lines = spec.split(b"\n")
+            plain = next(
+                i for i, line in enumerate(lines)
+                if line.strip() and not MODULE._dispositions(line)
+                and MODULE.EXPECTED_CANDIDATE.encode() not in line
+                and MODULE.EXPECTED_MERGE.encode() not in line
+            )
+            lines[plain] = b"Posture rewritten in place."
+            return b"\n".join(lines)
+
+        self.verify_with_head_spec("dng-auto-processor", rewrite)
+
+    def test_new_disposition_marker_on_head_is_drift(self):
+        for marker in (
+            b"REJECT(" + MODULE.EXPECTED_MERGE.encode() + b")",
+            b"DISTINGUISH(" + b"a" * 40 + b")",
+        ):
+            with self.subTest(marker=marker):
+                with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
+                    self.verify_with_head_spec("conjugal", lambda b: b + b"\n" + marker + b"\n")
+
+    def test_new_adopt_line_on_head_is_drift(self):
+        line = MODULE._adopt_disposition_line({
+            "status": "ADOPT", "subjectCommit": MODULE.EXPECTED_MERGE,
+            "profilePath": "p", "profileSha256": "sha256:" + "a" * 64,
+            "reviewReceiptPath": "r", "reviewReceiptSha256": "sha256:" + "b" * 64,
+        }).encode()
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
+            self.verify_with_head_spec("conjugal", lambda b: b + b"\n" + line + b"\n")
+
+    def test_removed_binding_on_head_is_drift(self):
+        merge = MODULE.EXPECTED_MERGE.encode()
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
+            self.verify_with_head_spec("conjugal", lambda b: b.replace(merge, b"0" * 40))
+
+    def test_new_binding_on_missing_project_head_is_drift(self):
+        row = next(row for row in self.ledger["projects"] if row["projectId"] == "context-ultra-salesforce")
+        self.assertEqual(row["status"], "MISSING")
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
+            self.verify_with_head_spec(
+                "context-ultra-salesforce",
+                lambda b: b + b"\n" + MODULE.EXPECTED_MERGE.encode() + b"\n",
+            )
+
+    def test_candidate_table_row_removed_on_head_is_drift(self):
+        row = next(row for row in self.ledger["projects"] if row["projectId"] == "adversarialllm")
+        artifact = row["evidence"]["projectCandidate"]["artifacts"][0]
+        needle = (
+            f"| `{artifact['path']}` | `{artifact['gitBlobOid']}` | "
+            f"{artifact['bytes']:,} | `{artifact['sha256']}` |"
+        ).encode("utf-8")
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
+            self.verify_with_head_spec("adversarialllm", lambda b: b.replace(needle, b"", 1))
+
+    def test_census_base_stays_exact(self):
+        # The census itself must still pin the latest blob at its own base.
+        base = self.ledger["census"]["baseCommit"]
         original = MODULE._oid
 
         def changed(treeish, path):
-            if treeish == "HEAD" and path == "specs/conjugal.md":
+            if treeish == base and path == "specs/conjugal.md":
                 return "0" * 40
             return original(treeish, path)
 
         with mock.patch.object(MODULE, "_oid", side_effect=changed):
             with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
                 self.verify()
+
+    def test_historical_profile_keeps_the_exact_blob_pin(self):
+        row = copy.deepcopy(next(row for row in self.ledger["projects"] if row["projectId"] == "adversarialllm"))
+        oid, blob = self.head_spec("adversarialllm", lambda b: b + b"\nappend\n")
+        with mock.patch.object(MODULE, "_oid", side_effect=oid), mock.patch.object(MODULE, "_blob", side_effect=blob):
+            with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
+                MODULE._verify_project(row, base_commit=self.ledger["census"]["baseCommit"], treeish="HEAD")
+
+    def test_adopt_row_keeps_the_exact_blob_pin(self):
+        ledger = copy.deepcopy(self.ledger)
+        row = next(row for row in ledger["projects"] if row["projectId"] == "conjugal")
+        row["status"] = "ADOPT"
+        row["blocker"] = MODULE.STATUS_BLOCKERS["ADOPT"]
+        with self.assertRaisesRegex(MODULE.LedgerError, "PROJECT_SPEC_DRIFT"):
+            self.verify_with_head_spec("conjugal", lambda b: b + b"\nappend\n", ledger=ledger)
 
     def test_current_mode_cannot_manufacture_adopt(self):
         ledger = copy.deepcopy(self.ledger)

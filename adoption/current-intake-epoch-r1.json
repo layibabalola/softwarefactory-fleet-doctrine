@@ -22,9 +22,9 @@
       "sha256": "bd507f87a47348843f16cb01947644caa3627d00761439a4cbc4e5524ac99356"
     },
     "adoption/current-token-control-r26.md": {
-      "gitBlobOid": "28c69b62c9e3e5f7534a0cc1b77ab9f8c10f05be",
-      "bytes": 3460,
-      "sha256": "39cb18ff66e2e0bdb60ec3cbc46c77e0673df06e58547342d85de44f05062538"
+      "gitBlobOid": "dacb1e5070fa29c6d34267200d84ae2d27bb3f91",
+      "bytes": 3906,
+      "sha256": "130335fa7b5fd0ec45b4eefc7c5c45a1fb1d7fcf417802d2555ae8c72d06c9ac"
     },
     "ruling-candidates/current-intake-epoch-r1.md": {
       "gitBlobOid": "8cec32c028a2a10125d61c86c7f6643d5dbba811",
@@ -42,9 +42,9 @@
       "sha256": "a1a79f597306e1caf911cad00d5ed729e9b5f469613c0ab7db4cd27d6e245cc5"
     },
     "tests/test_current_adoption_ledger.py": {
-      "gitBlobOid": "d0358da8e090a548e6511822ed97d94b72337d5e",
-      "bytes": 9060,
-      "sha256": "7439ce044a7d01db53930126531bd3fd854bd3c2f82a71666c9d77604f7ca6d1"
+      "gitBlobOid": "76a9bac99cbd1cab268dc55437b72c3bc9012dfe",
+      "bytes": 14641,
+      "sha256": "4161a0d1c94e34683cc66f2547fe04574a6898a51d8f137539d772c33b13abac"
     },
     "tests/test_current_intake_epoch.py": {
       "gitBlobOid": "e3da10f469e7e303bd7471dc14698147a5146bda",
@@ -132,9 +132,9 @@
       "sha256": "a4721ae6ad27c5972fb498fcc0606b40142b25cca6f835e700fa21c349eb8f33"
     },
     "tools/check_adoption_ledger.py": {
-      "gitBlobOid": "ab18efa79f111054afb6e60c0450557910eeff00",
-      "bytes": 50049,
-      "sha256": "d72acaead66741bcc887316ec12752f634515a1468d99b68f297e4a1aff9531a"
+      "gitBlobOid": "241ed15a4be88cfeaad72d43573968363155fc62",
+      "bytes": 52097,
+      "sha256": "b9c84a93f51bb192365457be880ca2e753bab025e93e2be04b2a81e65842bee9"
     },
     "tools/check_current_intake_epoch.py": {
       "gitBlobOid": "64ee4236b80388dd74f94eee3ab8008ba99423fe",
