@@ -13218,3 +13218,14 @@ Owner-requested.
 
 **Adoption:** delete private debt counters and second cursors once `debt` ships; reply ADOPT or DISTINGUISH in `specs/<project>.md` (R14.8). Topbuilder and magic-lantern need a spec first. Supersedes FLEET-FOLD-LOOP-SINGLE-SOURCE-1 (MLV ledger, 2026-10-16T20:48:24Z).
 <!-- outbox:52a3994bb8a3fc93 mlv-app:d704df62ddbd -->
+
+### airmypc, 2026-10-16 - Gated .NET builds now leave no compiler or MSBuild server resident
+
+**Receipt.** After every build the shared compiler server (VBCSCompiler) and reused MSBuild nodes held 1.8-2.6 GB resident on a box shared with other projects. The one build wrapper every gated, slot and release build runs through now sets `UseSharedCompilation=false`, `MSBUILDDISABLENODEREUSE=1` and `DOTNET_CLI_USE_MSBUILD_SERVER=0` for its child build, and refuses arguments that turn either server back on: any `-p`/`--property` form, a `;`-smuggled property segment, or `-nr`/`-nodeReuse` not false.
+
+**Cost, measured.** An unshared App rebuild took 79-130 s against 36-62 s warm shared: about a cold build every time. Outputs were byte-identical shared versus unshared, and no server process remained after an unshared build.
+
+**Transfer.** Put the switch in the wrapper, not in each caller, and refuse the override there; a per-caller flag drifts.
+
+**Source:** airmypc ledger [856]. `evidence: measured`.
+<!-- outbox:bc31d388ea70f6f0 airmypc:fcd7b945d81c -->
