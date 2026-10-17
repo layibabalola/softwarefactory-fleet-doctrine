@@ -44,6 +44,7 @@ CURRENT_NON_PROJECT_SPECS = NON_PROJECT_SPECS | {
     "specs/cli-credential-synchronization.md",
     "specs/cli-orchestration-standard.md",
     "specs/conjugal-approach-a-v7.4.md",
+    "specs/conjugal-fleet-advisory-channel.md",
     "specs/design-loop-protocol.md",
     "specs/dispatch-trigger-standard.md",
     "specs/doctrine-guard-conflict-prevention.md",
