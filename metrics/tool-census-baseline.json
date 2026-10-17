@@ -88,7 +88,11 @@
         "fleet-scorecard",
         "doctrine-periodic",
         "account-parity",
-        "realign-cli"
+        "realign-cli",
+        "kernel-subjects",
+        "kernel-receipt",
+        "codex-review",
+        "kernel-config"
       ],
       "total": 0,
       "measuredAt": "2026-10-16T20:01:55.046Z"

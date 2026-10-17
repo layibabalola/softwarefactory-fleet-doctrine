@@ -16,7 +16,11 @@
     { "name": "fleet-scorecard", "names": ["fleet-scorecard.py", "fleet_scorecard.py"] },
     { "name": "doctrine-periodic", "names": ["doctrine-periodic.py", "doctrine_periodic.py"] },
     { "name": "account-parity", "names": ["check-account-parity.py", "check_account_parity.py", "check-account-parity.ps1", "check_account_parity.ps1", "account-parity.py", "account-parity.ps1"] },
-    { "name": "realign-cli", "names": ["realign-cli.py", "realign_cli.py", "realign-cli.ps1", "realign_cli.ps1"] }
+    { "name": "realign-cli", "names": ["realign-cli.py", "realign_cli.py", "realign-cli.ps1", "realign_cli.ps1"] },
+    { "name": "kernel-subjects", "names": ["kernel-subjects.py", "kernel_subjects.py"], "canonical": "tools/factory/kernel-subjects.py" },
+    { "name": "kernel-receipt", "names": ["kernel-receipt.py", "kernel_receipt.py"], "canonical": "tools/factory/kernel-receipt.py" },
+    { "name": "codex-review", "names": ["codex-review.py", "codex_review.py"], "canonical": "tools/factory/codex-review.py" },
+    { "name": "kernel-config", "names": ["kernel-config.py", "kernel_config.py"], "canonical": "tools/factory/kernel-config.py" }
   ],
   "roots": [
     { "name": "bus", "path": "@bus", "kind": "bus" },
