@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:21:07Z",
+  "last_beat_utc": "2026-10-17T03:21:58Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "mlv-app #465 r6 0fb1eb8c not-merge-ready (new B3: --clip=, /clip, bare extension-less clip fall through, refuse->pass vs master); ask 6228973410."
+  "note": "mlv-app #474 r3 b9f5a529 not-merge-ready (gates only; r2 I2 remainder and N4 addressed, verified; soft N5 strip-failure reason); ask 6228982500."
 }
