@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T00:19:00Z",
+  "last_beat_utc": "2026-10-17T00:30:58Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Iverson ADVISORY fold-in on mlv-app #465/#468/#455/#470/#471/#467, CoS-verified on live heads (#471 moved to bb45349e). 8 verified (1 narrowed from Blocker), 4 refuted, 9 skipped as already raised. One ACK ask per PR: 6227229580, 6227229808, 6227229994, 6227230180, 6227232346, 6227230400. No merge verdict changed."
+  "note": "Reviewed mlv-app #472 r1 76999ae4 (CI-DUALVENUE-EVIDENCE-SHARD2-HANG-1): not-merge-ready on gates (HIGH-RISK, legs 0/2, CI pending); I1 straggler path reproduced, I2 class/leg plan, I3 hosted timing; ask 6227363745."
 }
