@@ -802,13 +802,19 @@ class ReviewRound2(_Init):
         r = self.push("HEAD:refs/heads/sneak")
         self.assertNotEqual(r.returncode, 0)
         self.assertIn("[no-unpinned-tool] PUSH REFUSED", r.stderr)
-        # pins that cannot be read at all never turn a layer off: that judge still judges, and the runner refuses
-        git(self.proj, "reset", "-q", "--hard", "origin/master")
-        pins.write_text("{not json", encoding="utf-8")
-        git(self.proj, "add", "--", "factory-pins/factory-pins.json")
-        git(self.proj, "commit", "-qm", "torn pins")
-        r = self.push("HEAD:refs/heads/torn")
+
+    def test_unreadable_pins_never_turn_a_layer_off(self):
+        """Tiebreak (third key): pins that cannot be read must not look 'not pinned'. With no protected ref holding the
+        runner yet, the pushed commit judges; its torn pins keep the layer applied and the runner refuses."""
+        self.assertEqual(self.init().returncode, 0)
+        (self.proj / "factory-pins" / "factory-pins.json").write_text("{not json", encoding="utf-8")
+        git(self.proj, "add", "--", ".")
+        git(self.proj, "commit", "-qm", "factory, with torn pins")
+        r = self.push("master")
+        self.assertNotEqual(r.returncode, 0)
         self.assertNotIn("not applied", r.stderr)
+        self.assertIn("[ff-only] PUSH REFUSED (exit 2)", r.stderr)
+        self.assertIn("invalid JSON", r.stderr)
 
     def test_the_commit_line_is_quoted_for_a_spaced_hooks_dir(self):
         git(self.proj, "config", "core.hooksPath", ".team hooks")

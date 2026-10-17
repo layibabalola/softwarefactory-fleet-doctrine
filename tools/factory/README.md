@@ -93,7 +93,8 @@ Hooks that must never block (session-checkpoint on Stop and SessionStart) run as
 a runner refusal there exits 1 (a loud, non-blocking hook error) instead of 2, which on Stop would block every turn end.
 The guards keep exit 2. A vendored runner release that predates `--never-block` is never wired to those hooks (HAND:
 delete it, and init vendors the reviewed one). The pre-push layers run the runner with `python -I` and judge with the
-first protected ref whose pins (parsed as JSON, its `tools` object) already pin the layer's tool, else the pushed commit; a judge that does not pin the tool at all (a branch from before
+first protected ref whose pins (parsed as JSON, its `tools` object) already pin the layer's tool -- or cannot be read at
+all, which judges and refuses rather than switch the layer off -- else the pushed commit; a judge that does not pin the tool at all (a branch from before
 the adoption) skips that layer with a notice, since such a judge could drop its own pin anyway: an existing consumer's adoption push is never locked out, and once master pins a layer, a
 branch can no longer re-pin its own judge.
 

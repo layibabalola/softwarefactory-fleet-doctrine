@@ -55,7 +55,10 @@ Tests: `python hooks/hooks.tests.py`.
    an existing consumer whose master pins other tools but not yet this one: judging with those pins
    would refuse every push, the adoption push included), else `HEAD`. A judge that does not pin the
    layer's tool at all (a branch from before the adoption) skips the layer with a `not applied` notice: it could
-   drop its own pin anyway, so refusing would protect nothing. Protected
+   drop its own pin anyway, so refusing would protect nothing. Pins that cannot be read at all (torn JSON, a wrong
+   shape) never switch a layer off: such a ref still judges and the runner refuses. If origin/master itself carries
+   torn pins, every push is refused, the repair included; land the repair with `git push --no-verify` after review,
+   or fix the file on the remote. Protected
    branches come from the consumer's `factory-pins/ff-only.json` (`{"protected": [...]}`) at the
    judge ref when present, else `master`/`main`:
 
