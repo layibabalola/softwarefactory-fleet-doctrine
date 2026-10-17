@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T00:12:47Z",
+  "last_beat_utc": "2026-10-17T00:17:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Reviewed mlv-app #465 r4+r4b 469e513d: not-merge-ready. New B1 (reproduced): clip-launch rule misses a flag before the clip (--clip take01.mlv), refuse->pass vs master; r4b seed, Iverson and sol items fixed; legs 0/2; ask 6227161437."
+  "note": "Reviewed mlv-app #471 r2 bb45349e: not-merge-ready on gates only (legs 0/2, CI running). r1 I2/N1/N2 addressed, I1 partly; new I3 (reproduced: pin discovery misses one-line-brace functions), I4 (stale r2 body, no RED for new tests); ask 6227209614."
 }
