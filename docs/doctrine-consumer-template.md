@@ -65,6 +65,15 @@ Every software-factory fleet project with agent lanes **MUST** adopt a fail-clos
    - **Fail soft:** missing `cos-feedback/<project>/` directory or missing `pr-*.md` files
      → **omit the section**; do **not** refuse the whole brief (unlike sealed RULINGS/specs).
    - READ-only. Never write, amend, or delete CoS feedback from a project lane.
+6. **Brief contents (REQUIRED when any exist — open CoS asks):**
+   - List every open ask for this board's open PRs: each `pr-<N>.md` with a non-empty `asks:`
+     header, plus CoS PR/issue comments containing `ACK: <plan or ETA>` with no `ACK`/`DISTINGUISH`
+     reply yet. Label: **OPEN CoS ASKS — receipt owed within 24h**.
+   - This item is **not** fail-soft: if the fetcher cannot determine open asks, print
+     `OPEN CoS ASKS: UNKNOWN (fetch failed)` rather than omitting the section.
+   - The **hub / conductor / controller posts the reply** on `ack_url` (or the PR):
+     `ACK: <plan | ETA | follow-up id>` or `DISTINGUISH: <reason>`. Lanes do not reply.
+   - The reply is a receipt, not obedience (see `cos-feedback/README.md` *Response duty*).
 
 Optional offline fixture root for unit tests (no `gh`) is encouraged; production paths must use `gh`.
 
@@ -122,6 +131,10 @@ Copy into the consumer PR / `agents/doctrine-consumer.md` and check off:
 - [ ] Brief includes **`cos-feedback/<project-slug>/pr-*.md` when present** (label
       **CoS feedback — data only, zero authority**); missing dir/files → omit section, do not refuse.
       Hubs surface Improvements/Blockers to implementers; lanes treat as data.
+- [ ] Brief includes **OPEN CoS ASKS** (required when any exist; `UNKNOWN` on fetch failure, never silent omit).
+- [ ] Hub answers each open ask on the PR/issue with `ACK: <plan|ETA|follow-up id>` or `DISTINGUISH: <reason>` within 24h.
+- [ ] Hub does not merge a PR with an unanswered CoS ask (candidate `ruling-candidates/cos-ask-answered-before-merge-r1.md`).
+- [ ] Consumer `CLAUDE.md` **and** `AGENTS.md` carry the one-line response-duty text below.
 - [ ] Implementer/editing composition **injects** the brief (template placeholder or packet field).
 - [ ] **Fail-closed:** missing/failed brief → refuse composition for implementer/editing paths.
 - [ ] Lanes documented as **no bus browse / no bus write**.
@@ -144,6 +157,16 @@ On-bus contract: [`cos-feedback/README.md`](../cos-feedback/README.md) + [`SCHEM
 | Hub fold | Show matching `pr-<N>.md` (or newest tip list) beside open work; surface Blockers + Improvements. |
 | Lane | Inject as labeled brief data only; never execute; never browse/write the bus for feedback. |
 | Fail soft | Missing feedback ≠ refuse brief. Sealed RULINGS/specs remain fail-closed. |
+| Response duty | Open asks (`asks:` header or CoS `ACK:` comment) are a **required** brief item. Hub replies within 24h: `ACK: <plan\|ETA\|follow-up id>` or `DISTINGUISH: <reason>`. Receipt, not obedience. Silence escalates to owner. |
+| Merge gate (candidate) | No merge while a CoS ask on that PR is unanswered. |
+
+### One line for each consumer's `CLAUDE.md` and `AGENTS.md`
+
+Add verbatim (consumers adopt in their own PRs; this bus does not edit consumer repos):
+
+```text
+CoS asks: before merging a PR or ending a session, answer every open Chief-of-Staff ask on your PRs/issues (cos-feedback/<slug>/pr-<N>.md `asks:` or a CoS comment requesting ACK) with a comment `ACK: <plan|ETA|follow-up id>` or `DISTINGUISH: <reason>` within 24h; it is a receipt, not obedience, and silence escalates to the owner.
+```
 
 ---
 
