@@ -13,6 +13,7 @@ import os
 import pathlib
 import tempfile
 import unittest
+from types import SimpleNamespace
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location("kernel_e2e", ROOT / "tools" / "kernel-e2e.py")
@@ -182,6 +183,79 @@ def test_a_genuine_zero_is_not_flagged_unreadable(kernel):
     led = kernel([_row12("conjugal", "0 end-to-end (1 blocked at acceptance closure)")])
     assert led["e2e_unreadable"] == []
     assert led["projects_closing_end_to_end"] == []
+
+
+def test_case_alias_rows_keep_label_and_maximum_without_inventing_a_fifth_project(kernel):
+    led = kernel([_row12("AdversarialLLM", "2 end-to-end"),
+                  _row12("adversarialllm", "3 end-to-end"),
+                  *[_row12(p, "1 end-to-end") for p in ("beta", "gamma", "delta")]])
+    assert led["per_project_closed"]["AdversarialLLM"] == 3
+    assert led["closed_end_to_end"] == 6
+    assert len(led["closed_projects"]) == 4
+    assert led["projects_in_ledger"] == ["AdversarialLLM", "beta", "delta", "gamma"]
+    assert not ke.criterion_1_met(led)
+
+
+def test_similar_non_case_aliases_remain_distinct(kernel):
+    led = kernel([_row12(p, "1 end-to-end") for p in
+                  ("alpha-app", "alpha_app", "alphaapp", "beta", "gamma")])
+    assert ke.criterion_1_met(led)
+    assert len(led["closed_projects"]) == 5
+
+
+def test_case_alias_with_ambiguous_count_still_blocks(kernel):
+    led = kernel([_row12("AdversarialLLM", "1 end-to-end"),
+                  _row12("adversarialllm", "end-to-end: unknown"),
+                  *[_row12(p, "1 end-to-end") for p in ("b", "c", "d", "e")]])
+    assert not ke.criterion_1_met(led)
+    assert led["e2e_unreadable"] == ["AdversarialLLM"]
+
+
+def test_gate_itself_does_not_count_case_alias_as_a_distinct_project():
+    led = {"closed_projects": ["alpha", "ALPHA", "b", "c", "d"],
+           "ambiguous_subject_cells": []}
+    assert not ke.criterion_1_met(led)
+
+
+@pytest.mark.parametrize("roster_name,filing_name,ledger_name", [
+    ("adversarialllm", "AdversarialLLM", "AdversarialLLM"),
+    ("AdversarialLLM", "adversarialllm", "ADVERSARIALLLM"),
+])
+@pytest.mark.parametrize("status", ["HARVESTED", "STALE", "UNHARVESTED"])
+def test_main_reconciles_case_without_hiding_missing_or_open(
+        monkeypatch, capsys, roster_name, filing_name, ledger_name, status):
+    monkeypatch.setattr(ke, "roster", lambda: [roster_name, "salesforce-tools"])
+    monkeypatch.setattr(ke.subprocess, "run", lambda *a, **kw: SimpleNamespace(
+        stdout="  {} {} blob=123\nfilings=1\n".format(filing_name, status)))
+    monkeypatch.setattr(ke, "ledger_rows", lambda: [_row12(ledger_name, "0 end-to-end")])
+    monkeypatch.setattr(ke.sys, "argv", ["kernel-e2e.py", "--json"])
+    assert ke.main() == 1
+    result = ke.json.loads(capsys.readouterr().out)
+    assert result["roster"] == [roster_name, "salesforce-tools"]
+    assert result["never_filed"] == ["salesforce-tools"]
+    assert result["filed_but_unrowed"] == []
+    assert result["open_filings"] == ({} if status == "HARVESTED" else {filing_name: status})
+    assert result["criterion_1_projects"] == 0
+    assert result["any_due"] is True
+
+
+def test_case_collision_in_roster_refuses_instead_of_picking_a_label(tmp_path, monkeypatch):
+    path = tmp_path / "kernel.md"
+    path.write_text("## 6. Fleet mapping\n| alpha | code |\n| ALPHA | code |\n## 7. Next\n",
+                    encoding="utf-8")
+    monkeypatch.setattr(ke, "KERNEL", str(path))
+    with pytest.raises(ke.Refused) as error:
+        ke.roster()
+    assert error.value.code == 2
+
+
+@pytest.mark.parametrize("second_status", ["HARVESTED", "STALE"])
+def test_case_collision_in_filings_refuses_even_when_statuses_agree(monkeypatch, second_status):
+    monkeypatch.setattr(ke.subprocess, "run", lambda *a, **kw: SimpleNamespace(
+        stdout="  alpha HARVESTED blob=123\n  ALPHA {} blob=456\nfilings=2\n".format(second_status)))
+    with pytest.raises(ke.Refused) as error:
+        ke.filings()
+    assert error.value.code == 2
 
 
 if __name__ == "__main__":
