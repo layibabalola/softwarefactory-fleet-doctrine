@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T02:29:30Z",
+  "last_beat_utc": "2026-10-17T02:30:44Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #474 r2 9c3a8095 not-merge-ready (gates only; r1 I1/I3/I4/N1-N3/Prevention addressed, I2 remainder + N4 open); ask 6228505451."
+  "note": "Reviewed fleet-doctrine #87 r1 4e3d0344 (consumer-template CoS response duty): not-merge-ready, B1 marker rule, B2 unpaginated check command; ask 6228528126."
 }
