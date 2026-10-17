@@ -18,6 +18,7 @@ required). Blank line, then Markdown sections.
 | `event` | yes | Why this rewrite happened. One of: `pr-opened` \| `pr-pushed` \| `review-requested`. |
 | `verdict` | yes | CoS summary posture. One of: `merge-ready` \| `merge-when-ci-green` \| `not-merge-ready` \| `info`. |
 | `ci_summary` | yes | One line on CI / checks state as observed at review time (or `unknown` / `n/a`). |
+| `assurance` | no | Approval assurance for any Layi approval the note cites: `high` \| `low`. Use `low` while approvals are recorded on the shared owner account (SEAT-DUTIES.md section 9). |
 
 ### `event` values
 
