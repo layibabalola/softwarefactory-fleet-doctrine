@@ -282,9 +282,9 @@
     },
     {
       "path": "tools/check_universal_manifest.py",
-      "gitBlobOid": "d03ee8459eb49b5e1473f30acb9e477b361252c1",
-      "sha256": "sha256:8309d3cabab31eb5da45e0d334a8ac44f19c6e79191119411e29f92fe28b01e2",
-      "bytes": 207337
+      "gitBlobOid": "643d75c491421fddb30b5348d11f5047b85398c6",
+      "sha256": "sha256:ba8199a10dfc1f32e6de9388f693bdb0179008df87a5ad9d85c685cb84ff5810",
+      "bytes": 211444
     },
     {
       "path": "tools/universal_provider_control.py",
@@ -296,6 +296,6 @@
   "manifestSelf": {
     "path": "manifests/universal-provider-control-reconciliation-r45.json",
     "bytes": 10974,
-    "canonicalGitBlobSha256": "sha256:9a6de6810b03cfe6269cb31037cfa97570b2c6e845c8e15534cafa4322843d8a"
+    "canonicalGitBlobSha256": "sha256:1b7835c8ebcc3d45b8eb38505164a39f7fc5a859cb13bb98ac0697d89a595cb4"
   }
 }

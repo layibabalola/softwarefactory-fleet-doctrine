@@ -3113,9 +3113,100 @@ def _parse_manifest(raw: bytes, expected_schema: str) -> dict[str, Any]:
     return manifest
 
 
+# Claim-scoped drift for the active layer's README.md binding only
+# (ruling candidate member-spec-edit-must-not-redden-bus-intake-r1, addendum A3).
+# README.md is the bus's shared index; nearly every writer edits it, and the R45
+# binding reads one claim from it: the universal-provider-control candidate is
+# listed, and described, under "Proposed amendments (not ratified)" and nowhere as
+# ratified (test_r2_13). The binding stays exact at its own base -- the last commit
+# that wrote the active manifest -- and a later README blob is admitted only when
+# the projection below is unchanged. Every other subject, every frozen layer and an
+# uncommitted manifest keep the exact-blob pin.
+R45_CLAIM_SCOPED_SUBJECT = "README.md"
+R45_README_PROPOSED_HEADING = "## Proposed amendments (not ratified)"
+R45_README_CLAIM_TOKENS = ("universal-provider", "universal provider")
+
+
+def _r45_readme_claims(raw: bytes) -> tuple[Any, ...]:
+    """Every README line a reviewer of the R45 subject reads, with its section."""
+
+    try:
+        text = raw.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise ManifestError("MANIFEST_SUBJECT_MISMATCH") from exc
+    heading = ""
+    entries: list[tuple[str, tuple[str, ...]]] = []
+    mentions: list[tuple[str, str]] = []
+    bullet: list[str] | None = None
+    for line in text.split("\n"):
+        if bullet is not None and line[:1] in (" ", "\t") and line.strip():
+            bullet.append(line)
+            continue
+        if bullet is not None:
+            entries.append((heading, tuple(bullet)))
+            bullet = None
+        if line.startswith("#"):
+            heading = line
+        lowered = line.lower()
+        if any(token in lowered for token in R45_README_CLAIM_TOKENS):
+            if line.startswith("- "):
+                bullet = [line]
+            else:
+                mentions.append((heading, line))
+    if bullet is not None:
+        entries.append((heading, tuple(bullet)))
+    headings = sum(1 for line in text.split("\n") if line == R45_README_PROPOSED_HEADING)
+    return (headings, tuple(entries), tuple(mentions))
+
+
+def _r45_binding_base(candidate: str, manifest_path: str) -> str | None:
+    """The last commit that wrote the active manifest, or None when there is none."""
+
+    if candidate == ":":
+        head = subprocess.run(
+            ["git", "rev-parse", "--verify", "--quiet", f"HEAD:{manifest_path}"],
+            cwd=ROOT, check=False, capture_output=True, text=True, encoding="utf-8",
+        )
+        if head.returncode != 0 or head.stdout.strip() != _oid(":", manifest_path):
+            return None  # an uncommitted manifest is its own base: exact only
+        tip = "HEAD"
+    else:
+        tip = candidate
+    run = subprocess.run(
+        ["git", "rev-list", "-1", tip, "--", manifest_path],
+        cwd=ROOT, check=False, capture_output=True, text=True, encoding="utf-8",
+    )
+    base = run.stdout.strip()
+    if run.returncode != 0 or re.fullmatch(r"[0-9a-f]{40,64}", base) is None:
+        return None
+    return base
+
+
+def _admit_r45_claim_drift(subject: dict[str, Any], blob: bytes, *, candidate: str, manifest_path: str) -> bool:
+    if subject["path"] != R45_CLAIM_SCOPED_SUBJECT:
+        return False
+    base = _r45_binding_base(candidate, manifest_path)
+    if base is None:
+        return False
+    try:
+        pinned = _git(_blob_spec(base, subject["path"]))
+        pinned_oid = _oid(base, subject["path"])
+    except ManifestError:
+        return False
+    assert isinstance(pinned, bytes)
+    if (
+        subject["gitBlobOid"] != pinned_oid
+        or subject["sha256"] != "sha256:" + hashlib.sha256(pinned).hexdigest()
+        or subject["bytes"] != len(pinned)
+    ):
+        return False  # not exact at its own base
+    return _r45_readme_claims(pinned) == _r45_readme_claims(blob)
+
+
 @_object_read_scope
 def _verify_subjects_and_self(
-    manifest: dict[str, Any], raw: bytes, *, manifest_path: str, candidate: str
+    manifest: dict[str, Any], raw: bytes, *, manifest_path: str, candidate: str,
+    claim_scoped: bool = False,
 ) -> int:
     subjects = manifest.get("subjectFiles")
     if not isinstance(subjects, list) or not subjects:
@@ -3132,6 +3223,10 @@ def _verify_subjects_and_self(
         assert isinstance(blob, bytes)
         expected_sha = "sha256:" + hashlib.sha256(blob).hexdigest()
         if subject["sha256"] != expected_sha or subject["bytes"] != len(blob):
+            if claim_scoped and _admit_r45_claim_drift(
+                subject, blob, candidate=candidate, manifest_path=manifest_path
+            ):
+                continue
             raise ManifestError("MANIFEST_SUBJECT_MISMATCH")
         if subject["gitBlobOid"] != _oid(candidate, path):
             raise ManifestError("MANIFEST_BLOB_OID_MISMATCH")
@@ -3302,6 +3397,7 @@ def _execute_manifest_layers(treeish: str) -> tuple[dict[str, Any], ...]:
             raw,
             manifest_path=descriptor.manifest_path,
             candidate=subject_candidate,
+            claim_scoped=descriptor.candidate == CURRENT_CANDIDATE,
         )
         receipts.append(
             {

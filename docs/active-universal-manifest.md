@@ -4,6 +4,17 @@ R45 is the current snapshot. R26–R44 are frozen layers, and the original R45
 proof remains at `0da4a20f9e62a47414f42a8780c695865f1633a0`. A later change to a
 bound document must not silently inherit the old snapshot's hashes.
 
+`README.md` is the one claim-scoped subject (ruling candidate
+`member-spec-edit-must-not-redden-bus-intake-r1`, addendum A3). The binding stays
+exact at its own base, the last commit that wrote the active manifest. A later
+README blob passes only when the claim the binding reads is unchanged: the
+universal-provider-control entry, its section, every other line that mentions
+universal-provider control, and the single "Proposed amendments (not ratified)"
+heading (`_r45_readme_claims` in `tools/check_universal_manifest.py`). An
+unrelated index edit therefore needs no refresh. A change to that claim, any other
+subject, any frozen layer, or an uncommitted manifest still fails with
+`MANIFEST_SUBJECT_MISMATCH` and needs the refresh below.
+
 From a clean checkout, run the following with the exact current commit:
 
 ```text
