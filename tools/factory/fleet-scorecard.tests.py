@@ -54,6 +54,23 @@ else:
     sys.exit(2)
 '''
 
+# A stand-in for `gh run list`: prints <dir>/gh-runs.json, or fails like an unauthenticated gh when absent.
+# The real gh is never called by a test (tests never census the host).
+FAKE_GH = r'''
+import sys
+from pathlib import Path
+f = Path(__file__).with_name("gh-runs.json")
+if not f.is_file():
+    print("HTTP 401: Bad credentials (https://api.github.com/graphql)", file=sys.stderr)
+    sys.exit(1)
+sys.stdout.write(f.read_text(encoding="utf-8"))
+'''
+
+
+def gh_run(wf, conclusion, created, sha="a" * 40, status="completed", rid=1):
+    return {"workflowName": wf, "status": status, "conclusion": conclusion if status == "completed" else "",
+            "headSha": sha, "createdAt": created, "databaseId": rid}
+
 
 def git(repo, *args, env=None):
     e = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid", GIT_COMMITTER_NAME="t",
@@ -74,6 +91,15 @@ def commit(repo, msg, when=None, path="f.txt"):
 class Fixture(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="scorecard-test-"))
+        gh_dir = self.tmp / "gh"
+        gh_dir.mkdir()
+        (gh_dir / "fake_gh.py").write_text(FAKE_GH, encoding="utf-8")
+        self.gh_runs = gh_dir / "gh-runs.json"
+        self.gh_runs.write_text(json.dumps([gh_run("Doctrine sync", "success", "2026-10-16T11:00:00Z")]),
+                                encoding="utf-8")
+        gh_patch = unittest.mock.patch.object(sc, "gh_argv", return_value=[sys.executable, str(gh_dir / "fake_gh.py")])
+        gh_patch.start()
+        self.addCleanup(gh_patch.stop)
         # --- bus: bare origin + a clone (the "local bus clone") ---
         self.bus_origin = self.tmp / "bus.git"
         git(self.tmp, "init", "-q", "--bare", "-b", "master", str(self.bus_origin))
@@ -476,6 +502,84 @@ class FleetTests(HealthFixture):
         code, _, err = self.fleet("--publish")
         self.assertIn("already published", err)
         self.assertEqual(len(self.published()), 1)
+
+
+class BusCiTests(Fixture):
+    def bus_ci(self, runs=None, *extra):
+        if runs is not None:
+            self.gh_runs.write_text(json.dumps(runs), encoding="utf-8")
+        code, rows, err = self.run_tool(*extra)
+        self.assertEqual(code, 0, err)
+        return rows[0]["fields"]["bus_ci"]
+
+    def test_latest_conclusion_per_workflow_and_red_streak_start(self):
+        f = self.bus_ci([
+            gh_run("Gov", "failure", "2026-10-16T11:00:00Z", rid=9),
+            gh_run("Gov", "cancelled", "2026-10-16T10:30:00Z"),          # decides nothing, never breaks a streak
+            gh_run("Gov", "failure", "2026-10-16T09:00:00Z"),
+            gh_run("Gov", "success", "2026-10-16T08:00:00Z"),
+            gh_run("Gov", "failure", "2026-10-16T07:00:00Z"),           # before the green: not this streak
+            gh_run("Sync", "", "2026-10-16T11:30:00Z", status="in_progress"),
+            gh_run("Sync", "success", "2026-10-16T10:00:00Z", sha="b" * 40, rid=7),
+            gh_run("Only cancelled", "cancelled", "2026-10-16T10:00:00Z"),
+        ])
+        v = f["value"]
+        self.assertIsNone(f["error"])
+        self.assertTrue(f["cmd"].startswith("gh run list -R "))
+        self.assertEqual(v["workflows"]["Gov"]["conclusion"], "failure")
+        self.assertEqual(v["workflows"]["Gov"]["red_since"], "2026-10-16T09:00:00Z")
+        self.assertEqual(v["workflows"]["Gov"]["run_id"], 9)
+        self.assertEqual(v["workflows"]["Sync"], {"conclusion": "success", "head_sha": "b" * 12, "run_id": 7,
+                                                  "created_at": "2026-10-16T10:00:00Z", "red_since": None,
+                                                  "in_progress": 1})
+        self.assertIsNone(v["workflows"]["Only cancelled"]["conclusion"])
+        self.assertEqual(v["red"], ["Gov"])
+        self.assertEqual(v["red_hours"], 3.0)   # NOW 12:00 - 09:00
+
+    def test_all_green_has_no_red_hours(self):
+        v = self.bus_ci([gh_run("A", "success", "2026-10-16T11:00:00Z"),
+                         gh_run("A", "failure", "2026-10-16T10:00:00Z")])["value"]
+        self.assertEqual((v["red"], v["red_hours"]), ([], None))
+
+    def test_gh_absent_or_failing_is_a_null_field_with_an_error_never_a_failure(self):
+        self.gh_runs.unlink()
+        f = self.bus_ci()
+        self.assertIsNone(f["value"])
+        self.assertTrue(f["error"].startswith("GH_FAILED: exit 1: HTTP 401"), f["error"])
+        with unittest.mock.patch.object(sc, "gh_argv", return_value=None):
+            f = self.bus_ci()
+        self.assertIsNone(f["value"])
+        self.assertTrue(f["error"].startswith("GH_UNAVAILABLE"), f["error"])
+        self.gh_runs.write_text("not json", encoding="utf-8")
+        f = self.bus_ci()
+        self.assertEqual((f["value"], f["error"]), (None, "GH_OUTPUT_INVALID: not JSON"))
+
+    def test_red_bus_ci_never_changes_exit_code_or_health(self):
+        runs = [gh_run("Gov", "failure", "2026-10-01T00:00:00Z")]
+        self.gh_runs.write_text(json.dumps(runs), encoding="utf-8")
+        code, rows, err = self.run_tool()
+        self.assertEqual(code, 0, err)
+        self.assertEqual(rows[0]["fields"]["bus_ci"]["value"]["red"], ["Gov"])
+        self.assertNotIn("bus_ci", json.dumps(rows[0].get("health", {})))
+
+    def test_repo_from_config_then_github_origin_then_canonical(self):
+        self.assertEqual(sc._github_repo("https://github.com/o/r.git"), "o/r")
+        self.assertEqual(sc._github_repo("git@github.com:o/r"), "o/r")
+        self.assertIsNone(sc._github_repo(str(self.bus_origin)))
+        self.assertIn(f"-R {sc.BUS_REPO} ", self.bus_ci()["cmd"])    # fixture origin is a local path
+        self.cfg["bus_ci"] = {"repo": "own/bus"}
+        self.write_cfg()
+        self.assertIn("-R own/bus ", self.bus_ci()["cmd"])
+
+    def test_bus_ci_mode_prints_only_the_field(self):
+        self.gh_runs.write_text(json.dumps([gh_run("Gov", "failure", "2026-10-16T09:00:00Z")]), encoding="utf-8")
+        out = io.StringIO()
+        with redirect_stdout(out):
+            code = sc.main(["--bus-ci", "--bus", str(self.bus), "--now", NOW])
+        self.assertEqual(code, 0)
+        doc = json.loads(out.getvalue())
+        self.assertEqual(set(doc), {"ts", "bus_ci"})
+        self.assertEqual(doc["bus_ci"]["value"]["red_hours"], 3.0)
 
 
 if __name__ == "__main__":

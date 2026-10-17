@@ -55,7 +55,7 @@ DEFAULT_PINS = "factory-pins/factory-pins.json"
 TIMEOUT = 300
 FIELDS = ("tool_census", "rule_tags", "evidence_dumps", "product_share", "doctrine_fold", "outbox_unsent",
           "commits_no_remote", "master_vs_origin", "kernel_24h", "pin_stale",
-          "rule_coverage", "bus_publish", "fold_lag", "kernel_filing")
+          "rule_coverage", "bus_publish", "fold_lag", "kernel_filing", "bus_ci")
 MASTER = "refs/remotes/origin/master"
 DEFAULT_MARKER = ".codex-state/doctrine/last-seen.json"
 # Health thresholds (diagnostic flags, never a gate): shipped beside this script, so a run judges by the
@@ -73,6 +73,12 @@ BUS_TOOLS = {"tool-census": ("node", "tools/tool-census.mjs"),
              "check-rule-tags": ("python", "tools/check-rule-tags.py"),
              "check-evidence-dumps": ("python", "tools/factory/check-evidence-dumps.py")}
 SCRIPT_BUS = Path(__file__).resolve().parents[2]
+# bus_ci: the latest master CI conclusion per bus workflow, read through `gh` (2026-10-17: four bus workflows
+# were red on master for days and nobody saw it). Diagnostic only, never a gate (metrics law 1).
+BUS_REPO = "layibabalola/softwarefactory-fleet-doctrine"
+CI_RED = {"failure", "timed_out", "startup_failure", "action_required"}
+CI_IGNORED = {"cancelled", "skipped", "stale"}   # a superseded or skipped run decides nothing
+CI_LIMIT = 200
 
 # The publish screen (bus Law 4: no coordination surfaces, transcripts, credentials or addresses travel).
 # A row is refused, never edited, when any pattern matches its serialized bytes.
@@ -678,6 +684,85 @@ def f_kernel_filing(ctx: Ctx, proj: dict, now: dt.datetime) -> dict:
     return field({"days_since": _age_days(now, rows[0][1]), "commit": rows[0][0][:12]}, cmd)
 
 
+def gh_argv() -> list[str] | None:
+    """The gh CLI argv prefix, or None when gh is not installed (tests patch this seam)."""
+    gh = shutil.which("gh")
+    return [gh] if gh else None
+
+
+def _github_repo(url: str | None) -> str | None:
+    m = re.search(r"github\.com[:/]+([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?/?$", (url or "").strip())
+    return m.group(1) if m else None
+
+
+def bus_ci_summary(runs: list[dict], now: dt.datetime, repo: str, branch: str) -> dict:
+    """`gh run list --json workflowName,status,conclusion,headSha,createdAt,databaseId` rows -> per workflow the
+    latest DECIDING conclusion (cancelled/skipped runs decide nothing) and, when red, since when it has been red
+    (the oldest run of the unbroken red streak)."""
+    by_wf: dict[str, list[dict]] = {}
+    for r in runs:
+        if isinstance(r, dict) and isinstance(r.get("workflowName"), str):
+            by_wf.setdefault(r["workflowName"], []).append(r)
+    workflows = {}
+    for name, rs in sorted(by_wf.items()):
+        rs.sort(key=lambda r: str(r.get("createdAt") or ""), reverse=True)
+        decided = [r for r in rs if r.get("status") == "completed" and r.get("conclusion") not in CI_IGNORED]
+        pending = sum(1 for r in rs if r.get("status") != "completed")
+        if not decided:
+            workflows[name] = {"conclusion": None, "head_sha": None, "run_id": None, "created_at": None,
+                               "red_since": None, "in_progress": pending}
+            continue
+        latest = decided[0]
+        red_since, truncated = None, False
+        if latest.get("conclusion") in CI_RED:
+            streak = 0
+            for r in decided:
+                if r.get("conclusion") not in CI_RED:
+                    break
+                red_since, streak = r.get("createdAt"), streak + 1
+            truncated = streak == len(decided) and len(runs) >= CI_LIMIT
+        workflows[name] = {"conclusion": latest.get("conclusion"), "head_sha": str(latest.get("headSha") or "")[:12],
+                           "run_id": latest.get("databaseId"), "created_at": latest.get("createdAt"),
+                           "red_since": red_since, "in_progress": pending}
+        if truncated:
+            workflows[name]["red_since_truncated"] = True
+    red = [n for n, w in workflows.items() if w["conclusion"] in CI_RED]
+    ages = [round((now - parse_ts(workflows[n]["red_since"])).total_seconds() / 3600, 1)
+            for n in red if workflows[n]["red_since"]]
+    return {"repo": repo, "branch": branch, "workflows": workflows, "red": red,
+            "red_hours": max(ages) if ages else None}
+
+
+def f_bus_ci(ctx: Ctx, proj: dict, now: dt.datetime) -> dict:
+    """Latest bus master CI conclusion per workflow, read through `gh run list`. A null value with an error
+    when gh is absent or fails; never a gate (metrics law 1). Repo: config bus_ci.repo, else the bus clone's
+    GitHub origin, else the canonical bus."""
+    cfg = proj.get("bus_ci") or {}
+    origin = git_out(ctx.bus, "remote", "get-url", "origin") if ctx.bus else None
+    repo = cfg.get("repo") or _github_repo(origin) or BUS_REPO
+    branch = cfg.get("branch") or "master"
+    args = ["run", "list", "-R", repo, "--branch", branch, "--limit", str(CI_LIMIT),
+            "--json", "workflowName,status,conclusion,headSha,createdAt,databaseId"]
+    cmd = " ".join(["gh", *args])
+    gh = gh_argv()
+    if not gh:
+        return field(cmd=cmd, error="GH_UNAVAILABLE: gh is not installed")
+    try:
+        p = run_cmd([*gh, *args], ctx.root if ctx.root and Path(ctx.root).is_dir() else Path.cwd(), timeout=120)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        return field(cmd=cmd, error=f"GH_FAILED: {type(e).__name__}")
+    if p.returncode != 0:
+        why = ((p.stderr or p.stdout or "").strip().splitlines() or ["no output"])[0]
+        return field(cmd=cmd, error=f"GH_FAILED: exit {p.returncode}: {ctx.scrub(why)}")
+    try:
+        runs = json.loads(p.stdout or "[]")
+    except ValueError:
+        return field(cmd=cmd, error="GH_OUTPUT_INVALID: not JSON")
+    if not isinstance(runs, list):
+        return field(cmd=cmd, error="GH_OUTPUT_INVALID: not a list")
+    return field(bus_ci_summary(runs, now, repo, branch), cmd)
+
+
 # ---------- health (diagnostic flags; never a gate, never a target: metrics law 1) ----------
 
 def load_thresholds(path: Path | None) -> tuple[dict | None, str | None]:
@@ -872,6 +957,7 @@ def _build_row(ctx: "Ctx", p: dict, root: Path, bus: Path | None, pins: Path | N
         "bus_publish": f_bus_publish(ctx, p, now),
         "fold_lag": f_fold_lag(ctx, p, now),
         "kernel_filing": f_kernel_filing(ctx, p, now),
+        "bus_ci": f_bus_ci(ctx, p, now),
     }
     return {
         "schema": ROW_SCHEMA,
@@ -1085,6 +1171,8 @@ def main(argv=None) -> int:
     ap.add_argument("--print", dest="print_table", action="store_true", help="human table instead of JSON rows")
     ap.add_argument("--json", action="store_true", help="JSON rows (the default; with --print, both)")
     ap.add_argument("--field", choices=FIELDS, help="print one field of each row (shows its command)")
+    ap.add_argument("--bus-ci", action="store_true", help="print only the bus_ci field (bus master CI per workflow) "
+                                                           "as one JSON object and exit 0; no project, config or publish")
     ap.add_argument("--now", help="ISO instant to measure at (tests)")
     a = ap.parse_args(argv)
     for s in (sys.stdout, sys.stderr):
@@ -1092,6 +1180,11 @@ def main(argv=None) -> int:
             s.reconfigure(errors="backslashreplace")
     root = Path(a.root).resolve()
     now = parse_ts(a.now) if a.now else dt.datetime.now(dt.timezone.utc)
+    if a.bus_ci:
+        bus = Path(a.bus).resolve() if a.bus else None
+        ctx = Ctx(root, bus, None, None)
+        print(json.dumps({"ts": utc(now), "bus_ci": f_bus_ci(ctx, {}, now)}, ensure_ascii=False))
+        return 0
     if a.share is None:
         a.share = "live" if a.fleet else "row"
     rows = []

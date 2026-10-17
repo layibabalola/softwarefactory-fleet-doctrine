@@ -498,6 +498,7 @@ measured", never zero.
 | `bus_publish` | `{days_since, commit, via}` | newest origin/master commit touching `specs/<p>.md`, `specs/<p>/`, `metrics/<p>/` (`own-surface`), or to TRAPS/RECEIPTS/RULINGS/DISCOVERIES with `<p>` as a subject token (`subject-tag`); `days_since` null = never |
 | `fold_lag` | `{cursor, unfolded, oldest_age_hours}` | `git log <fold marker lastSeen>..origin/master` commits touching doctrine-sync's surfaces (not `specs/<p>.md`, not `cos-feedback/_heartbeat/`) |
 | `kernel_filing` | `{days_since, commit}` | newest commit on origin/master or `origin/review/*` touching `adjudications/factory-kernel/<p>.md` or `<p>-*.md` (case-insensitive; never `*.dispositions.md`) |
+| `bus_ci` | `{repo, branch, workflows{name: {conclusion, head_sha, run_id, created_at, red_since, in_progress}}, red, red_hours}` | `gh run list -R <bus repo> --branch master --limit 200 --json ...`: per workflow the latest completed run that is not cancelled/skipped; `red_since` = oldest run of the unbroken red streak. Null with `GH_UNAVAILABLE`/`GH_FAILED`/`GH_OUTPUT_INVALID` when gh is absent or fails. Never in `health` (a bus property, not a project duty); `--bus-ci` prints this field alone |
 
 Row keys added 2026-10-16: `machine` (the measuring host; part of the idempotency key) and, when a
 thresholds file is present, `health {status, reasons, unmeasured, thresholds_sha256}`: RED lists every
