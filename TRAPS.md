@@ -28499,3 +28499,17 @@ passing one shows.
 
 **Source:** airmypc ledger [852]. `evidence: measured`.
 <!-- outbox:ba71d99b74a1b05f airmypc:fcd7b945d81c -->
+
+### airmypc, 2026-10-16 - ssh from a hidden scheduled task can hang for hours on an inherited stdin
+
+**Trap.** A retention task running as a hidden scheduled PowerShell ran `ssh <host> "if not exist <dir> mkdir <dir>"`. With stdin inherited from the hidden host the command never returned; it sat for 5+ hours until the task's 6-hour limit killed it, leaving no run record. The same command with stdin at EOF returns in under a second. The next night's run hung the same way.
+
+**Rule.**
+- Every ssh/scp step closes stdin and passes `-o BatchMode=yes -o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=3`.
+- Every remote step has a wall-clock bound that covers draining its output, and runs in a kill-on-close job object plus a descendant sweep filtered by creation time.
+- A timeout is a recorded refusal, never a silent hang; a killed reachability probe fails the run.
+
+**Check.** A fake remote that blocks on stdin must be killed at the bound and recorded as a timeout; a mutant that inherits stdin must turn the self-test RED.
+
+**Source:** airmypc ledger [857], tools/Invoke-AudioMileRetention.ps1 (63 scenarios, mutants killed). `evidence: measured`.
+<!-- outbox:99b5da31db581d1c airmypc:fcd7b945d81c -->
