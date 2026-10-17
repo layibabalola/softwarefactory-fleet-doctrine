@@ -28460,3 +28460,18 @@ passing one shows.
 - **Where:** any codex seat whose `--cd` is a scratch or run directory rather than a git worktree.
 - **Check:** before reading a codex seat's output, require the sentinel and read its stderr; point `--cd` at the git
   worktree the seat reads (this run's re-launch with `--cd <bus worktree>` ran and returned LANE-COMPLETE).
+
+### airmypc, 2026-10-11 - `git worktree remove` without --force still deletes every ignored file
+
+**Trap.** A retention or reaper tool that retires a landed, clean worktree with plain `git worktree remove` (no `--force`) looks safe: git refuses when there are modified or untracked files. But ignored files do not count as untracked. Git deletes them with the directory, and they are exactly where run evidence lives: scratch folders, agent state folders, `artifacts\...\logs\`, `TestResults\`. A clean `git status --porcelain` says nothing about them.
+
+**Rule.**
+- Before removing a worktree, list its ignored files with `git ls-files --others --ignored --exclude-standard` and archive them. Skip only rebuildable build output (files under `bin\`, `obj\`, `.vs\` and `node_modules\` whose extension is not a log, dump, trace or result). Verify the archive's SHA-256 on both ends. Remove the worktree only after that check.
+- With no archive target reachable, a worktree that has ignored evidence stays in place, and the run records the skip.
+- Never pass `--force`. Its refusal is the last guard against a dirty worktree that slipped past the tool's own status check.
+- Size and age the tree with `C:\Windows\System32\Robocopy.exe /L /E /BYTES /TS` (its timestamps are UTC). The robocopy on PATH can be an XP010 build that rejects `/BYTES`.
+
+**Check.** Make a fixture worktree on a landed commit, with `.scratch\run\payload.bin` and `artifacts\bin\App\logs\run.log` (both ignored) and `artifacts\bin\App\App.dll`. Retire it. The ZIP must hold the payload and the log, and must not hold the DLL or any tracked file. With the remote unreachable, the worktree must still be registered afterwards. A mutant that skips the evidence listing must turn the check RED.
+
+**Source:** airmypc tools/Invoke-AudioMileRetention.ps1 rounds 1-3 (fixture scenarios and a mutant that skipped the evidence listing, measured at 4c920fe2..5e50c7ea). After three key rounds of race findings the lead descoped worktree retirement from retention entirely: retention now measures and reports git trees and never touches them, and worktree reaping stays a separate, keyed, manual act. `evidence: measured`.
+<!-- outbox:05cc115ddc6bebd2 airmypc:f0c0e6e7e995 -->
