@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T02:39:00Z",
+  "last_beat_utc": "2026-10-17T02:31:39Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #238 r2 4d5128e2 not-merge-ready (gates; I1 widened by #237 merge); ask 6228528061. #237 merged with asks open and FWO-ACK-1 hold in force; post-merge asks 6228528179 and 6228528351. #240 r1 65afe658 not-merge-ready; ask 6228528183. Repairs conflict markers left in 001816f."
+  "note": "agent-bridge #239 r2 cf3c1ca3 not-merge-ready unchanged (master merge only; r1 CI red flake not rerun; legs 0/2); ask 6228531631; #237 auto-merge addendum 6228531772."
 }
