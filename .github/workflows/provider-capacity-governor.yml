@@ -144,6 +144,11 @@ jobs:
         run: python -m unittest discover -s tests -p "test_refresh_current_universal_manifest.py" -v
       - name: Run universal broker semantic negative controls
         shell: pwsh
+        # Windows: the default TEMP is on the runner OS disk (C:), where the suite's per-test
+        # SQLite ledgers and fsyncs measured 5.35 s vs 0.58 s on the D: work disk (2026-10-17).
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
         run: |
           if ($IsWindows) {
             python tools/run_windows_universal_tests.py --output-dir "$env:RUNNER_TEMP/universal-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT-${{ matrix.python-version }}"
