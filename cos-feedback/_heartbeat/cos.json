@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T02:32:00Z",
+  "last_beat_utc": "2026-10-17T02:32:04Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "context-ultra-salesforce #109 r1 fc17e3d6 not-merge-ready (B1 open-ask script window/marker defects, CoS-verified on live comments); ask 6228539273."
+  "note": "Cloudvore #7 r1 a3630ba8 not-merge-ready (B1 open-ask selector; I1-I4); ask 6228539909."
 }
