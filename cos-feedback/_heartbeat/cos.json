@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:35:33Z",
+  "last_beat_utc": "2026-10-17T03:35:47Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "adversarialllm #277 r3 c93f8387 not-merge-ready (self-authored; r1 B2 mostly fixed, I1 partial, I2 carried, I3 addressed); new B2 legacy answered asks OPEN (14/15 MLV-App), B3 issue threads unscanned (#168), B4 CLOSED hides same-comment ask; ask 6229107877; r1 ask closed 6229108538; ruling candidate cos-open-ask-scanner-fixture-gate-r1."
+  "note": "agent-bridge #240 r3 eb90bcd not-merge-ready (B1 legacy answered asks OPEN, B2 CLOSED hides ask, B3 gates); r1 items addressed; ask 6229107087; CLOSED 6228528183 via 6229107786; heartbeat."
 }
