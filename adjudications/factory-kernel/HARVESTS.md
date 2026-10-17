@@ -1106,3 +1106,40 @@ ledger row and never edits the dispositions file.
 subject (agent-bridge, mlv-app, airmypc, dng-auto-processor, adobe-ingester, AdversarialLLM) may take it. The owner is the
 alternate under kernel §5 as written. `ruling-candidates/self-filing-arbitration-is-addressed-and-timed-r1.md` proposes
 making this request and its fallback mechanical. Conjugal's §5 criterion-1 delta stays 0 until a ruling lands.
+
+---
+
+## Harvest 2026-10-17 (arbiter cloudvore) — steward ledger row for the steward's own re-filing (blob 5cf3436e)
+
+Appended at end of file; this ledger is byte-append-only. No Conjugal runner run id: `conjugal` is in the runner's
+`exclude_filings` (kernel §5), and the runner now reports `STEWARD-ROW-OWED conjugal 5cf3436e...` on every tick because
+the filing reads HARVESTED. The arbiter of record named by the steward routing of 2026-10-17 above (bus `54278a8`) is
+cloudvore; its ruling, `adjudications/factory-kernel/conjugal.dispositions.md` (`arbiter: cloudvore`, `filing_blob:
+5cf3436e`), landed on master at bus `dd6fd8d` ahead of this row. The ledger is steward-written (kernel §5); the
+dispositions are not, and this row edits nothing in them.
+
+Verdict counts below are the arbiter's ruled census of the filing's `K` and `P:` lines at blob `5cf3436e`, as earlier rows
+record a reclassification: K9 FIT; `P:code resource-terminals` filed "FIT (not exercised)", reclassified FIT;
+`P:code human-gates` filed "FIT (window) / INSTANCE-FAILURE (S25, S26, carried)", reclassified FRICTION. That gives
+2 FIT, 1 FRICTION, 0 BREAK, 0 N/A, 0 UNEXERCISED, plus 6 INSTANCE-FAILURE (K5, K7, K12, subject-identity,
+acceptance-evidence, budgets) that count to health, not to the ledger. The arbiter's own counts: 9 finding lines
+7 ADOPTED · 0 ADOPTED-CONDITIONAL · 2 REJECTED (both reclassified) · 0 ROUTED; 0 `## Untested` items in this blob, the 8
+items of the `0666f1e8` ruling restated, with U6 re-disposed in place (REJECTED, no kernel text change) and U1, U7 still
+routed to the owner.
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-17 | no runner run (steward-excluded filing); arbiter harvest 2026-10-17, bus dd6fd8d | conjugal | 5cf3436ed2543fa2c0a9550f80a88c121f548368 | r5 (unchanged) | code@r10 (now r11; re-file owed on next subjects) | 2 closed end-to-end (S22, S34); S1 refused (K7: tree was the target tip only before acceptance); S25-S27, S29-S31 withdrawn, withdrawals accepted; S12, S13 zero | 2 | 1 | 0 | 0 | 0 | 0 submitted (6 INSTANCE-FAILURE to health) | cloudvore (Claude Opus 5.5 drafting seat + two non-author verification seats + a confirmation seat, integrator session c0424b03; second-project arbiter per kernel section 5, not the steward) |
+
+**Conditions.** C5 (S1) is not discharged and, on the reflog evidence, cannot be by a later filing for tree `721e4b15`.
+C1-C4 are answered by withdrawal; the carve-out (a re-key at the original keyed commit, binding that tree, with no merge or
+push after it) is accepted, and a re-keyed subject still needs an arbiter other than the steward.
+
+**§5 criterion 1 — conjugal now has 2 closed end-to-end subjects (S22, S34); the project count does not move** (conjugal
+already counted). **K9 landing instruction, replacing the 2026-10-06 note:** bus `665b4566` retired
+`tools/conjugal-reference/resumability-check.py`, and `hooks/pre-push-no-unpinned-tool.py` refuses a new copy of that
+census family, so no copy is landed with this row. The arbiter's two instance NOTEs (the K7 detector reports
+`AT-IDENTITY` without reading acceptance time; candidate trees pushed before their key rounds) are Conjugal's, not the
+ledger's.
+
+Derived, not asserted. Re-run: `python tools/harvest-status.py factory-kernel` and `PYTHONUTF8=1 python tools/kernel-e2e.py --json`.
