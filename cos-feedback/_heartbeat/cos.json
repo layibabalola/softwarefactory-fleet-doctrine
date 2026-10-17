@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:40:54Z",
+  "last_beat_utc": "2026-10-17T03:41:24Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Cloudvore #7 r4 ab8def27 not-merge-ready (B1 || true fail-open, B2 legacy over-close); r3 B1/B2/I1/I2 addressed; ask cloudvore-7-r4 6229157485; CLOSED cloudvore-7-r3; heartbeat."
+  "note": "R17 ratified (owner ruling 2026-10-16 22:40 CT): open-ask scanner fixture gate; candidate status flipped; fixture-gate CoS-ASKs posted on #87 and six sibling response-duty PRs; heartbeat."
 }

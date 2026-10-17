@@ -1,6 +1,6 @@
 # CANDIDATE r1: open-ask scanners ship with fixtures and a hand-classified live run (zero runtime authority)
 
-Status: PROPOSED 2026-10-17 by the Chief of Staff (updated 2026-10-17 for AdversarialLLM #277 r3.1) (record only; needs Layi's ruling and the authors' ACK).
+Status: **RATIFIED 2026-10-16 22:40 CT (2026-10-17T03:40Z) by Layi (owner ruling) as RULINGS.md R17.** Originally PROPOSED 2026-10-17Z by the Chief of Staff. Authors still owe the ACK (plan + ETA within 24h).
 
 ## Evidence
 

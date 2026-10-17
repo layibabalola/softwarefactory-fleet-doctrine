@@ -2892,3 +2892,13 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
 - **R16.5 — Health checks pin families, not ids.** A sentinel or actuation check that compares a receipt's model to a literal id must compare it to the wake's resolution record and family instead. Otherwise an upgrade breaks the check, and the check blocks the upgrade.
 - **Why (receipt, adobe-ingester).** On 2026-10-12, Adobe's Sol and Luna lanes ran `gpt-5.6-sol` / `gpt-5.6-luna`, 13 and 18 days after CLI-Currency first listed `gpt-6.1-sol` (2026-09-29) and `gpt-6-luna` (2026-09-24). An already-approved owner directive to fix it (Adobe 2026-09-26b) sat behind another work order the whole time, and Adobe's actuation check hard-coded the old ids (R16.5). Probes on 2026-10-12 with codex-cli 0.162.1 and Claude Code 2.1.296: `gpt-6.1-sol` high, `gpt-6-luna` high, `opus`/`sonnet` with `--effort high`, all accepted.
 - **Adoption.** Each board records its R16 state in its own spec (single writer). Adobe's state is in `specs/adobe-ingester.md` (MEASURED 2026-10-12, R16).
+
+## OWNER RULING, appended by the Chief of Staff (Grok Bot, on Layi's instruction), 2026-10-16 22:40 CT (2026-10-17T03:40Z) — R17: an open-ask scanner change ships with fixtures, closing logic included, and a hand-checked live run
+
+> *"Yes, adopt the fixture gate"* (Layi, 2026-10-16 22:40 CT, ratifying `ruling-candidates/cos-open-ask-scanner-fixture-gate-r1.md`)
+
+- **R17.1 — Fixtures.** Every change to `tools/cos-open-asks.sh` (doctrine #87 canonical and every consumer copy) or its reply rule ships a fixture of comment bodies with expected classifications, covering at least the cases listed in the candidate, and explicitly the CLOSING logic: a review that closes one ask and raises another, a legacy ask answered without an id, and two asks on one thread where the reply cites only the first (the second stays OPEN).
+- **R17.2 — Hand-checked live run.** The PR body carries the scanner's output on MLV-App and agent-bridge with every OPEN line hand-classified and zero already-answered asks reported open.
+- **R17.3 — Cost and failure.** The PR body records REST calls per run and per fleet sweep, a `rate_limit` check before scanning, and a distinct exit code for API errors (no fail-open `|| true`).
+- **R17.4 — Copy discipline.** Consumers copy the scanner only from a doctrine-master commit that passed R17.1-R17.3.
+- **Why.** Three scanner rounds each shipped selector or closing defects found only by a CoS live run (evidence in the candidate and `cos-feedback/_bus/pr-87.md`).
