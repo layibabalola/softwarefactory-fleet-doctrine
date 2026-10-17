@@ -63,16 +63,21 @@ Tests: `python hooks/hooks.tests.py`.
    # factory-ff-only
    FF_PROTECTED="refs/remotes/origin/master refs/remotes/origin/main"
    FF_REFS=$(cat)
+   # ff_pins REF: 0 = REF's pins pin pre-push-ff-only; 3 = they do not, or REF has no pins; any other = unreadable pins
+   # (BOM, bad JSON, wrong shape): such a REF still judges, and the runner refuses with its own reason.
    ff_pins() {
-     git show "$1:factory-pins/factory-pins.json" 2>/dev/null | python -I -c "import json, sys; sys.exit(0 if isinstance(json.load(sys.stdin).get('tools', {}).get(sys.argv[1]), dict) else 1)" pre-push-ff-only 2>/dev/null
+     git cat-file -e "$1:factory-pins/factory-pins.json" 2>/dev/null || return 3
+     git show "$1:factory-pins/factory-pins.json" | python -I -c "import json, sys; t = json.loads(sys.stdin.buffer.read().decode('utf-8-sig')).get('tools', {}); sys.exit(0 if isinstance(t.get(sys.argv[1]), dict) else 3)" pre-push-ff-only 2>/dev/null
    }
    FF_JUDGE=
    for FF_P in $FF_PROTECTED; do
-     if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null && ff_pins "$FF_P"; then FF_JUDGE=$FF_P; break; fi
+     if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null && { ff_pins "$FF_P" || [ $? -ne 3 ]; }; then FF_JUDGE=$FF_P; break; fi
    done
    [ -n "$FF_JUDGE" ] || FF_JUDGE=$(printf '%s\n' "$FF_REFS" | awk '$2 !~ /^0+$/ { print $2; exit }')
    [ -n "$FF_JUDGE" ] || FF_JUDGE=HEAD
-   if ! ff_pins "$FF_JUDGE"; then
+   FF_PST=0
+   ff_pins "$FF_JUDGE" || FF_PST=$?
+   if [ "$FF_PST" -eq 3 ]; then
      echo "[ff-only] not applied: $FF_JUDGE does not pin pre-push-ff-only (it applies once a protected branch pins it)" >&2
    else
    FF_TOOL=$(mktemp) && git show "$FF_JUDGE:factory-pins/pin-runner.py" > "$FF_TOOL" \

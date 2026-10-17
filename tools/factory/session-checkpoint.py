@@ -4,7 +4,7 @@
 Run from pinned bus bytes, never copied (tools/factory/README.md). One command serves every event,
 which it reads from the hook payload's hook_event_name (else the positional EVENT argument):
 
-    python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run session-checkpoint -- \
+    python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --never-block run session-checkpoint -- \
         --config "$CLAUDE_PROJECT_DIR/factory-pins/session-checkpoint.config.json"
 
   SessionStart  keep an account rotation as a marker and print its notice while it stands; snapshot

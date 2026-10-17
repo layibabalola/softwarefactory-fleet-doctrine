@@ -305,6 +305,7 @@ class NeverOverwrites(_Init):
         # the person chains the layers and switches to the pinned hook (as the HAND line printed it); the same init
         # then completes
         (hooks / "pre-push").write_bytes(before_hook + lf(BUS_ROOT / "hooks/pre-push.factory.sh"))
+        os.chmod(hooks / "pre-push", 0o755)              # a chained hook git will run (init checks it on POSIX)
         s["hooks"]["SessionStart"][0]["hooks"][0]["command"] = (
             'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --never-block run session-checkpoint -- '
             '--config "$CLAUDE_PROJECT_DIR/factory-pins/session-checkpoint.config.json"')
@@ -643,6 +644,23 @@ class ReviewRound2(_Init):
         self.assertTrue(any("session-checkpoint already runs on Stop" in l and "--never-block run session-checkpoint" in l
                             for l in p.stdout.splitlines() if l.startswith("HAND:")), p.stdout)
 
+    def test_a_stop_hook_elsewhere_by_pin_without_never_block_is_a_hand_step(self):
+        """Review round 3 (Claude key): one registration in another scope was kept unchecked; by pin WITHOUT
+        --never-block it still exits 2 on a runner refusal and blocks every turn end."""
+        cmd = ('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run session-checkpoint -- '
+               '--config "$CLAUDE_PROJECT_DIR/factory-pins/session-checkpoint.config.json"')
+        (self.proj / ".claude").mkdir()
+        (self.proj / ".claude/settings.local.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": cmd}]}]}}), encoding="utf-8")
+        p = self.init()
+        self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+        self.assertTrue(any("by pin without --never-block" in l and "settings.local.json" in l
+                            for l in p.stdout.splitlines() if l.startswith("HAND:")), p.stdout)
+        (self.proj / ".claude/settings.local.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": cmd.replace(" run session-checkpoint", " --never-block run session-checkpoint")}]}]}}),
+            encoding="utf-8")
+        self.assertEqual(self.init().returncode, 0)
+
     def test_runner_commands_are_parsed_at_the_subcommand(self):
         pr = self.load_pr()
         guard = "hooks/claude/exact-path-add.py"
@@ -652,8 +670,16 @@ class ReviewRound2(_Init):
         self.assertTrue(pr.by_pin(smuggled, "git-optional-locks"))
         self.assertFalse(pr.by_pin("python -I /tmp/pin-runner.py run exact-path-add", "exact-path-add"))
         self.assertTrue(pr.wires_tool("python -I /tmp/pin-runner.py run exact-path-add", "exact-path-add", guard))
-        self.assertTrue(pr.by_pin('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --pins x.json run exact-path-add',
+        # the project's own form judges with the pins init writes: no runner option but --never-block (round 3)
+        self.assertFalse(pr.by_pin('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --pins x.json run exact-path-add',
+                                   "exact-path-add"))
+        self.assertTrue(pr.by_pin('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --never-block run exact-path-add',
                                   "exact-path-add"))
+        # a '#' inside a word is not a comment (round 3: shlex.shlex kept its default commenters)
+        self.assertTrue(pr.wires_tool("python C:/dev/C#/proj/tools/session-checkpoint.py", "session-checkpoint",
+                                      "tools/factory/session-checkpoint.py"))
+        self.assertTrue(pr.wires_tool("echo x#; python tools/session-checkpoint.py", "session-checkpoint",
+                                      "tools/factory/session-checkpoint.py"))
         sc = "tools/factory/session-checkpoint.py"
         for c in ("python tools/session-checkpoint.py; echo done", "(python tools/session-checkpoint.py)",
                   "true&&python tools/session-checkpoint.py", "python tools/session-checkpoint.py>/dev/null"):
@@ -757,6 +783,32 @@ class ReviewRound2(_Init):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("[ff-only] not applied", r.stderr)
         self.assertIn("[no-unpinned-tool] not applied", r.stderr)
+
+    def test_pins_with_a_bom_still_judge_and_unreadable_pins_refuse(self):
+        """Review round 3 (Codex key): the judge helper read the pins as plain UTF-8, so pins with a BOM (Windows
+        PowerShell's UTF-8 writer; the runner itself accepts them) looked 'not pinned' and BOTH layers were skipped."""
+        self.assertEqual(self.init().returncode, 0)
+        pins = self.proj / "factory-pins" / "factory-pins.json"
+        pins.write_bytes(b"\xef\xbb\xbf" + pins.read_bytes())
+        git(self.proj, "add", "--", ".")
+        git(self.proj, "commit", "-qm", "factory, pins written with a BOM")
+        r = self.push("master")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("not applied", r.stderr)
+        (self.proj / "tools").mkdir()
+        (self.proj / "tools" / "session-checkpoint.py").write_text("print('copy')\n", encoding="utf-8")
+        git(self.proj, "add", "--", "tools/session-checkpoint.py")
+        git(self.proj, "commit", "-qm", "a copy")
+        r = self.push("HEAD:refs/heads/sneak")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("[no-unpinned-tool] PUSH REFUSED", r.stderr)
+        # pins that cannot be read at all never turn a layer off: that judge still judges, and the runner refuses
+        git(self.proj, "reset", "-q", "--hard", "origin/master")
+        pins.write_text("{not json", encoding="utf-8")
+        git(self.proj, "add", "--", "factory-pins/factory-pins.json")
+        git(self.proj, "commit", "-qm", "torn pins")
+        r = self.push("HEAD:refs/heads/torn")
+        self.assertNotIn("not applied", r.stderr)
 
     def test_the_commit_line_is_quoted_for_a_spaced_hooks_dir(self):
         git(self.proj, "config", "core.hooksPath", ".team hooks")

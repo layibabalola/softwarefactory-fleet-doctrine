@@ -51,7 +51,7 @@ python tools/factory/kernel-suites.tests.py     # the kernel's own suites, stage
 ```
 sh tools/factory/bootstrap.sh <bus> <bus-sha> profile:base <reviewer> <reason> [project-root]
 pwsh tools/factory/bootstrap.ps1 -Bus <bus> -Sha <bus-sha> -Tool profile:base -Reviewer <who> -Reason <why> [-Project <dir>]
-python factory-pins/pin-runner.py init --profile base --commit <bus-sha> --reviewer <who> --reason <why> --bus <bus>   # runner already vendored
+python -I factory-pins/pin-runner.py init --profile base --commit <bus-sha> --reviewer <who> --reason <why> --bus <bus>   # runner already vendored
 ```
 
 A **profile** is registry data (`profiles` in `registry.json`, checked by `validate_profile`). `base` installs:

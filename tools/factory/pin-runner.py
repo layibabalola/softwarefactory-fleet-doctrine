@@ -841,6 +841,7 @@ def command_scripts(command: str) -> list[list[str]]:
     try:
         lex = shlex.shlex(command.replace("\\", "/"), posix=True, punctuation_chars=True)
         lex.whitespace_split = True
+        lex.commenters = ""                             # a '#' inside a path (C:/dev/C#/...) is part of the word
         words = list(lex)
     except ValueError:
         words = command.split()
@@ -902,11 +903,13 @@ def load_settings(path: Path) -> dict[str, Any]:
 
 
 def by_pin(command: str, tool: str, never_block: bool = False) -> bool:
-    """Is this command THIS project's vendored runner running <tool> (any tool args), with --never-block when the
-    profile requires it (a Stop/SessionStart hook that could exit 2 would block)?"""
+    """Is this command THIS project's vendored runner running <tool> (any tool args; no runner option but
+    --never-block, so it judges with the pins init writes), with --never-block when the profile requires it (a
+    Stop/SessionStart hook that could exit 2 would block)?"""
     for c in command_scripts(command):
         t, opts = runner_tool(c)
-        if t == tool and PROJECT_RUNNER.match(c[0]) and (not never_block or "--never-block" in opts):
+        if (t == tool and PROJECT_RUNNER.match(c[0]) and set(opts) <= {"--never-block"}
+                and (not never_block or "--never-block" in opts)):
             return True
     return False
 
@@ -959,7 +962,11 @@ def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[s
                         + (f", matcher {m}" if m else "") + f", in {path})")
             continue
         p, mm, c = regs[0]
-        if p != path:
+        if p != path and h.get("never_block") and any(
+                runner_tool(sc)[0] == tool and "--never-block" not in runner_tool(sc)[1] for sc in command_scripts(c)):
+            hand.append(f"{tool} runs on {ev} from {p} by pin without --never-block: a runner refusal there exits 2 "
+                        f"(on Stop: blocks every turn end). Add --never-block before `run` in that entry: {c}")
+        elif p != path:
             out.append(f"  kept    hook {label}: {tool} already runs once from {p}" + ("" if by_pin(c, tool) else " (not by pin)"))
         elif by_pin(c, tool, h.get("never_block", False)) and mm == m:
             out.append(f"  kept    hook {label}: {tool}" + ("" if c == cmd else f" (the project's own form: {c})"))
@@ -1037,7 +1044,7 @@ def remove_dirs(made: list[Path]) -> None:
             pass
 
 
-def commit_writes(staged: list[tuple[Path, bytes, int]]) -> None:
+def commit_writes(staged: list[tuple[Path, bytes, int]], verify: dict[Path, str] | None = None) -> None:
     """Stage every file under a temporary name beside its destination; only when all are staged, rename each into
     place, moving any original aside first. A failure at either step undoes everything done so far (originals restored,
     new files and temporaries removed) and refuses: no destination keeps a change."""
@@ -1058,6 +1065,13 @@ def commit_writes(staged: list[tuple[Path, bytes, int]]) -> None:
             t.unlink(missing_ok=True)
         remove_dirs(made)
         raise Refused(f"cannot write {final} ({exc.__class__.__name__}: {exc}); nothing written") from None
+    for t, final, _m in temps:                          # a staged file that must be a known blob is read back first
+        want = (verify or {}).get(final)
+        if want is not None and blob_id(t.read_bytes().replace(bytes([13, 10]), bytes([10]))) != want:
+            for t2, _f, _m2 in temps:
+                t2.unlink(missing_ok=True)
+            remove_dirs(made)
+            raise Refused(f"{final} would not hold object {want[:12]} (it read back differently once staged); nothing written")
     done: list[tuple[Path, Path | None]] = []          # (destination, where its original was moved, or None)
     try:
         for t, final, _m in temps:
@@ -1236,12 +1250,7 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
     staged += [(p, b, 0o755 if p in git_modes else 0o644) for p, b in writes]
     if pins_changed or vendor:
         staged.append((c.pfile, (json.dumps(c.pins, indent=2) + "\n").encode("utf-8"), 0o644))
-    commit_writes(staged)
-    if vendor:
-        wrote = c.vendored.read_bytes().replace(bytes([13, 10]), bytes([10]))
-        if blob_id(wrote) != c.want:
-            c.vendored.unlink(missing_ok=True)
-            raise Refused(f"{c.vendored} does not hold the reviewed runner after writing (object {c.want[:12]}); removed")
+    commit_writes(staged, verify={c.vendored: c.want} if vendor else None)
 
     print(f"{'NO-OP' if not staged else 'INIT'} profile {args.profile} ({prof['purpose']}) at bus {c.commit[:12]} "
           f"into {c.root} as project {name!r}")
