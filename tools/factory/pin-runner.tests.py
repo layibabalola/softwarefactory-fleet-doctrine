@@ -671,13 +671,28 @@ class Install(unittest.TestCase):
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertEqual(self.sh(self.runner, "verify", cwd=self.proj).returncode, 0)
 
+    # Git for Windows' bin/bash.exe (what _bash picks when `git` is Git\cmd\git.exe, i.e. from PowerShell or cmd) is a
+    # launcher that PREPENDS /ucrt64/bin (or /mingw64/bin) and /usr/bin to PATH, so the real git wins over a shim put
+    # first on the Windows PATH and the tamper never happens: the script installs and exits 0 (reproduced 2026-10-17
+    # from PowerShell; from Git Bash _bash finds /usr/bin/bash, which keeps PATH, and the test passed). So the shim
+    # directory is put first again INSIDE bash, and bash itself must resolve `git` to the shim before the test runs.
+    SHIM_FIRST = ('if [ -n "${SHIM_DIR:-}" ]; then d=$SHIM_DIR; '
+                  'if command -v cygpath >/dev/null 2>&1; then d=$(cygpath -u "$d"); fi; PATH="$d:$PATH"; export PATH; fi; ')
+
     def test_bootstrap_sh_refuses_a_tampered_blob_and_installs_a_clean_one(self):
         bash = self._bash()
         if bash is None:
             self.skipTest("no POSIX shell")
         script = (Path(__file__).resolve().parent / "bootstrap.sh").as_posix()
         clean = {**os.environ, "PYTHON": sys.executable}
-        self._check_bootstrap(lambda a: [str(bash), script, *[x.replace("\\", "/") for x in a]], self._shim_env("sh"), clean)
+        tamper = self._shim_env("sh")
+        tamper["SHIM_DIR"] = str(Path(self._tmp.name) / "shim-sh")
+        seen = subprocess.run([str(bash), "-c", self.SHIM_FIRST + 'command -v git'], capture_output=True, text=True,
+                              env=tamper)
+        self.assertEqual(seen.stdout.strip().rsplit("/", 1)[0].rsplit("/", 1)[-1], "shim-sh",
+                         f"inside bash, git is not the shim, so the tamper case proves nothing: {seen.stdout!r} {seen.stderr!r}")
+        self._check_bootstrap(lambda a: [str(bash), "-c", self.SHIM_FIRST + 'exec "$BASH" "$@"', "bootstrap.sh", script,
+                                         *[x.replace("\\", "/") for x in a]], tamper, clean)
 
     def test_bootstrap_ps1_refuses_a_tampered_blob_and_installs_a_clean_one(self):
         pwsh = shutil.which("pwsh") or shutil.which("powershell")
