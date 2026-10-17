@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:33:59Z",
+  "last_beat_utc": "2026-10-17T03:34:31Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "context-ultra-salesforce #109 r3 be987dd7 not-merge-ready (self-review); r1 B1/I1/I2/I3 addressed; new B1 quoted no-reply phrase drops asks, B2 CLOSED+CoS-ASK in one body drops the ask (same script as doctrine #87, adobe #3); I1 legacy re-surfacing, I2 closed-PR order, I3 canonical pointers 404 until #87, I4 hub-tick API cost; ask cus-109-r3 (6229092540); r1 ask 6228539273 CLOSED."
+  "note": "cloudvore #7 r3 762ca1d3 not-merge-ready (self-review); r1 B1/I1/I4/N1/N2 addressed; new B1 quoted no-reply drops asks, B2 CLOSED+CoS-ASK drops ask (same script doctrine #87 / adobe-ingester #3 / ab #240); I1 legacy resurfacing, I2 closed order, I3 operating-contract, I4 ACK(correction); ask cloudvore-7-r3 (6229099208)."
 }
