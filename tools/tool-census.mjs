@@ -28,6 +28,20 @@
 //      an entry to metrics/tool-census-rulings.json: {view, change, from?, to?, ruling, date}, change one
 //      of view-removed | total-raised (with from/to) | roots-removed | families-removed |
 //      schedule-loosened, ruling citing the owner ruling. CI runs it against the push/PR base.
+//   9. FORWARDERS. A consumer may keep a thin file at a legacy path that hooks or settings name, which only
+//      runs the PINNED canonical: `factory-pins/pin-runner.py run <tool>`. Such a file is a FORWARDER, reported
+//      apart and never counted as a version, only when the config has a 'forwarders' block and ALL hold:
+//        a. it sits in a non-bus root, is a .py file and is at most forwarders.maxBytes bytes (CRLF read as LF);
+//        b. its Python AST has the forwarder SHAPE, tools/tool-census-forwarder.py (stdlib, parses, never
+//           executes; its header is the rule): no file I/O, no imports beyond os/sys/subprocess/pathlib, calls
+//           only from fixed allowlists, and every subprocess.run is either the vendored runner with
+//           `run <tool> --` for THIS family's tool (family 'pinTool', default the family name) or a constant
+//           `git rev-parse` query; any list naming another tool fails it;
+//        c. the root's factory-pins/factory-pins.json pins that tool: a 40-hex blob, a path whose basename is a
+//           family name (and equals the family's 'canonical' when it has one), and that blob is a release on the
+//           bus history of that path; the bus root must be visible, else nothing is verified;
+//        d. the root's vendored factory-pins/pin-runner.py is itself a release of the bus runner.
+//      A file failing any check is a version as before, labelled with the reason. No python = no forwarders.
 //   Measured 2026-10-11: session-checkpoint.py in 4 versions, wired by 3 projects AND the user settings.
 //
 // What it counts
@@ -154,6 +168,56 @@ export function busHistoryBlobs(busDir, relPath, override = null) {
   return { blobs, ref };
 }
 
+// --- forwarders (rule 9) ---------------------------------------------------------------------------
+const FORWARDER_CHECK = join(dirname(fileURLToPath(import.meta.url)), 'tool-census-forwarder.py');
+let pythonExe;
+function python() {
+  if (pythonExe !== undefined) return pythonExe;
+  pythonExe = null;
+  for (const c of process.env.TOOL_CENSUS_PYTHON ? [process.env.TOOL_CENSUS_PYTHON] : ['python3', 'python']) {
+    try { execFileSync(c, ['-I', '-c', 'import ast, json'], { stdio: 'ignore', timeout: 30000 }); pythonExe = c; break; } catch { /* next */ }
+  }
+  return pythonExe;
+}
+
+// The AST shape verdicts for [{path, tool}]: null = forwarder shape, else why not (fails closed).
+export function forwarderShapes(items) {
+  if (!items.length) return [];
+  const py = python();
+  if (!py) return items.map(() => 'python is unavailable here: the forwarder shape cannot be verified');
+  try {
+    const out = execFileSync(py, ['-I', FORWARDER_CHECK], { input: JSON.stringify(items), encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 });
+    const v = JSON.parse(out);
+    if (!Array.isArray(v) || v.length !== items.length) throw new Error('verdict count mismatch');
+    return v.map((x) => (x === null ? null : String(x)));
+  } catch (e) { return items.map(() => `forwarder check failed: ${String(e.message || e).split('\n')[0]}`); }
+}
+
+const HEX40 = /^[0-9a-f]{40}$/;
+const BAD_REL = /^[\\/]|^[A-Za-z]:|(^|[\\/])\.\.([\\/]|$)/;
+// Rule 9c/9d: the consumer pins the tool to a real bus release, and its vendored runner is a bus release.
+export function forwarderPin({ rootDir, tool, fam, bus, fwd, busRefOverride = null }) {
+  if (!bus) return { why: 'no bus root is visible: the pin cannot be verified' };
+  const pinsRel = fwd.pinsFile || 'factory-pins/factory-pins.json';
+  let pins;
+  try { pins = JSON.parse(readFileSync(join(rootDir, pinsRel), 'utf8').replace(/^﻿/, '')); } catch { return { why: `no readable ${pinsRel}` }; }
+  const t = pins && pins.tools && typeof pins.tools === 'object' ? pins.tools[tool] : null;
+  if (!t || typeof t !== 'object') return { why: `${pinsRel} does not pin '${tool}'` };
+  if (typeof t.blob !== 'string' || !HEX40.test(t.blob)) return { why: `pin '${tool}' has no 40-hex blob` };
+  if (typeof t.path !== 'string' || !t.path || BAD_REL.test(t.path)) return { why: `pin '${tool}' path is not a bus-relative path` };
+  if (!(fam.names || []).map(globRe).some((r) => r.test(baseName(t.path)))) return { why: `pin '${tool}' path ${t.path} is not a ${fam.name} file` };
+  if (fam.canonical && t.path !== fam.canonical) return { why: `pin '${tool}' path ${t.path} is not the family canonical ${fam.canonical}` };
+  const hist = busHistoryBlobs(bus.dir, t.path, busRefOverride);
+  if (!hist.blobs.has(t.blob)) return { why: `pinned blob ${t.blob.slice(0, 12)} is not a release of ${t.path} on the bus ${hist.ref || '(no history ref)'}` };
+  const runnerRel = fwd.runner || 'factory-pins/pin-runner.py';
+  const runner = join(rootDir, runnerRel);
+  if (!existsSync(runner)) return { why: `no vendored ${runnerRel}` };
+  const runnerCanon = fwd.runnerCanonical || 'tools/factory/pin-runner.py';
+  const runnerBlob = blobIdLF(runner);
+  if (!busHistoryBlobs(bus.dir, runnerCanon, busRefOverride).blobs.has(runnerBlob)) return { why: `vendored ${runnerRel} (blob ${runnerBlob.slice(0, 12)}) is not a release of ${runnerCanon}` };
+  return { why: null, pin: { path: t.path, blob: t.blob } };
+}
+
 const isDir = (p) => { try { return statSync(p).isDirectory(); } catch { return false; } };
 
 function versionOf(file, marker, canonical = false) {
@@ -234,6 +298,11 @@ export function census({ config, root, home, busRefOverride = null }) {
     const hist = busRoot ? busHistoryBlobs(busRoot.dir, fam.canonical, busRefOverride) : { blobs: new Set(), ref: null };
     const canonBlob = busRoot && existsSync(join(busRoot.dir, fam.canonical)) ? blobIdLF(join(busRoot.dir, fam.canonical)) : null;
     const vendoredDir = fam.vendoredDir || 'factory-pins';
+    const fwd = config.forwarders && typeof config.forwarders === 'object' ? config.forwarders : null;
+    const fwdBus = fwd ? roots.find((r) => r.kind === 'bus' && !absent.includes(r.name)) : null;
+    const fwdMax = fwd && Number.isInteger(fwd.maxBytes) && fwd.maxBytes > 0 ? fwd.maxBytes : 4096;
+    const tool = fam.pinTool || fam.name;
+    const forwarders = [], candidates = [];
     for (const r of roots) {
       if (absent.includes(r.name)) continue;
       for (const f of fileCache.get(r.name)) {
@@ -247,11 +316,26 @@ export function census({ config, root, home, busRefOverride = null }) {
           version = `blob:${release && canonBlob ? canonBlob : blob}`;
           extra = { blob, ...(release ? { release } : {}) };
         }
-        copies.push({ root: r.name, path: f, ...v, version, ...extra, ...(canonical ? { canonical: true } : {}) });
+        const copy = { root: r.name, path: f, ...v, version, ...extra, ...(canonical ? { canonical: true } : {}) };
+        copies.push(copy);
+        if (fwd && r.kind !== 'bus' && /\.py$/i.test(f)) {
+          const text = readFileSync(join(r.dir, f), 'latin1').replace(/\r\n/g, '\n');
+          const bytes = Buffer.byteLength(text, 'latin1');
+          if (bytes <= fwdMax && text.includes('pin-runner')) candidates.push({ copy, r, abs: join(r.dir, f), bytes });
+        }
       }
     }
+    // Rule 9: a candidate that passes the shape AND the pin checks leaves the version count.
+    const shapes = forwarderShapes(candidates.map((c) => ({ path: c.abs, tool })));
+    candidates.forEach((c, i) => {
+      let why = shapes[i], pin = null;
+      if (!why) ({ why, pin } = forwarderPin({ rootDir: c.r.dir, tool, fam, bus: fwdBus, fwd, busRefOverride }));
+      if (why) { c.copy.notForwarder = why; return; }
+      copies.splice(copies.indexOf(c.copy), 1);
+      forwarders.push({ root: c.copy.root, path: c.copy.path, bytes: c.bytes, tool, pinnedPath: pin.path, pinnedBlob: pin.blob });
+    });
     const distinct = [...new Set(copies.map((c) => c.version))];
-    families.push({ name: fam.name, marker: fam.sharedSectionMarker || null, copies, distinct: distinct.length, excess: Math.max(distinct.length - 1, 0), ...(rel ? { historyRef: hist.ref } : {}) });
+    families.push({ name: fam.name, marker: fam.sharedSectionMarker || null, copies, distinct: distinct.length, excess: Math.max(distinct.length - 1, 0), ...(rel ? { historyRef: hist.ref } : {}), forwarders });
     for (const r of roots) {
       if (r.kind === 'user' || absent.includes(r.name)) continue;
       const proj = familyEvents(hookScripts(join(r.dir, '.claude', 'settings.json')), fam);
@@ -312,10 +396,13 @@ function human(rep) {
   const L = [];
   for (const f of rep.families) {
     L.push(`[tool-census] ${f.name}: ${f.copies.length} cop${f.copies.length === 1 ? 'y' : 'ies'}, ${f.distinct} distinct version(s)${f.marker ? ` (hashed below '${f.marker}')` : ''}`);
-    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.release === 'history' ? '   RELEASE (equals a bus-history blob: counted as the canonical)' : c.canonical ? '   CANONICAL (hashed whole; copies converge on it)' : c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}`);
+    for (const c of f.copies) L.push(`    ${c.hash.slice(0, 10)}  ${String(c.lines).padStart(5)} lines  ${c.root}: ${c.path}${c.release === 'history' ? '   RELEASE (equals a bus-history blob: counted as the canonical)' : c.canonical ? '   CANONICAL (hashed whole; copies converge on it)' : c.markerFound === false ? '   NO MARKER (hashed whole)' : ''}${c.notForwarder ? `   (not a forwarder: ${c.notForwarder})` : ''}`);
+    for (const w of f.forwarders || []) L.push(`    FORWARDER   ${String(w.bytes).padStart(5)} bytes  ${w.root}: ${w.path}   runs pinned ${w.tool} = ${w.pinnedPath}@${w.pinnedBlob.slice(0, 12)}; not a version`);
   }
   for (const d of rep.doubleRegistrations) L.push(`[tool-census] DOUBLE REGISTRATION: ${d.family} wired by ${d.project} .claude/settings.json AND user settings on ${d.events.join(', ')}${d.projectFlat ? ' (project entry is FLAT, not the matcher-group schema: may never fire)' : ''}`);
   if (rep.absentRoots.length) L.push(`[tool-census] roots absent on this box (skipped): ${rep.absentRoots.map((n) => ((rep.absentWhy || {})[n] && rep.absentWhy[n] !== 'directory absent' ? `${n} [${rep.absentWhy[n]}]` : n)).join(', ')}`);
+  const nf = rep.families.reduce((s, f) => s + (f.forwarders || []).length, 0);
+  if (nf) L.push(`[tool-census] ${nf} pinned forwarder(s) reported apart, never counted as versions (rule 9)`);
   L.push(`[tool-census] count = ${rep.families.reduce((s, f) => s + f.excess, 0)} excess version(s) + ${rep.doubleRegistrations.length} double registration(s) = ${rep.total}`);
   return L.join('\n');
 }
@@ -327,7 +414,7 @@ function baselineOf(rep, old) {
     total: rep.total,
     ...(old && old.schedule !== undefined ? { schedule: old.schedule } : {}),
     roots: rep.measuredRoots,
-    families: Object.fromEntries(rep.families.map((f) => [f.name, { copies: f.copies.length, distinct: f.distinct }])),
+    families: Object.fromEntries(rep.families.map((f) => [f.name, { copies: f.copies.length, distinct: f.distinct, ...((f.forwarders || []).length ? { forwarders: f.forwarders.map((w) => `${w.root}:${w.path}`) } : {}) }])),
     doubleRegistrations: rep.doubleRegistrations.map((d) => `${d.project}:${d.family}:${d.events.join('+')}`),
     measuredAt: new Date().toISOString(),
     rule: 'The count may only fall, and must be at or below the max of the latest schedule date reached. tools/tool-census.mjs --update-baseline refuses a rise and keeps the schedule. It grades the fleet tool layout, never a lane (metrics law 1).',

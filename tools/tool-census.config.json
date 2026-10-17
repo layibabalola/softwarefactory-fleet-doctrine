@@ -37,5 +37,6 @@
     { "name": "user-hooks", "path": "~/.claude/hooks", "kind": "user" }
   ],
   "userSettings": "~/.claude/settings.json",
+  "forwarders": { "_comment": "rule 9: a pinned forwarder (tools/tool-census-forwarder.py shape + a verified pin) is reported apart, never a version", "maxBytes": 4096 },
   "excludeDirs": [".git", "node_modules", "archive", "__pycache__", "worktrees", ".claude-worktrees", ".codex-worktrees"]
 }

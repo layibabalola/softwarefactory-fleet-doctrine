@@ -306,6 +306,82 @@ try {
   r = census(['--check', '--config', join(root, 'nm.json'), '--baseline', nmBase]);
   assert.equal(r.status, 0, r.out); assert.match(r.out, /NEW-MEMBERS-UNBASELINED: root:newroot, family:newfam/); assert.match(r.out, /Informational/); cases++;
 
+  // 21. Rule 9: a pinned FORWARDER is reported apart and is not a version -- only when shape, size, pin and
+  //     vendored runner all verify. Each adversarial variant below fails exactly one check and stays a version.
+  const fwBus = join(root, 'fwbus');
+  execFileSync('git', ['init', '-q', '-b', 'master', fwBus]);
+  put('fwbus/tools/factory/check-doc-size.py', 'print("canonical doc-size")\n');
+  put('fwbus/tools/factory/session-start-auth.py', 'print("canonical auth")\n');
+  put('fwbus/tools/factory/pin-runner.py', 'print("runner")\n');
+  gitIn(fwBus, 'add', '-A'); gitIn(fwBus, 'commit', '-qm', 'release');
+  const blobOf = (rel) => gitIn(fwBus, 'rev-parse', `HEAD:${rel}`).trim();
+  const FWD = (toolName = 'check-doc-size', extra = '', flag = '"-I"') => [
+    '"""Forwarder: runs the pinned bus check-doc-size."""', 'import os', 'import subprocess', 'import sys', '',
+    'ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))',
+    'RUNNER = os.path.join(ROOT, "factory-pins", "pin-runner.py")', '', '',
+    'def main() -> int:',
+    `    return subprocess.run([sys.executable, ${flag}, RUNNER, "run", "${toolName}", "--", *sys.argv[1:]], cwd=ROOT).returncode`,
+    '', '', 'if __name__ == "__main__":', '    sys.exit(main())', extra].join('\n');
+  const pinsFor = (tools) => JSON.stringify({ schema: 'factory-pins.v1', tools });
+  const goodPin = () => ({ 'check-doc-size': { path: 'tools/factory/check-doc-size.py', blob: blobOf('tools/factory/check-doc-size.py') } });
+  const fwRoot = (name, { body = FWD(), pins = goodPin(), runner = 'print("runner")\n' } = {}) => {
+    put(`${name}/tools/check-doc-size.py`, body);
+    put(`${name}/factory-pins/factory-pins.json`, pinsFor(pins));
+    if (runner !== null) put(`${name}/factory-pins/pin-runner.py`, runner);
+    return name;
+  };
+  const fwCases = {
+    good: fwRoot('fw-good'),
+    goodCrlf: fwRoot('fw-crlf', { body: FWD().replace(/\n/g, '\r\n') }),
+    appended: fwRoot('fw-append', { body: FWD('check-doc-size', 'open("report.txt", "w").write("ok")\n') }),
+    appendedDef: fwRoot('fw-appdef', { body: FWD('check-doc-size', 'def extra():\n    return getattr(os, "sys" + "tem")("echo hi")\n') }),
+    importJson: fwRoot('fw-import', { body: 'import json\n' + FWD() }),
+    otherTool: fwRoot('fw-other', { body: FWD('session-start-auth') }),
+    secondRun: fwRoot('fw-second', { body: FWD('check-doc-size', 'X = ["run", "session-start-auth"]\n') }),
+    flagInject: fwRoot('fw-flag', { body: FWD('check-doc-size', '', '"-cimport os"') }),
+    shellKw: fwRoot('fw-shell', { body: FWD().replace('cwd=ROOT)', 'cwd=ROOT, shell=True)') }),
+    rebound: fwRoot('fw-rebind', { body: FWD().replace('\n\ndef main', '\nRUNNER = "evil.py"\n\ndef main') }),
+    notPinned: fwRoot('fw-nopin', { pins: { 'session-start-auth': { path: 'tools/factory/session-start-auth.py', blob: blobOf('tools/factory/session-start-auth.py') } } }),
+    fakeBlob: fwRoot('fw-fakeblob', { pins: { 'check-doc-size': { path: 'tools/factory/check-doc-size.py', blob: 'a'.repeat(40) } } }),
+    wrongPath: fwRoot('fw-wrongpath', { pins: { 'check-doc-size': { path: 'tools/factory/session-start-auth.py', blob: blobOf('tools/factory/session-start-auth.py') } } }),
+    editedRunner: fwRoot('fw-runner', { runner: 'print("runner, locally edited")\n' }),
+    noRunner: fwRoot('fw-norunner', { runner: null }),
+    oversize: fwRoot('fw-big', { body: FWD() + '# pad\n'.repeat(800) }),
+  };
+  const fwFam = { name: 'docsize', names: ['check-doc-size.py'], canonical: 'tools/factory/check-doc-size.py', pinTool: 'check-doc-size' };
+  const fwRoots = [{ name: 'bus', path: 'fwbus', kind: 'bus' }, ...Object.values(fwCases).map((n) => ({ name: n, path: n, kind: 'project' }))];
+  put('fw.json', JSON.stringify({ families: [fwFam], roots: fwRoots, forwarders: { maxBytes: 4096 } }));
+  const fwRep = fam(JSON.parse(census(['--json', '--config', join(root, 'fw.json')]).stdout), 'docsize');
+  const fwIs = (n) => fwRep.forwarders.some((w) => w.root === n);
+  const why = (n) => (fwRep.copies.find((c) => c.root === n) || {}).notForwarder || '';
+  assert.ok(fwIs('fw-good') && fwIs('fw-crlf'), `a pinned forwarder is reported apart: ${JSON.stringify(fwRep.copies.map((c) => [c.root, c.notForwarder]))}`);
+  assert.ok(!fwRep.copies.some((c) => c.root === 'fw-good'), 'a forwarder is not a copy'); cases++;
+  const expectWhy = {
+    appended: /open\(\)|\.write\(\) is not allowed/, appendedDef: /getattr\(\)|computed callee/, importJson: /import json/,
+    otherTool: /session-start-auth/, secondRun: /runs pinned tool 'session-start-auth'/, flagInject: /flag/, shellKw: /shell/,
+    rebound: /no name is bound only to the factory-pins\/pin-runner\.py path/, notPinned: /does not pin 'check-doc-size'/,
+    fakeBlob: /is not a release of/, wrongPath: /not a docsize file|not the family canonical/, editedRunner: /pin-runner\.py .*is not a release/,
+    noRunner: /no vendored/,
+  };
+  for (const [k, re] of Object.entries(expectWhy)) {
+    assert.ok(!fwIs(fwCases[k]), `${k}: must stay a version`);
+    assert.match(why(fwCases[k]), re, `${k}: reason`); cases++;
+  }
+  assert.ok(!fwIs('fw-big') && fwRep.copies.some((c) => c.root === 'fw-big' && !c.notForwarder), 'over maxBytes: never a candidate, stays a version'); cases++;
+  // Each failing variant is its own version; the good and CRLF forwarders and the canonical add nothing.
+  // canonical 1 + eight distinct failing bodies + one shared body (the five pin/runner failures) + oversize 1 = 11
+  assert.equal(fwRep.distinct, 11, 'versions: the canonical and each distinct failing body; the forwarders add none'); cases++;
+  put('fw-off.json', JSON.stringify({ families: [fwFam], roots: fwRoots.slice(0, 2) }));
+  const off = fam(JSON.parse(census(['--json', '--config', join(root, 'fw-off.json')]).stdout), 'docsize');
+  assert.deepEqual([off.forwarders.length, off.excess], [0, 1], 'no forwarders block: the rule is off, the forwarder is a version'); cases++;
+  put('fw-nobus.json', JSON.stringify({ families: [fwFam], roots: fwRoots.slice(1, 2), forwarders: {} }));
+  const nobus = fam(JSON.parse(census(['--json', '--config', join(root, 'fw-nobus.json')]).stdout), 'docsize');
+  assert.equal(nobus.forwarders.length, 0); assert.match(nobus.copies[0].notForwarder, /no bus root/, 'no bus: the pin cannot be verified'); cases++;
+  const noPy = spawnSync(process.execPath, [tool, '--json', '--config', join(root, 'fw.json'), '--root', root, '--home', join(root, 'home')], { encoding: 'utf8', env: { ...process.env, TOOL_CENSUS_PYTHON: 'no-such-python-exe' } });
+  const np = fam(JSON.parse(noPy.stdout), 'docsize');
+  assert.equal(np.forwarders.length, 0, 'no python: fails closed, nothing is a forwarder');
+  assert.match(np.copies.find((c) => c.root === 'fw-good').notForwarder, /python is unavailable/); cases++;
+
   assert.ok(existsSync(tool));
   console.log(`tool-census fixtures: ${cases} cases passed`);
 } finally { rmSync(root, { recursive: true, force: true }); }
