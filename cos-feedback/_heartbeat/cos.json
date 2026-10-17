@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:39:40Z",
+  "last_beat_utc": "2026-10-17T03:40:05Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #240 r4 d077f538 not-merge-ready (self-review; r3 B2 addressed; B1 legacy close too strict (MLV #447/#461 answered asks still OPEN) and too loose; I1-I4/N1 carried; new I5 I6 N2; live scan blocked by shared REST quota 0/5000); ask 6229145497 (CoS-ASK ab-240-r4); CLOSED ab-240-r3; heartbeat."
+  "note": "AdversarialLLM #277 r3.1 b0479dbf not-merge-ready (B2 legacy asks false-close on any later ACK, B3 scan cost vs shared REST quota (0 at 03:36Z), B4 issue threads, B1 gates); r3 B2/B4/I5/N2 addressed; ask advllm-277-r3.1 6229145257; CLOSED 6229107877 via 6229145822; heartbeat."
 }
