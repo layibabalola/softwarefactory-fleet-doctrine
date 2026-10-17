@@ -114,7 +114,7 @@ Written by a Conjugal implementer session (Claude Opus 5.5). It records a decisi
 built for it, and its evidence. It ratifies nothing and grants no adoption, launch or runtime permission.
 Status stays PROPOSED until the owner rules.
 
-**Decision proposed.** Adopt **B** as the standing fix, built as an epoch amendment at bus `2277ba4e`.
+**Decision proposed.** Adopt **B** as the standing fix, built as an epoch amendment at bus `aab42685`.
 Keep A′ as defence in depth. Reject C. Reject a sibling-file split.
 
 **Evidence that decided it.**
