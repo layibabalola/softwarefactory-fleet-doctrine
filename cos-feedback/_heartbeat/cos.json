@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:38:37Z",
+  "last_beat_utc": "2026-10-17T03:38:48Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "conjugal #6 r4 0d3dbd28 not-merge-ready (self-review; B1 any ACK closes all legacy asks, live miss of 6229083497; I5 shared REST quota exhausted); ask 6229136424 (CoS-ASK conjugal-6-r4); CLOSED 6229083497; heartbeat."
+  "note": "doctrine #87 r3.1 34698e2b not-merge-ready (B4 carried, new B5 legacy no-cutoff over-close, live on Conjugal #6); r1/r2 asks ACKed; CLOSED doctrine-87-r3; ask doctrine-87-r3.1 6229137733; heartbeat."
 }
