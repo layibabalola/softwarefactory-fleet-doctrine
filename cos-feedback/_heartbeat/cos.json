@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-16T23:59:25Z",
+  "last_beat_utc": "2026-10-17T00:12:47Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Reviewed mlv-app #468 r5+r6 b5310592: not-merge-ready on gates (legs 0/2, CI pending). r4 Blocker and Improvements plus Dot items addressed; new I1 repaired guard fail-open (reproduced), I2 e2e route test skips in CI; ask 6226980669."
+  "note": "Reviewed mlv-app #465 r4+r4b 469e513d: not-merge-ready. New B1 (reproduced): clip-launch rule misses a flag before the clip (--clip take01.mlv), refuse->pass vs master; r4b seed, Iverson and sol items fixed; legs 0/2; ask 6227161437."
 }
