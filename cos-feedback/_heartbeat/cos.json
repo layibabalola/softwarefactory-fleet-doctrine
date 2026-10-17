@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T02:15:29Z",
+  "last_beat_utc": "2026-10-17T02:29:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Extended FWO-ACK-1 to agent-bridge (Layi 9:14 PM CT): cos-feedback/agent-bridge/fwo-ack-1.md; delivered on agent-bridge #237 comment 6228385413; M0 merge-path audit + ACK with plan/ETA due 2026-10-17 9:20 PM CT; guarded landings held."
+  "note": "MLV-App #474 r2 9c3a8095 not-merge-ready (gates only; r1 I1/I3/I4/N1-N3/Prevention addressed, I2 remainder + N4 open); ask 6228505451."
 }
