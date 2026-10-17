@@ -1,0 +1,5 @@
+{
+  "schema": "session-checkpoint.v1",
+  "_comment": "Seeded by `pin-runner.py init`. Every key is optional; with none the hook behaves as the ROTATION install prompt's v2. Keys, defaults and path rules: the docstring of tools/factory/session-checkpoint.py on the bus. To repeat the rotation notice until a resume writes a receipt, add rotation.resume_receipts; to see the fleet doctrine bus at SessionStart and on a periodic PreToolUse tick, add doctrine.bus_clone.",
+  "runbook_candidates": ["docs/ops/ROTATION.md", "knowledge/ROTATION.md", "roadmap/handoff/ROTATION.md", "docs/ROTATION.md"]
+}

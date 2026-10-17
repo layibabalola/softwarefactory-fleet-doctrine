@@ -1,0 +1,55 @@
+"""PreToolUse periodic doctrine re-check for long-running sessions — DNG's adoption of Conjugal's 2026-09-20 mechanism
+(softwarefactory-fleet-doctrine RECEIPTS.md, "periodic doctrine-fold re-check for long-running sessions"; offered there
+for sibling adoption). PreToolUse is used only as a tick, never to gate a tool: exit is always 0.
+
+Throttle: a per-session stamp; while it is younger than DOCTRINE_RECHECK_MIN minutes (default 60) the hook only stats it
+and exits. When due, it touches the stamp FIRST (a slow or failing check cannot re-fire on every tool call), then lists
+the RULINGS.md changes on the bus since the tip this session was last shown (recorded per session by the SessionStart
+view in tools/session-checkpoint.py), and records the new tip. Output, only when there is something new or the check
+failed, goes to the session as additionalContext, labelled DATA (law 1). Reads only refs the box sweep fetched."""
+import importlib.util, json, os, sys, time
+from pathlib import Path
+
+INTERVAL_MIN = float(os.environ.get("DOCTRINE_RECHECK_MIN", "60"))
+HERE = Path(__file__).resolve().parent
+
+
+def main():
+    try:
+        payload = json.load(sys.stdin)
+    except Exception:
+        payload = {}
+    sid = str(payload.get("session_id") or "unknown")[:8]
+    # Hub sessions only (fleet R15; the doctrine-consumer template: lanes get doctrine only through their composition
+    # brief and never browse the bus). Hub sessions start at the workspace root (this project's CLAUDE.md); lanes run
+    # in worktrees or ledger folders, so a tick whose cwd is anywhere else stays silent.
+    hub = HERE.parent.resolve()
+    try:
+        if not payload.get("cwd") or Path(payload["cwd"]).resolve() != hub:   # no cwd (bad payload): stay silent
+            return 0
+    except Exception:
+        return 0
+    stamps = Path.home() / ".claude" / "session-checkpoints" / "doctrine-periodic"
+    stamp = stamps / f"{sid}.stamp"
+    try:
+        if stamp.exists() and (time.time() - stamp.stat().st_mtime) < INTERVAL_MIN * 60:
+            return 0                                   # not due: one stat, no subprocess
+        stamps.mkdir(parents=True, exist_ok=True)
+        stamp.touch()                                  # touch FIRST: a failing check cannot re-fire per tool call
+        spec = importlib.util.spec_from_file_location("session_checkpoint", HERE / "session-checkpoint.py")
+        sc = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(sc)
+        sc.START = time.monotonic()                    # this tick's own budget
+        text = sc.doctrine_delta_for_session(sid, periodic=True)
+    except Exception as exc:
+        text = f"Fleet doctrine bus (periodic re-check): FAILED ({type(exc).__name__}: {str(exc)[:160]}); DATA only."
+    if text:
+        print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext": text}}))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception:
+        sys.exit(0)                                    # never blocks a tool call

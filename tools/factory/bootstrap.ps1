@@ -1,6 +1,7 @@
 # Make a project a consumer WITHOUT running unverified bytes: write the reviewed runner blob, prove its
 # identity against git's own tree entry, and only then run it. Refuses (exit 2, runner never started) on mismatch.
-# usage: bootstrap.ps1 <bus-clone> <bus-sha> <tool> <reviewer> <reason> [project-root]
+# usage: bootstrap.ps1 <bus-clone> <bus-sha> <tool | profile:NAME> <reviewer> <reason> [project-root]
+# profile:NAME runs `init --profile NAME` (a whole factory) instead of `install <tool>`.
 param([Parameter(Mandatory)][string]$Bus, [Parameter(Mandatory)][string]$Sha, [Parameter(Mandatory)][string]$Tool,
       [Parameter(Mandatory)][string]$Reviewer, [Parameter(Mandatory)][string]$Reason, [string]$Project = '.')
 $ErrorActionPreference = 'Stop'
@@ -17,5 +18,9 @@ if ($got -ne $want) {
   [Console]::Error.WriteLine("REFUSED: runner bytes hash to $got, not object $want; nothing was run"); exit 2
 }
 Move-Item -Force $tmp $dst
-python $dst install $Tool --commit $Sha --reviewer $Reviewer --reason $Reason --project-root $Project --bus $Bus
+if ($Tool -like 'profile:*') {
+  python $dst init --profile $Tool.Substring(8) --commit $Sha --reviewer $Reviewer --reason $Reason --project-root $Project --bus $Bus
+} else {
+  python $dst install $Tool --commit $Sha --reviewer $Reviewer --reason $Reason --project-root $Project --bus $Bus
+}
 exit $LASTEXITCODE

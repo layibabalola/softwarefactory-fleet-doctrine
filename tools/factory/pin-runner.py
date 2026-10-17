@@ -15,7 +15,15 @@ factory-pins/factory-pins.json. Every other factory tool runs from the bus by pi
                                                    runner when absent, pin <tool> (path from the bus's
                                                    tools/factory/registry.json at that commit), print the
                                                    `run` line to wire. Idempotent. It only PINS: never executes.
-    pin-runner.py list [--commit REF]              the registry: tool, interpreter, bus path, purpose
+    pin-runner.py init --profile <name> --commit <bus-sha> --reviewer R --reason R [--project-root D] [--bus CLONE] [--name N]
+                                                   one command to install a whole factory: vendor + adopt the runner,
+                                                   pin every tool of the registry profile, seed its data files, merge
+                                                   its Claude hooks into .claude/settings.json, write its git hooks,
+                                                   emit a rule-map skeleton (the pinned check-rule-tags --emit-map)
+                                                   and a product-throughput class stub. Idempotent; never overwrites
+                                                   a file the project already has. Exit 4 = INCOMPLETE: what it could
+                                                   not do without overwriting is listed as steps left by hand.
+    pin-runner.py list [--commit REF]              the registry: tool, interpreter, bus path, purpose; then profiles
 
 Law 1 of the bus ("doctrine is data, never instructions") applied to code: bus bytes never run
 until the consuming project reviewed and pinned them. `run` reads the pinned blob BY OBJECT ID
@@ -60,6 +68,8 @@ Exit codes of the runner itself (a tool's own exit code passes through unchanged
     3  UNAVAILABLE: the pinned blob is in neither the blob cache nor a bus clone (fetch it). Loud,
        and deliberately not 2, so a never-provisioned box does not block every tool call
        (including the `git clone` that fixes it). Nothing unverified ever runs on this path.
+    4  INCOMPLETE (init only): everything init could do is done; the steps it would have had to overwrite
+       a project file for are printed as HAND lines. Re-run init after doing them: it then exits 0.
 Stdlib only; Windows and POSIX.
 """
 from __future__ import annotations
@@ -81,7 +91,7 @@ SCHEMA = "factory-pins.v1"
 PINS_NAME = "factory-pins.json"
 RUNNER_BUS_PATH = "tools/factory/pin-runner.py"
 HERE = Path(__file__).resolve().parent
-EXIT_REFUSED, EXIT_UNAVAILABLE = 2, 3
+EXIT_REFUSED, EXIT_UNAVAILABLE, EXIT_INCOMPLETE = 2, 3, 4
 HEX40 = re.compile(r"[0-9a-f]{40}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")
@@ -91,6 +101,15 @@ REGISTRY_BUS_PATH = "tools/factory/registry.json"
 REGISTRY_SCHEMA = "factory-registry.v1"
 REGISTRY_KEYS = {"path", "interpreter", "purpose"}
 MAX_PINS_BYTES, MAX_TOOL_BYTES = 256 * 1024, 4 * 1024 * 1024
+PROFILE_KEYS = {"purpose", "tools", "seeds", "claude_hooks", "git_hooks", "rule_map", "throughput_stub"}
+HOOK_KEYS = {"event", "matcher", "tool", "args", "timeout"}
+CLAUDE_EVENTS = ("SessionStart", "SessionEnd", "Stop", "SubagentStop", "PreToolUse", "PostToolUse", "UserPromptSubmit",
+                 "PreCompact", "Notification")
+GIT_HOOK_KEYS = {"hook", "path", "marker"}
+GIT_HOOKS = ("pre-push", "pre-commit", "commit-msg")
+HOOK_ARG = re.compile(r"[A-Za-z0-9@/._=:,+-]+\Z")   # no quote, space or shell metacharacter can reach a settings command
+PROJECT_ARG = "@project/"                           # a hook arg naming a file of the project: "$CLAUDE_PROJECT_DIR/..."
+RULE_TAGS_SCHEMA, THROUGHPUT_SCHEMA = "fleet/rule-tags/v1", "fleet/product-throughput-classes/v1"
 CONFLICT = re.compile(rb"^(?:<{7}|={7}|>{7}|\|{7})(?:[ \t]|\r?$)", re.M)
 
 
@@ -375,6 +394,13 @@ def cmd_run(args: argparse.Namespace, rest: list[str]) -> int:
     members = [(m, pins["tools"][m], tool_bytes(args, pins, m, pins["tools"][m])) for m in t.get("with", [])]
     if t["interpreter"] == "python" and sys.flags.isolated and not members:
         return run_in_process(name, t, data, tool_args)
+    return run_materialized(t, data, members, tool_args)
+
+
+def run_materialized(t: dict[str, Any], data: bytes, members: list, tool_args: list[str],
+                     capture: bool = False, cwd: Path | None = None) -> Any:
+    """Write verified bytes (and a group's members) into a fresh private directory, prove the directory holds exactly
+    those blobs, and run the tool there (python -I / node). Returns the exit code, or the CompletedProcess if capture."""
     work = Path(tempfile.mkdtemp(prefix="factory-pin-"))
     try:
         script = work / Path(t["path"]).name
@@ -387,7 +413,12 @@ def cmd_run(args: argparse.Namespace, rest: list[str]) -> int:
             raise Refused("materialized directory differs from the pin")
         argv = [sys.executable, "-I", str(script)] if t["interpreter"] == "python" else ["node", str(script)]
         try:
+            if capture:
+                return subprocess.run([*argv, *tool_args], env=child_env(), capture_output=True, text=True, cwd=cwd,
+                                      encoding="utf-8", errors="replace", stdin=subprocess.DEVNULL, timeout=300)
             return subprocess.run([*argv, *tool_args], env=child_env()).returncode
+        except subprocess.TimeoutExpired:
+            raise Refused(f"{script.name} did not finish in 300 s") from None
         except OSError as exc:
             raise Unavailable(f"cannot start {argv[0]} ({exc})") from None
     finally:
@@ -519,8 +550,12 @@ def cmd_adopt_runner(args: argparse.Namespace, _rest: list[str]) -> int:
 
 # --- registry + install: one command to become a consumer --------------------------------------
 def load_registry(raw: bytes, where: str) -> dict[str, dict[str, Any]]:
+    return parse_registry(raw, where)[0]
+
+
+def parse_registry(raw: bytes, where: str) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
     """tools/factory/registry.json (DATA read from a reviewed commit, never executed):
-    {schema, tools: {name: {path, interpreter, purpose}}}."""
+    {schema, tools: {name: {path, interpreter, purpose[, with]}}[, profiles: {name: PROFILE}]}. Returns (tools, profiles)."""
     try:
         reg = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_no_dupes)
     except (UnicodeError, json.JSONDecodeError, Refused) as exc:
@@ -544,17 +579,76 @@ def load_registry(raw: bytes, where: str) -> dict[str, dict[str, Any]]:
                                        for m in w)):
             raise Refused(f"registry at {where}: entry {name!r} 'with' must list distinct other registered python "
                           "tools that have no 'with' of their own")
-    return tools
+    profiles = reg.get("profiles", {})
+    if not isinstance(profiles, dict):
+        raise Refused(f"registry at {where}: 'profiles' must be an object")
+    profiles = {k: v for k, v in profiles.items() if not k.startswith("_")}
+    for name, p in profiles.items():
+        validate_profile(name, p, tools, where)
+    return tools, profiles
 
 
-def registry_at(bus: Path, ref: str) -> dict[str, dict[str, Any]]:
+def validate_profile(name: str, p: Any, tools: dict[str, dict[str, Any]], where: str) -> None:
+    """A PROFILE (read by `init`): {purpose, tools: [registered names], seeds?: {"factory-pins/<file>": <bus path>},
+    claude_hooks?: [{event, tool, matcher?, args?, timeout?}], git_hooks?: [{hook, path, marker}], rule_map?: bool,
+    throughput_stub?: bool}. Every write it implies stays inside factory-pins/, .claude/settings.json or the hooks dir."""
+    def bad(why: str) -> Refused:
+        return Refused(f"registry at {where}: profile {name!r} {why}")
+    if not NAME.match(name) or not isinstance(p, dict):
+        raise bad("is malformed")
+    keys = {k for k in p if not k.startswith("_")}
+    if keys - PROFILE_KEYS or not {"purpose", "tools"} <= keys:
+        raise bad(f"needs purpose and tools, and only keys from {sorted(PROFILE_KEYS)}")
+    if not isinstance(p["purpose"], str) or not p["purpose"].strip():
+        raise bad("needs a purpose")
+    ts = p["tools"]
+    if not isinstance(ts, list) or not ts or len(set(map(str, ts))) != len(ts) or not all(isinstance(t, str) and t in tools for t in ts):
+        raise bad("'tools' must be a non-empty list of distinct registered tools")
+    for t in ts:
+        missing = [m for m in tools[t].get("with", []) if m not in ts]
+        if missing:
+            raise bad(f"installs group {t!r} without its member(s) {missing}")
+    seeds = p.get("seeds", {})
+    if not isinstance(seeds, dict) or not all(
+            isinstance(d, str) and not bad_path(d) and d.startswith("factory-pins/") and d.count("/") == 1
+            and d not in (f"factory-pins/{PINS_NAME}", "factory-pins/pin-runner.py") and isinstance(s, str) and not bad_path(s)
+            for d, s in seeds.items()):
+        raise bad("'seeds' must map factory-pins/<file> (not the pins or the runner) to bus paths")
+    hooks = p.get("claude_hooks", [])
+    if not isinstance(hooks, list):
+        raise bad("'claude_hooks' must be a list")
+    for h in hooks:
+        if (not isinstance(h, dict) or {k for k in h if not k.startswith("_")} - HOOK_KEYS or not {"event", "tool"} <= set(h)
+                or h["event"] not in CLAUDE_EVENTS or h["tool"] not in ts
+                or ("matcher" in h and not (isinstance(h["matcher"], str) and h["matcher"].strip()))
+                or not (isinstance(h.get("args", []), list) and all(isinstance(a, str) and HOOK_ARG.match(a) for a in h.get("args", [])))
+                or not (type(h.get("timeout", 60)) is int and 1 <= h.get("timeout", 60) <= 600)):
+            raise bad(f"has a malformed claude hook {h!r} (event from {CLAUDE_EVENTS}, a tool of the profile, args "
+                      f"matching {HOOK_ARG.pattern}, timeout 1-600)")
+    gh = p.get("git_hooks", [])
+    if not isinstance(gh, list) or len({h.get("hook") for h in gh if isinstance(h, dict)}) != len(gh) or not all(
+            isinstance(h, dict) and set(h) == GIT_HOOK_KEYS and h["hook"] in GIT_HOOKS and not bad_path(h["path"])
+            and isinstance(h["marker"], str) and h["marker"].strip() and "\n" not in h["marker"] for h in gh):
+        raise bad(f"'git_hooks' entries need exactly {sorted(GIT_HOOK_KEYS)}, a hook from {GIT_HOOKS}, one each")
+    for k in ("rule_map", "throughput_stub"):
+        if type(p.get(k, False)) is not bool:
+            raise bad(f"'{k}' must be true or false")
+    if p.get("rule_map") and "check-rule-tags" not in ts:
+        raise bad("'rule_map' needs check-rule-tags among its tools")
+
+
+def registry_doc_at(bus: Path, ref: str) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
     try:
         _want, data = read_blob(bus, ref, REGISTRY_BUS_PATH)
     except Refused as exc:
         if " has no " in str(exc):
             raise Refused(f"{ref[:12]} has no {REGISTRY_BUS_PATH}; pin by hand with `pin <tool> --path ...`") from None
         raise
-    return load_registry(data, f"{ref[:12]}:{REGISTRY_BUS_PATH}")
+    return parse_registry(data, f"{ref[:12]}:{REGISTRY_BUS_PATH}")
+
+
+def registry_at(bus: Path, ref: str) -> dict[str, dict[str, Any]]:
+    return registry_doc_at(bus, ref)[0]
 
 
 def runner_record(commit: str, data: bytes) -> dict[str, Any]:
@@ -566,91 +660,376 @@ def short(v: Any) -> str:
     return v[:12] if isinstance(v, str) and HEX40.match(v) else str(v)
 
 
+class Consumer:
+    """What install and init share: the consumer's pins, the bus at the reviewed commit, and the runner decision.
+    Law 1 on the installer itself: before anything is read from the registry or written, the bytes RUNNING this
+    command and the bytes it will vendor must both be the reviewed blob at --commit (git's own object id)."""
+
+    def __init__(self, args: argparse.Namespace, verb: str):
+        self.root = Path(args.project_root).resolve() if args.project_root else Path.cwd().resolve()
+        self.pfile = Path(args.pins).resolve() if args.pins else self.root / "factory-pins" / PINS_NAME
+        if args.bus:
+            args.bus = str(Path(args.bus).resolve())  # a command-line clone is cwd-relative, not consumer-relative
+        self.args = args
+        self.pins = load_pins(self.pfile) if self.pfile.exists() else {"schema": SCHEMA, "tools": {}}
+        self.before = json.dumps(self.pins, sort_keys=True)
+        self.bus = find_bus(args, self.pins, self.pfile)
+        self.commit = resolve_commit(self.bus, args.commit)
+        self.want, self.runner_bytes = read_blob(self.bus, self.commit, RUNNER_BUS_PATH)
+        if blob_id(own_bytes()) != self.want:
+            raise Refused(f"this running pin-runner.py is not byte-identical to {self.commit[:12]}:{RUNNER_BUS_PATH}; {verb} "
+                          f"only runs from the reviewed blob: git -C <bus> show {self.commit[:12]}:{RUNNER_BUS_PATH} > "
+                          f"factory-pins/pin-runner.py, then python factory-pins/pin-runner.py {verb} ...")
+        self.vendored = self.pfile.parent / "pin-runner.py"
+
+    def plan_runner(self) -> tuple[bool, bool]:
+        """(vendor, adopt). install/init never overwrite a vendored runner: an adopted older release stays (status
+        reports STALE), an unadopted byte-identical one is adopted, anything else refuses."""
+        have = self.vendored.read_bytes().replace(b"\r\n", b"\n") if self.vendored.is_file() else None
+        rec = self.pins.get("runner")
+        if have is None:
+            return True, True
+        if isinstance(rec, dict) and rec.get("blob") == blob_id(have) and rec.get("sha256") == hashlib.sha256(have).hexdigest():
+            return False, False
+        if have == self.runner_bytes:
+            return False, True
+        raise Refused(f"{self.vendored} is neither adopted nor byte-identical to the bus runner at {self.commit[:12]}; delete "
+                      f"it to let install vendor a reviewed copy, or adopt-runner it at the commit it equals")
+
+    def plan_pin(self, name: str, r: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], bool, bytes]:
+        """(entry, old, same, verified bytes) for pinning registry entry <name> at the commit; nothing written."""
+        old = self.pins["tools"].get(name, {})
+        a = self.args
+        entry = pin_entry(self.bus, self.commit, r["path"], old, r["interpreter"], a.reviewer, a.reason, a.date)
+        if r.get("with"):
+            missing = [m for m in r["with"] if m not in self.pins["tools"]]
+            if missing:
+                raise Refused(f"{name} runs with {', '.join(missing)}: install {' and '.join(missing)} first")
+            entry["with"] = list(r["with"])
+        same = all(old.get(k) == entry.get(k) for k in ("path", "commit", "blob", "interpreter", "with"))
+        if same:
+            entry = old
+        validate_tool(name, entry)
+        validate_groups({**self.pins["tools"], name: entry})
+        return entry, old, same, read_blob(self.bus, self.commit, r["path"])[1]
+
+    def write_runner(self) -> None:
+        self.vendored.write_bytes(self.runner_bytes)
+        wrote = self.vendored.read_bytes().replace(bytes([13, 10]), bytes([10]))
+        if blob_id(wrote) != self.want or hashlib.sha256(wrote).hexdigest() != hashlib.sha256(self.runner_bytes).hexdigest():
+            self.vendored.unlink(missing_ok=True)
+            raise Refused(f"{self.vendored} does not hold the reviewed runner after writing (object {self.want[:12]}); removed")
+
+    def record_clone(self) -> None:
+        if not self.args.bus:
+            return
+        try:
+            rel = Path(os.path.relpath(self.bus, consumer_root(self.pfile))).as_posix()
+        except ValueError:  # another drive: only an absolute path can name it
+            rel = self.bus.as_posix()
+        listed = self.pins.get("bus_clone", [])
+        listed = [listed] if isinstance(listed, str) else list(listed)
+        if rel not in listed:
+            self.pins["bus_clone"] = [rel, *listed]
+
+    def runner_rel(self) -> str:
+        return (self.vendored.relative_to(self.root) if self.vendored.is_relative_to(self.root) else self.vendored).as_posix()
+
+
+def repin_lines(old: dict[str, Any], entry: dict[str, Any]) -> list[str]:
+    return [f"  ~ {k}: {short(old.get(k))} -> {short(entry[k])}"
+            for k in ("path", "commit", "blob", "bytes", "sha256", "interpreter", "reviewer", "reason", "pinned_utc")
+            if old.get(k) != entry[k]]
+
+
 def cmd_install(args: argparse.Namespace, _rest: list[str]) -> int:
     """Make a project a consumer of <tool>: vendor + adopt the runner if absent, pin the tool. Writes data
     and one vendored copy of the REVIEWED runner blob; executes nothing (`run` is the only executor)."""
     if args.tool == "pin-runner":
         raise Refused("the runner is vendored by install itself, not pinned as a tool")
-    root = Path(args.project_root).resolve() if args.project_root else Path.cwd().resolve()
-    pfile = Path(args.pins).resolve() if args.pins else root / "factory-pins" / PINS_NAME
-    if args.bus:
-        args.bus = str(Path(args.bus).resolve())  # a command-line clone is cwd-relative, not consumer-relative
-    pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
-    before = json.dumps(pins, sort_keys=True)
-    bus = find_bus(args, pins, pfile)
-    commit = resolve_commit(bus, args.commit)
-    # Law 1 on the installer itself: before anything is read from the registry or written, the bytes RUNNING
-    # this install and the bytes it will vendor must both be the reviewed blob at --commit (git's own object id).
-    want, runner_bytes = read_blob(bus, commit, RUNNER_BUS_PATH)
-    if blob_id(own_bytes()) != want:
-        raise Refused(f"this running pin-runner.py is not byte-identical to {commit[:12]}:{RUNNER_BUS_PATH}; install only runs "
-                      f"from the reviewed blob: git -C <bus> show {commit[:12]}:{RUNNER_BUS_PATH} > factory-pins/pin-runner.py, "
-                      f"then python factory-pins/pin-runner.py install ...")
-    reg = registry_at(bus, commit)
+    c = Consumer(args, "install")
+    reg = registry_at(c.bus, c.commit)
     if args.tool not in reg:
-        raise Refused(f"unknown tool {args.tool!r}; the registry at {commit[:12]} lists: {', '.join(sorted(reg)) or '(none)'}")
+        raise Refused(f"unknown tool {args.tool!r}; the registry at {c.commit[:12]} lists: {', '.join(sorted(reg)) or '(none)'}")
     r = reg[args.tool]
-    vendored = pfile.parent / "pin-runner.py"
-    have = vendored.read_bytes().replace(b"\r\n", b"\n") if vendored.is_file() else None
-    rec = pins.get("runner")
-    vendor = adopt = False
-    if have is None:
-        vendor = adopt = True
-    elif isinstance(rec, dict) and rec.get("blob") == blob_id(have) and rec.get("sha256") == hashlib.sha256(have).hexdigest():
-        pass  # already adopted, maybe an older release than <commit>: `status` reports STALE; install never overwrites it
-    elif have == runner_bytes:
-        adopt = True
-    else:
-        raise Refused(f"{vendored} is neither adopted nor byte-identical to the bus runner at {commit[:12]}; delete it to "
-                      f"let install vendor a reviewed copy, or adopt-runner it at the commit it equals")
-    old = pins["tools"].get(args.tool, {})
-    entry = pin_entry(bus, commit, r["path"], old, r["interpreter"], args.reviewer, args.reason, args.date)
-    if r.get("with"):
-        missing = [m for m in r["with"] if m not in pins["tools"]]
-        if missing:
-            raise Refused(f"{args.tool} runs with {', '.join(missing)}: install {' and '.join(missing)} first")
-        entry["with"] = list(r["with"])
-    same = all(old.get(k) == entry.get(k) for k in ("path", "commit", "blob", "interpreter", "with"))
-    if same:
-        entry = old
-    validate_tool(args.tool, entry)
-    validate_groups({**pins["tools"], args.tool: entry})
-    pfile.parent.mkdir(parents=True, exist_ok=True)
+    vendor, adopt = c.plan_runner()
+    entry, old, same, _data = c.plan_pin(args.tool, r)
+    c.pfile.parent.mkdir(parents=True, exist_ok=True)
     if vendor:
-        vendored.write_bytes(runner_bytes)
-        wrote = vendored.read_bytes().replace(bytes([13, 10]), bytes([10]))
-        if blob_id(wrote) != want or hashlib.sha256(wrote).hexdigest() != hashlib.sha256(runner_bytes).hexdigest():
-            vendored.unlink(missing_ok=True)
-            raise Refused(f"{vendored} does not hold the reviewed runner after writing (object {want[:12]}); removed")
+        c.write_runner()
     if adopt:
-        pins["runner"] = runner_record(commit, runner_bytes)
-    if args.bus:
-        try:
-            rel = Path(os.path.relpath(bus, consumer_root(pfile))).as_posix()
-        except ValueError:  # another drive: only an absolute path can name it
-            rel = bus.as_posix()
-        listed = pins.get("bus_clone", [])
-        listed = [listed] if isinstance(listed, str) else list(listed)
-        if rel not in listed:
-            pins["bus_clone"] = [rel, *listed]
-    pins["tools"][args.tool] = entry
-    changed = vendor or json.dumps(pins, sort_keys=True) != before
+        c.pins["runner"] = runner_record(c.commit, c.runner_bytes)
+    c.record_clone()
+    c.pins["tools"][args.tool] = entry
+    changed = vendor or json.dumps(c.pins, sort_keys=True) != c.before
     if changed:
-        pfile.write_text(json.dumps(pins, indent=2) + "\n", encoding="utf-8", newline="\n")
-    runner_rel = (vendored.relative_to(root) if vendored.is_relative_to(root) else vendored).as_posix()
+        c.pfile.write_text(json.dumps(c.pins, indent=2) + "\n", encoding="utf-8", newline="\n")
     if not changed:
-        print(f"NO-OP: {args.tool} already pinned at {commit[:12]} (blob {entry['blob'][:12]}) in {pfile}")
+        print(f"NO-OP: {args.tool} already pinned at {c.commit[:12]} (blob {entry['blob'][:12]}) in {c.pfile}")
     else:
         print(f"{'RE-PINNED' if old and not same else 'INSTALLED'} {args.tool}: {r['path']} blob {entry['blob'][:12]} "
-              f"at bus {commit[:12]} -> {pfile}")
+              f"at bus {c.commit[:12]} -> {c.pfile}")
         if vendor or adopt:
-            print(f"  {'vendored' if vendor else 'adopted'} runner: {vendored} (bus blob {pins['runner']['blob'][:12]})")
+            print(f"  {'vendored' if vendor else 'adopted'} runner: {c.vendored} (bus blob {c.pins['runner']['blob'][:12]})")
         if old and not same:
-            for k in ("path", "commit", "blob", "bytes", "sha256", "interpreter", "reviewer", "reason", "pinned_utc"):
-                if old.get(k) != entry[k]:
-                    print(f"  ~ {k}: {short(old.get(k))} -> {short(entry[k])}")
-    print(f"WIRE: python {runner_rel} run {args.tool} -- <tool args>   (a hook should use `python -I`)")
-    print(f"CHECK: python {runner_rel} verify")
+            for line in repin_lines(old, entry):
+                print(line)
+    print(f"WIRE: python {c.runner_rel()} run {args.tool} -- <tool args>   (a hook should use `python -I`)")
+    print(f"CHECK: python {c.runner_rel()} verify")
+    return 0
+
+
+# --- init: a whole factory in one command --------------------------------------------------------
+def hook_command(h: dict[str, Any]) -> str:
+    cmd = f'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run {h["tool"]}'
+    if h.get("args"):
+        cmd += " --" + "".join(" " + (f'"$CLAUDE_PROJECT_DIR/{a[len(PROJECT_ARG):]}"' if a.startswith(PROJECT_ARG) else a)
+                               for a in h["args"])
+    return cmd
+
+
+def wired_commands(settings: Any, event: str) -> list[str]:
+    out = []
+    groups = settings.get("hooks", {}).get(event, []) if isinstance(settings, dict) and isinstance(settings.get("hooks"), dict) else []
+    for g in groups if isinstance(groups, list) else []:
+        for h in (g.get("hooks") if isinstance(g, dict) and isinstance(g.get("hooks"), list) else []):
+            if isinstance(h, dict) and isinstance(h.get("command"), str):
+                out.append(h["command"])
+    return out
+
+
+def wires_tool(command: str, tool: str, path: str) -> bool:
+    """Does an existing hook command already run this tool (a copy by file name, or the runner by tool name)?"""
+    base = Path(path).name
+    return (base in command or base.replace("-", "_") in command
+            or re.search(rf"\brun\s+{re.escape(tool)}(\s|$)", command) is not None)
+
+
+def load_settings(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        s = json.loads(path.read_bytes().decode("utf-8-sig"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise Refused(f"{path} is not readable JSON ({exc.__class__.__name__}); fix it, then re-run init") from None
+    if not isinstance(s, dict) or not isinstance(s.get("hooks", {}), dict) or not all(
+            isinstance(v, list) and all(isinstance(g, dict) and isinstance(g.get("hooks", []), list) for g in v)
+            for v in s.get("hooks", {}).values()):
+        raise Refused(f"{path}: 'hooks' is not {{event: [{{matcher?, hooks: [...]}}]}}; fix it, then re-run init")
+    return s
+
+
+def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[str, Any]], out: list[str],
+                  hand: list[str]) -> bytes | None:
+    """The merged .claude/settings.json bytes, or None when nothing is added. Existing entries are never edited or
+    removed: a hook another entry (or the user settings) already runs under another command is a HAND step, since
+    adding it would run it twice per event."""
+    settings = load_settings(path)
+    user = Path.home() / ".claude" / "settings.json"
+    try:
+        user_settings = load_settings(user) if user.resolve() != path.resolve() else {}
+    except Refused:
+        user_settings = {}
+    added = False
+    for h in hooks:
+        cmd, ev, tool = hook_command(h), h["event"], h["tool"]
+        have = wired_commands(settings, ev)
+        if cmd in have:
+            out.append(f"  kept    hook {ev}{'/' + h['matcher'] if h.get('matcher') else ''}: {tool}")
+            continue
+        clash = [c for c in have if wires_tool(c, tool, reg[tool]["path"])]
+        uclash = [c for c in wired_commands(user_settings, ev) if wires_tool(c, tool, reg[tool]["path"])]
+        if clash or uclash:
+            where = f"{path}" if clash else f"the user settings {user}"
+            hand.append(f"{where} already runs {tool} on {ev} as: {(clash or uclash)[0]}  -- replace it with: {cmd}"
+                        + ("" if clash else f"  (in {path}), or keep the user-level one; never both"))
+            continue
+        groups = settings.setdefault("hooks", {}).setdefault(ev, [])
+        g = next((g for g in groups if g.get("matcher") == h.get("matcher")), None)
+        if g is None:
+            g = ({"matcher": h["matcher"]} if h.get("matcher") else {})
+            g["hooks"] = []
+            groups.append(g)
+        g.setdefault("hooks", []).append({"type": "command", "command": cmd, "timeout": h.get("timeout", 60)})
+        out.append(f"  WIRED   hook {ev}{'/' + h['matcher'] if h.get('matcher') else ''}: {cmd}")
+        added = True
+    return (json.dumps(settings, indent=2) + "\n").encode("utf-8") if added else None
+
+
+def rule_tags_config(name: str, root: Path) -> dict[str, Any]:
+    files = [{"path": f, "bullet": "^- "} for f in ("CLAUDE.md", "AGENTS.md") if (root / f).is_file()]
+    return {"schema": RULE_TAGS_SCHEMA,
+            "_comment": ("Seeded by pin-runner.py init. Add each file whose bullets are rules (optionally a 'section' "
+                         "heading), and the hooks/CI files that run your checks as invocation_surfaces; then tag rules in "
+                         "the map (kinds enforced|judgement|record|prose). Grammar: the bus tools/check-rule-tags.py "
+                         "docstring. Run: python factory-pins/pin-runner.py run check-rule-tags -- --config "
+                         f"factory-pins/rule-tags.config.json --project {name} --report"),
+            "projects": [{"name": name, "root_candidates": ["."], "files": files, "rule_map": "factory-pins/rule-map.json"}]}
+
+
+def throughput_stub(name: str) -> dict[str, Any]:
+    return {"schema": THROUGHPUT_SCHEMA,
+            "note": ("Seeded by pin-runner.py init: a stub. List this repository's repo-relative path prefixes per class "
+                     "(pattern rules: the note in the bus tools/product-throughput-classes.json); unmatched paths are "
+                     "reported as 'unclassified', never dropped. DIAGNOSTIC ONLY, never a gate. Measure: pwsh "
+                     f"<bus>/tools/Get-ProductThroughput.ps1 -Repo . -Project {name} -ClassConfig "
+                     "factory-pins/product-throughput-classes.json -Lines"),
+            "projects": [{"name": name, "root": ".", "ref": "HEAD",
+                          "classes": {"product": [], "tests": [],
+                                      "factory-tooling": ["factory-pins/", ".claude/", ".githooks/", ".github/"],
+                                      "coordination-paperwork": [], "vendored-copies": []}}]}
+
+
+def emit_rule_map(entry: dict[str, Any], data: bytes, cfg_bytes: bytes, name: str, root: Path) -> bytes:
+    """Run the pinned check-rule-tags (verified bytes, private directory, python -I) with --emit-map against the
+    project; return the map's bytes. The config goes in through a private file and the root is explicit, so nothing
+    is written into the project by the tool itself."""
+    tmp = Path(tempfile.mkdtemp(prefix="factory-init-"))
+    try:
+        (tmp / "rule-tags.config.json").write_bytes(cfg_bytes)
+        p = run_materialized(entry, data, [], ["--config", str(tmp / "rule-tags.config.json"), "--project", name,
+                                               "--root", str(root), "--emit-map", str(tmp / "rule-map.json")], capture=True, cwd=tmp)
+        if p.returncode != 0 or not (tmp / "rule-map.json").is_file():
+            raise Refused(f"check-rule-tags --emit-map exited {p.returncode}: {(p.stderr or p.stdout).strip()[-300:]}")
+        return (tmp / "rule-map.json").read_bytes()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def project_name(root: Path, given: str | None) -> str:
+    n = given or (re.sub(r"[^a-z0-9]+", "-", root.name.lower()).strip("-") or "project")
+    if not NAME.match(n):
+        raise Refused(f"--name {n!r} must match {NAME.pattern}")
+    return n
+
+
+def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
+    """Install a registry PROFILE into a repository in one command. Every bus byte it records, writes or runs is first
+    proven to be git's object at --commit (read_blob), exactly as install does; the only tool it executes is the
+    profile's pinned check-rule-tags (--emit-map), from those verified bytes. Everything is planned before the first
+    write; a file the project already has is never overwritten (a conflict is a HAND step, exit 4). Never commits."""
+    c = Consumer(args, "init")
+    top = git(c.root, "rev-parse", "--show-toplevel", timeout=10)
+    if top.returncode != 0 or Path(top.stdout.decode().strip()).resolve() != c.root:
+        raise Refused(f"init installs at the top level of a git repository; {c.root} is not one")
+    reg, profiles = registry_doc_at(c.bus, c.commit)
+    if args.profile not in profiles:
+        raise Refused(f"unknown profile {args.profile!r}; the registry at {c.commit[:12]} lists: "
+                      f"{', '.join(sorted(profiles)) or '(none)'}")
+    prof = profiles[args.profile]
+    out: list[str] = []
+    hand: list[str] = []
+    writes: list[tuple[Path, bytes]] = []
+    fp = c.pfile.parent
+
+    vendor, adopt = c.plan_runner()
+    order = sorted(prof["tools"], key=lambda t: "with" in reg[t])          # group members before their group
+    verified: dict[str, tuple[dict[str, Any], bytes]] = {}
+    for t in order:
+        entry, old, same, data = c.plan_pin(t, reg[t])
+        c.pins["tools"][t] = entry
+        verified[t] = (entry, data)
+        out.append(f"  {'kept   ' if same else 'RE-PINNED' if old else 'PINNED '} {t}: {reg[t]['path']} blob {entry['blob'][:12]}")
+        if old and not same:
+            out += repin_lines(old, entry)
+    name = project_name(c.root, args.name)
+
+    for dest, src in sorted(prof.get("seeds", {}).items()):
+        if (c.root / dest).exists():
+            out.append(f"  kept    {dest} (the project's own)")
+        else:
+            writes.append((c.root / dest, read_blob(c.bus, c.commit, src)[1]))
+            out.append(f"  SEEDED  {dest} from {src}")
+    if prof.get("throughput_stub"):
+        dest = fp / "product-throughput-classes.json"
+        if dest.exists():
+            out.append("  kept    factory-pins/product-throughput-classes.json")
+        else:
+            writes.append((dest, (json.dumps(throughput_stub(name), indent=2) + "\n").encode()))
+            out.append("  STUB    factory-pins/product-throughput-classes.json (fill the classes)")
+    if prof.get("rule_map"):
+        cfg_path, map_path = fp / "rule-tags.config.json", fp / "rule-map.json"
+        if cfg_path.exists():
+            cfg_bytes = cfg_path.read_bytes()
+            try:
+                projects = json.loads(cfg_bytes.decode("utf-8-sig")).get("projects") or []
+                name_in = projects[0]["name"] if len(projects) == 1 else None
+            except (ValueError, AttributeError, KeyError, TypeError, IndexError):
+                name_in = None
+            out.append("  kept    factory-pins/rule-tags.config.json")
+        else:
+            cfg_bytes = (json.dumps(rule_tags_config(name, c.root), indent=2) + "\n").encode()
+            name_in = name
+            writes.append((cfg_path, cfg_bytes))
+            out.append("  SEEDED  factory-pins/rule-tags.config.json (rule files: "
+                       + (", ".join(f["path"] for f in rule_tags_config(name, c.root)["projects"][0]["files"]) or "none found") + ")")
+        if map_path.exists():
+            out.append("  kept    factory-pins/rule-map.json")
+        elif name_in is None:
+            hand.append(f"{cfg_path} does not name exactly one project; emit the map with: python factory-pins/pin-runner.py "
+                        "run check-rule-tags -- --config factory-pins/rule-tags.config.json --project <name> --emit-map "
+                        "factory-pins/rule-map.json")
+        else:
+            entry, data = verified["check-rule-tags"]
+            body = emit_rule_map(entry, data, cfg_bytes, name_in, c.root)
+            writes.append((map_path, body))
+            out.append(f"  EMITTED factory-pins/rule-map.json ({len(json.loads(body)['rules'])} rule(s), every kind prose)")
+
+    settings_path = c.root / ".claude" / "settings.json"
+    sbytes = plan_settings(settings_path, prof.get("claude_hooks", []), reg, out, hand)
+    if sbytes is not None:
+        writes.append((settings_path, sbytes))
+
+    hp = git(c.root, "rev-parse", "--path-format=absolute", "--git-path", "hooks", timeout=10)
+    if hp.returncode != 0:
+        raise Refused(f"cannot locate the git hooks directory of {c.root}")
+    hooks_dir = Path(hp.stdout.decode().strip())
+    git_modes: list[Path] = []
+    for gh in prof.get("git_hooks", []):
+        target = hooks_dir / gh["hook"]
+        body = read_blob(c.bus, c.commit, gh["path"])[1]
+        if not target.exists():
+            writes.append((target, body))
+            git_modes.append(target)
+            out.append(f"  WROTE   git {gh['hook']}: {target} (bus {gh['path']})")
+        elif gh["marker"] in target.read_bytes().decode("utf-8", "replace").splitlines():
+            out.append(f"  kept    git {gh['hook']}: {target} carries {gh['marker']!r}")
+        else:
+            hand.append(f"{target} exists with other layers: chain the layers of the bus {gh['path']} at {c.commit[:12]} "
+                        f"into it by hand (ahead of any layer that consumes stdin); init re-checks for {gh['marker']!r}")
+
+    if adopt:
+        c.pins["runner"] = runner_record(c.commit, c.runner_bytes)
+    c.record_clone()
+    pins_changed = json.dumps(c.pins, sort_keys=True) != c.before
+    # --- every decision above is made; now write (the vendored runner first, the pins -- the decision record -- last)
+    fp.mkdir(parents=True, exist_ok=True)
+    if vendor:
+        c.write_runner()
+    for path, body in writes:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(body)
+    for path in git_modes:
+        path.chmod(0o755)
+    if pins_changed or vendor:
+        c.pfile.write_text(json.dumps(c.pins, indent=2) + "\n", encoding="utf-8", newline="\n")
+
+    changed = [p for p, _b in writes] + ([c.vendored] if vendor else []) + ([c.pfile] if pins_changed or vendor else [])
+    print(f"{'NO-OP' if not changed else 'INIT'} profile {args.profile} ({prof['purpose']}) at bus {c.commit[:12]} "
+          f"into {c.root} as project {name!r}")
+    if vendor or adopt:
+        print(f"  {'vendored' if vendor else 'adopted'} runner: {c.vendored} (bus blob {c.pins['runner']['blob'][:12]})")
+    print("\n".join(out))
+    tracked = sorted({p.relative_to(c.root).as_posix() for p in changed
+                      if p.is_relative_to(c.root) and ".git" not in p.relative_to(c.root).parts})
+    if tracked:
+        print(f"COMMIT (a review decision; init never commits): git add -- {' '.join(tracked)}")
+    print(f"CHECK: python {c.runner_rel()} verify")
+    for h in hand:
+        print(f"HAND: {h}")
+    if hand:
+        print(f"INCOMPLETE: {len(hand)} step(s) left by hand; re-run the same init afterwards (it then exits 0)")
+        return EXIT_INCOMPLETE
     return 0
 
 
@@ -659,16 +1038,19 @@ def cmd_list(args: argparse.Namespace, _rest: list[str]) -> int:
     pins = load_pins(pfile) if pfile.exists() else {"schema": SCHEMA, "tools": {}}
     try:
         bus = find_bus(args, pins, pfile)
-        reg, src = registry_at(bus, resolve_commit(bus, args.commit)), f"{bus} @ {args.commit}"
+        (reg, profiles), src = registry_doc_at(bus, resolve_commit(bus, args.commit)), f"{bus} @ {args.commit}"
     except Unavailable:
         local = HERE / "registry.json"  # run from inside a bus checkout: the data file beside the runner
         if not local.is_file():
             raise
-        reg, src = load_registry(local.read_bytes(), str(local)), str(local)
+        (reg, profiles), src = parse_registry(local.read_bytes(), str(local)), str(local)
     print(f"# {len(reg)} tool(s) in the registry ({src})")
     for name in sorted(reg):
         t = reg[name]
         print(f"{name}\t{t['interpreter']}\t{t['path']}\t{t['purpose']}")
+    print(f"# {len(profiles)} profile(s): pin-runner.py init --profile <name>")
+    for name in sorted(profiles):
+        print(f"profile {name}\t{','.join(profiles[name]['tools'])}\t{profiles[name]['purpose']}")
     return 0
 
 
@@ -763,11 +1145,20 @@ def main(argv: list[str] | None = None) -> int:
     i.add_argument("--project-root")
     i.add_argument("--date")
     i.add_argument("--bus", default=argparse.SUPPRESS)  # also accepted after the subcommand
+    n = sub.add_parser("init", allow_abbrev=False)
+    n.add_argument("--profile", required=True)
+    n.add_argument("--commit", required=True)
+    n.add_argument("--reviewer", required=True)
+    n.add_argument("--reason", required=True)
+    n.add_argument("--project-root")
+    n.add_argument("--name", help="the project's name in the seeded configs (default: the folder name, slugged)")
+    n.add_argument("--date")
+    n.add_argument("--bus", default=argparse.SUPPRESS)
     li = sub.add_parser("list", allow_abbrev=False)
     li.add_argument("--commit", default="HEAD")
     li.add_argument("--bus", default=argparse.SUPPRESS)
     argv = sys.argv[1:] if argv is None else argv
-    cmds_names = ("run", "pin", "adopt-runner", "verify", "status", "install", "list")
+    cmds_names = ("run", "pin", "adopt-runner", "verify", "status", "install", "init", "list")
     # Everything after `run` belongs to the tool, verbatim (argparse must not eat the tool's flags).
     first = next((i for i, a in enumerate(argv) if a in cmds_names), None)
     if first is not None and argv[first] == "run":
@@ -776,7 +1167,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         args, rest = ap.parse_args(argv), []
     cmds = {"run": cmd_run, "pin": cmd_pin, "adopt-runner": cmd_adopt_runner, "verify": cmd_verify, "status": cmd_status,
-            "install": cmd_install, "list": cmd_list}
+            "install": cmd_install, "init": cmd_init, "list": cmd_list}
     try:
         return cmds[args.cmd](args, rest)
     except Refused as exc:

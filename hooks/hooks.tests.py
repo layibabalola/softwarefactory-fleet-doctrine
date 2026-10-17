@@ -203,7 +203,7 @@ class NoUnpinnedTool(unittest.TestCase):
         subprocess.run(["git", "init", "-q", "--bare", self.remote], check=True)
         subprocess.run(["git", "init", "-q", "-b", "master", self.repo], check=True)
         _g(self.repo, "remote", "add", "origin", self.remote)
-        self.write("tools/session-checkpoint.py", "print(1)\n")      # a census copy the project already has
+        self.write("tools/doctrine_outbox.py", "print(1)\n")         # a census copy the project already has
         self.write("README.md", "x\n")
         self.commit("base")
         _g(self.repo, "push", "-q", "origin", "master")
@@ -246,21 +246,28 @@ class NoUnpinnedTool(unittest.TestCase):
                 self.assertEqual(self.judge().returncode, 1)
 
     def test_census_family_new_copy_refuses_existing_edit_allowed(self):
-        self.write("tools/session-checkpoint.py", "print(2)\n")
+        self.write("tools/doctrine_outbox.py", "print(2)\n")
         self.commit("edit the project's own copy")
         self.assertEqual(self.judge().returncode, 0, "editing the existing census copy is allowed")
-        self.write("other/session_checkpoint.py", "print(3)\n")
+        self.write("other/doctrine-outbox.py", "print(3)\n")
         self.commit("second copy")
         r = self.judge()
         self.assertEqual(r.returncode, 1)
-        self.assertIn("a NEW copy of the census-counted tool 'session-checkpoint'", r.stderr)
+        self.assertIn("a NEW copy of the census-counted tool 'doctrine-outbox'", r.stderr)
+
+    def test_session_checkpoint_is_canonical_since_the_bus_ships_it(self):
+        self.write("tools/session-checkpoint.py", "print('a project copy')\n")
+        self.commit("a project copy, added after tools/factory/session-checkpoint.py landed")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1, "a canonical family refuses an add or an edit")
+        self.assertIn("pin-runner.py run session-checkpoint", r.stderr)
 
     def test_unrelated_files_deletion_and_removal_pass(self):
         self.write("src/check-doc-size.md", "doc\n")
         self.write("src/app.py", "x\n")
         self.commit("unrelated")
         self.assertEqual(self.judge().returncode, 0)
-        Path(self.repo, "tools/session-checkpoint.py").unlink()
+        Path(self.repo, "tools/doctrine_outbox.py").unlink()
         self.commit("retire the copy")
         self.assertEqual(self.judge().returncode, 0, "deleting a copy is what the hook wants")
         self.assertEqual(self.judge(f"(delete) {Z} refs/heads/master {self.base}").returncode, 0)
@@ -361,6 +368,19 @@ def readme_layer() -> str:
     start = text.index("   ```sh\n   # factory-ff-only\n") + len("   ```sh\n")
     end = text.index("   ```\n", start)
     return "".join(l[3:] if l.startswith("   ") else l for l in text[start:end].splitlines(True))
+
+
+class FactoryPrePushFile(unittest.TestCase):
+    """hooks/pre-push.factory.sh is what `pin-runner.py init` writes: its ff-only layer must stay the README layer,
+    verbatim (the push behaviour of that layer is regression-tested below), followed by the no-unpinned-tool layer.
+    tools/factory/init.tests.py runs the whole file through real pushes."""
+
+    def test_the_file_carries_the_readme_layer_verbatim_then_the_no_unpinned_layer(self):
+        body = (HERE / "pre-push.factory.sh").read_text(encoding="utf-8").replace("\r\n", "\n")
+        layer = readme_layer()
+        self.assertIn(layer, body)
+        self.assertGreater(body.index("# factory-no-unpinned-tool\n"), body.index(layer))
+        self.assertIn("run no-unpinned-tool --", body)
 
 
 class FfOnlyLayerSnippet(unittest.TestCase):

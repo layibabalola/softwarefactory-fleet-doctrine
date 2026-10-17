@@ -175,6 +175,8 @@ jobs:
       - name: Factory tools and refusing hooks (pin runner, check-doc-size tier tables, fleet scorecard + health, hooks)
         run: |
           python3 tools/factory/pin-runner.tests.py
+          python3 tools/factory/init.tests.py
+          python3 tools/factory/session-checkpoint.tests.py
           python3 tools/factory/check-doc-size.tests.py
           python3 tools/factory/session-start-auth.tests.py
           python3 tools/factory/fleet-scorecard.tests.py

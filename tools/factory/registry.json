@@ -1,6 +1,6 @@
 {
   "schema": "factory-registry.v1",
-  "_comment": "Tools a project may install with `pin-runner.py install <tool>`. DATA read from the reviewed bus commit, never executed. Add a tool here in the same commit that adds it under tools/factory/.",
+  "_comment": "Tools a project may install with `pin-runner.py install <tool>`, and PROFILES (named bundles) it may install with `pin-runner.py init --profile <name>`. DATA read from the reviewed bus commit, never executed. Add a tool here in the same commit that adds it; a profile names registered tools only (its keys: validate_profile in pin-runner.py).",
   "tools": {
     "check-doc-size": {
       "path": "tools/factory/check-doc-size.py",
@@ -21,13 +21,105 @@
       "path": "tools/factory/kernel-receipt.py",
       "interpreter": "python",
       "purpose": "factory kernel: write or dry-run a landing's kernel receipt (a pinned group; install its members first)",
-      "with": ["kernel-subjects", "codex-review"]
+      "with": [
+        "kernel-subjects",
+        "codex-review"
+      ]
     },
     "kernel-config": {
       "path": "tools/factory/kernel-config.py",
       "interpreter": "python",
       "purpose": "check a project's kernel config with the loader of record (a pinned group; install kernel-subjects first)",
-      "with": ["kernel-subjects"]
+      "with": [
+        "kernel-subjects"
+      ]
+    },
+    "session-checkpoint": {
+      "path": "tools/factory/session-checkpoint.py",
+      "interpreter": "python",
+      "purpose": "machine-local session checkpoint hook (SessionStart/Stop; optional doctrine view + PreToolUse tick); config from --config"
+    },
+    "exact-path-add": {
+      "path": "hooks/claude/exact-path-add.py",
+      "interpreter": "python",
+      "purpose": "PreToolUse Bash|PowerShell: refuse sweeping git stages (git add -A/./-u, git commit -a)"
+    },
+    "git-optional-locks": {
+      "path": "hooks/claude/git-optional-locks.py",
+      "interpreter": "python",
+      "purpose": "PreToolUse Bash|PowerShell: refuse observer git commands without --no-optional-locks"
+    },
+    "pre-push-ff-only": {
+      "path": "hooks/pre-push-ff-only.py",
+      "interpreter": "python",
+      "purpose": "git pre-push: refuse a non-fast-forward or a deletion of a protected branch"
+    },
+    "no-unpinned-tool": {
+      "path": "hooks/pre-push-no-unpinned-tool.py",
+      "interpreter": "python",
+      "purpose": "git pre-push: refuse a pushed copy of a shared factory tool (run it by pin instead)"
+    },
+    "check-rule-tags": {
+      "path": "tools/check-rule-tags.py",
+      "interpreter": "python",
+      "purpose": "rule census: which written rules a refusing check backs; --emit-map writes a rule-map skeleton; config from --config"
+    }
+  },
+  "profiles": {
+    "base": {
+      "purpose": "the floor every member repository runs: session checkpoints, refusing Claude and git hooks, a rule map and a throughput stub",
+      "tools": [
+        "session-checkpoint",
+        "exact-path-add",
+        "git-optional-locks",
+        "pre-push-ff-only",
+        "no-unpinned-tool",
+        "check-rule-tags"
+      ],
+      "seeds": {
+        "factory-pins/session-checkpoint.config.json": "tools/factory/fixtures/session-checkpoint/default.config.json"
+      },
+      "claude_hooks": [
+        {
+          "event": "SessionStart",
+          "tool": "session-checkpoint",
+          "args": [
+            "--config",
+            "@project/factory-pins/session-checkpoint.config.json"
+          ],
+          "timeout": 60
+        },
+        {
+          "event": "Stop",
+          "tool": "session-checkpoint",
+          "args": [
+            "--config",
+            "@project/factory-pins/session-checkpoint.config.json"
+          ],
+          "timeout": 60
+        },
+        {
+          "event": "PreToolUse",
+          "matcher": "Bash|PowerShell",
+          "tool": "exact-path-add",
+          "timeout": 30
+        },
+        {
+          "event": "PreToolUse",
+          "matcher": "Bash|PowerShell",
+          "tool": "git-optional-locks",
+          "timeout": 30
+        }
+      ],
+      "git_hooks": [
+        {
+          "hook": "pre-push",
+          "path": "hooks/pre-push.factory.sh",
+          "marker": "# factory-no-unpinned-tool"
+        }
+      ],
+      "rule_map": true,
+      "throughput_stub": true
     }
   }
 }

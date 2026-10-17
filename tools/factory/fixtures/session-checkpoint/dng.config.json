@@ -1,0 +1,17 @@
+{
+  "schema": "session-checkpoint.v1",
+  "_comment": "DNG's v3 (workspace tools/session-checkpoint.py + tools/doctrine-periodic.py) as data, for DngAutoProcessor/factory-pins/session-checkpoint.config.json. Relative paths resolve against that file's directory: '../..' is the workspace root (the hub), '..' the nested repo. Parity with v3 is session-checkpoint.tests.py V3Parity.",
+  "nested_repo_search": true,
+  "rotation": {
+    "resume_receipts": "C:/DngAutoJobs/evidence/RESUME",
+    "resume_hint": "\"resume our work\" (DngAutoProcessor/docs/13-RESET-PROMPTS.md section P-RESUME)",
+    "receipt_writer": "P-RESUME"
+  },
+  "doctrine": {
+    "bus_clone": "C:/code/softwarefactory-fleet-doctrine",
+    "steward_receipts": "C:/DngAutoJobs/evidence/steward",
+    "fold_marker": "../.codex-state/doctrine/last-seen.json",
+    "sweep_log": "C:/DngAutoJobs/machine/doctrine/doctrine-sweep.log",
+    "hub_dir": "../.."
+  }
+}

@@ -1,0 +1,367 @@
+#!/usr/bin/env python3
+"""session-checkpoint v3, a superset of session-checkpoint v2 (that string is the install prompt's
+skip marker; keep it, or a re-run of the install prompt silently downgrades this file to v2).
+SessionStart: record an account rotation and repeat the notice until "resume our work" has run,
+list dirty or ahead worktrees, print the newest checkpoints, re-seed the runbook, snapshot current
+dirt. Stop: write a pointer-only checkpoint for THIS session to
+Home/.claude/session-checkpoints/<repo-slug>/ (machine-local, outside the repo, survives an account
+rotation). Never blocks, never runs a git write, always exits 0: an internal error is printed into
+the delivered output instead. Owned dirt = files dirty now that were not dirty at SessionStart.
+
+Why v3, measured 2026-09-28 from the hook records in this project's transcripts:
+- v2 printed "[AUTO-RESUME] ... Launching recovery lanes..." on a rotation. It launched nothing (the
+  recovery tooling was never wired and is frozen), and the arrow on that line cannot be encoded by
+  the cp1252 stdout a hook gets on this machine: the hook exited 1 on all six rotations from 09-15
+  to 09-21, and a hook that exits non-zero delivers none of its output. v2 had also recorded the
+  new account before printing, so each crash consumed the notice for every later session; at the
+  rotation into the current account the session that consumed it was a scheduled cop tick. Now the
+  rotation is a marker that only a P-RESUME receipt clears, stdout is UTF-8, and errors exit 0.
+- v2's worktree scan outran the 60 s hook timeout under load (9 sessions in 10 days), and a
+  timed-out hook delivers nothing either. The scan now runs in parallel under a deadline and says
+  how many worktrees it did not reach."""
+import calendar, json, os, re, shutil, subprocess, sys, time
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+RUNBOOK_CANDIDATES = ["docs/ops/ROTATION.md", "knowledge/ROTATION.md",
+                      "roadmap/handoff/ROTATION.md", "docs/ROTATION.md"]
+# .claude/settings.json gives SessionStart 60 s; work bounded by this deadline leaves room for the rest.
+DEADLINE_S = 40
+# P-RESUME step 6 writes its receipts here as <UTC yyyymmdd-hhmm>.md and says no other file here is
+# one. A receipt stamped after the minute a rotation was recorded means that rotation was resumed.
+RESUME_RECEIPTS = Path(r"C:\DngAutoJobs\evidence\RESUME")
+RECEIPT_NAME = re.compile(r"(\d{8}-\d{4})\.md")
+START = time.monotonic()
+
+
+def git(cwd, *args, deadline=False):
+    """stdout of a read-only git call, "" on failure. With deadline=True the call is bounded by
+    DEADLINE_S and returns None when the deadline cut it off, so the caller can say what it missed."""
+    timeout = 60
+    if deadline:
+        timeout = DEADLINE_S - (time.monotonic() - START)
+        if timeout <= 0:
+            return None
+    try:
+        p = subprocess.run(["git", "-C", str(cwd), "--no-optional-locks", *args],
+                           capture_output=True, text=True, timeout=timeout)
+        return p.stdout.strip() if p.returncode == 0 else ""
+    except subprocess.TimeoutExpired:
+        return None if deadline else ""
+    except Exception:
+        return ""
+
+
+def account_id():
+    try:
+        d = json.load(open(Path.home() / ".claude.json", encoding="utf-8"))
+        return str((d.get("oauthAccount") or {}).get("accountUuid") or "")[:8]
+    except Exception:
+        return ""
+
+
+def dirt(cwd, deadline=False):
+    """Modified tracked files plus untracked ones; None when the deadline cut either call off."""
+    diff = git(cwd, "diff", "--name-only", deadline=deadline)
+    others = git(cwd, "ls-files", "--others", "--exclude-standard", deadline=deadline)
+    if diff is None or others is None:
+        return None
+    return set(diff.splitlines()) | set(others.splitlines())
+
+
+def worktree_scan(repo):
+    listing = git(repo, "worktree", "list", "--porcelain", deadline=True)
+    if listing is None:
+        return ["  (not scanned: the hook's deadline passed first; derive with `git worktree list`)"]
+    paths = [l[9:] for l in listing.splitlines() if l.startswith("worktree ")]
+    if not paths:
+        return []
+    main = git(paths[0], "symbolic-ref", "-q", "--short", "HEAD", deadline=True) or "HEAD"
+
+    def one(p):
+        dirty = dirt(p, deadline=True)
+        ahead = git(p, "rev-list", "--count", f"{main}..HEAD", deadline=True) if p != paths[0] else "0"
+        return None if dirty is None or ahead is None else (len(dirty), ahead)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(one, paths))
+    out = [f"  {p}: dirty={r[0]} ahead-of-{main}={r[1] or '?'}"
+           for p, r in zip(paths, results) if r and (r[0] or r[1] not in ("", "0"))]
+    missed = sum(r is None for r in results)
+    if missed:
+        out.append(f"  ({missed} of {len(paths)} worktrees not scanned before the {DEADLINE_S} s deadline; "
+                   "derive them with `git worktree list` and `git -C <path> status`)")
+    return out
+
+
+def rotation_notice(base, home, acct):
+    """Keep an account change as a marker until a P-RESUME receipt is stamped after it, and return
+    the notice while it stands. The marker is written before .account moves, so a hook that dies at
+    any later point cannot lose the rotation, and no single session can swallow it."""
+    seen, marker = base / ".account", base / ".rotation-pending"
+    if marker.exists():
+        recorded = time.strftime("%Y%m%d-%H%M", time.gmtime(marker.stat().st_mtime))
+        try:
+            stamps = [m.group(1) for m in map(RECEIPT_NAME.fullmatch, os.listdir(RESUME_RECEIPTS)) if m]
+        except OSError:
+            stamps = []
+        if any(s > recorded for s in stamps):
+            marker.unlink()
+    prev = seen.read_text(encoding="utf-8").strip() if seen.exists() else ""
+    if prev and acct and prev != acct:
+        chain = marker.read_text(encoding="utf-8").strip() if marker.exists() else prev
+        marker.write_text(f"{chain} -> {acct}\n", encoding="utf-8")
+    if acct:
+        seen.write_text(acct, encoding="utf-8")
+    if not marker.exists():
+        return ""
+    since = time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(marker.stat().st_mtime))
+    return (f"ACCOUNT ROTATION DETECTED ({marker.read_text(encoding='utf-8').strip()}, recorded {since}) "
+            f"and not yet resumed. In an attended session: read {home / 'ROTATION.md'} section 4, then "
+            "\"resume our work\" (DngAutoProcessor/docs/13-RESET-PROMPTS.md section P-RESUME). Nothing "
+            "reopens the previous account's sessions on its own. This line repeats until P-RESUME writes "
+            "its receipt; a scheduled seat ignores it.")
+
+
+BUS = Path(r"C:\code\softwarefactory-fleet-doctrine")
+STEWARD_RECEIPTS = Path(r"C:\DngAutoJobs\evidence\steward")
+SWEEP_LOG = Path(r"C:\DngAutoJobs\machine\doctrine\doctrine-sweep.log")
+SWEEP_STALE_H = 3            # the box sweep runs hourly; a last run older than this means it has stopped
+SESSION_TIPS = Path.home() / ".claude" / "session-checkpoints" / "doctrine-periodic"
+LABEL = "bus law 3 / fleet candidate R15.5"
+
+
+def fold_cursor(repo):
+    """The board's fold cursor, from the artifact that advances it: the LAST `doctrineFoldedThrough` in the newest steward
+    receipt that has one; the bus tool's marker is the fallback. Returns (sha, source) or (None, reason)."""
+    try:
+        rcpts = sorted((f for f in STEWARD_RECEIPTS.glob("2*.md") if ".lane" not in f.name), reverse=True)[:6]
+        for f in rcpts:
+            ms = re.findall(r"doctrineFoldedThrough:\s*`?([0-9a-f]{40})", f.read_text(encoding="utf-8", errors="replace"))
+            if ms:
+                return ms[-1], f"steward receipt {f.stem}"
+    except OSError:
+        pass
+    mk = repo / ".codex-state" / "doctrine" / "last-seen.json"
+    if mk.exists():
+        try:
+            return json.loads(mk.read_text(encoding="utf-8")).get("lastSeen"), "doctrine-sync marker"
+        except Exception:
+            pass
+    return None, "no fold cursor found"
+
+
+def sweep_state():
+    """(hours since the box sweep last ran, last heartbeat step line, last pull step line) from the sweep's own log."""
+    try:
+        lines = SWEEP_LOG.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return None, "no sweep log", ""
+    stamps = [ln.split(" ", 1)[0] for ln in lines if re.match(r"\d{4}-\d{2}-\d{2}T", ln)]
+    hb = next((ln for ln in reversed(lines) if " step=heartbeat " in ln), "")
+    pull = next((ln for ln in reversed(lines) if " step=pull " in ln), "")
+    if not stamps:
+        return None, "empty sweep log", pull
+    last = calendar.timegm(time.strptime(stamps[-1], "%Y-%m-%dT%H:%M:%SZ"))
+    return (time.time() - last) / 3600, hb, pull
+
+
+def _session_tip_path(sid):
+    return SESSION_TIPS / f"{sid}.tip"
+
+
+def _git_bus(*args):
+    budget = DEADLINE_S - (time.monotonic() - START) - 1
+    if budget < 1:
+        raise TimeoutError("hook time budget spent")
+    r = subprocess.run(["git", "-C", str(BUS), *args], capture_output=True, text=True, encoding="utf-8",
+                       errors="replace", timeout=budget)
+    if r.returncode != 0:
+        raise RuntimeError(((r.stderr or r.stdout).strip().splitlines() or [f"git {args[0]} rc={r.returncode}"])[-1])
+    return r.stdout
+
+
+def _doctrine_view(repo, sid, periodic):
+    """Lines to show, and the bus tip they cover. SessionStart: from the OLDER of this session's last-shown tip and the
+    board's fold cursor (nothing the steward folds between a session's events can slip past it). Periodic: from this
+    session's last-shown tip only, and nothing at all when there is nothing new."""
+    out = []
+    tip = _git_bus("rev-parse", "--verify", "refs/remotes/origin/master").strip()
+    cur, src = fold_cursor(repo)
+    seen = None
+    tp = _session_tip_path(sid)
+    if tp.exists():
+        seen = tp.read_text(encoding="utf-8").strip() or None
+    start, basis = None, ""
+    if periodic and seen:
+        start, basis = seen, "since this session was last shown the bus"
+    elif cur and seen:
+        try:
+            _git_bus("merge-base", "--is-ancestor", seen, cur)
+            start, basis = seen, "since this session was last shown the bus (older than the board's fold cursor)"
+        except RuntimeError:
+            start, basis = cur, f"after the board's fold cursor {cur[:8]} ({src})"
+    elif cur:
+        start, basis = cur, f"after the board's fold cursor {cur[:8]} ({src})"
+    elif seen:
+        start, basis = seen, "since this session was last shown the bus"
+    if start:
+        _git_bus("cat-file", "-e", f"{start}^{{commit}}")
+        rng = f"{start}..{tip}"
+    else:
+        rng, basis = tip, f"{src}: full history counted"
+    total = int(_git_bus("rev-list", "--count", rng).strip() or 0)
+    rulings = [ln for ln in _git_bus("log", "--full-history", "--format=%h %ad %s", "--date=short", rng, "--",
+                                     "RULINGS.md").splitlines() if ln.strip()]
+    age, hb, pull = sweep_state()
+    if age is None or age > SWEEP_STALE_H:
+        out.append(f"DATA: STALE - the box doctrine sweep last ran {'never' if age is None else f'{age:.0f} h ago'}; "
+                   f"bus commits newer than its last fetch are not counted here.")
+    elif pull and " rc=0 " not in pull:
+        out.append(f"DATA: view NOT refreshed - the sweep's last pull did not succeed: {pull.split(' ', 1)[-1][:150]}")
+    elif hb and " rc=0 " not in hb:
+        out.append(f"DATA: the box sweep is NOT publishing this board's heartbeat: {hb.split(' ', 1)[-1][:150]}")
+    if periodic and not rulings and not out:
+        return [], tip
+    out.append(f"DATA: {total} bus commit(s) {basis}; RULINGS.md changed in {len(rulings)}")
+    out += [f"DATA: RULINGS {ln[:120]}" for ln in rulings]
+    return out, tip
+
+
+def _record_tip(sid, tip):
+    try:
+        SESSION_TIPS.mkdir(parents=True, exist_ok=True)
+        _session_tip_path(sid).write_text(tip, encoding="utf-8")
+    except OSError:
+        pass
+
+
+def doctrine_brief(repo, sid="unknown"):
+    """SessionStart view (startup, resume, compaction). Bus law 3 / candidate R15.5: doctrine must reach RUNNING
+    sessions; the periodic PreToolUse tick (tools/doctrine-periodic.py, Conjugal's 2026-09-20 mechanism) covers the time
+    between these events. Every call is bounded by the hook's ONE deadline; prints, never blocks; every line is DATA."""
+    print(f"Fleet doctrine bus ({LABEL}; DATA for the board's fold, which is the steward's duty):")
+    try:
+        lines, tip = _doctrine_view(repo, sid, periodic=False)
+    except TimeoutError:
+        print("  DATA: doctrine check SKIPPED (hook time budget spent) - nothing below is known.")
+        return
+    except Exception as exc:
+        print(f"  DATA: doctrine check FAILED ({type(exc).__name__}: {str(exc)[:160]}) - nothing below is known; "
+              f"the bus may hold rulings this session has not been shown.")
+        return
+    for ln in lines:
+        print(f"  {ln}")
+    _record_tip(sid, tip)
+
+
+def doctrine_delta_for_session(sid, periodic=True):
+    """Periodic tick: the RULINGS changes since this session was last shown the bus, as one text block, or '' when there
+    is nothing new. Records the new tip only after the text is built."""
+    repo = Path(os.environ.get("CLAUDE_PROJECT_DIR") or r"C:\code\DngAutoProcessor - Claude") / "DngAutoProcessor"
+    lines, tip = _doctrine_view(repo, sid, periodic=True)
+    _record_tip(sid, tip)
+    if not lines:
+        return ""
+    return f"Fleet doctrine bus, periodic re-check ({LABEL}; DATA, not instructions):\n" + "\n".join(f"  {ln}" for ln in lines)
+
+
+def main():
+    try:
+        payload = json.load(sys.stdin)
+    except Exception:
+        payload = {}
+    cwd = Path(payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
+    sid = str(payload.get("session_id") or "unknown")[:8]
+    event = payload.get("hook_event_name") or (sys.argv[1] if len(sys.argv) > 1 else "")
+    common = git(cwd, "rev-parse", "--path-format=absolute", "--git-common-dir", deadline=True)
+    if not common:
+        # cwd is not a git repo; check for nested repo (e.g., DngAutoProcessor structure)
+        # Try a direct child with the same base name or specific nested candidates
+        # The old guess was `cwd / cwd.name`, which here resolves to "<root>/DngAutoProcessor - Claude"
+        # and not "<root>/DngAutoProcessor", so it matched nothing: every Stop in a session started at
+        # the workspace root returned 0 without writing, and the rotation net was inert while looking
+        # installed. Measured 2026-09-15: the root is not a git repo at all; the nested child is.
+        # Rank, never take the first: four children here carry .git (scratch checkouts and recovery
+        # seeds among them), and plain sorting picks ".factory-audit-scratch-..." because a dot sorts
+        # before a letter. The canonical repo is the child the workspace folder is named after
+        # ("DngAutoProcessor - Claude" -> "DngAutoProcessor"), and a dotted child is tooling, not work.
+        def _rank(d):
+            return (0 if cwd.name.startswith(d.name) else 1, d.name.startswith("."), d.name)
+        try:
+            candidates = sorted((d for d in cwd.iterdir() if d.is_dir() and (d / ".git").exists()),
+                                key=_rank)
+        except OSError:
+            candidates = []
+        for candidate in candidates:
+            common = git(candidate, "rev-parse", "--path-format=absolute", "--git-common-dir", deadline=True)
+            if common:
+                cwd = candidate  # git operations run in the nested repo
+                break
+    if not common:
+        return 0
+    repo = Path(common).parent
+    home = Path.home() / ".claude"
+    base = home / "session-checkpoints" / repo.name.replace(" ", "-")
+    base.mkdir(parents=True, exist_ok=True)
+    snap = base / f".snap-{sid}.json"
+    acct = account_id()
+    if event == "SessionStart":
+        notice = rotation_notice(base, home, acct)
+        dirty = dirt(cwd, deadline=True)
+        if dirty is not None:
+            snap.write_text(json.dumps(sorted(dirty)), encoding="utf-8")
+        if not (home / "ROTATION.md").exists():
+            for c in RUNBOOK_CANDIDATES:
+                if (repo / c).exists():
+                    shutil.copyfile(repo / c, home / "ROTATION.md")
+                    break
+        if notice:
+            print(notice)
+        doctrine_brief(repo, sid)
+        scan = worktree_scan(repo)
+        if scan:
+            print(f"Worktrees of {repo.name} with uncommitted or unintegrated work:")
+            print("\n".join(scan))
+        files = sorted(base.glob("SESSION-*.md"), key=lambda p: p.stat().st_mtime, reverse=True)[:5]
+        if files:
+            print(f"Session checkpoints for {repo.name} (newest first, pointer-only, machine-local):")
+            for f in files:
+                print(f"  {f}")
+        return 0
+    if event != "Stop":
+        return 0
+    dirty = dirt(cwd)
+    before = set(json.loads(snap.read_text(encoding="utf-8"))) if snap.exists() else set()
+    owned = sorted(dirty - before)
+    branch = git(cwd, "symbolic-ref", "-q", "--short", "HEAD") or "(detached)"
+    head = git(cwd, "rev-parse", "--short", "HEAD")
+    subject = git(cwd, "log", "-1", "--format=%s")[:120]
+    ts = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    out = base / f"SESSION-{sid}.md"
+    lines = [f"# SESSION-{sid} checkpoint (pointer-only, written mechanically at every turn end)", "",
+             f"- written: {ts}", f"- account: {acct or 'unknown'}", f"- repo: {repo}", f"- cwd: {cwd}",
+             f"- branch: {branch} @ {head}", f"- last commit: {subject}",
+             f"- files this session dirtied and has NOT committed ({len(owned)}):"]
+    lines += [f"  - {p}" for p in owned] or ["  - none"]
+    lines += ["", "Resume: read the repo entry file, then `git log -5 <branch>`; the list above is what a rotation would lose."]
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    if owned:
+        print(f"checkpoint: {len(owned)} uncommitted file(s) from this session recorded at {out}")
+    return 0
+
+
+if __name__ == "__main__":
+    for stream in (sys.stdin, sys.stdout):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    try:
+        main()
+    except Exception as exc:
+        # A non-zero exit makes the harness drop everything already printed, which is how v2 lost
+        # its rotation notice, so the error travels inside the delivered output and the exit stays 0.
+        print(f"session-checkpoint.py failed ({type(exc).__name__}: {exc}); "
+              "whatever it would have printed or written after that point is missing")
+    sys.exit(0)

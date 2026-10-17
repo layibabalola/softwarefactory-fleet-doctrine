@@ -8,9 +8,11 @@ is how it falls. One implementation lives here; a project supplies only **data**
 
 | file | what |
 |---|---|
-| [`pin-runner.py`](pin-runner.py) | the one generic runner: `install`, `list`, `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args`. `run` judges with the pins committed at HEAD (stderr `FALLBACK`) when the working copy is not JSON or carries merge-conflict markers, so a conflicted pins file cannot block the commands that resolve it; an unusable HEAD copy still refuses |
-| [`bootstrap.sh`](bootstrap.sh), [`bootstrap.ps1`](bootstrap.ps1) | write the reviewed runner blob, prove `git hash-object` equals git's tree entry, only then run `install` (refuse otherwise) |
-| [`registry.json`](registry.json) | tool name to bus path, interpreter and purpose: what `install` and `list` resolve (add a tool here in the commit that adds it) |
+| [`pin-runner.py`](pin-runner.py) | the one generic runner: `init --profile`, `install`, `list`, `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args`. `run` judges with the pins committed at HEAD (stderr `FALLBACK`) when the working copy is not JSON or carries merge-conflict markers, so a conflicted pins file cannot block the commands that resolve it; an unusable HEAD copy still refuses |
+| [`bootstrap.sh`](bootstrap.sh), [`bootstrap.ps1`](bootstrap.ps1) | write the reviewed runner blob, prove `git hash-object` equals git's tree entry, only then run `install` (or `init` for `profile:NAME`) (refuse otherwise) |
+| [`registry.json`](registry.json) | tool name to bus path, interpreter and purpose: what `install` and `list` resolve (add a tool here in the commit that adds it); `profiles`: the named bundles `init` installs |
+| [`session-checkpoint.py`](session-checkpoint.py) | the fleet's one session checkpoint hook (SessionStart, Stop; with a `doctrine` block also the periodic PreToolUse doctrine tick that was `doctrine-periodic.py`); every project difference is `--config` data. No config = the ROTATION install prompt's v2; [`fixtures/session-checkpoint/dng.config.json`](fixtures/session-checkpoint/dng.config.json) = DNG's v3. Parity with both is tested event for event |
+| [`fixtures/session-checkpoint/`](fixtures/session-checkpoint/) | `default.config.json` (what `init` seeds), `dng.config.json`, and the v2/v3 references the parity tests run (`*.py.txt`, so nothing counts them as copies) |
 | [`check-doc-size.py`](check-doc-size.py) | markdown size budgets; every tier, glob, exemption, scan mode and unit from `--config` |
 | [`session-start-auth.py`](session-start-auth.py) | SessionStart hook: runs the project's CLI auth/parity checker, surfaces the verdict, always exits 0, never re-auths, then self-tests every Bash/PowerShell PreToolUse guard in `.claude/settings.json` against a must-refuse fixture and reports any that fail open (`--checker`, `--repair-hint`, `--live`, `--config` for fixtures/green text/settings path, `--no-guard-self-test`) |
 | [`fixtures/check-doc-size/`](fixtures/check-doc-size/) | the three projects' tier tables as configs (test fixtures and adoption starting points) |
@@ -33,6 +35,8 @@ Tests (stdlib only, Windows and POSIX):
 
 ```
 python tools/factory/pin-runner.tests.py
+python tools/factory/init.tests.py             # init --profile base end to end: hooks as written, a real git push
+python tools/factory/session-checkpoint.tests.py  # parity with v2 and DNG's v3, event for event
 python tools/factory/check-doc-size.tests.py
 python tools/factory/check-evidence-dumps.tests.py
 python tools/factory/session-start-auth.tests.py
@@ -41,6 +45,34 @@ node tools/tool-census.tests.mjs
 python tools/factory/kernel-tools.tests.py      # config location, schema = loader, seed project through the runner
 python tools/factory/kernel-suites.tests.py     # the kernel's own suites, staged as a project's tools/ directory
 ```
+
+## A whole factory in one command: `init --profile`
+
+```
+sh tools/factory/bootstrap.sh <bus> <bus-sha> profile:base <reviewer> <reason> [project-root]
+pwsh tools/factory/bootstrap.ps1 -Bus <bus> -Sha <bus-sha> -Tool profile:base -Reviewer <who> -Reason <why> [-Project <dir>]
+python factory-pins/pin-runner.py init --profile base --commit <bus-sha> --reviewer <who> --reason <why> --bus <bus>   # runner already vendored
+```
+
+A **profile** is registry data (`profiles` in `registry.json`, checked by `validate_profile`). `base` installs:
+
+| piece | where it lands |
+|---|---|
+| the runner (vendored, adopted) and a pin per tool: `session-checkpoint`, `exact-path-add`, `git-optional-locks`, `pre-push-ff-only`, `no-unpinned-tool`, `check-rule-tags` | `factory-pins/pin-runner.py`, `factory-pins/factory-pins.json` |
+| seeds, copied from verified bus blobs | `factory-pins/session-checkpoint.config.json` |
+| Claude hooks, each `python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run <tool>`: session-checkpoint on SessionStart and Stop, the two guards on PreToolUse `Bash\|PowerShell` | merged into `.claude/settings.json` |
+| the git pre-push layers (ff-only, then no-unpinned-tool), [`hooks/pre-push.factory.sh`](../../hooks/pre-push.factory.sh) | the effective hooks dir (`core.hooksPath` honoured) |
+| a rule-map skeleton: the pinned `check-rule-tags --emit-map` over `CLAUDE.md`/`AGENTS.md`, every rule `prose` | `factory-pins/rule-tags.config.json`, `factory-pins/rule-map.json` |
+| a product-throughput class stub for `tools/Get-ProductThroughput.ps1 -ClassConfig` | `factory-pins/product-throughput-classes.json` |
+
+Law 1 holds exactly as for `install`: the running runner must be git's object at `<bus-sha>`, and every blob init pins,
+seeds, writes as a hook or executes is hashed in-process and must equal the commit's tree entry. The one tool it
+executes is the profile's pinned `check-rule-tags`, from those verified bytes, in a private directory. Everything is
+planned before the first write, so a refusal (exit 2) writes nothing. A file the project already has is **never
+overwritten**: a different settings entry already running a profile tool (or the user settings running it, which would
+double-register it), or a pre-push hook with other layers, is printed as a `HAND:` step and init exits **4
+INCOMPLETE**; re-run it after the step and it exits 0. A second run with the same commit is a `NO-OP`. init never
+commits: it prints the exact `git add --` line (a review decision).
 
 ## Install contract (consumer project)
 

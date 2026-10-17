@@ -60,9 +60,9 @@ CANONICAL = {   # ships from the bus: refuse add AND modify
     "codex-review": ("codex-review.py", "codex_review.py"),
     "kernel-config": ("kernel-config.py", "kernel_config.py"),
     "bus-tests": ("pre-push-bus-tests.py", "pre_push_bus_tests.py"),
+    "session-checkpoint": ("session-checkpoint.py", "session_checkpoint.py"),
 }
 CENSUS = {      # counted, no bus canonical yet: refuse a NEW copy only
-    "session-checkpoint": ("session-checkpoint.py", "session_checkpoint.py"),
     "doctrine-outbox": ("doctrine_outbox.py", "doctrine-outbox.py"),
     "doctrine-triage": ("fold-triage.mjs", "doctrine-triage.mjs"),
     "resumability-check": ("resumability-check.py", "resumability_check.py"),
