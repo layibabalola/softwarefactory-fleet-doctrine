@@ -312,3 +312,10 @@ mechanism: an automated adjudicator injected a project's "legacy model is deprec
 check: count closed items per (file, probe text); any probe that closed more than two items, or whose text is not in that item's own search evidence, is a tautology.
 supersedes: none
 evidence: measured
+
+## conjugal/k7-detector-reads-acceptance-time
+rule: A delivery-at-identity (K7) detector passes a subject only when the keyed tree was the delivery ref's tip at an instant at or after the key's acceptance time and the ref's next move recorded the Outcome; it reads the acceptance time from the receipted final-answer record, and refuses when that time cannot be proven.
+mechanism: "Was this tree ever the tip" cannot see a tree that was the tip only before its key accepted it. The detector passed a subject from local master's reflog that the 2026-10-17 dispositions refused because the tip moved 83 s before acceptance. Reflog times are the clock; commit dates are not (rebase rewrites committer dates).
+check: python tools/factory/delivery-at-identity.tests.py
+supersedes: none
+evidence: measured
