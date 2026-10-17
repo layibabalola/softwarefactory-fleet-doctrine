@@ -50,3 +50,9 @@ The same shape hit a hook, not just a prompt lint. NA-2 exempts `verb=` assignme
 - Each round shipped a generated sweep that passed with an empty allow-list, because the sweep's axes were the same lists the lint keyed on.
 - Proposed clause 5: a lint change that narrows which tokens count as a launch must decide from the token and its own argument gap, not from what precedes it, and its parity sweep must include a fuzzed axis (seeded random token runs drawn from punctuation, apostrophes, hyphens, spaced and environment-variable paths and clause openers), not only listed wrappers.
 - Bus: `cos-feedback/mlv-app/pr-465.md`. ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/465#issuecomment-6230178238
+
+## Recurrence 5: MLV-App #465 r9 `96cdd148` (2026-10-17)
+- r9 adopted the token rule and a seeded lead fuzz, which closed every B5 probe. The next outside probe hit the other side of the token: a `;` between the app-plus-clip launch and its playback mode (`Run MLVAppRelease.exe take01.mlv; add --gui-smoke-playback.`) passes on r2 through r9 and is refused by master. The r2 fix for the r1 cross-`;` Blocker stopped the app gap at `;`, and the clip launch is scored only when a direct launch exists, so the cut-off launch is never scored.
+- Every sweep and the new fuzz vary only what stands before the app token and keep the mode flag in the same clause; CoS reviews r2 to r8 did not probe the split either.
+- Clause 5 addition: the parity sweep of a narrowing must fuzz both sides of the token, the lead and the tail, including clause separators (`;`, `; then`, glued `;`) between the argument and the mode flag, judged against the pin with an empty allow-list. When a fix narrows a gap at a separator, add rows where the separator cuts the trigger itself off.
+- ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/465#issuecomment-6230713095

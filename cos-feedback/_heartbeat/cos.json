@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T05:36:00Z",
+  "last_beat_utc": "2026-10-17T06:33:00Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "mlv-app #467 r3 ae9e28f1 not-merge-ready (gates only); Iverson I1/I2 and CoS nits addressed (verified, 78 RED); two soft nits; ask 6230246571; heartbeat."
+  "note": "mlv-app #465 r9 96cdd148 not-merge-ready; B5 and quote-class addressed (verified, 22 passed); new B6 semicolon-split launch (bisected to r2); Recurrence 5; ask 6230713095; heartbeat."
 }
