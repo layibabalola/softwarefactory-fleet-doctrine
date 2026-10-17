@@ -107,3 +107,47 @@ End to end, the installed layer took 1.17–1.38 s against a 1.44–1.53 s push 
   deliberate: no writer is refused for drift it did not cause.
 - The layer does not strip `GIT_CONFIG_PARAMETERS`, the other half of the 63ca737 trap. No steward push uses
   `git -c`.
+
+## Addendum A2: option B built, 2026-10-17 (NOT ratified; zero authority)
+
+Written by a Conjugal implementer session (Claude Opus 5.5). It records a decision proposal, the change
+built for it, and its evidence. It ratifies nothing and grants no adoption, launch or runtime permission.
+Status stays PROPOSED until the owner rules.
+
+**Decision proposed.** Adopt **B** as the standing fix, built as an epoch amendment at bus `2277ba4e`.
+Keep A′ as defence in depth. Reject C. Reject a sibling-file split.
+
+**Evidence that decided it.**
+
+- A′ landed at bus `bfb30116` and was installed in one clone. Three census reds followed in 48 h, from three
+  different writers, none through that clone: adobe-ingester headless fold `16ef646c`, dng-auto-processor
+  `80a5873d`, and dng-auto-processor `76394aad`, pushed from another machine. Each needed a hand re-pin
+  (`797d1b86`, `4c97e5b5`, `28f63f3b`). A writer-side control only works where it is installed, and the
+  evidence says it will not be installed everywhere soon.
+- A sibling-file split also depends on every writer changing its habits. It moves the same edits to a new
+  path and leaves the old path's treadmill in place for any writer who misses the notice.
+- Pinning only "normative sections" needs a section grammar that member specs do not share.
+- The pin protects claims. Across all 66 spec edits on `origin/master` since 2026-09-18, the claim projection
+  below never changed once. 12 of the 23 commits to census-pinned specs since 2026-09-29 removed lines, not
+  only appended, so an append-only rule would still have reddened intake 12 times.
+- Bus PRs #58 to #85 carried the red as "pre-existing", so reviewers learned to ignore a hard check.
+
+**What B checks now** (`tools/check_adoption_ledger.py`, current mode only):
+
+- The census stays exact at its base. The evidence commit is the last commit that touched the spec at
+  `baseCommit`, and its blob is the pinned blob there.
+- A later treeish may carry a different blob only if every claim the row reads from the pinned bytes is
+  unchanged: the disposition marker set (DISTINGUISH, REJECT and ADOPT lines), whether the candidate and merge
+  bindings appear, and, when pinned, every candidate-table row. Anything else is still `PROJECT_SPEC_DRIFT`,
+  so the drift alarm, the pre-push layer and the printed refresh are unchanged.
+- ADOPT rows and historical verification keep the exact-blob pin. No credit is derived from later bytes. The
+  next refresh pins them.
+
+**Tests.** `tests/test_current_adoption_ledger.py` gains admit cases (append, in-place prose) and refuse cases
+(new marker, new ADOPT line, removed or added binding, removed candidate row, base drift, historical, ADOPT).
+The pre-amendment checker fails the 5 admit cases. Dropping the candidate re-check fails the candidate-row case.
+A real-git run on a scratch commit admitted an append to `specs/dng-auto-processor.md` and refused an appended
+`REJECT(<merge>)`.
+
+**Not covered.** The r45 `README.md` pin (`MANIFEST_SUBJECT_MISMATCH`) has the same treadmill shape and is not
+changed here. A new top-level `specs/*.md` is still `PROJECT_CLOSED_SET_MISMATCH` by design.
