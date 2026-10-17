@@ -23,6 +23,7 @@ is how it falls. One implementation lives here; a project supplies only **data**
 | [`kernel-receipt.py`](kernel-receipt.py) | factory kernel: write or dry-run a landing's kernel receipt; loads kernel-subjects.py and codex-review.py beside itself, so it is pinned as a **group** |
 | [`codex-review.py`](codex-review.py) | dispatch one `codex exec` review with an explicit, recorded model/effort tier |
 | [`kernel-config.py`](kernel-config.py), [`factory-config.schema.json`](factory-config.schema.json) | check a project's kernel config with the loader of record (kernel-subjects.py `load_config`); the schema describes the same keys for editors |
+| [`delivery-at-identity.py`](delivery-at-identity.py) | K7 detector (from Conjugal, fixed after the 2026-10-17 conjugal dispositions refused S1): AT-IDENTITY only when the keyed tree was the delivery ref's tip at an instant at or after the key's acceptance time (`--accepted-at`, or the Outcome's Receipts block re-hashed against the rollout) and the ref's next move recorded the Outcome; reflog times only, never commit dates; unprovable = NOT-AT-IDENTITY |
 | [`fixtures/kernel/`](fixtures/kernel/) | `seed-repo/` (a minimal project: queue, a brief with a kernel block, a stub config, one product file) and Cloudvore's config (the suites' fixture) |
 
 **Sharing is the default.** A tool here is never copied into a project: the project pins it.
@@ -44,6 +45,7 @@ python hooks/hooks.tests.py
 node tools/tool-census.tests.mjs
 python tools/factory/kernel-tools.tests.py      # config location, schema = loader, seed project through the runner
 python tools/factory/kernel-suites.tests.py     # the kernel's own suites, staged as a project's tools/ directory
+python tools/factory/delivery-at-identity.tests.py  # K7: the S1 shape (tip only before acceptance) refused; S22/S34/S137 shapes pass
 ```
 
 ## A whole factory in one command: `init --profile`

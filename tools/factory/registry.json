@@ -34,6 +34,11 @@
         "kernel-subjects"
       ]
     },
+    "delivery-at-identity": {
+      "path": "tools/factory/delivery-at-identity.py",
+      "interpreter": "python",
+      "purpose": "factory kernel K7: was the keyed tree the delivery ref's tip at or after the key's acceptance time, until the Outcome was recorded (reflog + receipted acceptance time)"
+    },
     "session-checkpoint": {
       "path": "tools/factory/session-checkpoint.py",
       "interpreter": "python",
