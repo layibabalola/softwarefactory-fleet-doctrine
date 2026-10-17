@@ -11,7 +11,7 @@ file, exits non-zero to refuse, and names no project path. Like every factory to
 |---|---|---|
 | [`pre-push-ff-only.py`](pre-push-ff-only.py) | git `pre-push` (ref lines on stdin) | exit 1 when a protected ref is deleted, or its remote tip is not an ancestor of the pushed tip, or ancestry cannot be proven. Protected: `--protect <name>` / `--config <json>` `{"protected": [...]}`; default `master`, `main` |
 | [`pre-push-no-unpinned-tool.py`](pre-push-no-unpinned-tool.py) | git `pre-push` (ref lines on stdin) | exit 1 when the pushed commits add or modify a file named like a bus factory tool (tools/factory/*, hooks/*: any add or edit) or add a NEW copy of a census family (session-checkpoint, doctrine-outbox, doctrine-triage, resumability-check). Exempt: the vendored runner when it equals its pinned blob, and paths in `factory-pins/no-unpinned-tool.json` (read from the pushed tip) with a reason and an expiry at most 120 days out; an expired entry refuses. Families are kept equal to `tools/tool-census.config.json` by the tests |
-| [`pre-push-bus-tests.py`](pre-push-bus-tests.py) | git `pre-push` in a **bus clone** (ref lines on stdin) | exit 1 when a push to a protected ref (default `master`, `main`) changes `hooks/`, `tools/factory/`, `tools/tool-census*`, `metrics/tool-census*`, `factory-pins/` or the doctrine-sync workflow and the fast bus suites (`hooks/hooks.tests.py`, `tools/factory/pin-runner.tests.py`, `tools/tool-census.tests.mjs`) fail on the PUSHED tip, checked out into a temporary worktree; a missing interpreter or a timeout also refuses. Any other push runs nothing |
+| [`pre-push-bus-tests.py`](pre-push-bus-tests.py) | git `pre-push` in a **bus clone** (ref lines on stdin) | exit 1 when a push to a protected ref (default `master`, `main`) changes `hooks/`, `tools/factory/`, `tools/tool-census*`, `metrics/tool-census*`, `factory-pins/` or the doctrine-sync workflow and the fast bus suites (`hooks/hooks.tests.py`, `tools/factory/pin-runner.tests.py`, `tools/tool-census.tests.mjs`) fail on the PUSHED tip, checked out into a temporary worktree; a missing interpreter or a timeout also refuses. Also exit 1, with the approved refresh command, when the push touches a file a sealed pin covers (the r45 manifest's subjects such as `README.md`; the R26 census's project specs, a new top-level `specs/*.md`) and that pin's CI checker fails on the tip. Any other push runs nothing |
 | [`claude/exact-path-add.py`](claude/exact-path-add.py) | Claude Code `PreToolUse` on `Bash\|PowerShell` | exit 2 on `git add -A/--all/-u/--update/.`/`:/`, `git commit -a/--all` (clusters such as `-am` included), `git commit .` |
 | [`claude/git-optional-locks.py`](claude/git-optional-locks.py) | Claude Code `PreToolUse` on `Bash\|PowerShell` | exit 2 on `git status/diff/log/show/rev-list` without the global `--no-optional-locks` or `GIT_OPTIONAL_LOCKS=0`. Mutation commands are never judged -- `run git-optional-locks -- --observe-only` (opt-in per project, for runbooks that still say plain `git status`) prints the finding as OBSERVED and exits 0 |
 
@@ -131,4 +131,25 @@ nothing and took 0.6 s. A push that touches them checks out the tip and runs all
 suites, python suites sharded over half the CPUs: 56 s end to end on that box (the slowest pin-runner shard
 bounds it; serially the three suites took about 220 s there, and about 30 s on a Linux CI runner).
 `--shards N`, `--timeout S` (per shard, default 300), `--all` (run whatever changed) and
-`--config <json>` (`protected`, `trigger`, `suites`) tune it. Tests: `BusTests` in `hooks.tests.py`.
+`--config <json>` (`protected`, `trigger`, `suites`, `drift`) tune it. Tests: `BusTests` and `BusDrift` in `hooks.tests.py`.
+
+**Drift checks (added 2026-10-17).** Two sealed pins turn CI red after an ordinary edit: the active r45
+manifest binds `README.md` and six other subjects by blob (`MANIFEST_SUBJECT_MISMATCH`, repaired by hand at
+158a072e and 9b08e709 the same day), and the R26 current census binds every project's `specs/<project>.md` and
+the closed set of top-level specs (`PROJECT_SPEC_DRIFT`, `PROJECT_CLOSED_SET_MISMATCH`, repaired at da3e22dc and
+797d1b86). When the pushed range touches a path a pin covers -- read from the pin AT THE PUSHED TIP, plus the
+pin file, a new top-level `specs/*.md` and the checker -- the layer runs the checker CI runs, in check mode, on
+the tip, in the same temporary worktree and in parallel with any suites:
+
+| pin | runs | refusal prints |
+|---|---|---|
+| `manifests/universal-provider-control-reconciliation-r45.json` | `python tools/check_universal_manifest.py --treeish HEAD` | `python tools/refresh_current_universal_manifest.py --candidate <tip>` and how to write its `manifest` (docs/active-universal-manifest.md) |
+| `adoption/current-token-control-r26.json` | `python tools/check_adoption_ledger.py --current --treeish HEAD` | `python tools/refresh_current_adoption_census.py` (adoption/current-token-control-r26.md); for a closed-set change, that it needs an epoch amendment first |
+
+It never refreshes: a refresh is its own reviewed commit on top of the refused tip, and the push carries both.
+A push that touches no covered path runs no drift check, so a writer is never refused for drift someone else
+left on master (an append to `TRAPS.md` or `specs/<project>/cards.md`, a classified portable spec). Measured
+2026-10-17 on the same box against bus 49009d20: untouched push 0.54 s; `README.md` edit refused in 16.6 s and
+its refreshed tip passed in 16.0 s; `specs/conjugal.md` edit refused in 7.9 s and its refreshed tip passed in
+7.4 s; a new top-level spec refused `PROJECT_CLOSED_SET_MISMATCH` in 10 s. `"drift": []` in `--config` turns the
+checks off.

@@ -6,6 +6,7 @@ lines on stdin, exit status is the verdict).
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -588,6 +589,204 @@ class BusTests(unittest.TestCase):
         bad = subprocess.run(["git", "-C", wt, "push", "-q", "origin", "HEAD:refs/heads/master"], capture_output=True, text=True)
         self.assertNotEqual(bad.returncode, 0)
         self.assertIn("[bus-tests] PUSH REFUSED", bad.stderr)
+
+
+# Fixture checkers for the drift layer. Each reads its pin at the TESTED tree's HEAD, exactly like the bus checkers
+# (tools/check_universal_manifest.py --treeish HEAD, tools/check_adoption_ledger.py --current --treeish HEAD).
+FAKE_MANIFEST_CHECK = """import json, os, subprocess, sys
+assert "GIT_DIR" not in os.environ
+def g(*a):
+    return subprocess.run(["git", *a], capture_output=True, text=True, check=True).stdout.strip()
+m = json.loads(g("show", "HEAD:pins/manifest.json"))
+for row in m["subjectFiles"]:
+    if g("rev-parse", "HEAD:" + row["path"]) != row["gitBlobOid"]:
+        print("MANIFEST_SUBJECT_MISMATCH"); sys.exit(1)
+if m.get("broken"):
+    print("MANIFEST_SELF_MISMATCH"); sys.exit(1)
+print("MANIFEST_PASS")
+"""
+FAKE_CENSUS_CHECK = """import json, subprocess, sys
+NON_PROJECT = {"specs/portable.md"}
+def g(*a):
+    return subprocess.run(["git", *a], capture_output=True, text=True, check=True).stdout.strip()
+c = json.loads(g("show", "HEAD:pins/census.json"))
+for row in c["projects"]:
+    if g("rev-parse", "HEAD:" + row["specPath"]) != row["gitBlobOid"]:
+        print("FAIL: PROJECT_SPEC_DRIFT", file=sys.stderr); sys.exit(1)
+top = {p for p in g("ls-tree", "-r", "--name-only", "HEAD", "--", "specs").splitlines() if "/" not in p[6:]}
+if {r["specPath"] for r in c["projects"]} != top - NON_PROJECT:
+    print("FAIL: PROJECT_CLOSED_SET_MISMATCH", file=sys.stderr); sys.exit(1)
+print("PASS")
+"""
+
+NOOP_SUITES = [{"name": "noop", "argv": ["{python}", "-c", "pass"]}]
+
+
+class BusDrift(unittest.TestCase):
+    """The bus writers' pre-push layer runs a pin's CI checker when the push touches a file that pin covers,
+    and refuses drift with the approved refresh command; it never refreshes and never judges untouched pins."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        t = Path(self._tmp.name)
+        self.repo = str(t / "work")
+        subprocess.run(["git", "init", "-q", "-b", "master", self.repo], check=True)
+        self.write("t/check_manifest.py", FAKE_MANIFEST_CHECK)
+        self.write("t/check_census.py", FAKE_CENSUS_CHECK)
+        self.write("README.md", "readme\n")
+        self.write("specs/a.md", "a\n")
+        self.write("specs/portable.md", "portable\n")
+        self.write("specs/a/cards.md", "card\n")
+        self.write("TRAPS.md", "trap\n")
+        self.commit("content")
+        self.repin_manifest()
+        self.repin_census()
+        self.base = self.commit("pins")
+        self.cfg = t / "bus-tests.json"
+        self.cfg.write_text(json.dumps({"trigger": ["nothing/"], "suites": NOOP_SUITES, "drift": [
+            {"name": "manifest", "pin": "pins/manifest.json", "covers": "manifest-subjects", "also": [],
+             "argv": ["{python}", "t/check_manifest.py"],
+             "refresh": {"MANIFEST_SUBJECT_MISMATCH": "run refresh-manifest --candidate {sha} then commit {pin}"}},
+            {"name": "census", "pin": "pins/census.json", "covers": "census-specs", "also": ["t/check_census.py"],
+             "argv": ["{python}", "t/check_census.py"],
+             "refresh": {"PROJECT_SPEC_DRIFT": "run refresh-census at {sha12}",
+                         "PROJECT_CLOSED_SET_MISMATCH": "no refresh can fix this"}}]}), encoding="utf-8")
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def write(self, rel: str, body: str):
+        p = Path(self.repo) / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body, encoding="utf-8", newline="\n")
+
+    def commit(self, msg: str) -> str:
+        _g(self.repo, "add", "-A", ".")
+        _g(self.repo, "commit", "-q", "-m", msg)
+        return _g(self.repo, "rev-parse", "HEAD")
+
+    def oid(self, rel: str) -> str:
+        return _g(self.repo, "hash-object", rel)
+
+    def repin_manifest(self, extra: dict | None = None):
+        self.write("pins/manifest.json", json.dumps(
+            {"subjectFiles": [{"path": "README.md", "gitBlobOid": self.oid("README.md")}], **(extra or {})}))
+
+    def repin_census(self):
+        self.write("pins/census.json", json.dumps({"projects": [{"specPath": "specs/a.md",
+                                                                  "gitBlobOid": self.oid("specs/a.md")}]}))
+
+    def judge(self, *extra: str, base: str | None = None) -> subprocess.CompletedProcess:
+        head = _g(self.repo, "rev-parse", "HEAD")
+        line = f"refs/heads/master {head} refs/heads/master {base or self.base}"
+        return subprocess.run([sys.executable, str(BT), "origin", "x", "--repo", self.repo,
+                               "--config", str(self.cfg), *extra],
+                              input=line + "\n", capture_output=True, text=True)
+
+    def test_untouched_pins_run_nothing_even_when_master_already_drifted(self):
+        self.write("TRAPS.md", "trap 2\n")
+        self.write("specs/a/cards.md", "card 2\n")       # under specs/, but no pin covers it
+        self.write("specs/portable.md", "portable 2\n")  # a classified non-project spec
+        self.commit("append-only writer")
+        r = self.judge()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("no pinned path touched; no suite run", r.stderr)
+        self.write("specs/a.md", "a drifted\n")
+        drifted = self.commit("someone else's unrefreshed spec edit")
+        self.write("TRAPS.md", "trap 3\n")
+        self.commit("next writer")
+        r = self.judge(base=drifted)
+        self.assertEqual(r.returncode, 0, "a writer is never refused for drift it did not touch\n" + r.stderr)
+
+    def test_readme_edit_refuses_with_the_refresh_command_and_refreshed_tip_passes(self):
+        self.write("README.md", "readme 2\n")
+        head = self.commit("readme edit")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("drift manifest FAILED", r.stderr)
+        self.assertIn(f"MANIFEST_SUBJECT_MISMATCH -- run refresh-manifest --candidate {head} then commit "
+                      f"pins/manifest.json", r.stderr)
+        self.assertEqual(_g(self.repo, "rev-parse", "HEAD"), head, "the hook never refreshes or commits")
+        self.assertEqual(_g(self.repo, "status", "--porcelain"), "")
+        self.repin_manifest()
+        self.commit("refresh")
+        r = self.judge()
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("ok   drift manifest", r.stderr)
+        self.assertNotIn("drift census", r.stderr, "only the pin whose coverage was touched runs")
+
+    def test_project_spec_edit_refuses_drift_and_new_top_level_spec_refuses_closed_set(self):
+        self.write("specs/a.md", "a 2\n")
+        head = self.commit("spec edit")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn(f"PROJECT_SPEC_DRIFT -- run refresh-census at {head[:12]}", r.stderr)
+        self.repin_census()
+        refreshed = self.commit("census refresh")
+        self.assertEqual(self.judge().returncode, 0)
+        self.write("specs/b.md", "new project\n")
+        self.commit("new spec")
+        r = self.judge(base=refreshed)                     # the range touches only the new spec
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("PROJECT_CLOSED_SET_MISMATCH -- no refresh can fix this", r.stderr)
+
+    def test_coverage_is_read_at_the_pushed_tip(self):
+        self.write("TRAPS.md", "now pinned\n")
+        self.write("pins/manifest.json", json.dumps({"subjectFiles": [
+            {"path": "README.md", "gitBlobOid": self.oid("README.md")},
+            {"path": "TRAPS.md", "gitBlobOid": "0" * 40}]}))
+        self.commit("pin TRAPS.md with a wrong oid")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("MANIFEST_SUBJECT_MISMATCH", r.stderr)
+
+    def test_unknown_failure_is_refused_without_a_refresh_and_unreadable_pin_runs(self):
+        self.repin_manifest({"broken": True})
+        self.commit("hand edit of the pin")
+        r = self.judge()
+        self.assertEqual(r.returncode, 1, r.stderr)
+        self.assertIn("not a drift any approved refresh covers", r.stderr)
+        self.write("pins/manifest.json", "{not json")
+        self.write("README.md", "readme 3\n")
+        self.commit("unreadable pin")
+        self.assertEqual(self.judge(base=_g(self.repo, "rev-parse", "HEAD~1")).returncode, 1)
+
+    def test_unknown_base_all_flag_absent_pin_and_config(self):
+        self.write("README.md", "readme 4\n")
+        self.commit("drift")
+        self.assertEqual(self.judge(base="1" * 40).returncode, 1, "unknown base runs every present pin")
+        _g(self.repo, "rm", "-q", "pins/manifest.json")
+        self.commit("pin removed")
+        r = self.judge(base="1" * 40)
+        self.assertEqual(r.returncode, 0, r.stderr)        # no pin at the tip: nothing to drift from
+        self.assertIn("drift check census", r.stderr)
+        self.assertEqual(self.judge("--all").returncode, 0)
+        self.cfg.write_text(json.dumps({"trigger": ["nothing/"], "suites": NOOP_SUITES, "drift": []}),
+                            encoding="utf-8")
+        self.write("specs/a.md", "a 3\n")
+        self.commit("drift with checks off")
+        self.assertEqual(self.judge().returncode, 0)
+        self.cfg.write_text(json.dumps({"drift": [{"name": "x", "pin": "p", "covers": "nope", "argv": ["a"]}]}),
+                            encoding="utf-8")
+        self.assertEqual(self.judge().returncode, 2)
+
+    def test_defaults_name_real_bus_checkers_pins_and_refresh_tools(self):
+        spec = importlib.util.spec_from_file_location("bus_tests_hook", BT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        bus = HERE.parent
+        self.assertEqual([e["name"] for e in mod.DEFAULT_DRIFT], ["r45-manifest", "r26-census"])
+        for e in mod.DEFAULT_DRIFT:
+            self.assertTrue((bus / e["pin"]).is_file(), e["pin"])
+            self.assertTrue((bus / e["argv"][1]).is_file(), e["argv"])
+            for text in e["refresh"].values():
+                for word in text.split():
+                    if word.startswith("tools/") and word.endswith(".py"):
+                        self.assertTrue((bus / word).is_file(), word)
+        workflows = {"r45-manifest": "provider-capacity-governor.yml", "r26-census": "adoption-ledger.yml"}
+        for e in mod.DEFAULT_DRIFT:
+            text = (bus / ".github" / "workflows" / workflows[e["name"]]).read_text(encoding="utf-8")
+            self.assertIn(e["argv"][1], text, "the drift check is a checker CI runs")
 
 
 if __name__ == "__main__":
