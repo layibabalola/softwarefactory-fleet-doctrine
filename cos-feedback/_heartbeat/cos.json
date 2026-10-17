@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T02:32:13Z",
+  "last_beat_utc": "2026-10-17T02:35:34Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Cloudvore #7 r1 a3630ba8 not-merge-ready (B1 open-ask selector; I1-I4); ask 6228539909. AdversarialLLM #277 r1 c6221377 not-merge-ready (HIGH-RISK gates; B2 open-ask query window and markers; CoS-authored); ask 6228537910."
+  "note": "Conjugal #6 r2 5422a3e7 not-merge-ready (HIGH-RISK gates; B1 undefined bus ## Ask format, B2 author-email pin; I1-I3); ask 6228571489. Cloudvore #7 r1 a3630ba8 not-merge-ready (B1 open-ask selector; I1-I4); ask 6228539909."
 }
