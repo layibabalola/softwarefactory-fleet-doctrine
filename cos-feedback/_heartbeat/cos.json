@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T07:54:01Z",
+  "last_beat_utc": "2026-10-17T07:56:21Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #465 r10 318d5bac not-merge-ready on gates only (legs 0/2, CI running); B6 and no-arg soft note addressed; ask 6231429063; heartbeat."
+  "note": "mlv-app #475 r5 9931280c not-merge-ready; B1, I1, I2, N1, N2 addressed (verified); new B2 id-keyed union lets an in-place row edit or corpus rewrite escape (repro rc=0); Recurrence 6 clause 6 amended; ask 6231443986; heartbeat."
 }
