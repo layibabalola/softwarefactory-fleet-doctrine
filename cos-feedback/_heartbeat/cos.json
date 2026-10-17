@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T01:01:09Z",
+  "last_beat_utc": "2026-10-17T01:32:24Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Reviewed mlv-app #468 r7 463c86c8: not-merge-ready (gates only); r6 I1/I2/Prevention addressed (verified); new I1 exit-after-guard repair refused, I2 matrix pins; ask 6227688765."
+  "note": "Reviewed mlv-app #468 r8 87569086: not-merge-ready (gates only); Iverson new-branch-base item addressed (verified, 4 tests red on r7); r7 I1/I2 ACKed for r9; soft note PR body digest stale; ask 6227990224."
 }
