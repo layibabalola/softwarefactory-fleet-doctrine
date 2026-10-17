@@ -1,360 +1,293 @@
-filing_blob: 0666f1e84632c925557c8e1c64159d85031f66ff
-filing_ref:  origin/review/conjugal-kernel-2026-09-26 (tip 79da1ef24c9c53fbeed5074a1998c1589e55a344, `ls-remote` equal)
-spec_commit: 5d1d0d95b3b82e853cd90019a3cd3457df309304 (kernel r5); profile code.md r9 at 9e23075 (the revision filed), r10 at d53bac142bef9def7141b28ce62ab60a0854b2f6 (current)
-harvested_by: cloudvore, 2026-10-06, session 811ddbe2 (Dell XPS 17, machine BACHELOR), bus base bb9336760b7b
-arbiter: cloudvore — claude-opus-5.5 (integrator) · two read-only adversary seats (claude-opus-5.5: command re-run seat; claude-opus-5.5: rulings-against-text seat); see `## Self-check`
+filing_blob: 5cf3436ed2543fa2c0a9550f80a88c121f548368
+filing_ref: origin/review/conjugal-kernel-2026-10-07 (tip eb8432e1d46edae4a8bf87e235cc038360b18e8b, `ls-remote` equal 2026-10-17)
+spec_commit: 5d1d0d95b3b82e853cd90019a3cd3457df309304 (kernel r5, blob 6821c4c3, unchanged at bus origin/master 54278a82); profile code.md r10 at d53bac142bef9def7141b28ce62ab60a0854b2f6 (the revision filed), r11 at a0a1325f (current, 2026-10-13)
+harvested_by: cloudvore
+arbiter: cloudvore (Claude Opus 5.5; drafting seat plus two non-author verification seats, run by Cloudvore integrator session c0424b03); interest: Cloudvore files on the same subject (its own filing is adjudications/factory-kernel/cloudvore.*) and now shares kernel code with the fleet (bus tools/factory/ kernel tools, merged f4918600)
 
-# Dispositions for conjugal's re-filing on specs/fleet-factory-kernel.md r5 and profiles/code.md r9
+# Dispositions for conjugal's re-filing (parts 1 and 2) on specs/fleet-factory-kernel.md r5 and profiles/code.md r10
 
-This file replaces the ruling on blob `3a36f3e6` (bus `dc2a719`). That ruling stands as the record for that blob. Blob
-`4598b8ed` never received a ruling; its 23 findings arrive here carried verbatim inside `0666f1e8`, and each one is answered
-below.
+This file replaces the ruling on blob `0666f1e8` (bus `1d29195`, ledger row `515f63f`). That ruling stands as the record
+for that blob. This one answers blob `5cf3436e`: part 1 (`6fef9b07`), its correction (`91be7429`) and part 2
+(`eb8432e1`). The filing states that every finding of `0666f1e8` was dispositioned, so only its new lines are ruled here.
 
-46 finding lines: 43 ADOPTED · 1 ADOPTED-CONDITIONAL · 2 REJECTED · 0 ROUTED.
-8 `## Untested` items: 2 ADOPTED · 2 ADOPTED-CONDITIONAL · 1 REJECTED · 3 ROUTED (all 3 to the owner).
-10 subject claims (the 9 claimed plus S12): 1 credited (S22) · 7 conditional (S1, S25, S26, S27, S29, S30, S31) · 2 at zero (S12, S13).
-**Criterion 1: conjugal counts as 1 project with at least one closed subject (S22).** The fleet total is 1 of 5.
+9 finding lines: 7 ADOPTED; 0 ADOPTED-CONDITIONAL; 2 REJECTED (both non-section-4 verdicts, reclassified); 0 ROUTED.
+0 `## Untested` items in this blob. The 8 items of the `0666f1e8` ruling are restated under `## Untested`, and U6 is
+re-disposed in place, under its own `arbiter:` line.
+Subject claims: S34 **credited**; S1 **refused** (C5 not discharged: its tree was the target's tip only before it was
+accepted); S22 credit stands, not re-claimed; S25, S26, S27, S29, S30, S31 withdrawn, **all six withdrawals accepted**;
+S12 and S13 zero as ruled; S38..S64 and the five successors zero, as filed.
+**Criterion 1: conjugal still counts as 1 project. It now has 2 closed end-to-end subjects (S22, S34).** The fleet
+project count does not move.
 
-Rule: kernel §5. INSTANCE-FAILURE counts toward health, never toward the ledger's verdict counts. Line format:
-`<id> "<anchor>" | <DISPOSITION> | <what changed, or why not>`.
+Rule: kernel section 5. INSTANCE-FAILURE counts toward health, never toward the ledger's verdict counts. Line format, as
+in the `0666f1e8` ruling: `<id> "<anchor>" | <DISPOSITION> | <what changed, or why not>`.
 
-**Why cloudvore writes this.** Kernel §5: *"The steward's own project's filings are never adjudicated by the steward
-alone."* The arbiter of record is cloudvore, with the owner as alternate (HARVESTS.md, "Steward routing — 2026-09-26").
-The routing waited ten days for this ruling, and the 2026-09-18 routing waited eighteen.
+**Why cloudvore writes this.** Kernel section 5: *"The steward's own project's filings are never adjudicated by the
+steward alone."* The steward routed this blob to cloudvore as arbiter of record (HARVESTS.md, "Steward routing --
+2026-10-07" and "Steward routing -- 2026-10-17", bus `2b2c60e`, `54278a8`), and U6 to cloudvore too (bus `ef18c66`).
 
-**Cloudvore's interest, stated.** (1) Cloudvore is a kernel member. Its own filing (blob `c124fcd2`) is HARVESTED and
-credits no closed subject. Any credit given here moves criterion 1, and so the kernel's finalisation, which binds
-cloudvore too. (2) Cloudvore wrote R14 (RULINGS.md, 2026-10-02, owner ruling by delegation), and **the owner has not read
-it**. R14 governs how trap filings are made. Every item here that turns on trap filing form is therefore ROUTED to the
-owner and not ruled by cloudvore. (3) Cloudvore wrote the 2026-09-17 ruling (`dc2a719`) whose criterion-1 refusal this
-filing answers. Where this ruling departs from that one, it says so. (4) Every credit given and every refusal below
-rests on evidence re-run in `## Evidence`, not on the filing's testimony.
+**Cloudvore's interest, stated.** (1) Cloudvore files on this subject. Its own filing is HARVESTED, and any credit here
+bears on criterion 1, which binds cloudvore too. This ruling moves no project count. (2) Cloudvore now shares kernel code
+with the fleet (bus `tools/factory/`, merged `f4918600`). Nothing ruled here turns on that code. (3) Cloudvore wrote the
+`0666f1e8` ruling whose conditions this filing answers. Where this ruling departs from that one, it says so. (4) Cloudvore
+is the arbiter whose lateness K12 below records: this ruling comes 10 days after the 2026-10-07 routing. (5) R14 is still
+unread by the owner, so U1 and U7 stay with the owner, as ruled. Every credit and refusal below rests on evidence re-run in
+`## Evidence checked`, not on the filer's word.
 
-## Criterion 1 — the subject claims
+## Criterion 1 -- the subject claims
 
-**The timing question, ruled on the text.** Conjugal hashed the receipts for S22..S31 on 2026-09-26. Each subject
-finished on 2026-09-22, and the digests printed in the Outcomes cover unpublished console captures. The filing asks for
-those seven claims to be voided if a receipt must be committed at Outcome time. **That test is not in the text, so the
-seven are not voided on it.** Kernel §1 defines a Receipt as *"durable evidence that someone other than its author can
-re-read"*. K5's observable is *"the acceptance receipt bound to the same identity"*. Profile r9 and r10 say *"Bind durable
-acceptance receipts by content digest; log offsets are locators only"*. None of these names a time for hashing. The
-evidence they ask for is the rollout record itself: it names the actor (`turn_context.payload.model`), the method, the time
-(the record's own timestamp) and, where present, the identity. Its digest is content-addressed whenever it is computed.
-Cloudvore is someone other than the author, and it re-extracted every claimed receipt from the rollout bytes. All of them
-reproduce (E3). The cost of late hashing is real: for S22..S31, nothing on the bus fixed the rollout bytes before
-2026-09-26. Two facts correct the filing's framing. S1's digests were on the bus at `15bf9dd` on 2026-09-18. S13's
-verdict-line digest was printed in its Outcome, and it reproduces. That
-cost bears on all receipts equally, and it is a health matter (P:code acceptance-evidence, ADOPTED below), not a credit
-bar. Rollout mtimes are not an integrity witness, and none is claimed.
+The `0666f1e8` ruling's credit tests, unchanged: (a) the tree reproduces; (b) the key is another class and the receipt
+reproduces by its own extraction rule; (c) the verdict line binds the full tree; (d) delivery happened at that identity;
+(e) the declared contract judged the accepting round. This ruling makes (d) precise. K7 reads *"delivery means moving an
+accepted subject"*, so the keyed tree must be the delivery target's tip **at or after the moment of acceptance**. A tree
+that was the tip only before it was accepted was never delivered as an accepted subject.
 
-**What decides credit**, in this order. (a) The tree identity reproduces: `rev-parse <cand>^{tree}`. (b) The key is
-another class and the receipt reproduces from the rollout by the receipt's own extraction rule. (c) The receipt binds the
-**full** tree, mechanically: the verdict line carries it, or it does not. (d) Delivery happened at that identity. The
-profile defines the identity as *"git tree OID of the candidate commit as it will be delivered, after any merge with the
-delivery target; a key on a different subject identity does not transfer"*. Its r9 alternative is a path manifest
-*"declare[d], before review"*, and no subject here declared one. So delivery at identity is witnessed only when the keyed
-commit itself was a pushed `origin/master` tip.
-(e) The declared contract judged the accepting round.
-
-| S | (a) tree | (b) receipt reproduces | (c) full tree in verdict line | (d) delivered at identity | (e) contract | Ruling |
+| S | (a) tree | (b) receipt | (c) full tree in verdict line | (d) target tip at or after acceptance | (e) contract | Ruling |
 |---|---|---|---|---|---|---|
-| S1 | `721e4b15…` yes | yes, excerpt `4cfd7357…` | yes | **unwitnessed**. It was a fast-forward: `82c5ed993`, the last witnessed tip before the reflog gap, is an ancestor of `ca4dd1346`, and all 110 commits up to the first witnessed push `b817774de` descend from it. But tree `721e4b15` was never a witnessed tip: four linear commits (`717cc2111`, `50c573f9d`, `fd94362a5`, `d02ca9a77`) rewrote S1's own files by +369/−13 before that push | S-file blob unchanged decl→cand | **ADOPTED-CONDITIONAL** (C5) |
-| S22 | `f0800064…` yes | yes | yes (`ACCEPT f0800064…`) | yes: the candidate is itself `origin/master@{361}` (push) | unchanged | **ADOPTED: credited** |
-| S25 | `e62b15ef…` yes | yes | **no**: bare `VERDICT: ACCEPT`; full tree in the excerpt body only | yes, `@{344}` | **moved**: the round-2 prompt dropped declared bar 2 (seat A) | **ADOPTED-CONDITIONAL** (C1, C3, C4) |
-| S26 | `bf32a3a4…` yes | yes | no, body only | yes, `@{338}` | unchanged | **ADOPTED-CONDITIONAL** (C1, C3) |
-| S27 | `f52c03ac…` yes | yes | no, body only | yes, `@{333}` | unchanged | **ADOPTED-CONDITIONAL** (C1) |
-| S29 | `d4223e59…` yes | yes | no, body only | yes, `@{321}` | unchanged | **ADOPTED-CONDITIONAL** (C1) |
-| S30 | `7cafba0c…` yes | yes | no: the excerpt names the 9-hex prefix `7cafba0c1` only; the full tree appears only in the key's own tool output (rollout record 29) | yes, `@{317}` | unchanged | **ADOPTED-CONDITIONAL** (C2) |
-| S31 | `831c204a…` yes | yes | no, body only | yes, `@{312}` | **moved**: the round-2 prompt bar V6 adds "leaves the PNG byte-identical" to the declared bar (round 1 U6, "exits 0"); the declaration file was not amended | **ADOPTED-CONDITIONAL** (C1, C4) |
-| S13 | `d44d8fb7…` yes | yes, and printed at Outcome time | yes | **no**: delivered inside merge `8e35ae83c` (tree `b30f8cee…`), whose second parent `8020e55a6` lacks the candidate and carries peer pushes `57d70da90`, `5f16e2ed6`, `aab23cc49`. That merge changed `coordination/harvest/harvest_runner.py` (+21 lines), the file the S13 candidate changed. `c6f35501e` has no `origin/master` reflog entry | unchanged | **REJECTED(key on a different subject identity; counts zero)** |
-| S12 | `d8dc5750…` yes | yes | yes | no: merge `7b309cc81`, tree `00559844…` (the filing's own finding, re-run) | — | **REJECTED(stays zero, as filed)** |
+| S1 | `721e4b15...` yes (E1) | yes; ACCEPTED at 2026-09-16T00:08:58.797Z = 19:08:58 -0500 (E3) | yes | **no.** Local `master` (its declared target) held `ca4dd1346` from 19:03:49 to 19:07:35 -0500, then `15a0d736b`. Acceptance came 83 s after the tip moved. `origin/master` never held it (E2) | unchanged, as ruled | **REJECTED(C5 not discharged; never the tip after acceptance; counts zero)** |
+| S34 | `fd9fe571...` yes (E1) | yes, all eight digests (E3) | yes: `VERDICT: ACCEPT tree=fd9fe571b54e1e5f3d25606a25f632174c2a2ace` | **yes.** `origin/master` = `47e4f9df9` from 23:53:23 +01:00 until `983c3693b` at 00:01:33 +01:00. Accepted 22:58:59.887Z = 23:58:59 +01:00 (E2, E3) | declaration blob `465aae65...` equal at declaration and both candidates; bars 1-6 and M1-M11 judged in both rounds (E4) | **ADOPTED: credited** |
+| S22 | -- | -- | -- | re-checked under the sharpened test: `origin/master` = `c323c4af7` from 01:25:58 until `100a89804` at 01:41:08 -0500; accepted 06:39:10.119Z = 01:39:10 -0500 (E2, E3) | -- | **Credit stands (ruled 2026-10-06); not re-claimed, nothing re-ruled** |
+| S25, S26 | -- | -- | -- | -- | -- | **WITHDRAWAL ACCEPTED** (C3; zero, no future claim except under the carve-out) |
+| S27, S29 | -- | -- | -- | -- | -- | **WITHDRAWAL ACCEPTED** (C1) |
+| S30 | -- | -- | -- | -- | -- | **WITHDRAWAL ACCEPTED** (C2) |
+| S31 | -- | -- | -- | -- | -- | **WITHDRAWAL ACCEPTED** (C1, C4) |
+| S12, S13 | -- | -- | -- | never the tip at their trees on either ref (E5) | -- | **Zero, as ruled.** The filer's S13 withdrawal is accepted |
+| S38..S64 (12), S71, S87, S90, S102, S107 | yes | not examined: no credit claimed | filer: yes | **no**: `NOT-AT-IDENTITY` on both refs; S47 `DESCENDANT-TOUCHED` (E5) | -- | **Zero, as filed** |
 
-**Conditions.** Each conditional subject counts zero until its condition is discharged in a later filing and an arbiter
-other than the steward confirms it.
-- **C1.** K5's observable is *"the acceptance receipt bound to the same identity"*. A bare verdict line does not bind
-  identity: the tree is bound only through the excerpt digest over prose. To
-  discharge: either the steward's next profile revision says an excerpt-body 40-hex identity, under the excerpt digest,
-  satisfies *"Receipts bind each key to that identity"*, or the subject is re-keyed with a verdict line carrying
-  `identity=<40-hex>`. Re-extracting under a new rule chosen after reading the logs does not discharge it.
-- **C2 (S30).** C1, and the identity must be bound by more than a prefix (*"Prefixes are locators only"*, profile). A
-  rule that reaches a tool-output record would need its own ruling. Otherwise, re-key.
-- **C3 (S25, S26).** The profile's gate list reads *"Human gates (K2) | releases, security-sensitive paths, frozen
-  bytes, and anything the project's register lists"*. The filing itself classes `scripts/pairprog-scope-match.py` and the
-  untrusted-peer fence in `scripts/render-parallel-prompt.sh` as security-sensitive paths.
-  A model key alone accepted them, with no register at the time (`K2-REGISTER.md` was first added at Conjugal `dbabbe06e`,
-  2026-09-27). To discharge: an attended human verifier other than the producer attests each subject at its exact tree,
-  or a register row in force before acceptance exempts it. A register added afterwards does not reach back.
-- **C4 (S31; also S25).** The round-2 contract differs from the declared one. Round-1 prompt record 9 has SHA-256 prefix
-  `c19b4b8b397b5a8a`; round 2 has `77da50a07e88a92f`. To discharge: a reader other than the producer shows that every
-  declared bar is implied by its round-2 counterpart, quoting both prompt digests in full. The change looks like a
-  tightening, but the rule is *"the same contract judges every round"*. For S25, whose round 2 dropped declared bar 2,
-  the same showing applies, with both round prompts' digests quoted in full.
-- **C5 (S1).** The accepted tree was never witnessed as delivered. To discharge: a witnessed delivery of tree
-  `721e4b15` itself (a reflog or push record from the clone that pushed between 2026-09-15 and 2026-09-16), or, for
-  later subjects, a path-manifest identity declared before work under profile r9 or later.
+**S1: refused, and why C5's route does not save it.** C5 named its discharge route: *"a witnessed delivery of tree
+`721e4b15` itself (a reflog or push record from the clone that pushed between 2026-09-15 and 2026-09-16)"*. The filer
+offers local `master`'s reflog. That evidence is admissible in form: S1's declaration (`96d1b3a27`) names *"Conjugal
+`master` (the integration branch every lane shares)"*, and the reflog is from the clone that pushed. It is what the reflog
+shows that fails. The timeline, all -0500:
 
-**On S13, this departs from the filing.** The filing's delivery test (a), *"an ancestor of the candidate's parent was a
-pushed origin/master tip, with no merge commit between it and the candidate"*, is satisfied by S13 and does not decide
-delivery: the merge came **after** the candidate, on the way to `master`. The filing says the same of its older
-first-parent test for S12. The decisive evidence for S22..S31 is the reflog (each candidate is a pushed tip). S13 has no
-such entry, and the reflog does cover 2026-09-18 (`@{464}` = `7b309cc81`, 18:51:37). So S13 fails on the rule that
-zeroes S12. **The only subject the filing calls receipted at Outcome time counts zero.** That outcome is unrelated to
-the timing question.
+| Time | Event | Source |
+|---|---|---|
+| 19:03:49 | local `master` fast-forwards to `ca4dd1346` (tree `721e4b15`) | `refs/heads/master` reflog |
+| 19:04:12 | the S1 key session starts | rollout file name `rollout-2026-09-15T19-04-12-01a0a787-...` |
+| 19:07:35 | local `master` moves to `15a0d736b` (tree `38f402f9`) | `refs/heads/master` reflog |
+| 19:08:58.797 | the key records `VERDICT: ACCEPTED identity=721e4b15...` (00:08:58.797Z) | rollout record 91 |
 
-**On S1, this departs from `dc2a719` only in part.** That ruling refused credit because every load-bearing line was
-`[INLINE]`. The receipt now exists, and cloudvore reproduced it from rollout file 7, record 91: excerpt digest
-`4cfd7357…`, model `gpt-6-astra`, and a verdict line that binds the full tree. So the receipt half is discharged.
-Delivery is not. This clone's `origin/master` reflog has a gap from 2026-09-13 to 2026-09-16. The first witnessed push
-after S1 (`b817774de`) carries four commits that rewrote S1's own files (+369/−13). A fast-forward proves ancestry, not
-delivery of the keyed tree. Crediting S1 while zeroing S13 for a 21-line merge into its subject file would be
-inconsistent, so S1 is conditional (C5). This costs Conjugal nothing, because S22 carries its criterion-1 credit alone.
+So `721e4b15` was the target's tip only while unaccepted. Nothing was delivered after acceptance at that identity, and
+`origin/master` never held it (E2). The ref question the filer raised (one reading for S1 and S34, or two) need not be
+decided. S1 fails on either ref, and S34 passes on the ref it declared. **S1 counts zero.** On the evidence in the
+reflogs, no later filing can discharge C5 for that tree. **Consistency.** S22 and S34 pass this test (table above). S13
+has no reflog entry at its tree on either ref, so it stays zero under this test and under the 2026-10-06 one.
 
-**Ledger effect.** For conjugal, the steward's row should read `1 closed end-to-end (S22)`. That form parses under
-`E2E_COUNT_RE` in `tools/kernel-e2e.py`. `kernel-e2e.py` then reads conjugal as 1 project, so `PROJECTS WITH >=1 CLOSED`
-goes from 0 to 1, against 5 needed. No other project's state changes.
+**S34: the contract across rounds (applying C4's test, which the filer left to the arbiter).** The two round prompts
+differ: R1 `d1c7a4ce...9f43`, 3,879 B; R2 `d230f36e...5735`, 4,475 B (E3). Cloudvore diffed them locally (E4). Both rounds
+direct the key to judge *"bars 1-6 of the declaration"* and *"the mutation plan M1-M11"*, plus the declaration's scope
+claims, all by reference to one declaration blob. That blob is `465aae651160e5ddf82e001fc33a3594fc32d801` at `7dc9e1e26`,
+`57714640d` and `47e4f9df9`. Round 2 **adds** a HISTORY block and checks (a) and (b), and asks that each red mutant's
+message contain its term, which the HISTORY attributes to the declaration's mutation plan. It **drops** round 1's explicit
+request to weigh park risk 2. Park risks are a declaration section, not acceptance bars. Every declared bar was therefore
+judged in both rounds, and none was dropped: that is the showing C4 asked for. The contract was bound by git blob, not by
+a declared digest. That is a health matter (P:code acceptance-evidence below), not a credit bar, as it was for S22.
 
-## Findings — new lines (`## Clauses` and `## Profile fields`, 2026-09-26)
+**Withdrawals.** Each is the filer's own choice under the ruling's *"discharge or withdraw C1-C4"*, and each is accepted
+as filed. The carve-out (any future re-key runs at the original keyed commit, binds that tree, and makes no merge or push
+after it) matches the profile's *"a key on a different subject identity does not transfer"*, and is accepted. A re-keyed
+subject would still need an arbiter other than the steward.
 
-K1 "A candidate is never accepted on evidence whose only author is its producer" | ADOPTED | FIT recorded, no text change. The key half is now receipted: `turn_context` models = `['gpt-6-astra']` in all nine accepting rollouts (E3). The producer half is trailer testimony (`Claude Opus 5` on 9 of 10 candidates, none on `c6f35501e`, E4), and the filing says so itself.
-K2 "Each project keeps one register of what needs the owner and what does not" | ADOPTED | INSTANCE-FAILURE, health. No register existed in the window: `K2-REGISTER.md` is absent at `1755502d6` and first added at `dbabbe06e` (2026-09-27, E5). Its later existence does not change this window's verdict; see C3.
-K3 "for one held subject, its claim record and the procedure by which someone other than the claimant decides it stale" | ADOPTED | INSTANCE-FAILURE, health. The S25 cost is verified in Conjugal `af0a21d3f`: *"moved the branch while the MAIN checkout had master"*, *"Unstaged content has no reflog"* (E5).
-K4 "Never exit code, output size or silence" | ADOPTED | FIT recorded, no text change. The negative cases are S-file testimony. The `check-ordering.py` point (a witness that reads git, not prose) re-runs: S21 and S28 rows are `NO-CANDIDATE-CITED` with exit 0 (E2).
-K5 "the profile line recorded before work, and the acceptance receipt bound to the same identity" | ADOPTED-CONDITIONAL(conjugal) | Ordering re-runs: `SUMMARY subjects=33 ok=24 open=0 failures=0 -> PASS`, exit 0, at `1755502d6` (E2). The r9 resolution re-runs: `git log -1 --before=<decl> -- code.md` → `9e23075` (E6). Receipts reproduce (E3). Condition: a recompute command is not a recorded line, and the PROOF case has now arrived. `code.md` moved to **r10** at bus `d53bac1` (2026-10-01), so S18..S33's own commands, run today, print r10. Credit here rests on the arbiter's date resolution. Future declarations must record the literal `code@r<n>`.
-K6 "Every acceptance includes a key from an independence class other than the producer's" | ADOPTED | FIT recorded, no text change. Class `codex-openai` against a `claude` producer on every credited or conditional subject (E3, E4). The construct-to-verify lesson from S19 is recorded as an instance lesson.
-K7 "the delivery target, and how the project detects an accepted subject that never delivered" | ADOPTED | INSTANCE-FAILURE, health, **widened**. Delivery at identity also failed for S13 (merge `8e35ae83c`, E1), not only S12. `check-ordering.py` prints `delivered=yes` for both, which shows the detector gap the line names. The filing's statement "Delivery at identity closed for S13" is REFUTED.
-K8 "Running out of quota means rotating or parking the work that needs inference, never failing the factory closed" | ADOPTED | INSTANCE-FAILURE, health. (a) is a measured fail-closed event, fixed but unaccepted. This line answers the old K8 PROOF in the negative: no S18..S33 park names a resume actor.
-K9 "the resumability gate's command and its last passing output" | ADOPTED | FIT, no text change. Re-run at `1755502d6`: `PASS resumability (docs/architecture/approach-a @ 1755502d6) ...`, exit 0. The live blob `0f055821…` equals the copy on `origin/review/conjugal-kernel-2026-09-18` (E7). Landing note: bus master and the 2026-09-26 branch both still carry the stale copy `46aaa31b…`. The steward lands `0f055821` with this filing, or the dc2a719 K9 condition is undone on master.
-K10 "Missing, `unknown` or mismatched account identity makes the inventory stale" | ADOPTED | INSTANCE-FAILURE, health.
-K11 "the quoted title line of each rule the project confirms it meets" | ADOPTED | FIT, with a correction. The line's PROOF (*"a rule below this filing violates"*) is not met: R2 governs completion evidence and does not reach a delivery claim. The S13 claim "ACCEPTED, delivered at identity" is wrong (E1). It is corrected under K7 and P:code subject-identity, not here. The posture line is tool-computed, and `harvest-status.py` raises no flag on it (E0).
-K12 "The steward harvests every filing and answers each one" | ADOPTED | INSTANCE-FAILURE, health; this file is the answer. Re-run today: `conjugal STALE blob=0666f1e8 ... findings=46 untested=0`, `open=1`, exit 1. `kernel-e2e.py --json` → `criterion_1_projects: 0`, `open_filings: {conjugal: STALE}` (E0). Instrument defect, measured: run under the default Windows console code page, `kernel-e2e.py` prints `REFUSE kernel-e2e: harvest-status.py produced no filing rows`, exit 2, because the child's output cannot be encoded. With `PYTHONUTF8=1` it runs. That gate fails closed, and the fail-closed is correct, but it hides the verdict. Follow-up for the tool's owner.
-P:code subject-identity "a key on a different subject identity does not transfer" | ADOPTED | INSTANCE-FAILURE, health, **widened to S13**: merge `8e35ae83c` changed the subject's own file (E1). Correction: "Eight other acceptances were delivered as the exact keyed commit" should read seven (S22, S25, S26, S27, S29, S30, S31).
-P:code artifact-store "build outputs are not the subject" | ADOPTED | FIT, no text change.
-P:code determinism-class "flaky suites are declared per test, never silently retried" | ADOPTED | INSTANCE-FAILURE, health.
-P:code acceptance-evidence "the same contract judges every round" | ADOPTED | INSTANCE-FAILURE, health. Correction: S31's round-2 contract **is** recoverable, from the rollout rather than the tree. Round-2 prompt record 9 (`77da50a0…`) differs from round 1 (`c19b4b8b…`), and bar U6 became V6 (E8); see C4. For the claimed subjects, the declaration blob is identical at declaration and at candidate (E8), so git content-addressing bound the declared text. It bound no harness, budget or rule digest.
-P:code independent-key "Review-key charters declare execution or static review before dispatch" | ADOPTED | INSTANCE-FAILURE, health.
-P:code resource-terminals "parked work names its resume condition and the actor who can satisfy it" | ADOPTED | INSTANCE-FAILURE, health.
-P:code delivery-target "Stricter instance closure mechanisms and their budgets are declared before work" | ADOPTED | INSTANCE-FAILURE, health.
-P:code human-gates "releases, security-sensitive paths, frozen bytes" | ADOPTED | INSTANCE-FAILURE, health. It now also bears on credit: C3.
-P:code budgets "window counts of subjects accepted, delivered, parked and closed undelivered" | ADOPTED | INSTANCE-FAILURE, health. Corrections: witnessed delivery at identity in the window is 7 (S22, S25..S27, S29..S31). S1 is unwitnessed and S13 is removed. Accepted-undelivered-at-identity is 2 (S12, S13).
-P:code claims "A mutable checkout another project executes from is itself a claimed subject" | ADOPTED | INSTANCE-FAILURE, health.
-P:code dispatch-preflight "the spending tool runs the project's resume gate before dispatch" | ADOPTED | INSTANCE-FAILURE, health.
+**NOTE (steward and kernel): the K7 detector cannot see the S1 failure.** `delivery-at-identity.py` reports `AT-IDENTITY`
+when *some* reflog entry's tree equals the keyed tree. On `refs/heads/master` it prints `S1 AT-IDENTITY` (E5). The test K7
+needs is whether that tree was the tip at or after acceptance, and the detector does not read acceptance time. Until it
+does, an `AT-IDENTITY` row is necessary for credit but not sufficient. This is an instance-tool observation for Conjugal.
+It changes no kernel text.
 
-## Findings — kept lines (blob 4598b8ed, carried verbatim)
+**NOTE (K7 delivery discipline; no credit change): candidate trees were pushed before their key rounds.** `57714640d`
+(S34 round 1) reached `origin/master` by push at 23:40:01 +01:00 and was refused at 23:48:39 +01:00. `47e4f9df9` (round
+2) was pushed at 23:53:23 and accepted at 23:58:59. S22 has the same pattern: pushed at 01:25:58 -0500, accepted at
+01:39:10 (E2). An unaccepted, and once refused, tree sat on the delivery target. S22 was credited on 2026-10-06 under this
+pattern, and both S22 and S34 were still the tip when accepted. So no credit changes. The observation is recorded for
+Conjugal's landing order and for the steward.
 
-K1 (kept) "A candidate is never accepted on evidence whose only author is its producer" | ADOPTED | FIT, no text change. S1's receipt now reproduces (E3).
-K2 (kept) "Each project keeps one register" | ADOPTED | INSTANCE-FAILURE, health; dc2a719's reclassification was honoured.
-K3 (kept) "its claim record and the procedure by which someone other than the claimant decides it stale" | ADOPTED | Identity half FIT. Claim half INSTANCE-FAILURE, health.
-K4 (kept) "Never exit code, output size or silence" | ADOPTED | FIT. The mutation evidence is the same as dc2a719 re-ran (19 cases / 113 ok; `-z` removed → exit 1, 10 failures; restored → green).
-K5 (kept) "the profile line recorded before work" | ADOPTED | FIT for S1. `check-ordering.py`: `S1 OK decl=96d1b3a@...18:18:10 cand=ca4dd13@...19:03:48` (E2).
-K6 (kept) "Every acceptance includes a key from an independence class other than the producer's" | ADOPTED | FIT. S1's receipt reproduces (E3); the proposed wording is ruled under Untested 2.
-K7 (kept) "how the project detects an accepted subject that never delivered" | ADOPTED | INSTANCE-FAILURE, health.
-K8 (kept) "Running out of quota means rotating or parking" | ADOPTED | INSTANCE-FAILURE, health. The S11 correction is accepted.
-K9 (kept) "the resumability gate's command and its last passing output" | ADOPTED | dc2a719's condition was met on `origin/review/conjugal-kernel-2026-09-18`: copy `0f055821` = live (E7). See the landing note under the new K9.
-K10 (kept) "Missing, `unknown` or mismatched account identity makes the inventory stale" | ADOPTED | INSTANCE-FAILURE, health.
-K11 (kept) "the quoted title line of each rule" | ADOPTED | The replaced evidence (a tool-computed posture) is what dc2a719 asked for. This blob made no S13 claim.
-K12 (kept) "The steward harvests every filing and answers each one" | ADOPTED | INSTANCE-FAILURE, health. The ledger-row gap stands: this ruling also produces no automated row.
-P:code subject-identity (kept FIT) "git tree OID of the candidate commit as it will be delivered" | REJECTED(restatement of K3's identity half) | As in dc2a719. The author-versus-committer FRICTION condition stays open there.
-P:code acceptance-evidence (kept) "bind the acceptance contract by digest" | ADOPTED | INSTANCE-FAILURE, health.
-P:code independent-key (kept FIT) "a verifier from another model family (R3)" | REJECTED(restatement of K6) | The line itself asks for no credit.
-P:code resource-terminals (kept) "parked work names its resume condition" | ADOPTED | INSTANCE-FAILURE, health.
-P:code delivery-target (kept FIT) "integration branch via the project's landing path" | ADOPTED | FIT, no text change: the landing path is a fast-forward. Delivery at the keyed identity is a separate question (S1: C5).
-P:code dispatch-preflight (kept) | ADOPTED | INSTANCE-FAILURE, health.
-P:code claims (kept) | ADOPTED | INSTANCE-FAILURE, health; the same fact as K3.
-P:code human-gates (kept) | ADOPTED | INSTANCE-FAILURE, health.
-P:code budgets (kept) | ADOPTED | INSTANCE-FAILURE, health.
-P:code artifact-store (kept FIT) | ADOPTED | FIT, no text change.
-P:code determinism-class (kept) | ADOPTED | INSTANCE-FAILURE, health.
+**Ledger effect.** For conjugal, the steward's row should read `2 closed end-to-end (S22, S34)`. That form parses under
+`E2E_COUNT_RE` in `tools/kernel-e2e.py`. `per_project_closed.conjugal` goes from 1 to 2. `criterion_1_projects` is
+unchanged, because conjugal already counted.
+
+## Findings (`## Clauses` and `## Profile fields`, blob 5cf3436e)
+
+K5 "the profile line recorded before work, and the acceptance receipt bound to the same identity" | ADOPTED | INSTANCE-FAILURE, health. The fix half is verified: S38..S64 record `resolved r9, bus 9e23075`, S71..S107 record `resolved r10, bus d53bac1`, and S41 and S43 carry none (E6). The failure half reproduces at 16: `SUMMARY subjects=57 ok=27 open=0 failures=16 -> FAIL`, exit 1, and the failing rows are exactly S38..S107 less S87 (E6). The 2026-10-06 K5 condition (record the literal revision) is met for this window.
+K7 "the delivery target, and how the project detects an accepted subject that never delivered" | ADOPTED | INSTANCE-FAILURE, health, and the detector the 2026-10-06 ruling asked for is verified. The bus copy blob `7bfabc53` equals Conjugal `578f8af9a`. Its test is 5/5 green in a scratch copy. Re-run against `origin/master` and `refs/heads/master`, it prints exactly the filed rows, ten of ten against the 2026-10-06 ruling (E5). STALE in the filing: *"not yet on Conjugal `master`"*. `578f8af9a` is now an ancestor of Conjugal `origin/master` `2551fe3c9`. 17 of 18 window acceptances were not delivered at identity: confirmed. See the detector NOTE above: `AT-IDENTITY` does not test the time of acceptance.
+K9 "the resumability gate's command and its last passing output" | ADOPTED | FIT. `--rev 18c0d2bc4` and `--rev origin/master` (`2551fe3c9`) both print `PASS resumability ...`, exit 0. The live blob `87c0eb8a` equals the filing branch's copy (E7). **Landing instruction, replacing the 2026-10-06 K9 note.** Bus `665b4566` (2026-10-16) retired `tools/conjugal-reference/{doctrine_outbox.py, doctrine-outbox-README.md, resumability-check.py, session-start-auth.py}` and `tools/session-start-auth.py`, and `hooks/pre-push-no-unpinned-tool.py` refuses a new copy of the `resumability-check` census family. Of the files on this filing branch, only `tools/conjugal-reference/resumability-check.py` must not land. `tools/conjugal-reference/delivery-at-identity.py` (blob `7bfabc53`) was not retired, is in no census family, and remains the bus copy K7 relies on.
+K12 "The steward harvests every filing and answers each one" | ADOPTED | INSTANCE-FAILURE, health. Dates re-read: routing `e31b50c` 2026-09-26, ruling `1d29195` 2026-10-06 (E0). The PROOF, *"dispositioned ... within 7 days of routing"*, failed again: routing `2b2c60e` is dated 2026-10-06 22:07 -0500, and this ruling 2026-10-17. The lateness is the arbiter's (cloudvore's), not the steward's. The candidate ruling cited by the 2026-10-17 routing (`self-filing-arbitration-is-addressed-and-timed-r1`) is not ruled here.
+P:code subject-identity "git tree OID of the candidate commit as it will be delivered, after any merge with the delivery target" | ADOPTED | INSTANCE-FAILURE, health. Re-run: the candidates of S53, S55, S60, S62 and S64 have 2 parents; those of S38 and S40 have 1. S53's first tip differs from the keyed tree only by its Outcome and `QUEUE/subjects.md`. S47's range (75 paths) includes its own test, `scripts/test-repair-loop-state-live-write.sh`. `manifest` occurs 0 times in S34..S69 at `18c0d2bc4` (E6). STALE in the filing: *"QUEUE step 6 now says so on branch `kd-delivery-at-identity` (`b7702b005`), not yet on Conjugal `master`"*. `b7702b005` is an ancestor of Conjugal `origin/master` `2551fe3c9`.
+P:code acceptance-evidence "the same contract judges every round" | ADOPTED | INSTANCE-FAILURE, health, narrowed as filed. For S34 the arbiter's own C4 showing (above) finds every declared bar judged in both rounds, so S34 keeps its credit. The prompt is still not bound by a declared digest.
+P:code resource-terminals "Before dispatch, declare any register-permitted substitution for a family-bound quorum seat" | REJECTED(non-section-4 verdict "FIT (not exercised)") | Reclassified to FIT. Precedents: `cloudvore.dispositions.md` (finding lines around 80-89) records a reclassification as `REJECTED(<reason>)` with the new verdict, and `agent-bridge.dispositions.md` (around line 89) records the same act as `ADOPTED`. This file uses the REJECTED form for both of its reclassifications. Reason: section 4 has FIT (*"held and cost nothing extra"*) and UNEXERCISED (*"could arise but did not"*), not a blend. The filer's own evidence shows the **field** was exercised and held. S90's first launch ended on *"Selected model is at capacity"* with no verdict and was not charged as a round (rollout `86b3334d...`, no final answer: E8). S50 was parked before its key on a Codex capacity stop with no verdict, and its unspent round passed to S54 (`closed.md` row 11). Those are typed terminals with no partial green. The new r10 substitution sentence was not exercised within that field. The claim that every key round in the window was `gpt-6-astra` is verified for S34 only (E3). Not ruled: S50's park row names a successor, not an actor who can satisfy its resume condition (the 2026-10-06 resource-terminals failure). No credit rests on it.
+P:code human-gates "releases, security-sensitive paths, frozen bytes, and anything the project's register lists" | REJECTED(non-section-4 verdict "FIT (window) / INSTANCE-FAILURE (S25, S26, carried)") | Reclassified to FRICTION, the same way as resource-terminals and on the same precedents. The gate held in the window, but at a measured cost, so it is not FIT by section 4's definition. S93 and S94 each spent their one key round and were refused and parked on the register's missing row (`closed.md` rows 50-51), and the row then needed an owner decision (`a0be03860`, 2026-10-06). That commit's message records the grant as a session's quotation (*"owner's Claude Code conversation"*, `Co-Authored-By: Claude Opus 5.5`), not as owner-authored text, and no credit here rests on it. One profile's FRICTION changes only that profile (section 5), and no REPLACES is offered, so there is no text change. The carried S25/S26 INSTANCE-FAILURE stays as health, and both subjects are now withdrawn.
+P:code budgets "window counts of subjects accepted, delivered, parked and closed undelivered" | ADOPTED | INSTANCE-FAILURE, health. 18 acceptances, 1 at identity (S34), 17 not (E5). The derive command `grep -c '^| parked' .../closed.md` prints 42 at `18c0d2bc4`. That is a whole-ledger count, not a window count, and is recorded as such.
 
 ## Untested
 
-The filing carries 8 items (4 kept, 4 new). `harvest-status.py` prints `untested=0` because it counts only `K`/`P` lines.
-Kernel K12 asks for a disposition on every Untested item, so all 8 are answered.
+Blob `5cf3436e` has no `## Untested` section (`harvest-status.py`: `untested=0`). The 8 items the `0666f1e8` ruling
+disposed are restated so this replacement file keeps them. U6 is re-disposed in place, as the 2026-10-07 U6 re-routing
+asks.
 
-U1 TRAPS row (`An assertion that passes without testing what it names`) | ROUTED(owner) | It turns on how a trap is filed, and R14.1/R14.6 (written by cloudvore, unread by the owner) govern exactly that. Cloudvore does not rule on its own unread ruling.
-U2 Proposed K6 wording (`KEY_UNAVAILABLE_BY_PROVIDER` typed terminal) | REJECTED(already covered; one profile) | The profile's resource-terminals field already makes *"independent key unavailable"* a typed terminal with no partial green. Kernel text needs FRICTION from two profiles (§5).
-U3 S10 "no K6 route for security subjects" | ADOPTED-CONDITIONAL(a second bench reports it) | Recorded as an instance claim. C3 now shows the cost on S25 and S26.
-U4 `RULINGS.md` mentions the kernel zero times | ADOPTED | True when filed, and resolved since. Re-run today at bus `bb93367`: `grep -ci "fleet-factory-kernel\|factory kernel" RULINGS.md` → 5.
-U5 Five provider-filter terminations and one no-verdict | ADOPTED | Recorded as an instance lesson (construct versus verify), with no kernel text.
-U6 A non-model oracle as a K6 class | ROUTED(owner) | This is a question of kernel wording (*"a measured score against held-out ground truth"*), and nothing was accepted on it. The steward is Conjugal, the filer, so it cannot rule on this (§5). The owner is the alternate.
-U7 Declaration prose is an unguarded surface: a lesson for `TRAPS.md` | ROUTED(owner) | Trap filing form, R14; same reason as U1.
-U8 Subject shape predicts parks | ADOPTED-CONDITIONAL(a second bench reports it) | One bench.
+U1 TRAPS row (`An assertion that passes without testing what it names`) | ROUTED(owner) | Stands. R14 is still unread by the owner. The filer is filing it as an R14 card (`## Owner items`).
+U2 Proposed K6 wording (`KEY_UNAVAILABLE_BY_PROVIDER`) | REJECTED(already covered; one profile) | Stands.
+U3 S10 "no K6 route for security subjects" | ADOPTED-CONDITIONAL(a second bench reports it) | Stands. S25 and S26, the cost it predicted, are now withdrawn.
+U4 `RULINGS.md` mentions the kernel zero times | ADOPTED | Stands. Resolved since.
+U5 Five provider-filter terminations and one no-verdict | ADOPTED | Stands, as an instance lesson.
+arbiter: cloudvore, for U6 only (Claude Opus 5.5; the same drafting and two verification seats); re-disposed in place 2026-10-17 on the steward's 2026-10-07 U6 re-routing (bus ef18c66), replacing the 2026-10-06 ROUTED(owner); alternate dng-auto-processor not used
+U6 A non-model oracle as a K6 class | REJECTED(no kernel text change: K6 already admits a non-model key; one profile; nothing accepted on it) | The re-routing is right: section 5 bars only the steward, and R14 does not reach a K6 wording question, so cloudvore rules. K6 already counts *"a human, a hardware rig or a measured score against held-out ground truth"* as the independent key. U6 offers no replacement text, and only one profile reports it. Section 5 changes kernel text on FRICTION only when two profiles report it. **The arbiter's reading of K6 as it stands; it makes no new rule and binds no profile.** K6's words *"held-out ground truth"* are met by a measurement only when it measures the accepted property against truth, not when it reports agreement with another implementation of that property. *Obiter:* S19's library-agreement score would on that reading not by itself be such a key. S19 is parked and nothing rests on it.
+U7 Declaration prose is an unguarded surface | ROUTED(owner) | Stands. R14, as for U1.
+U8 Subject shape predicts parks | ADOPTED-CONDITIONAL(a second bench reports it) | Stands.
 
-## Header
+## Header and other items
 
-HEADER: `subjects: 9 end-to-end claimed` | ACCEPTED AS RECORDED, CREDIT 1 OF 9 | See `## Criterion 1`. S22 is credited, S1 and S25..S31 are conditional, and S13 counts zero.
-HEADER: `health: assurance=UNSATISFIED operability=PRESSURED` | CONFIRMED | 29 INSTANCE-FAILURE lines are adopted as health.
+HEADER: `subjects:` (S1, S34 claimed; S22 not re-claimed; six NEEDS-KEY, then withdrawn; 17 zero) | ACCEPTED AS RECORDED, CREDIT 1 NEW (S34) | S1 is refused (see `## Criterion 1`). Part 2's paragraph governs the stale NEEDS-KEY wording, as the filing says.
+HEADER: `window: 2026-09-26T22:35Z .. 2026-10-06T14:31Z` | CONFIRMED | `7dc9e1e26` was authored at 23:35:24 +01:00 (22:35:24Z). `fb1d57e74` reached `origin/master` by push at 09:31:01 -0500 (14:31:01Z) (E1, E5). S1's C5 answer is evidence about a subject outside this window and is ruled as such.
+HEADER: `health: assurance=UNSATISFIED operability=PRESSURED` | CONFIRMED | The adopted INSTANCE-FAILURE lines are K5, K7, K12, subject-identity, acceptance-evidence and budgets.
+HEADER: `providers: claude(producer ... by trailer) codex(gpt-6-astra, acceptance key)` | CONFIRMED for the credited subject | S34's candidate trailer is `Claude Sonnet 5`, and its declaration trailer `Claude Opus 5.5`. Both key rounds are `codex_exec`, provider `openai`, model `gpt-6-astra` (E3). Producer families are trailer testimony, as the filing says. The other window subjects' providers were not re-derived.
+HEADER: `instance:` | ACCEPTED, PARTLY STALE | The paths exist as filed. *"not yet on Conjugal `master`"* (the detector, `578f8af9a`) is stale: it is now an ancestor of `2551fe3c9`.
 HEADER: `posture:` R9 line | CONFIRMED | Tool-computed; `harvest-status.py` flags `-` (E0).
-HEADER: `profile: code@r9` | ACCEPTED, RE-FILE OWED | The profile is now r10 (bus `d53bac1`, 2026-10-01: a substitution sentence in resource-terminals). PROMPT K's revision trigger fired.
+HEADER: `profile: code@r10` | ACCEPTED, RE-FILE OWED ON NEXT SUBJECTS | The profile is now r11 (bus `a0a1325f`, 2026-10-13: K3 identity is the `sha256` of the OID text). The credited subjects ran under r9 (S34) and earlier, so r11 does not reach them.
+CORRECTIONS (S13 withdrawn; seven, not eight; literal revisions) | ACCEPTED | All three verified (E5, E6).
+C1-C4 decisions | ACCEPTED | C1, C2 and C4 are answered by withdrawal. Declining the profile route for C1 is correct under section 5. C3 stays open only to the owner's own attestation, and removing attestation text written in the owner's name (`91be7429`) was correct.
+C5 answer (S1) | REJECTED | See `## Criterion 1`.
+`specs/conjugal.md` `KERNEL:` refresh on the filing branch | NOT RULED | It is the steward's file under the steward's landing, outside this ruling.
 
-## Evidence
+## Evidence checked
 
-All of the following was run on 2026-10-06 CDT by cloudvore, between about 2026-10-07T00:00Z and 01:05Z UTC. `date -u` read 00:42Z at worktree creation and 01:02Z at the last check. It was read-only against Conjugal (two
-detached worktrees `C:/t/conj-1` at `db9fd5643`, `C:/t/conj-2` at `1755502d6`; `C:/code/Conjugal`'s working tree was not
-touched). Rollouts were read-only under `~/.codex/sessions/2026/09/`.
+Run 2026-10-17, from about 17:20Z, by the cloudvore drafting seat, and re-run after the verification seats. All reads
+were read-only. Bus worktree `C:/t/bus-arb` at `54278a82` (= `origin/master`). Conjugal `C:/code/Conjugal`, whose
+`origin/master` = `2551fe3c9` (as read on 2026-10-17; it has since moved to `ee0c5ae21`, and every ancestor claim here still holds), was read through `git` only: its working tree, index and refs were not touched, and no
+fetch was run. Scratch repositories in the session scratchpad borrow Conjugal's objects through `objects/info/alternates`.
+Rollouts were read from `~/.codex/sessions/2026/09/` and `2026/10/` (`*.jsonl.zst`) with Python 3.14 `compression.zstd`.
+The reader scripts print digests, timestamps and booleans, never excerpt text.
 
-**E0 — bus state.**
-```
-$ git -C <bus> rev-parse origin/review/conjugal-kernel-2026-09-26:adjudications/factory-kernel/conjugal.md
-0666f1e84632c925557c8e1c64159d85031f66ff
-$ python tools/harvest-status.py factory-kernel            # exit 1
-subject=factory-kernel spec=specs/fleet-factory-kernel.md filings=10
-  conjugal                     STALE       blob=0666f1e8 ref=origin/review/conjugal-kernel-2026-09-26 findings=46 untested=0 posture='conjugal-standard-PARTIAL (0/17 lanes; ...)' flags=-
-      superseded copy blob=4598b8ed ref=origin/review/conjugal-kernel-2026-09-18
-open=1  (UNHARVESTED or STALE; 0 means every current filing has a disposition)
-$ python tools/kernel-e2e.py --json                        # default console code page
-REFUSE kernel-e2e: harvest-status.py produced no filing rows     # exit 2
-$ PYTHONUTF8=1 PYTHONIOENCODING=utf-8 python tools/kernel-e2e.py --json    # exit 1
-"closed_end_to_end": 0, "criterion_1_met": false, "criterion_1_projects": 0, "ledger_rows": 23,
-"open_filings": {"conjugal": "STALE"}, "per_project_closed": {... "conjugal": 0 ...}
-```
+**E0 -- bus.** `git ls-remote origin refs/heads/review/conjugal-kernel-2026-10-07` -> `eb8432e1...` (= the local ref).
+`...:adjudications/factory-kernel/conjugal.md` -> `5cf3436e...`. `python tools/harvest-status.py factory-kernel` ->
+`conjugal STALE blob=5cf3436e ... findings=9 untested=0 ... flags=-`, `open=1`, exit 1. Every other filing is HARVESTED.
+Dates: `e31b50cc` 2026-09-26, `1d291955` and `515f63fd` 2026-10-06, `2b2c60ef` 2026-10-06 22:07 -0500, `ef18c662`
+2026-10-07, `54278a82` 2026-10-17.
 
-**E1 — identity, ancestry, delivery** (Conjugal `origin/master` = `db9fd5643a3c`).
-```
-$ for c: git rev-parse $c^{tree}; git merge-base --is-ancestor $c origin/master
-S1  ca4dd1346 tree=721e4b15677a579d1fab3fd430a785d7974e243d match=yes ancestor exit=0 parents=1
-S12 0a738a6b4 tree=d8dc575001d4a84f310a96c8e2a03061506b2ace match=yes ancestor exit=0 parents=1
-S13 c6f35501e tree=d44d8fb78b73d505c25d7ac0d3259251ca83bc50 match=yes ancestor exit=0 parents=1
-S22 c323c4af7 tree=f08000648013d77360d0e75f88d23d84d2965fc8 match=yes ancestor exit=0 parents=1
-S25 d7e2fc224 tree=e62b15efe2e125c83b6399d243364bd86b340471 match=yes ancestor exit=0 parents=1
-S26 ee4677985 tree=bf32a3a454e08401064bfb4cda18c207525b0f74 match=yes ancestor exit=0 parents=1
-S27 96fcad8ae tree=f52c03ac499ab7fbeabacdb8756f53cd1a521646 match=yes ancestor exit=0 parents=1
-S29 272be21e3 tree=d4223e59645634d1205ed3419913747659e0beb4 match=yes ancestor exit=0 parents=1
-S30 8cab657f6 tree=7cafba0c16649dd05027beb949e7b0b79c114f65 match=yes ancestor exit=0 parents=1
-S31 e93985e54 tree=831c204a9830893972db7d8cccc029e0eebd1a74 match=yes ancestor exit=0 parents=1
-$ git rev-list --first-parent origin/master | grep <cand>     # all ten: yes (does NOT discriminate: see S12, S13)
-$ git reflog show refs/remotes/origin/master --format='%H %gd %gs'   # 560 entries at read time, @{559} 2026-09-11; gap 09-13 16:16 .. 09-16 12:46
-# NOTE: @{n} indices drift as this clone fetches; a re-reader should match by SHA, not by index
-c323c4af7 @{361} update by push   d7e2fc224 @{344}   ee4677985 @{338}   96fcad8ae @{333}
-272be21e3 @{321}   8cab657f6 @{317}   e93985e54 @{312}   7b309cc81 @{464} (2026-09-18 18:51:37)
-ca4dd1346 0 entries   0a738a6b4 0 entries   c6f35501e 0 entries
-# S12
-$ git cat-file -p 7b309cc81 → parents 7b0ad750b bb86742db; tree 00559844199291ad61474439529d42497b3259d2
-$ git merge-base --is-ancestor 0a738a6b4 bb86742db → exit 1
-# S13
-$ git log --first-parent --format='%h %p %s' 8e35ae83c -6
-8e35ae83c 9407cb9db 8020e55a6 Merge branch 'master' into claude/confident-elbakyan-b32fbc   (= origin/master@{459})
-9407cb9db … fe5670190 … d7902e487 … 564844ab4 … c6f35501e 51d3e9489  (S13 candidate)
-$ git merge-base --is-ancestor c6f35501e 8020e55a6 → exit 1
-$ git merge-base --is-ancestor 57d70da90 8020e55a6 → exit 0     # peer pushes @{460..462}: aab23cc49 5f16e2ed6 57d70da90, all not descendants of c6f35501e
-$ git rev-parse 8e35ae83c^{tree} → b30f8ceee417ceaad5402af284daac3914ba223e  (≠ d44d8fb7…)
-$ git diff --name-only 9e7aad0fe c6f35501e   → coordination/harvest/harvest_runner.py, …/test_harvest_runner.py, s13-replay fixtures
-$ git diff --stat 9407cb9db 8e35ae83c -- coordination/harvest/harvest_runner.py → 1 file changed, 21 insertions(+)
-# S1
-$ git merge-base --is-ancestor 82c5ed993 ca4dd1346 → exit 0   # 82c5ed993 = last witnessed tip before the gap (2026-09-13 16:16:15)
-$ git rev-list --count ca4dd1346..b817774de → 110             # b817774de = first witnessed push containing S1 (2026-09-16 12:46:59)
-$ 717cc2111 (09-15 20:17), 50c573f9d (20:34), fd94362a5 (09-16 02:01), d02ca9a77 (07:43): each descends from ca4dd1346 (exit 0)
-$ git diff --shortstat ca4dd1346 d02ca9a77 -- <S1's two files> → 2 files changed, 369 insertions(+), 13 deletions(-)
-```
+**E1 -- trees.** `git log -1 --format='%H %aI' <c>` and `rev-parse <c>^{tree}`: `7dc9e1e26` 2026-09-26T23:35:24+01:00
+(declaration); `57714640d` 23:39:40 -> `48c82fd0...`; `47e4f9df9` 23:52:50 -> `fd9fe571b54e1e5f3d25606a25f632174c2a2ace`;
+`ca4dd1346` -> `721e4b15677a579d1fab3fd430a785d7974e243d`. `merge-base --is-ancestor 57714640d 47e4f9df9` -> 0. The range
+is `f83cd9112`, two merges (`2ac7574bd`, `7fa0516fb`) and `47e4f9df9`. `git diff --stat 57714640d 47e4f9df9` over S34's
+two declared paths and its S-file -> only `test-codex-heartbeat-policy.py` (+35/-4). Trailer on `47e4f9df9`:
+`Claude Sonnet 5`.
 
-**E2 — ordering witness.**
-```
-$ (C:/t/conj-2 @ 1755502d6) python coordination/kernel-dogfood/check-ordering.py ; exit=0
-S1 OK decl=96d1b3a@2026-09-15T18:18:10-05:00 cand=ca4dd13@2026-09-15T19:03:48-05:00 identity=ok delivered=yes outcome=ACCEPTED
-S12 OK … outcome=ACCEPTED     S13 OK decl=7fe8864@…18:50:41 cand=c6f3550@…19:22:26 identity=ok delivered=yes outcome=ACCEPTED
-S22 OK decl=ae02d54@2026-09-22T01:06:51-05:00 cand=c323c4a@2026-09-22T01:24:16-05:00 identity=ok delivered=yes outcome=ACCEPTED
-S25 OK … S26 OK … S27 OK … S29 OK … S30 OK … S31 OK … (all identity=ok delivered=yes outcome=ACCEPTED)
-S21 NO-CANDIDATE-CITED …   S28 NO-CANDIDATE-CITED …
-SUMMARY subjects=33 ok=24 open=0 failures=0 -> PASS pinned=bd96a7204
-$ (C:/t/conj-1 @ db9fd5643, today's master) same script → SUMMARY subjects=57 ok=27 open=0 failures=16 -> FAIL, exit 1
-  (the failures are S34..S107, outside this filing's window; they belong to Conjugal's next filing)
-```
+**E2 -- delivery reflogs** (`git reflog show <ref> --date=iso-strict --format='%h %T %gd %gs'`).
+- Local master: `ca4dd1346 721e4b156 master@{2026-09-15T19:03:49-05:00} merge claude/heuristic-ritchie-e012ea:
+  Fast-forward`, then `15a0d736b 38f402f99 master@{2026-09-15T19:07:35-05:00}` (`git show --stat 15a0d736b` ->
+  `coordination/lanes/luna.md | 2 +-`). For S22: `c323c4af7 master@{2026-09-22T01:25:50-05:00}`, then
+  `100a89804 master@{2026-09-22T01:40:59-05:00}`.
+- `refs/remotes/origin/master`: `57714640d @{2026-09-26T23:40:01+01:00} update by push`;
+  `47e4f9df9 @{2026-09-26T23:53:23+01:00} update by push`; next `983c3693b @{2026-09-27T00:01:33+01:00}`;
+  `c323c4af7 @{2026-09-22T01:25:58-05:00} update by push`; next `100a89804 @{2026-09-22T01:41:08-05:00}`. There is no
+  entry for `ca4dd1346`, `c6f35501e` or `0a738a6b4`.
+- Declarations: S1 at `96d1b3a27`, lines 8 and 14; S34 at `7dc9e1e26`, lines 5-8 (both quoted above).
 
-**E3 — receipts recomputed from the rollouts by each receipt's own rule.** Rule (S12..S31 receipts): rollout SHA-256 of
-the whole file. Excerpt = the last `response_item` with `payload.type=message`, `role=assistant`, `phase=final_answer`,
-UTF-8 concatenation of `content[].text`. Verdict line = the line in it beginning `VERDICT`/`ACCEPT`/`REFUSE`. S1 rule:
-the record at line 91 of file 7. Script: a read-only Python reader that prints digests and booleans, never excerpt text.
-```
-S12 R2 bytes=675371  rollout=cf74d5c9…6c16 ✓ rec=66  excerpt=d27776f4…28ad0 ✓ verdict='VERDICT: ACCEPTED identity=d8dc5750…2ace key=gpt-6-astra class=codex-openai' 223a9cf4…56cf ✓ models=[gpt-6-astra]
-S13 R1 bytes=1045281 rollout=f2409155…e337 ✓ rec=254 excerpt=eb37a32f…cd5c ✓ verdict='VERDICT: ACCEPTED identity=d44d8fb7…bc50 …' 23ddcd4e…3da0 ✓ models=[gpt-6-astra]
-S22 R1 bytes=684514  rollout=6a2f6b24…486f ✓ rec=203 excerpt=d6bf6765…e5c5 ✓ verdict='ACCEPT f08000648013d77360d0e75f88d23d84d2965fc8' 7d452bde…71d8 ✓ models=[gpt-6-astra]
-S25 R2 bytes=540629  rollout=3937177c…6bfa ✓ rec=57  excerpt=91c74aef…4c8b ✓ verdict='VERDICT: ACCEPT' f422a3f0…d1e7 ✓ full_tree_in_line=False in_excerpt=True
-S26 R1 bytes=714436  rollout=914d4945…2b96 ✓ rec=65  excerpt=1277d2a6…6c0c ✓ verdict='VERDICT: ACCEPT' ✓ in_line=False in_excerpt=True
-S27 R1 bytes=716128  rollout=2b9ccccf…96a6 ✓ rec=164 excerpt=9d972f8d…82b6 ✓ verdict='VERDICT: ACCEPT' ✓ in_line=False in_excerpt=True
-S29 R1 bytes=769315  rollout=7fab308e…81d5 ✓ rec=172 excerpt=152ab06d…0ff6 ✓ verdict='VERDICT: ACCEPT' ✓ in_line=False in_excerpt=True
-S30 R1 bytes=355951  rollout=cef728bf…5893 ✓ rec=49  excerpt=3203875c…3c5e ✓ verdict='VERDICT: ACCEPT' ✓ in_line=False in_excerpt=False prefix9_in_excerpt=True
-     full tree occurs only in records 29 (custom_tool_call_output: the key's own rev-parse) and 31 (event echo)
-S31 R2 bytes=453605  rollout=161e80da…e310 ✓ rec=72  excerpt=afd9b8bc…00f6 ✓ verdict='VERDICT: ACCEPT' ✓ in_line=False in_excerpt=True
-S1  f7   bytes=646775  rollout=c01100d0…a5ce9 ✓ rec=91 ts=2026-09-16T00:08:58.797Z excerpt=4cfd7357…05e2 ✓ verdict='VERDICT: ACCEPTED  identity=721e4b15…243d  key=gpt-6-astra  class=codex-openai' models=[gpt-6-astra]
-(✓ = equal to the digest printed in the receipt file on the filing branch; every check exit 0)
-$ git show origin/review/conjugal-kernel-2026-09-26:…/conjugal-receipts/S1-astra-acceptance.md | sha256sum
-66034ac71082662b3f86cb4bef1771e750c85d41aea6a2f951487cf773017ca2   (= the filing's cited digest)
-```
+**E3 -- receipts and acceptance times** (scratchpad `s34_rollouts.py`, `find_rollout.py`; rule as in the receipt).
+- S34 R1 `rollout-2026-09-26T23-44-19-01a0dfe4-0acf-...`: 611,202 B, `fd975c03...8fa8`; final record line 65
+  `ce3d5bc9...44f2` at 22:48:39.037Z; excerpt 7,506 B `32ca5023...90f2`; verdict `VERDICT: REFUSE tree=48c82fd0...`
+  `81ba45c8...5c05`; prompt (record 9) 3,879 B `d1c7a4ce...9f43`.
+- S34 R2 `rollout-2026-09-26T23-54-33-01a0dfed-6767-...`: 677,585 B, `05aa868d...d8d5`; line 69 `2fd6261f...1bcd` at
+  22:58:59.887Z; excerpt 7,893 B `406eba9b...af25`; verdict
+  `VERDICT: ACCEPT tree=fd9fe571b54e1e5f3d25606a25f632174c2a2ace` `e9275532...6445`; prompt 4,475 B `d230f36e...5735`.
+- Both S34 rounds: `turn_context` models `['gpt-6-astra']`; `session_meta` (`codex_exec`, `openai`, `0.157.1`). All
+  match `S34-key-rounds.md`. The Outcome `983c3693b` contains the six rollout, excerpt and verdict digests once each, and
+  not the two record digests.
+- S1 `rollout-2026-09-15T19-04-12-01a0a787-383b-...`: 646,775 B, `c01100d0...5ce9`; final record line 91 at
+  2026-09-16T00:08:58.797Z; excerpt `4cfd7357...05e2`; verdict `VERDICT: ACCEPTED  identity=721e4b15...  key=gpt-6-astra
+  class=codex-openai`.
+- S22: the rollout with SHA-256 prefix `6a2f6b24` is `rollout-2026-09-22T01-27-10-01a0c7cb-...`; its final answer is at
+  2026-09-22T06:39:10.119Z.
 
-**E4 — producer trailers.** `git log -1 --format='%(trailers:key=Co-Authored-By,valueonly)'`: `Claude Opus 5` on
-ca4dd1346, 0a738a6b4, c323c4af7, d7e2fc224, ee4677985, 96fcad8ae, 272be21e3, 8cab657f6, e93985e54; empty on c6f35501e.
+**E4 -- S34 contract.** `git rev-parse <c>:coordination/kernel-dogfood/S34-...md` -> `465aae65...` at `7dc9e1e26`,
+`57714640d` and `47e4f9df9`. Scratchpad `s34_prompt_diff.py`: a unified diff of the two record-9 texts, read locally and
+not published (Law 4). Hunks:
+- the round-2 banner;
+- the candidate SHA;
+- a HISTORY block, added;
+- the declaration-change check, reworded as (b);
+- "WHAT TO EVALUATE" -> "VERIFY ALL FIVE", (a)-(e), with bars 1-6 and M1-M11 kept;
+- the park-risk-2 sentence, removed;
+- the final-line form, fixed to the tree.
 
-**E5 — register and S25 cost.** `ls coordination/kernel-dogfood/K2-REGISTER.md` at `1755502d6` → No such file.
-`git log --diff-filter=A -- …/K2-REGISTER.md` → `dbabbe06e 2026-09-27 18:26:28 +0100`. The register (27 lines at
-`db9fd5643`) gates "Security-sensitive paths". `git show af0a21d3f | grep -n "MAIN checkout\|no reflog"` → lines 14, 24, 68.
+**E5 -- K7 detector.** `git show 578f8af9a:.../delivery-at-identity.py`; `hash-object` -> `7bfabc53...`, the same as the
+bus copy. Arguments: `--repo C:/code/Conjugal --files <archive of 18c0d2bc4> --extra S1=ca4dd1346 ... S34=47e4f9df9`.
+- `--ref refs/remotes/origin/master`: S22, S25, S26, S27, S29, S30, S31 and S34 `AT-IDENTITY`; S1 `DESCENDANT-TOUCHED
+  first_tip=b817774de`; S12 `DESCENDANT-CLEAN first_tip=7b309cc81`; S13 `DESCENDANT-TOUCHED first_tip=8e35ae83c`; S47
+  `DESCENDANT-TOUCHED`; the other 16 window subjects `DESCENDANT-CLEAN`. `SUMMARY subjects=28 not_at_identity=20`, exit 1.
+- `--ref refs/heads/master`: S1 `AT-IDENTITY master@{2026-09-15T19:03:49-05:00}` (before acceptance: see the NOTE);
+  S34 `DESCENDANT-CLEAN first_tip=7528530bc`; S12 and S13 unchanged. Exit 1.
+- `test-delivery-at-identity.py` (scratch copy): `Ran 5 tests ... OK`, exit 0.
+- `merge-base --is-ancestor 578f8af9a origin/master` -> 0; `merge-base --is-ancestor b7702b005 2551fe3c9` -> 0.
 
-**E6 — r9 resolution.** `git log -1 --format=%h --before=2026-09-21T01:24:35-05:00 origin/master -- specs/fleet-factory-kernel/profiles/code.md`
-→ `9e23075`. The same for `2026-09-22T22:23:29-05:00` → `9e23075`. `git log origin/master -- …/code.md` → `d53bac1`
-(2026-10-01, r10) is newer.
+**E6 -- K5 and identity.**
+- The run that reproduces the filing: scratch repository with alternates to Conjugal's objects, `master` =
+  `18c0d2bc4`, the default bus path, no `GIT_DIR` override.
+  `python -B -I coordination/kernel-dogfood/check-ordering.py --repo <scratch> --master 18c0d2bc4` ->
+  `SUMMARY subjects=57 ok=27 open=0 failures=16 -> FAIL`, exit 1 (verification seat B; reproduced by the drafting seat: the same SUMMARY, with S4 and S9 `OK`).
+- The first draft cited a run that printed 18. That run set `GIT_DIR` to Conjugal's `.git`, which also redirected the
+  script's bus lookups. S4's and S9's candidates are bus commits (`git -C <bus> cat-file -t 18d7ceb` -> `commit`), so they
+  read `UNRESOLVABLE`. No ruling rests on that run.
+- Literal revisions: quoted under K5.
+- Candidate parents: `7d71e60e8`, `7ba18b8c3`, `4173fd8b1`, `efe387c4c`, `cf077c9ff` -> 2; `d44990542`, `ce1eb9b79` -> 1.
+- `git diff --name-only 7d71e60e8 95bbef478` -> the S53 file and `QUEUE/subjects.md`.
+- `git diff --name-only 52ff854de 0551154b7` -> 75 paths, including `scripts/test-repair-loop-state-live-write.sh`.
+- `manifest`: 0 occurrences in S34..S69.
 
-**E7 — K9.** `(conj-2) python coordination/tools/resumability-check.py` → `PASS resumability (docs/architecture/approach-a
-@ 1755502d6): tree-only resume possible; no live values in RESUME.md`, exit 0. `rev-parse HEAD:coordination/tools/resumability-check.py`
-→ `0f05582128a3…`. Bus: `…-2026-09-18:tools/conjugal-reference/resumability-check.py` → `0f05582128a3…`;
-`…-2026-09-26:tools/conjugal-reference/resumability-check.py` → `46aaa31baf09…` (stale).
+**E7 -- K9.** `git rev-parse 18c0d2bc4:coordination/tools/resumability-check.py`, and the same at `origin/master`, ->
+`87c0eb8a4a8740f821f65ccff2c9832bb5793657`. The filing branch's `tools/conjugal-reference/resumability-check.py` -> the
+same. `python -B -I resumability-check.py --rev 18c0d2bc4` -> `PASS resumability (docs/architecture/approach-a @
+18c0d2bc4) ...`, exit 0; `--rev origin/master` -> `PASS ... @ 2551fe3c9`, exit 0. `git show 665b4566 --stat` -> the five
+retired files named under K9; `delivery-at-identity.py` is not among them. `hooks/pre-push-no-unpinned-tool.py:68` lists
+`resumability-check`, and no `delivery-at-identity` family.
 
-**E8 — contracts.** `git rev-list --count <decl>..<cand> -- coordination/kernel-dogfood/<S-file>` → 0 for S1, S22, S25,
-S26, S27, S29, S30, S31. The S-file blob is equal at declaration and candidate for all eight. S31: in both rollouts, the
-user prompt is record 9. R1 is 4124 bytes, SHA-256 `c19b4b8b397b5a8a…`, with bar `U6 ... build.py exits 0`. R2 is 4336
-bytes, SHA-256 `77da50a07e88a92f…`, with bar `V6 ... build.py exits 0 AND leaves ...-5k.png byte-identical`. The declared
-bar 5 at `a5b496be4` reads `python docs/product/roadmap-board/build.py exits 0`.
+**E8 -- resource terminals.** `rollout-2026-10-04T20-36-17-01a109b4-588f-...`: whole-file SHA-256 `86b3334d...117d` (= the
+S90 Outcome's citation), `final_answer` absent, `at capacity` present. `closed.md` row 11 at `18c0d2bc4`: S50 *"PARKED
+before the key: a Codex capacity stop (no verdict)"*.
 
 ## What the steward does next
 
-1. Append one HARVESTS.md row for conjugal, blob `0666f1e8`, kernel r5 / profile code@r9, with the subjects cell reading
-   `1 closed end-to-end (S22); 7 conditional (S1, S25-S27, S29-S31); S12, S13 zero`, plus the verdict counts above.
-   The row is the steward's to write; cloudvore did not touch HARVESTS.md.
-2. Land this file on bus master, then confirm `harvest-status.py` reads conjugal HARVESTED. `kernel-e2e.py` should then
-   read `criterion_1_projects: 1`. Run it with `PYTHONUTF8=1` until the encoding defect (K12) is fixed.
-3. When landing the filing, carry the `0f055821` copy of `resumability-check.py` (K9).
-4. Conjugal's next filing: re-file against code@r10; discharge or withdraw C1–C4; record literal profile revisions (K5);
-   correct the S13 and seven-not-eight statements; and add a delivery-at-identity detector that reads the reflog or a
-   merge-on-path test (K7).
-5. Owner: U1 and U7 (R14), and U6 (kernel wording; the steward is the filer).
+1. Land this file on bus master. `harvest-status.py factory-kernel` then reads conjugal HARVESTED.
+2. Append one HARVESTS.md row for conjugal, blob `5cf3436e`, kernel r5 / profile code@r10. Subjects cell:
+   `2 closed end-to-end (S22, S34); S1 refused (C5); S25-S27, S29-S31 withdrawn; S12, S13 and 17 window subjects zero`.
+   The ledger counts the filing's submitted verdict lines. The arbiter's counts are 7 ADOPTED and 2 REJECTED: two
+   reclassifications, resource-terminals to FIT and human-gates to FRICTION. The row is the steward's to write;
+   cloudvore did not touch HARVESTS.md.
+3. When landing the filing, do not carry `tools/conjugal-reference/resumability-check.py` (K9). The filing,
+   its receipts and `tools/conjugal-reference/delivery-at-identity.py` may land.
+4. Conjugal's next filing: re-file against code@r11.
+   - Bring `check-ordering.py` in step with the Outcome-table grammar (K5).
+   - Teach the K7 detector to test the tip at or after acceptance, not "ever the tip" (NOTE above).
+   - Show the QUEUE landing-order fix (`b7702b005`, now on Conjugal `master`) with a window whose
+     accepted-not-at-identity count is 0, and with no unaccepted candidate pushed to the target before its key (NOTE above).
+5. Owner: U1 and U7 (R14), and C3 for S25 and S26 if the owner wishes to attest. The withdrawals stand otherwise.
 
-## Self-check
+## Verification
 
-Two read-only adversary seats checked the draft before commit. Their verdicts are below. Each reproduced defect was
-fixed in place.
+Drafted by the cloudvore drafting seat (Claude Opus 5.5), which wrote none of Conjugal's work. Two non-author
+verification seats checked the first draft. The integrator (session c0424b03) adjudicated their findings, and the
+drafting seat re-verified each before revising.
 
-**Seat A** (claude-opus, read-only; re-ran E1, E2, E3 and E8 independently). **Verdict: SOUND-WITH-FIXES.**
-- Reproduced: the S13 merge `8e35ae83c` (its second parent lacks the candidate; it changes `harvest_runner.py`; no
-  reflog entry for `c6f35501e`). Reflog push entries for S22, S25 and S30. Rollout digests for S1, S22 and S30, and that
-  S30's excerpt carries only a prefix. `check-ordering.py` PASS at `1755502d6`. The S31 prompt digests.
-- Fix 1: the S1 credit was unsupported. The first push containing `ca4dd1346` is `b817774de` (2026-09-16 12:46), after
-  four commits (`717cc2111`, `50c573f9d`, `fd94362a5`, `d02ca9a77`) rewrote S1's own files by +369/−13. `8d431e43e` is
-  not on `origin/master`'s first-parent line.
-- Fix 2: S25's round 2 dropped declared bar 2.
-- Fix 3: E1's count, date and run timestamp; reflog indices drift.
+**Seat A: FAIL on the first draft** (evidence re-run).
+- S1 had been credited on local `master`'s reflog. Its tree was the tip only from 19:03:49 to 19:07:35 -0500, and the key
+  accepted at 19:08:58, so K7 is not met. Taken: S1 refused, with the timeline above. The S22 and S34 timings were
+  re-checked against the same test.
+- The detector's "ever the tip" blind spot. Taken, as a NOTE.
+- Human-gates: S93 and S94 parked on a missing row is a cost, so the line is not FIT. Taken: reclassified to FRICTION.
+- Candidate trees pushed before their key rounds. Taken, as a NOTE, with no credit change.
+- S34 re-derived: all eight digests are exact. Its credit stands.
 
-**Seat B** (claude-opus, read-only; rulings against kernel r5, profile r9/r10, PROMPT K, README, dc2a719 and R14).
-Its report did not reach this session directly. The integrator relayed its fixes, and every one was taken.
-**Verdict: fixes required (SOUND-WITH-FIXES).**
-- Remove the "no merge touched the subject" test, and ground delivery in the profile's identity sentence.
-- S1's fast-forward ancestry (`82c5ed993` is an ancestor of `ca4dd1346`; all 110 commits descend from it) belongs in the
-  file.
-- Re-ground C1 on K5's observable, and C3 on the profile's gate list.
-- Correct the timing facts: S1's digests were on the bus at `15bf9dd` on 09-18, and S13's were printed at Outcome.
-- K11: R2 does not reach a delivery claim, so ADOPTED with a correction, not REJECTED.
-- U4 was resolved since, so ADOPTED.
-- U6 cannot go to the steward, who is the filer.
-- `spec_commit` must name r9 `9e23075`.
+**Seat B: FAIL on the first draft.**
+- The K9 landing instruction over-reached: `665b4566` did not retire `delivery-at-identity.py`. Taken: the instruction
+  is limited to `resumability-check.py`.
+- K5 cited a run that printed 18 failures. Taken: the reproducing run (16) is cited, and the 18 is explained.
+- The two non-section-4 verdicts were handled inconsistently. Taken: both are reclassified, with precedents.
+- U6 needed its own `arbiter:` line, a reading rather than a rule, and its S19 remark struck or marked obiter. Taken.
+- The `providers:`, `window:` and `instance:` header lines were unruled. Taken: all three are ruled.
+- The stale `b7702b005` statement. Taken.
 
-**Where the seats conflicted** (S1: B, fast-forward; A, tree never a witnessed tip), the integrator ruled
-ADOPTED-CONDITIONAL. S1 is conditional (C5), not credited. Crediting S1 would have been inconsistent with zeroing S13.
-
-**What changed after the seats.**
-- S1 moved from credited to ADOPTED-CONDITIONAL (C5).
-- S25 gained C4.
-- C1 and C3 were re-grounded.
-- The timing facts were corrected.
-- K11 moved from REJECTED to ADOPTED.
-- U4 moved from REJECTED to ADOPTED.
-- U6 moved from ROUTED(steward) to ROUTED(owner).
-- The P:code budgets and kept delivery-target lines were corrected.
-- E1 was extended and its timestamp fixed.
-- The headline counts were recomputed. Finding lines: 43 / 1 / 2 / 0. Untested: 2 / 2 / 1 / 3. Credit falls to S22
-  alone, and criterion 1 is unchanged at 1 project for conjugal.
+**What changed.**
+- S1: credited -> REJECTED. Credit: S22 and S34, 2 closed.
+- Finding counts: 8/0/1/0 -> 7/0/2/0.
+- K9 landing instruction narrowed.
+- Resource-terminals: UNEXERCISED -> FIT, on the filer's S50 and S90 evidence.
+- Human-gates: ADOPTED as FIT -> REJECTED, reclassified to FRICTION.
+- U6 given its own arbiter line.
+- Two NOTEs, three header rulings, E6 corrected, E8 added.
