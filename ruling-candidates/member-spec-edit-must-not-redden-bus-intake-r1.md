@@ -27,3 +27,83 @@ Status: PROPOSED 2026-09-29 by a bus-auditor chat session (record only).
 
 A and B both need changes to sealed `tools/check_adoption_ledger.py` and the intake epoch, so either one is
 an epoch amendment (precedent 8727672 and Landing B, packet r2) run as its own K1/K6 subject.
+
+## Addendum A1: proposed decision, 2026-10-17 (NOT ratified; zero authority)
+
+Written by a Conjugal implementer session (Claude Opus 5.5). It records a decision proposal and its evidence.
+It ratifies nothing, edits no sealed control, and grants no adoption, launch or runtime permission.
+
+**Decision proposed.** Adopt **A′**, an A-variant that the writer enforces before the push and that needs no epoch
+amendment. Keep **B** open as the structural fix, run as its own K1/K6 subject. Reject **C** as the standing mode.
+
+**A′ as built.** Bus `hooks/pre-push-bus-tests.py` at bus `bfb30116` gained drift checks. The pushed range may
+touch a path a sealed pin covers. Coverage is read from the pin at the pushed tip: the r45 `subjectFiles`,
+the R26 census `specPath`s, the pin file itself, a new top-level `specs/*.md`, and the checker. When it does,
+the layer checks the tip out into a temporary worktree. There it runs the checker CI already runs, in check
+mode:
+
+- r45: `tools/check_universal_manifest.py --treeish HEAD`
+- R26: `tools/check_adoption_ledger.py --current --treeish HEAD`
+
+On failure it refuses the push and prints the approved refresh for that token:
+
+- `MANIFEST_SUBJECT_MISMATCH` prints `refresh_current_universal_manifest.py --candidate <tip>`.
+- `PROJECT_SPEC_DRIFT` prints `refresh_current_adoption_census.py`.
+- `PROJECT_CLOSED_SET_MISMATCH` says that no refresh can fix it without an epoch amendment (precedent bus
+  `da3e22dc`).
+
+The layer never refreshes. A refresh is a separate, reviewed commit on top of the refused tip, and the push
+carries both commits.
+
+**Why A′, not A as written.**
+
+1. "Refresh in the same commit" cannot be done. The census needs `baseCommit` to be the commit it sits in, and
+   each `evidence.commit` to be the last commit that touched the spec. So the refresh must be a second commit.
+   What matters is the master tip after the push, and that tip is what CI checks.
+2. "Must not be a git hook (63ca737 TRAP)." That trap is about GIT_DIR inheritance. The layer strips GIT_DIR,
+   GIT_WORK_TREE, GIT_INDEX_FILE and the related variables from its own git calls and from every child. The
+   tests push from a linked worktree, and their fixture checkers assert that GIT_DIR is absent:
+   - bus `hooks/hooks.tests.py` `BusTests` and `BusDrift`
+   - Conjugal `coordination/harvest/tests/test_bus_tests_layer.py`
+3. A CI job runs after a direct push to master, so a red result is only advisory.
+
+**Evidence.** Counted on bus `origin/master` from 2026-09-29 to 2026-10-17:
+
+| Edits | Repairs | Red cause | Hand repairs on 2026-10-16 |
+|---|---|---|---|
+| 20 commits to census-pinned project specs | 3 census refreshes | `PROJECT_SPEC_DRIFT` / `PROJECT_CLOSED_SET_MISMATCH` | `da3e22dc`, `797d1b86` |
+| 13 commits to `README.md` | 3 r45 re-pins | `MANIFEST_SUBJECT_MISMATCH` | `158a072e`, `9b08e709` |
+
+Every unrefreshed edit reddened CI until the next repair.
+
+Measured on the XPS 17 against bus `49009d20`, with other agents running:
+
+| Push | Result | Time |
+|---|---|---|
+| Untouched (layer decision only) | passed | 0.54 s |
+| `README.md` edit | refused | 16.6 s |
+| `README.md` edit, refreshed tip, following the printed procedure | passed | 16.0 s |
+| `specs/conjugal.md` edit | refused | 7.9 s |
+| `specs/conjugal.md` edit, refreshed tip | passed | 7.4 s |
+| New top-level spec | refused with `PROJECT_CLOSED_SET_MISMATCH` | 10 s |
+
+The layer is installed by pin, under Law 1, in the bus clone that the Conjugal harvest steward pushes from,
+along with every linked worktree of that clone (Conjugal `0d4312ba6`, `ce17dfd5e`). Five publish shapes ran
+through `git push --dry-run` and all passed with no suite run:
+
+- outbox appends to `TRAPS.md`, `RECEIPTS.md` and `specs/conjugal/cards.md`
+- `metrics/scorecard-daily.jsonl`
+- `metrics/product-share-lines.jsonl`
+
+End to end, the installed layer took 1.17–1.38 s against a 1.44–1.53 s push round trip.
+
+**What A′ does not do.**
+
+- It covers only writers whose push passes through a clone with the layer installed. Pushes from other
+  machines, the web UI, or clones without the layer can still redden CI, so CI stays the backstop.
+- It moves the per-edit refresh cost from a steward after landing to the writer before landing. It does not
+  remove that cost. Only **B** ends the treadmill for every writer, and **B** is an epoch amendment.
+- A push that touches no covered path is not judged, even if master already carries drift. That is
+  deliberate: no writer is refused for drift it did not cause.
+- The layer does not strip `GIT_CONFIG_PARAMETERS`, the other half of the 63ca737 trap. No steward push uses
+  `git -c`.
