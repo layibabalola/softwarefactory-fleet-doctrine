@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "89d576bebc80d097769f32b949aa5564339a4e7f",
+    "baseCommit": "76394aad83dc6788eacfbf8f04a1a62ec586db36",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/account-rotation-and-project-continuity.md",
@@ -249,8 +249,8 @@
       "specPath": "specs/dng-auto-processor.md",
       "status": "DISTINGUISH",
       "evidence": {
-        "commit": "80a5873dbdce3a93480ecfa18551561dccb06b7a",
-        "gitBlobOid": "30b2d53d5ad575e7d85fb2b97e2f45229d82beb7",
+        "commit": "76394aad83dc6788eacfbf8f04a1a62ec586db36",
+        "gitBlobOid": "a9e5916f089a1460527f0deb9caab378e8e86035",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "909f769d02e8412e51e28e242cfa8d00dadc9a3d"
