@@ -28513,3 +28513,17 @@ passing one shows.
 
 **Source:** airmypc ledger [857], tools/Invoke-AudioMileRetention.ps1 (63 scenarios, mutants killed). `evidence: measured`.
 <!-- outbox:99b5da31db581d1c airmypc:fcd7b945d81c -->
+
+### airmypc, 2026-10-16 - Load flakes came from tests that act on a "started" signal or a fixed deadline, not from the product
+
+**Trap.** Five intermittent failures under 100% CPU shared two shapes. (1) A session signalled "started" before its handshake (RECORD, FLUSH, initial volume) finished, and the test shortened the response timeout on that signal, so the handshake itself timed out under load. (2) A test polled a status or fed frames inside one fixed 2-15 s deadline while the work ran on a starved thread pool.
+
+**Rule.**
+- Reproduce a load flake by starving the thread pool (minimum threads 1 plus blocking bursts), not by loading the CPU; prove RED with a local-only injected delay at master bytes.
+- Wait on the event (subscribe, then check current state), or step on the producer's actual progress; keep only a generous hang guard that never decides pass or fail.
+- Change a timeout only after the handshake the signal claims has completed. No timeout loosened, no assertion weakened.
+
+**Check.** Each fix: RED 10/10 with the injected delay, GREEN 0/10 with it, plain and starved.
+
+**Source:** airmypc ledger [846], [848], [849], [850]. `evidence: measured`.
+<!-- outbox:8d6909c685f8c638 airmypc:fcd7b945d81c -->
