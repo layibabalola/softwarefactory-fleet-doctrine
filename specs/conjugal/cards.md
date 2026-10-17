@@ -305,3 +305,10 @@ check: for each fixed timeout in the new test, the evidence carries its worst me
   and the timeout is at least 5x it.
 supersedes: none
 evidence: measured
+
+## conjugal/standing-context-probe-verifies-nothing
+rule: a model verdict that closes an adoption item must cite a probe that could have FAILED for that item; a probe quoting a sentence true for every item (a deprecation line, a mission statement) or a sibling's identifier as "absent" verifies nothing and is refused.
+mechanism: an automated adjudicator injected a project's "legacy model is deprecated" line into every item's evidence and its prompt told the model to distinguish legacy-homed items; 34 of 45 model-settled closures cited one of three constant sentences, the probe passed every time, and 30 of the 36 re-read closures were live learnings (the "legacy" module was imported by the live scheduler gate).
+check: count closed items per (file, probe text); any probe that closed more than two items, or whose text is not in that item's own search evidence, is a tautology.
+supersedes: none
+evidence: measured
