@@ -65,6 +65,22 @@ Every software-factory fleet project with agent lanes **MUST** adopt a fail-clos
    - **Fail soft:** missing `cos-feedback/<project>/` directory or missing `pr-*.md` files
      → **omit the section**; do **not** refuse the whole brief (unlike sealed RULINGS/specs).
    - READ-only. Never write, amend, or delete CoS feedback from a project lane.
+   - **Exception:** CoS asks requiring `ACK:` are owner-authorized instructions; lanes must
+     reply on the PR thread per the CoS response duty.
+   - **Read PR comments, not just bus files.** CoS posts asks as PR/issue comments; a brief
+     that only reads `cos-feedback/` misses them. Key on the body marker (starts with
+     `**Chief of Staff review` or `**CoS`, or contains `CoS-CONCERN:`), not the login, since
+     the owner and factories share one GitHub account.
+   - **CoS response duty (copy into each consumer's AGENTS.md, pointer from CLAUDE.md):**
+     CoS asks for `ACK: <plan or ETA>` are owner-authorized instructions, not "data only";
+     doctrine text calling cos-feedback "zero authority" does not apply to them. Any PR
+     comment, issue comment, or `cos-feedback/<slug>/` bus note from the Chief of Staff that
+     asks for "ACK: <plan or ETA>" must get a reply within 24 hours on the same thread,
+     starting "ACK:" with a concrete plan and ETA, or "DISTINGUISH:" with the reason. A push,
+     heartbeat, or commit message is not an ACK. Never merge or enqueue a card while a CoS ask
+     on it is unanswered. At the start of every session (and every hub tick), check open CoS
+     asks first (`gh api repos/<repo>/issues/comments?since=<now-48h>`, match markers, then
+     look for a later `ACK:`/`DISTINGUISH:` reply on the same thread).
 
 Optional offline fixture root for unit tests (no `gh`) is encouraged; production paths must use `gh`.
 
