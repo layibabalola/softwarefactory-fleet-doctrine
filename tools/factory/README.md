@@ -66,13 +66,31 @@ A **profile** is registry data (`profiles` in `registry.json`, checked by `valid
 | a product-throughput class stub for `tools/Get-ProductThroughput.ps1 -ClassConfig` | `factory-pins/product-throughput-classes.json` |
 
 Law 1 holds exactly as for `install`: the running runner must be git's object at `<bus-sha>`, and every blob init pins,
-seeds, writes as a hook or executes is hashed in-process and must equal the commit's tree entry. The one tool it
-executes is the profile's pinned `check-rule-tags`, from those verified bytes, in a private directory. Everything is
-planned before the first write, so a refusal (exit 2) writes nothing. A file the project already has is **never
-overwritten**: a different settings entry already running a profile tool (or the user settings running it, which would
-double-register it), or a pre-push hook with other layers, is printed as a `HAND:` step and init exits **4
-INCOMPLETE**; re-run it after the step and it exits 0. A second run with the same commit is a `NO-OP`. init never
-commits: it prints the exact `git add --` line (a review decision).
+seeds, writes as a hook or executes is hashed in-process and must equal the commit's tree entry. An already-vendored
+runner is accepted only when its recorded bus commit really carries that blob (a forged runner with a hand-written
+record is refused, and `verify` reports it as DRIFT). The bootstrap scripts verify the runner into a private temporary
+directory and start it with `python -I`, so nothing touches the project before init has planned. The one tool init
+executes is the profile's pinned `check-rule-tags`, from those verified bytes, in a private directory.
+
+Everything is planned before the first write, then every file is staged under a temporary name beside its destination
+and renamed into place only when all are staged, so a refusal (exit 2) -- including an unwritable destination --
+writes nothing. A destination is refused if any link or junction lies between the project root (or the hooks dir) and
+it, and no two writes may name the same file (compared case-folded). A git hooks dir outside the repository (a shared
+`core.hooksPath`) is never written. A file the project already has is **never overwritten**; settings are merged
+(text, non-ASCII and order of existing entries kept; duplicate keys refused). Each profile hook is judged across every
+scope Claude Code merges (`.claude/settings.json`, `.claude/settings.local.json`, `~/.claude/settings.json`): one
+existing registration elsewhere, or the project's own pinned form (`run <tool> -- <its args>`) under the profile's
+matcher, is **kept**; a copy here, another matcher, or two registrations are printed as a `HAND:` step and init exits
+**4 INCOMPLETE**. Every HAND step can be cleared by the person (replace the copy by the pin, fix the matcher, keep
+one registration, chain the missing pre-push layers -- each layer marker is checked), and the same init then exits 0.
+A second run with the same commit is a `NO-OP`. init never commits: its `COMMIT:` line names every file it manages
+that HEAD does not hold as it is now (an adopted runner included).
+
+Hooks that must never block (session-checkpoint on Stop and SessionStart) run as `pin-runner.py --never-block run ...`:
+a runner refusal there exits 1 (a loud, non-blocking hook error) instead of 2, which on Stop would block every turn end.
+The guards keep exit 2. The pre-push layers judge with the first protected ref whose pins already name the layer's tool,
+else the pushed commit: an existing consumer's adoption push is never locked out, and once master pins a layer, a
+branch can no longer re-pin its own judge.
 
 ## Install contract (consumer project)
 

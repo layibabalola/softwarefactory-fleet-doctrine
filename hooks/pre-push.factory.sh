@@ -9,7 +9,10 @@ FF_PROTECTED="refs/remotes/origin/master refs/remotes/origin/main"
 FF_REFS=$(cat)
 FF_JUDGE=
 for FF_P in $FF_PROTECTED; do
-  if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null; then FF_JUDGE=$FF_P; break; fi
+  if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null \
+     && git show "$FF_P:factory-pins/factory-pins.json" 2>/dev/null | grep -q '"pre-push-ff-only"'; then
+    FF_JUDGE=$FF_P; break
+  fi
 done
 [ -n "$FF_JUDGE" ] || FF_JUDGE=$(printf '%s\n' "$FF_REFS" | awk '$2 !~ /^0+$/ { print $2; exit }')
 [ -n "$FF_JUDGE" ] || FF_JUDGE=HEAD
@@ -36,7 +39,10 @@ NUT_PROTECTED="refs/remotes/origin/master refs/remotes/origin/main"
 NUT_REFS=$(cat)
 NUT_JUDGE=
 for NUT_P in $NUT_PROTECTED; do
-  if git cat-file -e "$NUT_P:factory-pins/pin-runner.py" 2>/dev/null; then NUT_JUDGE=$NUT_P; break; fi
+  if git cat-file -e "$NUT_P:factory-pins/pin-runner.py" 2>/dev/null \
+     && git show "$NUT_P:factory-pins/factory-pins.json" 2>/dev/null | grep -q '"no-unpinned-tool"'; then
+    NUT_JUDGE=$NUT_P; break
+  fi
 done
 [ -n "$NUT_JUDGE" ] || NUT_JUDGE=$(printf '%s\n' "$NUT_REFS" | awk '$2 !~ /^0+$/ { print $2; exit }')
 [ -n "$NUT_JUDGE" ] || NUT_JUDGE=HEAD

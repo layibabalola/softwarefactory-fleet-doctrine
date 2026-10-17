@@ -80,6 +80,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -102,10 +103,11 @@ REGISTRY_SCHEMA = "factory-registry.v1"
 REGISTRY_KEYS = {"path", "interpreter", "purpose"}
 MAX_PINS_BYTES, MAX_TOOL_BYTES = 256 * 1024, 4 * 1024 * 1024
 PROFILE_KEYS = {"purpose", "tools", "seeds", "claude_hooks", "git_hooks", "rule_map", "throughput_stub"}
-HOOK_KEYS = {"event", "matcher", "tool", "args", "timeout"}
+HOOK_KEYS = {"event", "matcher", "tool", "args", "timeout", "never_block"}
 CLAUDE_EVENTS = ("SessionStart", "SessionEnd", "Stop", "SubagentStop", "PreToolUse", "PostToolUse", "UserPromptSubmit",
                  "PreCompact", "Notification")
-GIT_HOOK_KEYS = {"hook", "path", "marker"}
+GIT_HOOK_KEYS = {"hook", "path", "markers"}
+SEED_DEST = re.compile(r"factory-pins/[A-Za-z0-9][A-Za-z0-9._-]{0,99}\Z")
 GIT_HOOKS = ("pre-push", "pre-commit", "commit-msg")
 HOOK_ARG = re.compile(r"[A-Za-z0-9@/._=:,+-]+\Z")   # no quote, space or shell metacharacter can reach a settings command
 PROJECT_ARG = "@project/"                           # a hook arg naming a file of the project: "$CLAUDE_PROJECT_DIR/..."
@@ -609,11 +611,11 @@ def validate_profile(name: str, p: Any, tools: dict[str, dict[str, Any]], where:
         if missing:
             raise bad(f"installs group {t!r} without its member(s) {missing}")
     seeds = p.get("seeds", {})
+    reserved = {f"factory-pins/{PINS_NAME}".lower(), "factory-pins/pin-runner.py"}   # compared case-folded (Windows)
     if not isinstance(seeds, dict) or not all(
-            isinstance(d, str) and not bad_path(d) and d.startswith("factory-pins/") and d.count("/") == 1
-            and d not in (f"factory-pins/{PINS_NAME}", "factory-pins/pin-runner.py") and isinstance(s, str) and not bad_path(s)
-            for d, s in seeds.items()):
-        raise bad("'seeds' must map factory-pins/<file> (not the pins or the runner) to bus paths")
+            isinstance(d, str) and SEED_DEST.match(d) and d.lower() not in reserved
+            and isinstance(s, str) and not bad_path(s) for d, s in seeds.items()):
+        raise bad("'seeds' must map factory-pins/<plain file name> (not the pins or the runner, in any case) to bus paths")
     hooks = p.get("claude_hooks", [])
     if not isinstance(hooks, list):
         raise bad("'claude_hooks' must be a list")
@@ -622,14 +624,17 @@ def validate_profile(name: str, p: Any, tools: dict[str, dict[str, Any]], where:
                 or h["event"] not in CLAUDE_EVENTS or h["tool"] not in ts
                 or ("matcher" in h and not (isinstance(h["matcher"], str) and h["matcher"].strip()))
                 or not (isinstance(h.get("args", []), list) and all(isinstance(a, str) and HOOK_ARG.match(a) for a in h.get("args", [])))
-                or not (type(h.get("timeout", 60)) is int and 1 <= h.get("timeout", 60) <= 600)):
+                or not (type(h.get("timeout", 60)) is int and 1 <= h.get("timeout", 60) <= 600)
+                or type(h.get("never_block", False)) is not bool):
             raise bad(f"has a malformed claude hook {h!r} (event from {CLAUDE_EVENTS}, a tool of the profile, args "
                       f"matching {HOOK_ARG.pattern}, timeout 1-600)")
     gh = p.get("git_hooks", [])
     if not isinstance(gh, list) or len({h.get("hook") for h in gh if isinstance(h, dict)}) != len(gh) or not all(
             isinstance(h, dict) and set(h) == GIT_HOOK_KEYS and h["hook"] in GIT_HOOKS and not bad_path(h["path"])
-            and isinstance(h["marker"], str) and h["marker"].strip() and "\n" not in h["marker"] for h in gh):
-        raise bad(f"'git_hooks' entries need exactly {sorted(GIT_HOOK_KEYS)}, a hook from {GIT_HOOKS}, one each")
+            and isinstance(h["markers"], list) and h["markers"] and len(set(map(str, h["markers"]))) == len(h["markers"])
+            and all(isinstance(m, str) and m.strip() and "\n" not in m for m in h["markers"]) for h in gh):
+        raise bad(f"'git_hooks' entries need exactly {sorted(GIT_HOOK_KEYS)} (markers: the distinct one-line layer "
+                  f"markers the body carries), a hook from {GIT_HOOKS}, one each")
     for k in ("rule_map", "throughput_stub"):
         if type(p.get(k, False)) is not bool:
             raise bad(f"'{k}' must be true or false")
@@ -684,12 +689,24 @@ class Consumer:
 
     def plan_runner(self) -> tuple[bool, bool]:
         """(vendor, adopt). install/init never overwrite a vendored runner: an adopted older release stays (status
-        reports STALE), an unadopted byte-identical one is adopted, anything else refuses."""
+        reports STALE), an unadopted byte-identical one is adopted, anything else refuses. An adopted record is DATA the
+        consumer wrote, so it is believed only when the bus agrees: the recorded commit must carry exactly that blob at
+        the runner's bus path (a forged runner with a matching hand-written record is refused)."""
         have = self.vendored.read_bytes().replace(b"\r\n", b"\n") if self.vendored.is_file() else None
         rec = self.pins.get("runner")
         if have is None:
             return True, True
         if isinstance(rec, dict) and rec.get("blob") == blob_id(have) and rec.get("sha256") == hashlib.sha256(have).hexdigest():
+            if not HEX40.match(str(rec.get("commit"))):
+                raise Refused(f"{self.pfile}: the runner record names no commit; adopt-runner it at the commit it equals")
+            try:
+                want, _data = read_blob(self.bus, rec["commit"], RUNNER_BUS_PATH)
+            except Refused:
+                raise Refused(f"the adopted runner's commit {rec['commit'][:12]} has no {RUNNER_BUS_PATH} in {self.bus} "
+                              "(fetch the bus, or the record is not a bus release)") from None
+            if want != rec["blob"]:
+                raise Refused(f"{self.vendored} is recorded as bus {rec['commit'][:12]}:{RUNNER_BUS_PATH}, but that commit "
+                              f"carries blob {want[:12]}, not {rec['blob'][:12]}: not a bus release; nothing written")
             return False, False
         if have == self.runner_bytes:
             return False, True
@@ -781,36 +798,83 @@ def cmd_install(args: argparse.Namespace, _rest: list[str]) -> int:
 
 # --- init: a whole factory in one command --------------------------------------------------------
 def hook_command(h: dict[str, Any]) -> str:
-    cmd = f'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run {h["tool"]}'
+    nb = " --never-block" if h.get("never_block") else ""
+    cmd = f'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py"{nb} run {h["tool"]}'
     if h.get("args"):
         cmd += " --" + "".join(" " + (f'"$CLAUDE_PROJECT_DIR/{a[len(PROJECT_ARG):]}"' if a.startswith(PROJECT_ARG) else a)
                                for a in h["args"])
     return cmd
 
 
-def wired_commands(settings: Any, event: str) -> list[str]:
-    out = []
-    groups = settings.get("hooks", {}).get(event, []) if isinstance(settings, dict) and isinstance(settings.get("hooks"), dict) else []
+def registrations(settings: Any, event: str) -> list[tuple[str | None, str]]:
+    """[(matcher or None, command)] for every command hook registered on <event>."""
+    out: list[tuple[str | None, str]] = []
+    hooks = settings.get("hooks") if isinstance(settings, dict) else None
+    groups = hooks.get(event, []) if isinstance(hooks, dict) else []
     for g in groups if isinstance(groups, list) else []:
-        for h in (g.get("hooks") if isinstance(g, dict) and isinstance(g.get("hooks"), list) else []):
+        if not isinstance(g, dict):
+            continue
+        for h in g.get("hooks") if isinstance(g.get("hooks"), list) else []:
             if isinstance(h, dict) and isinstance(h.get("command"), str):
-                out.append(h["command"])
+                out.append((g.get("matcher") or None, h["command"]))
+    return out
+
+
+SHELL_SEPARATORS = {"&&", "||", ";", "|", "&"}
+INTERPRETER_WORDS = {"python", "python3", "py", "pythonw", "node", "pwsh", "powershell", "sh", "bash"}
+ENV_ASSIGN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
+
+
+def command_scripts(command: str) -> list[list[str]]:
+    """For each simple command in a hook command line: [the program it runs, *its arguments]. The program is the
+    first word, or the first non-option word after an interpreter (python -I x.py ...). Words are split like a POSIX
+    shell (quotes removed; backslashes read as path separators); env assignments are skipped."""
+    try:
+        words = shlex.split(command.replace("\\", "/"), posix=True)
+    except ValueError:
+        words = command.split()
+    simple: list[list[str]] = [[]]
+    for w in words:
+        if w in SHELL_SEPARATORS:
+            simple.append([])
+        else:
+            simple[-1].append(w)
+    out = []
+    for c in simple:
+        i = 0
+        while i < len(c) and ENV_ASSIGN.match(c[i]):
+            i += 1
+        if i < len(c):
+            prog = c[i].rsplit("/", 1)[-1].lower()
+            if prog.removesuffix(".exe") in INTERPRETER_WORDS:
+                i += 1
+                while i < len(c) and c[i].startswith("-"):
+                    i += 2 if c[i] in ("-X", "-W", "-m") else 1
+        if i < len(c):
+            out.append(c[i:])
     return out
 
 
 def wires_tool(command: str, tool: str, path: str) -> bool:
-    """Does an existing hook command already run this tool (a copy by file name, or the runner by tool name)?"""
-    base = Path(path).name
-    return (base in command or base.replace("-", "_") in command
-            or re.search(rf"\brun\s+{re.escape(tool)}(\s|$)", command) is not None)
+    """Does a hook command already run this tool: a copy by file name, or a pin runner by `run <tool>`?"""
+    names = {Path(path).name.lower(), Path(path).name.replace("-", "_").lower()}
+    for c in command_scripts(command):
+        prog = c[0].rsplit("/", 1)[-1].lower()
+        if prog in names:
+            return True
+        if prog in ("pin-runner.py", "pin_runner.py") and any(c[k] == "run" and c[k + 1] == tool for k in range(1, len(c) - 1)):
+            return True
+    return False
 
 
 def load_settings(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     try:
-        s = json.loads(path.read_bytes().decode("utf-8-sig"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        s = json.loads(path.read_bytes().decode("utf-8-sig"), object_pairs_hook=_no_dupes)
+    except Refused as exc:
+        raise Refused(f"{path} has a {str(exc).removeprefix('pins: ')}; fix it, then re-run init") from None
+    except (OSError, UnicodeError, ValueError, RecursionError) as exc:
         raise Refused(f"{path} is not readable JSON ({exc.__class__.__name__}); fix it, then re-run init") from None
     if not isinstance(s, dict) or not isinstance(s.get("hooks", {}), dict) or not all(
             isinstance(v, list) and all(isinstance(g, dict) and isinstance(g.get("hooks", []), list) for g in v)
@@ -819,41 +883,63 @@ def load_settings(path: Path) -> dict[str, Any]:
     return s
 
 
+def by_pin(command: str, tool: str) -> bool:
+    """Is this command the project's vendored runner running <tool> (whatever its other flags and tool args)?"""
+    return any(c[0].rsplit("/", 1)[-1].lower() in ("pin-runner.py", "pin_runner.py")
+               and any(c[k] == "run" and c[k + 1] == tool for k in range(1, len(c) - 1)) for c in command_scripts(command))
+
+
 def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[str, Any]], out: list[str],
                   hand: list[str]) -> bytes | None:
     """The merged .claude/settings.json bytes, or None when nothing is added. Existing entries are never edited or
-    removed: a hook another entry (or the user settings) already runs under another command is a HAND step, since
-    adding it would run it twice per event."""
+    removed. Every scope Claude Code merges is read: this file, .claude/settings.local.json, the user's
+    ~/.claude/settings.json. For each profile hook, the registrations of its tool on its event across those scopes:
+      none                      -> WIRED (added here)
+      exactly one, and it is this file running the tool BY PIN under the profile's matcher (any flags or tool args:
+      `-- --observe-only` is the project's choice)   -> kept
+      exactly one, in another scope (settings.local.json or the user's settings; a copy or a pin)
+                                -> kept: it already runs once, and adding ours would run it twice
+      exactly one here that is a copy (not by pin) or under another matcher, or two or more anywhere
+                                -> HAND (replace the copy by the pin / keep exactly one)
+    Every HAND step can be cleared by the person, and the same init then exits 0."""
     settings = load_settings(path)
-    user = Path.home() / ".claude" / "settings.json"
-    try:
-        user_settings = load_settings(user) if user.resolve() != path.resolve() else {}
-    except Refused:
-        user_settings = {}
+    scopes: list[tuple[Path, dict[str, Any]]] = [(path, settings)]
+    for p in (path.parent / "settings.local.json", Path.home() / ".claude" / "settings.json"):
+        if p.exists() and p.resolve() != path.resolve():
+            try:
+                scopes.append((p, load_settings(p)))
+            except Refused as exc:
+                hand.append(f"{exc}; init could not check it for hooks that would run twice")
     added = False
     for h in hooks:
-        cmd, ev, tool = hook_command(h), h["event"], h["tool"]
-        have = wired_commands(settings, ev)
-        if cmd in have:
-            out.append(f"  kept    hook {ev}{'/' + h['matcher'] if h.get('matcher') else ''}: {tool}")
+        cmd, ev, tool, m = hook_command(h), h["event"], h["tool"], h.get("matcher") or None
+        label = f"{ev}{'/' + m if m else ''}"
+        regs = [(p, mm, c) for p, s in scopes for mm, c in registrations(s, ev) if c == cmd or wires_tool(c, tool, reg[tool]["path"])]
+        if not regs:
+            groups = settings.setdefault("hooks", {}).setdefault(ev, [])
+            g = next((g for g in groups if (g.get("matcher") or None) == m), None)
+            if g is None:
+                g = ({"matcher": m} if m else {})
+                g["hooks"] = []
+                groups.append(g)
+            g.setdefault("hooks", []).append({"type": "command", "command": cmd, "timeout": h.get("timeout", 60)})
+            out.append(f"  WIRED   hook {label}: {cmd}")
+            added = True
             continue
-        clash = [c for c in have if wires_tool(c, tool, reg[tool]["path"])]
-        uclash = [c for c in wired_commands(user_settings, ev) if wires_tool(c, tool, reg[tool]["path"])]
-        if clash or uclash:
-            where = f"{path}" if clash else f"the user settings {user}"
-            hand.append(f"{where} already runs {tool} on {ev} as: {(clash or uclash)[0]}  -- replace it with: {cmd}"
-                        + ("" if clash else f"  (in {path}), or keep the user-level one; never both"))
+        where = "; ".join(f"{p} (matcher {mm or 'none'}): {c}" for p, mm, c in regs)
+        if len(regs) > 1:
+            hand.append(f"{tool} runs {len(regs)} times on {ev}: {where}  -- keep exactly one (the pinned form is: {cmd}"
+                        + (f", matcher {m}" if m else "") + f", in {path})")
             continue
-        groups = settings.setdefault("hooks", {}).setdefault(ev, [])
-        g = next((g for g in groups if g.get("matcher") == h.get("matcher")), None)
-        if g is None:
-            g = ({"matcher": h["matcher"]} if h.get("matcher") else {})
-            g["hooks"] = []
-            groups.append(g)
-        g.setdefault("hooks", []).append({"type": "command", "command": cmd, "timeout": h.get("timeout", 60)})
-        out.append(f"  WIRED   hook {ev}{'/' + h['matcher'] if h.get('matcher') else ''}: {cmd}")
-        added = True
-    return (json.dumps(settings, indent=2) + "\n").encode("utf-8") if added else None
+        p, mm, c = regs[0]
+        if p != path:
+            out.append(f"  kept    hook {label}: {tool} already runs once from {p}" + ("" if by_pin(c, tool) else " (not by pin)"))
+        elif by_pin(c, tool) and mm == m:
+            out.append(f"  kept    hook {label}: {tool}" + ("" if c == cmd else f" (the project's own form: {c})"))
+        else:
+            hand.append(f"{tool} already runs on {ev} as {where}  -- replace it with: {cmd}"
+                        + (f" with matcher {m}" if m else "") + f" in {path}")
+    return (json.dumps(settings, indent=2, ensure_ascii=False) + "\n").encode("utf-8") if added else None
 
 
 def rule_tags_config(name: str, root: Path) -> dict[str, Any]:
@@ -896,6 +982,46 @@ def emit_rule_map(entry: dict[str, Any], data: bytes, cfg_bytes: bytes, name: st
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def within(p: Path, base: Path) -> bool:
+    a, b = os.path.normcase(os.path.abspath(p)), os.path.normcase(os.path.abspath(base))
+    try:
+        return os.path.commonpath([a, b]) == b
+    except ValueError:  # another drive
+        return False
+
+
+def refuse_links(p: Path, base: Path) -> None:
+    """Refuse a destination that is not a plain path inside base: no symlink or junction from base down to it, and the
+    resolved path still inside the resolved base."""
+    cur, stop = Path(os.path.abspath(p)), os.path.normcase(os.path.abspath(base))
+    while os.path.normcase(str(cur)) != stop and cur != cur.parent:
+        if cur.is_symlink() or (hasattr(os.path, "isjunction") and os.path.isjunction(cur)):
+            raise Refused(f"{cur} is a link; init writes only plain files inside {base}; nothing written")
+        cur = cur.parent
+    if not (within(p, base) and within(Path(p).resolve(), Path(base).resolve())):
+        raise Refused(f"{p} resolves outside {base}; nothing written")
+
+
+def commit_writes(staged: list[tuple[Path, bytes, int]]) -> None:
+    """Stage every file under a temporary name beside its destination; only when all are staged, rename each into
+    place. A staging failure removes what was staged and refuses: nothing reaches a destination."""
+    temps: list[tuple[Path, Path, int]] = []
+    try:
+        for final, body, mode in staged:
+            final.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(dir=final.parent, prefix=f".{final.name}.init-")
+            temps.append((Path(tmp), final, mode))
+            with os.fdopen(fd, "wb") as fh:
+                fh.write(body)
+            os.chmod(tmp, mode)
+    except OSError as exc:
+        for t, _f, _m in temps:
+            t.unlink(missing_ok=True)
+        raise Refused(f"cannot write {final} ({exc.__class__.__name__}: {exc}); nothing written") from None
+    for t, final, _m in temps:
+        os.replace(t, final)
+
+
 def project_name(root: Path, given: str | None) -> str:
     n = given or (re.sub(r"[^a-z0-9]+", "-", root.name.lower()).strip("-") or "project")
     if not NAME.match(n):
@@ -935,10 +1061,10 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
     name = project_name(c.root, args.name)
 
     for dest, src in sorted(prof.get("seeds", {}).items()):
-        if (c.root / dest).exists():
+        if (fp / Path(dest).name).exists():                     # beside the pins, wherever --pins puts them
             out.append(f"  kept    {dest} (the project's own)")
         else:
-            writes.append((c.root / dest, read_blob(c.bus, c.commit, src)[1]))
+            writes.append((fp / Path(dest).name, read_blob(c.bus, c.commit, src)[1]))
             out.append(f"  SEEDED  {dest} from {src}")
     if prof.get("throughput_stub"):
         dest = fp / "product-throughput-classes.json"
@@ -984,46 +1110,85 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
     if hp.returncode != 0:
         raise Refused(f"cannot locate the git hooks directory of {c.root}")
     hooks_dir = Path(hp.stdout.decode().strip())
+    common = git(c.root, "rev-parse", "--path-format=absolute", "--git-common-dir", timeout=10)
+    git_dir = Path(common.stdout.decode().strip()) if common.returncode == 0 else c.root / ".git"
+    hooks_ours = any(within(hooks_dir, d) for d in (c.root, git_dir))
     git_modes: list[Path] = []
     for gh in prof.get("git_hooks", []):
         target = hooks_dir / gh["hook"]
         body = read_blob(c.bus, c.commit, gh["path"])[1]
-        if not target.exists():
+        lines = body.decode("utf-8", "replace").splitlines()
+        if not all(m in lines for m in gh["markers"]):
+            raise Refused(f"profile {args.profile!r}: {gh['path']} at {c.commit[:12]} lacks a declared marker line")
+        if not hooks_ours:
+            hand.append(f"the git hooks directory {hooks_dir} (core.hooksPath) is outside this repository; init writes no "
+                        f"hook there. Chain the layers of the bus {gh['path']} at {c.commit[:12]} into {gh['hook']} by hand")
+        elif not target.exists():
             writes.append((target, body))
             git_modes.append(target)
             out.append(f"  WROTE   git {gh['hook']}: {target} (bus {gh['path']})")
-        elif gh["marker"] in target.read_bytes().decode("utf-8", "replace").splitlines():
-            out.append(f"  kept    git {gh['hook']}: {target} carries {gh['marker']!r}")
         else:
-            hand.append(f"{target} exists with other layers: chain the layers of the bus {gh['path']} at {c.commit[:12]} "
-                        f"into it by hand (ahead of any layer that consumes stdin); init re-checks for {gh['marker']!r}")
+            have = target.read_bytes().decode("utf-8", "replace").splitlines()
+            missing = [m for m in gh["markers"] if m not in have]
+            if not missing:
+                out.append(f"  kept    git {gh['hook']}: {target} carries every layer ({', '.join(gh['markers'])})")
+            else:
+                hand.append(f"{target} exists without the layer(s) {', '.join(missing)}: chain those layers of the bus "
+                            f"{gh['path']} at {c.commit[:12]} into it by hand (ahead of any layer that consumes stdin); "
+                            "init re-checks each marker line")
+
+    # Every destination is a plain file inside the place it is promised to be: no link or junction anywhere on its way
+    # (an existing .claude/settings.json symlink must not carry a write elsewhere), and no two writes -- or a write and
+    # the runner or the pins -- name the same file, compared case-folded (Windows).
+    planned = [(p, c.root if within(p, c.root) else hooks_dir) for p, _b in writes]
+    planned += [(c.vendored, c.root), (c.pfile, c.root)] if within(c.pfile, c.root) else []
+    seen: set[str] = set()
+    for p, base in planned:
+        refuse_links(p, base)
+        key = os.path.normcase(os.path.abspath(p))
+        if key in seen:
+            raise Refused(f"two planned writes name the same file {p}; nothing written")
+        seen.add(key)
 
     if adopt:
         c.pins["runner"] = runner_record(c.commit, c.runner_bytes)
     c.record_clone()
     pins_changed = json.dumps(c.pins, sort_keys=True) != c.before
-    # --- every decision above is made; now write (the vendored runner first, the pins -- the decision record -- last)
-    fp.mkdir(parents=True, exist_ok=True)
-    if vendor:
-        c.write_runner()
-    for path, body in writes:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(body)
-    for path in git_modes:
-        path.chmod(0o755)
+    # --- every decision above is made. Write: every file is first staged under a temporary name beside its
+    # destination, and only when ALL are staged are they renamed into place (an OSError while staging -- '.claude' is a
+    # file, a read-only hooks dir -- removes the staged files and writes nothing). The pins, the decision record, last.
+    staged: list[tuple[Path, bytes, int]] = [(c.vendored, c.runner_bytes, 0o644)] if vendor else []
+    staged += [(p, b, 0o755 if p in git_modes else 0o644) for p, b in writes]
     if pins_changed or vendor:
-        c.pfile.write_text(json.dumps(c.pins, indent=2) + "\n", encoding="utf-8", newline="\n")
+        staged.append((c.pfile, (json.dumps(c.pins, indent=2) + "\n").encode("utf-8"), 0o644))
+    commit_writes(staged)
+    if vendor:
+        wrote = c.vendored.read_bytes().replace(bytes([13, 10]), bytes([10]))
+        if blob_id(wrote) != c.want:
+            c.vendored.unlink(missing_ok=True)
+            raise Refused(f"{c.vendored} does not hold the reviewed runner after writing (object {c.want[:12]}); removed")
 
-    changed = [p for p, _b in writes] + ([c.vendored] if vendor else []) + ([c.pfile] if pins_changed or vendor else [])
-    print(f"{'NO-OP' if not changed else 'INIT'} profile {args.profile} ({prof['purpose']}) at bus {c.commit[:12]} "
+    print(f"{'NO-OP' if not staged else 'INIT'} profile {args.profile} ({prof['purpose']}) at bus {c.commit[:12]} "
           f"into {c.root} as project {name!r}")
     if vendor or adopt:
         print(f"  {'vendored' if vendor else 'adopted'} runner: {c.vendored} (bus blob {c.pins['runner']['blob'][:12]})")
     print("\n".join(out))
-    tracked = sorted({p.relative_to(c.root).as_posix() for p in changed
-                      if p.is_relative_to(c.root) and ".git" not in p.relative_to(c.root).parts})
-    if tracked:
-        print(f"COMMIT (a review decision; init never commits): git add -- {' '.join(tracked)}")
+    # The COMMIT line names every file init manages that HEAD does not hold as it is now -- not only this run's writes:
+    # a runner adopted after being placed by hand, or a previous run's files never committed, belong in the commit too
+    # (without them the pre-push layers cannot read the runner from the pushed commit).
+    managed = {c.vendored, c.pfile, *(p for p, _b in writes), fp / "product-throughput-classes.json",
+               fp / "rule-tags.config.json", fp / "rule-map.json", c.root / ".claude" / "settings.json",
+               *(fp / Path(d).name for d in prof.get("seeds", {})), *(hooks_dir / gh["hook"] for gh in prof.get("git_hooks", []))}
+    uncommitted = []
+    for p in sorted(managed):
+        if not (p.is_file() and within(p, c.root)) or ".git" in Path(os.path.relpath(p, c.root)).parts:
+            continue
+        rel = Path(os.path.relpath(p, c.root)).as_posix()
+        if (git(c.root, "cat-file", "-e", f"HEAD:{rel}", timeout=10).returncode != 0
+                or git(c.root, "diff", "--quiet", "HEAD", "--", rel, timeout=10).returncode != 0):
+            uncommitted.append(rel)
+    if uncommitted:
+        print(f"COMMIT (a review decision; init never commits): git add -- {' '.join(uncommitted)}")
     print(f"CHECK: python {c.runner_rel()} verify")
     for h in hand:
         print(f"HAND: {h}")
@@ -1063,6 +1228,9 @@ def runner_line(pins: dict[str, Any], bus: Path | None) -> tuple[bool, str]:
         return False, f"runner: this vendored pin-runner.py differs from the recorded bus blob {str(r.get('blob'))[:12]}"
     if bus is None:
         return True, f"runner: vendored copy = bus blob {r['blob'][:12]}"
+    if not HEX40.match(str(r.get("commit"))) or blob_at(bus, r["commit"], RUNNER_BUS_PATH) != r["blob"]:
+        return False, (f"runner: the record names bus {str(r.get('commit'))[:12]}:{RUNNER_BUS_PATH}, which is not blob "
+                       f"{str(r.get('blob'))[:12]} in {bus}: not a bus release (or fetch the bus)")
     moved = [f"{ref} {got[:8]}" for ref in ("HEAD", "origin/master")
              if (got := blob_at(bus, ref, RUNNER_BUS_PATH)) != r["blob"]]
     return True, (f"runner: vendored copy = bus blob {r['blob'][:12]}"
@@ -1121,6 +1289,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--pins", help=f"the pins file (default: {PINS_NAME} beside this runner)")
     ap.add_argument("--pins-ref", help="read the pins file from this git ref of the consumer instead of the worktree")
     ap.add_argument("--bus", help="the local bus clone (data source for pinned blobs)")
+    ap.add_argument("--never-block", action="store_true",
+                    help="for hooks that must never block (Stop, SessionStart): a REFUSED or UNAVAILABLE runner exits 1 "
+                         "(a loud, non-blocking hook error) instead of 2/3; the tool's own exit still passes through")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("run", help="run <tool> [--] [args...]", add_help=False)
     p = sub.add_parser("pin", allow_abbrev=False)
@@ -1172,10 +1343,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmds[args.cmd](args, rest)
     except Refused as exc:
         print(f"[factory-pins] *** REFUSED *** {exc}; nothing executed", file=sys.stderr)
-        return EXIT_REFUSED
+        return 1 if args.never_block else EXIT_REFUSED
     except Unavailable as exc:
         print(f"[factory-pins] *** UNAVAILABLE *** {exc}; nothing executed", file=sys.stderr)
-        return EXIT_UNAVAILABLE
+        return 1 if args.never_block else EXIT_UNAVAILABLE
 
 
 if __name__ == "__main__":

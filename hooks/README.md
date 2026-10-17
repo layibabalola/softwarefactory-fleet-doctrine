@@ -49,9 +49,11 @@ Tests: `python hooks/hooks.tests.py`.
 3. `.git/hooks/pre-push`: a layer that reads the ref lines once, judges them with the runner AND
    the pins read from a **judge ref**, and hands the same lines to every later layer (git-lfs needs
    them). The judge ref is the first protected remote-tracking ref (`FF_PROTECTED`, edit it per
-   project) that already holds `factory-pins/pin-runner.py` -- there a pushed branch cannot weaken
-   or re-pin its own judge -- else the commit being pushed (a project whose work never reaches a
-   remote master, e.g. a local-only branch, and the adoption push itself), else `HEAD`. Protected
+   project) that already holds `factory-pins/pin-runner.py` AND pins this layer's tool -- there a
+   pushed branch cannot weaken or re-pin its own judge -- else the commit being pushed (a project whose
+   work never reaches a remote master, e.g. a local-only branch, and the adoption push itself, including
+   an existing consumer whose master pins other tools but not yet this one: judging with those pins
+   would refuse every push, the adoption push included), else `HEAD`. Protected
    branches come from the consumer's `factory-pins/ff-only.json` (`{"protected": [...]}`) at the
    judge ref when present, else `master`/`main`:
 
@@ -61,7 +63,10 @@ Tests: `python hooks/hooks.tests.py`.
    FF_REFS=$(cat)
    FF_JUDGE=
    for FF_P in $FF_PROTECTED; do
-     if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null; then FF_JUDGE=$FF_P; break; fi
+     if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null \
+        && git show "$FF_P:factory-pins/factory-pins.json" 2>/dev/null | grep -q '"pre-push-ff-only"'; then
+       FF_JUDGE=$FF_P; break
+     fi
    done
    [ -n "$FF_JUDGE" ] || FF_JUDGE=$(printf '%s\n' "$FF_REFS" | awk '$2 !~ /^0+$/ { print $2; exit }')
    [ -n "$FF_JUDGE" ] || FF_JUDGE=HEAD

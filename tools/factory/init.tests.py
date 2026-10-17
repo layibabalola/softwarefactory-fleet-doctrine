@@ -21,15 +21,32 @@ import tempfile
 import unittest
 from pathlib import Path
 
+sys.dont_write_bytecode = True   # importing pin-runner.py in a test must not leave __pycache__ in tools/factory
+
 FACTORY = Path(__file__).resolve().parent
 BUS_ROOT = FACTORY.parent.parent
 REAL_REGISTRY = json.loads((FACTORY / "registry.json").read_text(encoding="utf-8"))
 PROFILE = REAL_REGISTRY["profiles"]["base"]
 
 
+# Hermetic git: no system or global config of the host (signing, templates, hooksPath, autocrlf) reaches a fixture.
+_GITCFG = Path(tempfile.mkdtemp(prefix="factory-tests-gitcfg-")) / "gitconfig"
+_GITCFG.write_text("", encoding="utf-8")
+HERMETIC = {"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": str(_GITCFG)}
+
+
+def base_env() -> dict:
+    return {**{k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "FACTORY_", "CLAUDE_", "DOCTRINE_"))}, **HERMETIC}
+
+
 def git(repo, *a: str, env: dict | None = None) -> str:
     return subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@example.invalid", "-c", "user.name=t",
-                           "-c", "core.autocrlf=false", *a], check=True, capture_output=True, text=True, env=env).stdout.strip()
+                           "-c", "core.autocrlf=false", *a], check=True, capture_output=True, text=True, env=env or base_env()).stdout.strip()
+
+
+def git_blob(repo: Path, rev: str, path: str) -> bytes:
+    return subprocess.run(["git", "-C", str(repo), "cat-file", "blob", f"{rev}:{path}"], check=True, capture_output=True,
+                          env=base_env()).stdout
 
 
 def lf(p: Path) -> bytes:
@@ -61,12 +78,12 @@ class _Init(unittest.TestCase):
             (self.bus / f).parent.mkdir(parents=True, exist_ok=True)
             (self.bus / f).write_bytes(lf(BUS_ROOT / f))
         self.bus_files = files
-        subprocess.run(["git", "init", "-q", str(self.bus)], check=True)
+        subprocess.run(["git", "init", "-q", str(self.bus)], check=True, env=base_env())
         git(self.bus, "add", "-A")
         git(self.bus, "commit", "-qm", "bus")
         self.c1 = git(self.bus, "rev-parse", "HEAD")
-        subprocess.run(["git", "init", "-q", "--bare", str(self.origin)], check=True)
-        subprocess.run(["git", "init", "-q", "-b", "master", str(self.proj)], check=True)
+        subprocess.run(["git", "init", "-q", "--bare", str(self.origin)], check=True, env=base_env())
+        subprocess.run(["git", "init", "-q", "-b", "master", str(self.proj)], check=True, env=base_env())
         git(self.proj, "remote", "add", "origin", str(self.origin))
         (self.proj / "CLAUDE.md").write_text("# rules\n\n- never force-push master\n- add exact paths only\n", encoding="utf-8")
         git(self.proj, "add", "--", "CLAUDE.md")
@@ -78,7 +95,7 @@ class _Init(unittest.TestCase):
         self._tmp.cleanup()
 
     def env(self, **extra) -> dict:
-        e = {k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "FACTORY_", "CLAUDE_"))}
+        e = base_env()
         e.update(HOME=str(self.home), USERPROFILE=str(self.home), FACTORY_PINS_CACHE=str(self.cache), **extra)
         return e
 
@@ -201,6 +218,48 @@ class Init(_Init):
                            env=self.env(PYTHON=sys.executable), stdin=subprocess.DEVNULL)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertIn("INIT profile base", r.stdout)
+        self.commit_listed(r.stdout)                       # what init lists is enough for the pushed commit
+        p = self.push("master")
+        self.assertEqual(p.returncode, 0, p.stderr)
+
+    def test_a_hand_placed_runner_is_listed_for_the_commit(self):
+        """Review round 1 (Claude key, BLOCKER): an ADOPTED runner was missing from the COMMIT line, so the first push
+        was refused by the very pre-push hook init had installed."""
+        (self.proj / "factory-pins").mkdir()
+        self.runner.write_bytes(git_blob(self.bus, self.c1, "tools/factory/pin-runner.py"))   # git show <sha>:... > it
+        p = self.init(runner=self.runner)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertIn("adopted runner", p.stdout)
+        self.assertIn("factory-pins/pin-runner.py", next(l for l in p.stdout.splitlines() if l.startswith("COMMIT")))
+        self.commit_listed(p.stdout)
+        r = self.push("master")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("COMMIT", self.init().stdout)    # everything init manages is now in HEAD
+
+    def test_an_existing_consumer_adopts_without_a_push_lockout(self):
+        """Review round 1 (Claude key): a consumer whose master already pins other tools judged the new layers with
+        master's pins, which lack them, and every push -- the adoption push included -- was refused."""
+        r = subprocess.run([sys.executable, str(self.bus / "tools/factory/pin-runner.py"), "install", "check-rule-tags",
+                            "--commit", self.c1, "--reviewer", "t", "--reason", "r", "--project-root", str(self.proj),
+                            "--bus", str(self.bus)], capture_output=True, text=True, env=self.env(), stdin=subprocess.DEVNULL)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        git(self.proj, "add", "--", "factory-pins")
+        git(self.proj, "commit", "-qm", "an earlier consumer of one tool")
+        self.assertEqual(self.push("master").returncode, 0)
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.commit_listed(p.stdout)
+        for ref in ("HEAD:refs/heads/adopt-factory", "master"):
+            r = self.push(ref)
+            self.assertEqual(r.returncode, 0, f"{ref}: {r.stderr}")
+        # once master pins the layers, master judges: a branch can no longer re-pin its own judge
+        (self.proj / "tools").mkdir()
+        (self.proj / "tools" / "session-checkpoint.py").write_text("print('copy')\n", encoding="utf-8")
+        git(self.proj, "add", "--", "tools/session-checkpoint.py")
+        git(self.proj, "commit", "-qm", "a copy")
+        r = self.push("HEAD:refs/heads/sneak")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("[no-unpinned-tool] PUSH REFUSED", r.stderr)
 
     def test_list_names_the_profiles(self):
         r = subprocess.run([sys.executable, str(self.bus / "tools/factory/pin-runner.py"), "list", "--bus", str(self.bus)],
@@ -227,10 +286,14 @@ class NeverOverwrites(_Init):
         p = self.init()
         self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
         hand = [l for l in p.stdout.splitlines() if l.startswith("HAND:")]
-        self.assertEqual(len(hand), 3, hand)
-        self.assertTrue(any("already runs session-checkpoint on SessionStart" in h for h in hand), hand)
-        self.assertTrue(any("the user settings" in h and "on Stop" in h for h in hand), hand)
-        self.assertTrue(any("pre-push exists with other layers" in h for h in hand), hand)
+        self.assertEqual(len(hand), 2, hand)
+        self.assertTrue(any("session-checkpoint already runs on SessionStart as" in h and "tools/session-checkpoint.py" in h
+                            for h in hand), hand)
+        # the user settings already run it once on Stop: kept (adding ours would run it twice), never a HAND that the
+        # person could only clear by deleting their own user-level hook
+        self.assertIn("kept    hook Stop: session-checkpoint already runs once from", p.stdout)
+        self.assertTrue(any("pre-push exists without the layer(s) # factory-ff-only, # factory-no-unpinned-tool" in h
+                            for h in hand), hand)
         self.assertEqual((hooks / "pre-push").read_bytes(), before_hook)
         self.assertEqual((self.proj / "factory-pins/session-checkpoint.config.json").read_text(encoding="utf-8"),
                          '{"schema": "session-checkpoint.v1"}\n')
@@ -339,6 +402,201 @@ class Refusals(_Init):
         self.assertIn("are not object", p.stderr)
         self.assertEqual(tree_digest(self.proj), before)
         self.assertFalse(any(self.t.rglob("pwned.marker")))
+
+
+class ReviewRound1(_Init):
+    """Regressions for review round 1 (Codex gpt-6.1-sol key): each test fails on e5253fc8."""
+
+    def write(self, rel: str, body: str) -> Path:
+        p = self.proj / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(body, encoding="utf-8")
+        return p
+
+    def test_a_forged_runner_with_a_matching_record_is_refused(self):
+        forged = b"print('not a bus release')\n"
+        import hashlib as _h
+        self.write("factory-pins/pin-runner.py", "")
+        (self.proj / "factory-pins/pin-runner.py").write_bytes(forged)
+        self.write("factory-pins/factory-pins.json", json.dumps({"schema": "factory-pins.v1", "tools": {}, "runner": {
+            "commit": self.c1, "path": "tools/factory/pin-runner.py", "blob": _h.sha1(b"blob %d\0" % len(forged) + forged).hexdigest(),
+            "bytes": len(forged), "sha256": _h.sha256(forged).hexdigest()}}))
+        before = tree_digest(self.proj)
+        p = self.init()
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertIn("not a bus release", p.stderr)
+        self.assertEqual(tree_digest(self.proj), before)
+
+    def test_a_linked_destination_is_refused(self):
+        outside = self.t / "outside.json"
+        outside.write_text("{}", encoding="utf-8")
+        (self.proj / ".claude").mkdir()
+        try:
+            os.symlink(outside, self.proj / ".claude" / "settings.json")
+        except (OSError, NotImplementedError):
+            self.skipTest("this account cannot create symlinks")
+        before = tree_digest(self.proj)
+        p = self.init()
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertIn("is a link", p.stderr)
+        self.assertEqual((outside.read_text(encoding="utf-8"), tree_digest(self.proj)), ("{}", before))
+
+    def test_bootstrap_refusal_leaves_an_existing_runner_untouched(self):
+        bash = next((Path(p) for p in (shutil.which("bash"), shutil.which("sh")) if p and "system32" not in p.lower()), None)
+        if bash is None:
+            self.skipTest("no POSIX shell")
+        # The project adopted an OLDER runner release; the bus has moved on. A refused bootstrap must not replace it
+        # (identical bytes would make this test vacuous, so the two releases differ).
+        runner = self.bus / "tools/factory/pin-runner.py"
+        current = runner.read_bytes()
+        runner.write_bytes(current + b"# an older release\n")
+        git(self.bus, "commit", "-qam", "older runner release")
+        old_commit, self.c1 = git(self.bus, "rev-parse", "HEAD"), git(self.bus, "rev-parse", "HEAD")
+        old_runner = self.elsewhere / "pin-runner.py"
+        old_runner.write_bytes(runner.read_bytes())
+        self.assertEqual(self.init(runner=old_runner).returncode, 0)
+        runner.write_bytes(current)
+        git(self.bus, "commit", "-qam", "current runner release")
+        self.c1 = git(self.bus, "rev-parse", "HEAD")
+        self.assertNotEqual(old_commit, self.c1)
+        before = tree_digest(self.proj)
+        r = subprocess.run([str(bash), (FACTORY / "bootstrap.sh").as_posix(), self.bus.as_posix(), self.c1, "profile:nope",
+                            "tester", "fixture", self.proj.as_posix()], capture_output=True, text=True, cwd=str(self.elsewhere),
+                           env=self.env(PYTHON=sys.executable), stdin=subprocess.DEVNULL)
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertEqual(tree_digest(self.proj), before)
+
+    def test_bootstrap_runner_is_isolated_from_the_project(self):
+        bash = next((Path(p) for p in (shutil.which("bash"), shutil.which("sh")) if p and "system32" not in p.lower()), None)
+        if bash is None:
+            self.skipTest("no POSIX shell")
+        self.write("factory-pins/subprocess.py", "open(r'%s', 'w').write('x')\n" % (self.t / "imported.marker").as_posix())
+        r = subprocess.run([str(bash), (FACTORY / "bootstrap.sh").as_posix(), self.bus.as_posix(), self.c1, "profile:base",
+                            "tester", "fixture", self.proj.as_posix()], capture_output=True, text=True, cwd=str(self.proj / "factory-pins"),
+                           env=self.env(PYTHON=sys.executable), stdin=subprocess.DEVNULL)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertFalse((self.t / "imported.marker").exists(), "a project file was imported into the runner")
+
+    def registry_with(self, **profile_update) -> None:
+        reg_path = self.bus / "tools/factory/registry.json"
+        reg = json.loads(reg_path.read_text(encoding="utf-8"))
+        reg["profiles"]["base"].update(profile_update)
+        reg_path.write_text(json.dumps(reg), encoding="utf-8")
+        git(self.bus, "commit", "-qam", "profile variant")
+        self.c1 = git(self.bus, "rev-parse", "HEAD")
+
+    def test_a_seed_aliasing_the_runner_in_another_case_is_refused(self):
+        for dest in ("factory-pins/PIN-RUNNER.PY", "factory-pins/Factory-Pins.json", "factory-pins/.hidden", "factory-pins/a/b"):
+            self.registry_with(seeds={dest: "tools/factory/registry.json"})
+            with self.subTest(dest=dest):
+                p = self.init()
+                self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+                self.assertIn("'seeds'", p.stderr)
+
+    def settings_with(self, path: str, event: str, command: str, matcher: str | None = None) -> None:
+        g = {"hooks": [{"type": "command", "command": command}], **({"matcher": matcher} if matcher else {})}
+        self.write(path, json.dumps({"hooks": {event: [g]}}))
+
+    def test_a_registration_under_another_matcher_or_scope_is_a_hand_step(self):
+        cmd = 'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run exact-path-add'
+        # another matcher in this file: HAND (fix the matcher). One registration in settings.local.json: it already
+        # runs once, so it is kept and ours is not added. The same command in BOTH files: it would run twice -> HAND.
+        cases = (([(".claude/settings.json", "Read")], 4, "exact-path-add already runs on PreToolUse"),
+                 ([(".claude/settings.local.json", "Bash|PowerShell")], 0, "exact-path-add already runs once from"),
+                 ([(".claude/settings.json", "Bash|PowerShell"), (".claude/settings.local.json", "Bash|PowerShell")], 4,
+                  "exact-path-add runs 2 times on PreToolUse"))
+        for regs, rc, text in cases:
+            shutil.rmtree(self.proj / ".claude", ignore_errors=True)
+            for path, matcher in regs:
+                self.settings_with(path, "PreToolUse", cmd, matcher)
+            with self.subTest(regs=regs):
+                p = self.init()
+                self.assertEqual(p.returncode, rc, p.stdout + p.stderr)
+                self.assertIn(text, p.stdout)
+
+    def test_tool_detection_reads_commands_not_substrings(self):
+        sys.path.insert(0, str(FACTORY))
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pr", FACTORY / "pin-runner.py")
+        pr = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pr)
+        path = "tools/factory/session-checkpoint.py"
+        yes = ['python "$CLAUDE_PROJECT_DIR/tools/session-checkpoint.py"', "python3 -X utf8 C:\\x\\hooks\\session_checkpoint.py Stop",
+               'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run "session-checkpoint" -- --config x',
+               "cd /x && FOO=1 python tools/session-checkpoint.py", "./session-checkpoint.py"]
+        no = ["echo session-checkpoint.py", 'python -I factory-pins/pin-runner.py run session-checkpoint-v2',
+              "python tools/other.py --log session-checkpoint.py", "python factory-pins/pin-runner.py run exact-path-add"]
+        for c in yes:
+            self.assertTrue(pr.wires_tool(c, "session-checkpoint", path), c)
+        for c in no:
+            self.assertFalse(pr.wires_tool(c, "session-checkpoint", path), c)
+
+    def test_every_pre_push_layer_is_required(self):
+        hooks = Path(git(self.proj, "rev-parse", "--path-format=absolute", "--git-path", "hooks"))
+        hooks.mkdir(parents=True, exist_ok=True)
+        body = lf(BUS_ROOT / "hooks/pre-push.factory.sh").decode()
+        only_nut = "#!/bin/sh\n" + body[body.index("# factory-no-unpinned-tool"):]
+        (hooks / "pre-push").write_text(only_nut, encoding="utf-8")
+        p = self.init()
+        self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+        self.assertIn("without the layer(s) # factory-ff-only", p.stdout)
+        self.assertEqual((hooks / "pre-push").read_text(encoding="utf-8"), only_nut)
+
+    def test_a_hooks_path_outside_the_repository_is_never_written(self):
+        shared = self.t / "shared-hooks"
+        shared.mkdir()
+        git(self.proj, "config", "core.hooksPath", str(shared))
+        p = self.init()
+        self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+        self.assertIn("outside this repository", p.stdout)
+        self.assertEqual(list(shared.iterdir()), [])
+
+
+class ReviewRound1Claude(_Init):
+    """Regressions for review round 1 (Claude key)."""
+
+    def test_a_refused_runner_never_blocks_stop_but_still_blocks_a_guard(self):
+        self.assertEqual(self.init().returncode, 0)
+        pins = self.proj / "factory-pins" / "factory-pins.json"
+        pins.write_text(json.dumps({"schema": "not-the-schema", "tools": {}}), encoding="utf-8")
+        stop = self.hook("Stop", {"hook_event_name": "Stop", "session_id": "s1", "cwd": str(self.proj)})
+        self.assertEqual(stop.returncode, 1, "a Stop hook exiting 2 would block every turn end")
+        self.assertIn("REFUSED", stop.stderr)
+        guard = self.hook("PreToolUse", {"tool_name": "Bash", "tool_input": {"command": "git add -A"}}, "exact-path-add")
+        self.assertEqual(guard.returncode, 2, "a guard still blocks when the runner refuses")
+
+    def test_the_projects_own_pinned_form_is_kept(self):
+        own = 'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run git-optional-locks -- --observe-only'
+        (self.proj / ".claude").mkdir()
+        (self.proj / ".claude/settings.json").write_text(json.dumps({"hooks": {"PreToolUse": [
+            {"matcher": "Bash|PowerShell", "hooks": [{"type": "command", "command": own}]}]}}), encoding="utf-8")
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertIn("kept    hook PreToolUse/Bash|PowerShell: git-optional-locks (the project's own form", p.stdout)
+        cmds = [h["command"] for g in self.settings()["hooks"]["PreToolUse"] for h in g["hooks"]]
+        self.assertEqual(sum("git-optional-locks" in c for c in cmds), 1, cmds)
+
+    def test_settings_keep_their_text_and_duplicate_keys_refuse(self):
+        (self.proj / ".claude").mkdir()
+        (self.proj / ".claude/settings.json").write_text('{"env": {"GREETING": "café"}}', encoding="utf-8")
+        self.assertEqual(self.init().returncode, 0)
+        self.assertIn("café", (self.proj / ".claude/settings.json").read_text(encoding="utf-8"))
+        shutil.rmtree(self.proj / ".claude")
+        (self.proj / ".claude").mkdir()
+        (self.proj / ".claude/settings.json").write_text('{"hooks": {}, "hooks": {"Stop": []}}', encoding="utf-8")
+        before = tree_digest(self.proj)
+        p = self.init()
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertIn("duplicate key", p.stderr)
+        self.assertEqual(tree_digest(self.proj), before)
+
+    def test_a_write_that_cannot_be_staged_writes_nothing(self):
+        (self.proj / ".claude").write_text("a file where the directory should be", encoding="utf-8")
+        before = tree_digest(self.proj)
+        p = self.init()
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertIn("nothing written", p.stderr)
+        self.assertEqual(tree_digest(self.proj), before)
 
 
 if __name__ == "__main__":

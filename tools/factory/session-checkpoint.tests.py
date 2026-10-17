@@ -26,19 +26,31 @@ import time
 import unittest
 from pathlib import Path
 
+sys.dont_write_bytecode = True   # importing the tool in a test must not leave __pycache__ in tools/factory
+
 HERE = Path(__file__).resolve().parent
 TOOL = HERE / "session-checkpoint.py"
 FIX = HERE / "fixtures" / "session-checkpoint"
 
 
+# Hermetic git: no system or global config of the host (signing, templates, hooksPath, autocrlf) reaches a fixture.
+_GITCFG = Path(tempfile.mkdtemp(prefix="factory-tests-gitcfg-")) / "gitconfig"
+_GITCFG.write_text("", encoding="utf-8")
+HERMETIC = {"GIT_CONFIG_NOSYSTEM": "1", "GIT_CONFIG_GLOBAL": str(_GITCFG)}
+
+
+def base_env() -> dict:
+    return {**{k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "FACTORY_", "CLAUDE_", "DOCTRINE_"))}, **HERMETIC}
+
+
 def g(repo, *a: str) -> str:
     return subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@example.invalid", "-c", "user.name=t",
-                           "-c", "core.autocrlf=false", *a], check=True, capture_output=True, text=True).stdout.strip()
+                           "-c", "core.autocrlf=false", *a], check=True, capture_output=True, text=True, env=base_env()).stdout.strip()
 
 
 def init_repo(path: Path, branch: str = "master") -> Path:
     path.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "init", "-q", "-b", branch, str(path)], check=True)
+    subprocess.run(["git", "init", "-q", "-b", branch, str(path)], check=True, env=base_env())
     (path / "README.md").write_text("x\n", encoding="utf-8")
     g(path, "add", "--", "README.md")
     g(path, "commit", "-qm", "base")
@@ -57,7 +69,7 @@ class Impl:
         (self.home / ".claude.json").write_text(json.dumps({"oauthAccount": {"accountUuid": uuid}}), encoding="utf-8")
 
     def __call__(self, event: str, sid: str, cwd: Path, extra_env: dict | None = None) -> subprocess.CompletedProcess:
-        env = {k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "DOCTRINE_", "CLAUDE_"))}
+        env = base_env()
         env.update(HOME=str(self.home), USERPROFILE=str(self.home), **self.env, **(extra_env or {}))
         payload = json.dumps({"hook_event_name": event, "session_id": sid, "cwd": str(cwd)})
         return subprocess.run([sys.executable, *self.argv], input=payload, capture_output=True, text=True,
@@ -129,8 +141,10 @@ class V2Parity(_Tmp):
         self.both("start", "SessionStart", "s1")
         for i in (self.ref, self.can):
             i.account("bbbbbbbb-0000")
-        with self.assertRaises(AssertionError):
-            self.both("rotation", "SessionStart", "s2")
+        ref, can = self.ref("SessionStart", "s2", self.repo), self.can("SessionStart", "s2", self.repo)
+        self.assertEqual((ref.returncode, can.returncode), (0, 0))                 # both ran: the difference is the text
+        self.assertNotEqual(self.can.mask(can.stdout), self.ref.mask(ref.stdout))
+        self.assertIn("not yet resumed", can.stdout)
 
     def cfg(self) -> Path:
         (self.t / "rcpt").mkdir(exist_ok=True)
@@ -251,8 +265,10 @@ class V3Parity(_Tmp):
 
     def test_negative_control_no_config_differs(self):
         self.can = Impl("canonical-unconfigured", [str(TOOL)], self.t / "h-bare", {"CLAUDE_PROJECT_DIR": str(self.ws)})
-        with self.assertRaises(AssertionError):
-            self.both("start", "SessionStart", "s1")
+        ref, can = self.ref("SessionStart", "s1", self.ws), self.can("SessionStart", "s1", self.ws)
+        self.assertEqual((ref.returncode, can.returncode), (0, 0))                 # both ran: the difference is the text
+        self.assertNotEqual(self.can.mask(can.stdout), self.ref.mask(ref.stdout))
+        self.assertIn("Fleet doctrine bus", ref.stdout)
 
 
 class _V3Impl(Impl):
@@ -293,7 +309,7 @@ class Contract(_Tmp):
         for i, body in enumerate(bad):
             r = self.with_cfg(body)("Stop", f"b{i}", self.repo)
             self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertIn("config unusable", r.stdout, body)
+            self.assertIn("session-checkpoint: config ", r.stdout, body)
             self.assertTrue((self.t / "home/.claude/session-checkpoints/proj" / f"SESSION-b{i}.md").exists(), body)
         r = Impl("x", [str(TOOL), "--config", str(self.t / "missing.json")], self.t / "home")("SessionStart", "m", self.repo)
         self.assertIn("config unusable", r.stdout)
@@ -331,6 +347,70 @@ class Contract(_Tmp):
         self.assertEqual(i("PreToolUse", "s1", self.t / "lane", {"DOCTRINE_RECHECK_MIN": "0"}).stdout, "")
         out = i("PreToolUse", "s1", self.repo, {"DOCTRINE_RECHECK_MIN": "0"}).stdout
         self.assertIn("RULINGS.md changed in 1", json.loads(out)["hookSpecificOutput"]["additionalContext"])
+
+    def test_a_lane_tick_never_consumes_the_hubs_interval(self):
+        """Review round 1: with the default hub, a lane tick touched the session's stamp first, so the hub's next
+        tick inside the interval was silent. Real interval here (no DOCTRINE_RECHECK_MIN=0)."""
+        bus = init_repo(self.t / "bus")
+        g(bus, "update-ref", "refs/remotes/origin/master", "HEAD")
+        g(self.repo, "worktree", "add", "-q", "-b", "lane", str(self.t / "lane"))
+        i = self.with_cfg({"doctrine": {"bus_clone": str(bus)}})
+        i("SessionStart", "s1", self.repo)
+        (bus / "RULINGS.md").write_text("r\n", encoding="utf-8")
+        g(bus, "add", "--", "RULINGS.md")
+        g(bus, "commit", "-qm", "ruling")
+        g(bus, "update-ref", "refs/remotes/origin/master", "HEAD")
+        self.assertEqual(i("PreToolUse", "s1", self.t / "lane").stdout, "")
+        self.assertEqual(i("PreToolUse", "s1", self.t / "lane").stdout, "")      # remembered: still silent
+        out = i("PreToolUse", "s1", self.repo).stdout
+        self.assertIn("RULINGS.md changed in 1", json.loads(out)["hookSpecificOutput"]["additionalContext"])
+        self.assertEqual(i("PreToolUse", "s1", self.repo).stdout, "")            # the hub's own interval holds
+
+    def test_non_finite_numbers_and_escaping_runbooks_are_refused(self):
+        for body in ('{"doctrine": {"bus_clone": "b", "periodic_minutes": NaN}}',
+                     '{"doctrine": {"bus_clone": "b", "sweep_stale_hours": Infinity}}',
+                     '{"deadline_seconds": NaN}', {"runbook_candidates": ["../../etc/ROTATION.md"]},
+                     {"runbook_candidates": ["C:/x/ROTATION.md"]}, {"runbook_candidates": ["/abs/ROTATION.md"]}):
+            r = self.with_cfg(body)("Stop", "n", self.repo)
+            self.assertIn("the default is used", r.stdout, body)
+        bus = init_repo(self.t / "bus2")
+        g(bus, "update-ref", "refs/remotes/origin/master", "HEAD")
+        i = self.with_cfg({"doctrine": {"bus_clone": str(bus), "hub_dir": str(self.repo)}})
+        i("SessionStart", "s9", self.repo)
+        for bad in ("nan", "inf", "-1", "soon"):           # an unusable override falls back to the configured interval
+            r = i("PreToolUse", "s9", self.repo, {"DOCTRINE_RECHECK_MIN": bad})
+            self.assertEqual((r.returncode, "FAILED" in r.stdout), (0, False), bad)
+
+    def test_one_bad_key_costs_only_itself(self):
+        """Review round 1 (Claude key): any config error fell back to ALL defaults, nested_repo_search with it, so a
+        workspace whose folder is not the repository silently stopped writing checkpoints."""
+        ws = self.t / "Proj - X"
+        init_repo(ws / "Proj")
+        i = self.with_cfg({"nested_repo_search": True, "typo_key": 1, "deadline_seconds": "soon"})
+        r = i("Stop", "k1", ws)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("unknown key 'typo_key' ignored", r.stdout)
+        self.assertIn("deadline_seconds must be a number", r.stdout)
+        self.assertTrue((self.t / "home/.claude/session-checkpoints/Proj/SESSION-k1.md").exists(), r.stdout)
+
+    def test_an_optional_receipt_group_and_a_torn_tip_never_break_session_start(self):
+        (self.t / "rcpt").mkdir()
+        i = self.with_cfg({"rotation": {"resume_receipts": "rcpt", "receipt_pattern": r"(\d{8}-\d{4})?x\.md"}})
+        i("SessionStart", "s1", self.repo)
+        i.account("bbbbbbbb-0000")
+        (self.t / "rcpt" / "x.md").write_text("matches with the group unset\n", encoding="utf-8")
+        r = i("SessionStart", "s2", self.repo)
+        self.assertIn("not yet resumed", r.stdout)
+        self.assertNotIn("failed (", r.stdout)
+        bus = init_repo(self.t / "bus3")
+        g(bus, "update-ref", "refs/remotes/origin/master", "HEAD")
+        d = self.with_cfg({"doctrine": {"bus_clone": str(bus)}})
+        tips = self.t / "home/.claude/session-checkpoints/doctrine-periodic"
+        tips.mkdir(parents=True, exist_ok=True)
+        for torn in ("garbage", "0" * 40):
+            (tips / "s3.tip").write_text(torn, encoding="utf-8")
+            r = d("SessionStart", "s3", self.repo)
+            self.assertNotIn("doctrine check FAILED", r.stdout, torn)
 
     def test_fixtures_are_valid_configs(self):
         sys.path.insert(0, str(HERE))

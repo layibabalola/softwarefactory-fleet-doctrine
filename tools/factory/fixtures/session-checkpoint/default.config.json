@@ -1,5 +1,5 @@
 {
   "schema": "session-checkpoint.v1",
-  "_comment": "Seeded by `pin-runner.py init`. Every key is optional; with none the hook behaves as the ROTATION install prompt's v2. Keys, defaults and path rules: the docstring of tools/factory/session-checkpoint.py on the bus. To repeat the rotation notice until a resume writes a receipt, add rotation.resume_receipts; to see the fleet doctrine bus at SessionStart and on a periodic PreToolUse tick, add doctrine.bus_clone.",
+  "_comment": "Seeded by `pin-runner.py init`. Every key is optional; with none the hook behaves as the ROTATION install prompt's v2. Keys, defaults and path rules: the docstring of tools/factory/session-checkpoint.py on the bus. To repeat the rotation notice until a resume writes a receipt, add rotation.resume_receipts. To see the fleet doctrine bus at SessionStart, add doctrine.bus_clone; the periodic doctrine tick between SessionStarts ALSO needs the same hook command registered on PreToolUse in .claude/settings.json (the base profile does not register it: a tick costs one interpreter start per tool call).",
   "runbook_candidates": ["docs/ops/ROTATION.md", "knowledge/ROTATION.md", "roadmap/handoff/ROTATION.md", "docs/ROTATION.md"]
 }
