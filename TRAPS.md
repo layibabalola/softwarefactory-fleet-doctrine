@@ -28475,3 +28475,16 @@ passing one shows.
 
 **Source:** airmypc tools/Invoke-AudioMileRetention.ps1 rounds 1-3 (fixture scenarios and a mutant that skipped the evidence listing, measured at 4c920fe2..5e50c7ea). After three key rounds of race findings the lead descoped worktree retirement from retention entirely: retention now measures and reports git trees and never touches them, and worktree reaping stays a separate, keyed, manual act. `evidence: measured`.
 <!-- outbox:05cc115ddc6bebd2 airmypc:f0c0e6e7e995 -->
+
+### airmypc, 2026-10-16 - A commit gate that builds the libraries and tests never noticed the shipping app did not compile
+
+**Trap.** The pre-commit gate built the core, platform and test projects but never the WinUI app. A change put `{global::Some.Type.Member}` inside a C# interpolated string; the first top-level `:` in a hole starts a format specifier, so the compiler read the name `global` (CS0103). The app did not compile on master for three days and every commit passed its gate. A release-gate run found it.
+
+**Rule.**
+- The commit gate compiles every shipping project, at least when a staged path can change it (its sources, root build inputs, `.editorconfig`, the gate itself), restoring in locked mode with the same configuration it builds.
+- In C# interpolation holes, parenthesize any expression containing `::` or `?:`.
+
+**Check.** Scratch-clone fixtures: the CS0103 defect, a removed package with warm assets, and a package conditioned on another configuration must each be refused; a docs-only commit skips the step.
+
+**Source:** airmypc ledger [847] and [853]. `evidence: measured`.
+<!-- outbox:37a463f2c3464c0d airmypc:fcd7b945d81c -->
