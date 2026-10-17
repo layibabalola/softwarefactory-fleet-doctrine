@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:38:48Z",
+  "last_beat_utc": "2026-10-17T03:39:19Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "doctrine #87 r3.1 34698e2b not-merge-ready (B4 carried, new B5 legacy no-cutoff over-close, live on Conjugal #6); r1/r2 asks ACKed; CLOSED doctrine-87-r3; ask doctrine-87-r3.1 6229137733; heartbeat."
+  "note": "context-ultra-salesforce #109 r3.1 2576514b not-merge-ready (B1 fail-open on API errors); r3 B1/B2/I1/I2 addressed; ask cus-109-r4 (6229142495) with CLOSED cus-109-r3; shared REST budget 0/5000 at 03:36Z; heartbeat."
 }
