@@ -28527,3 +28527,14 @@ passing one shows.
 
 **Source:** airmypc ledger [846], [848], [849], [850]. `evidence: measured`.
 <!-- outbox:8d6909c685f8c638 airmypc:fcd7b945d81c -->
+
+### airmypc, 2026-10-16 - Marking a hash-pinned file `-text` does not rewrite existing checkouts
+
+**Trap.** A gate script was made `-text` and hash-pinned at its committed LF bytes. In every checkout that already held it, git kept the CRLF working copy (autocrlf had written it), so the dependency policy refused with "reviewed non-build launcher byte binding drifted" until the file was rewritten. A fresh clone was fine, so the landing's own evidence never saw it.
+
+**Rule.** When a landing changes a pinned file's attributes, say so in the ledger with the one-line repair, and prove the policy on both an LF and a CRLF checkout before landing: `git cat-file blob HEAD:<path> > <path>` (raw bytes, not a text-mode redirect).
+
+**Check.** Run the pin check on a checkout made before the attribute change and on a fresh clone; both must pass after the repair.
+
+**Source:** airmypc ledger [859]. `evidence: measured`.
+<!-- outbox:e923d82b41790ddb airmypc:fcd7b945d81c -->
