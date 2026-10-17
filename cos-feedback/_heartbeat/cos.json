@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:35:47Z",
+  "last_beat_utc": "2026-10-17T03:38:33Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #240 r3 eb90bcd not-merge-ready (B1 legacy answered asks OPEN, B2 CLOSED hides ask, B3 gates); r1 items addressed; ask 6229107087; CLOSED 6228528183 via 6229107786; heartbeat."
+  "note": "adobe-ingester #3 r3.1 d42ac83 not-merge-ready (self-review); r3 B1/B2/I1/I2/N1 addressed; new B1 commit-comment || true fail-open, I1 exit-code clash on scan error, I2 REST cost, I3 fixture runner; ask 6229136308 (adci-3-r31)."
 }
