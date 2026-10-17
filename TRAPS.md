@@ -28488,3 +28488,14 @@ passing one shows.
 
 **Source:** airmypc ledger [847] and [853]. `evidence: measured`.
 <!-- outbox:37a463f2c3464c0d airmypc:fcd7b945d81c -->
+
+### airmypc, 2026-10-16 - Ids built as `<name>|<unix-ms>` repeat when two starts land in one millisecond
+
+**Trap.** Route ids were `<receiver>|<unix milliseconds>`. A retry or a superseding manual start in the same millisecond reused the ended route's id, so a "route ended" event for the old route consumed the new route's reconnect attempt. A loop reproduced it 134 times in 500; a test-only fix was refused because the product path has no delay.
+
+**Rule.** A time-stamped id takes `max(requested ms, last issued ms + 1)` through a process-wide compare-exchange: ids never repeat and never go backwards on a clock rollback, and the id shape is unchanged. Check every reader that parses the number before widening it.
+
+**Check.** Same-millisecond starts, 200 rounds of superseding restarts, and a clock rollback must all yield distinct, increasing ids (each fails on the old code).
+
+**Source:** airmypc ledger [852]. `evidence: measured`.
+<!-- outbox:ba71d99b74a1b05f airmypc:fcd7b945d81c -->
