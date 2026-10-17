@@ -22,6 +22,8 @@ on:
       # every census family basename, anywhere: a new copy on the bus is judged by the 'bus' view
       - '**/session-checkpoint.py'
       - '**/session_checkpoint.py'
+      - '**/delivery-at-identity.py'
+      - '**/delivery_at_identity.py'
       - '**/doctrine_outbox.py'
       - '**/doctrine-outbox.py'
       - '**/check-doc-size.py'
@@ -91,6 +93,8 @@ on:
       # every census family basename, anywhere: a new copy on the bus is judged by the 'bus' view
       - '**/session-checkpoint.py'
       - '**/session_checkpoint.py'
+      - '**/delivery-at-identity.py'
+      - '**/delivery_at_identity.py'
       - '**/doctrine_outbox.py'
       - '**/doctrine-outbox.py'
       - '**/check-doc-size.py'
