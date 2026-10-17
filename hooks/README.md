@@ -53,7 +53,9 @@ Tests: `python hooks/hooks.tests.py`.
    pushed branch cannot weaken or re-pin its own judge -- else the commit being pushed (a project whose
    work never reaches a remote master, e.g. a local-only branch, and the adoption push itself, including
    an existing consumer whose master pins other tools but not yet this one: judging with those pins
-   would refuse every push, the adoption push included), else `HEAD`. Protected
+   would refuse every push, the adoption push included), else `HEAD`. A judge that does not pin the
+   layer's tool at all (a branch from before the adoption) skips the layer with a `not applied` notice: it could
+   drop its own pin anyway, so refusing would protect nothing. Protected
    branches come from the consumer's `factory-pins/ff-only.json` (`{"protected": [...]}`) at the
    judge ref when present, else `master`/`main`:
 
@@ -61,20 +63,23 @@ Tests: `python hooks/hooks.tests.py`.
    # factory-ff-only
    FF_PROTECTED="refs/remotes/origin/master refs/remotes/origin/main"
    FF_REFS=$(cat)
+   ff_pins() {
+     git show "$1:factory-pins/factory-pins.json" 2>/dev/null | python -I -c "import json, sys; sys.exit(0 if isinstance(json.load(sys.stdin).get('tools', {}).get(sys.argv[1]), dict) else 1)" pre-push-ff-only 2>/dev/null
+   }
    FF_JUDGE=
    for FF_P in $FF_PROTECTED; do
-     if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null \
-        && git show "$FF_P:factory-pins/factory-pins.json" 2>/dev/null | grep -q '"pre-push-ff-only"'; then
-       FF_JUDGE=$FF_P; break
-     fi
+     if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null && ff_pins "$FF_P"; then FF_JUDGE=$FF_P; break; fi
    done
    [ -n "$FF_JUDGE" ] || FF_JUDGE=$(printf '%s\n' "$FF_REFS" | awk '$2 !~ /^0+$/ { print $2; exit }')
    [ -n "$FF_JUDGE" ] || FF_JUDGE=HEAD
+   if ! ff_pins "$FF_JUDGE"; then
+     echo "[ff-only] not applied: $FF_JUDGE does not pin pre-push-ff-only (it applies once a protected branch pins it)" >&2
+   else
    FF_TOOL=$(mktemp) && git show "$FF_JUDGE:factory-pins/pin-runner.py" > "$FF_TOOL" \
      || { rm -f "$FF_TOOL"; echo "[ff-only] PUSH REFUSED: cannot read $FF_JUDGE:factory-pins/pin-runner.py" >&2; exit 1; }
    FF_CFG=$(mktemp)
    ff_run() {
-     printf '%s\n' "$FF_REFS" | python "$FF_TOOL" --pins "$(git rev-parse --show-toplevel)/factory-pins/factory-pins.json" \
+     printf '%s\n' "$FF_REFS" | python -I "$FF_TOOL" --pins "$(git rev-parse --show-toplevel)/factory-pins/factory-pins.json" \
          --pins-ref "$FF_JUDGE" run pre-push-ff-only -- "$@"
    }
    FF_RC=0
@@ -85,6 +90,7 @@ Tests: `python hooks/hooks.tests.py`.
    fi
    rm -f "$FF_TOOL" "$FF_CFG"
    [ "$FF_RC" -eq 0 ] || { echo "[ff-only] PUSH REFUSED (exit $FF_RC)" >&2; exit 1; }
+   fi
    exec 0<<FF_REFS_EOF
    $FF_REFS
    FF_REFS_EOF

@@ -73,23 +73,28 @@ directory and start it with `python -I`, so nothing touches the project before i
 executes is the profile's pinned `check-rule-tags`, from those verified bytes, in a private directory.
 
 Everything is planned before the first write, then every file is staged under a temporary name beside its destination
-and renamed into place only when all are staged, so a refusal (exit 2) -- including an unwritable destination --
-writes nothing. A destination is refused if any link or junction lies between the project root (or the hooks dir) and
+and renamed into place only when all are staged (an original is moved aside first and restored if any later rename
+fails), so a refusal (exit 2) -- including an unwritable or locked destination -- leaves nothing changed. The pins live
+at `factory-pins/factory-pins.json` only (init refuses another `--pins`: its hooks and configs name that place). A destination is refused if any link or junction lies between the project root (or the hooks dir) and
 it, and no two writes may name the same file (compared case-folded). A git hooks dir outside the repository (a shared
 `core.hooksPath`) is never written. A file the project already has is **never overwritten**; settings are merged
-(text, non-ASCII and order of existing entries kept; duplicate keys refused). Each profile hook is judged across every
+(content, non-ASCII and key order kept; formatting normalised to 2-space JSON; duplicate keys refused). Each profile hook is judged across every
 scope Claude Code merges (`.claude/settings.json`, `.claude/settings.local.json`, `~/.claude/settings.json`): one
-existing registration elsewhere, or the project's own pinned form (`run <tool> -- <its args>`) under the profile's
+existing registration elsewhere, or the project's own pinned form (this project's `factory-pins/pin-runner.py` with
+`run <tool>` as its subcommand, any tool args, `--never-block` where the profile requires it) under the profile's
 matcher, is **kept**; a copy here, another matcher, or two registrations are printed as a `HAND:` step and init exits
 **4 INCOMPLETE**. Every HAND step can be cleared by the person (replace the copy by the pin, fix the matcher, keep
-one registration, chain the missing pre-push layers -- each layer marker is checked), and the same init then exits 0.
+one registration, chain the missing pre-push layers -- each layer marker is checked, and the hook must be executable;
+a shared `core.hooksPath` is inspected, never written), and the same init then exits 0.
 A second run with the same commit is a `NO-OP`. init never commits: its `COMMIT:` line names every file it manages
 that HEAD does not hold as it is now (an adopted runner included).
 
 Hooks that must never block (session-checkpoint on Stop and SessionStart) run as `pin-runner.py --never-block run ...`:
 a runner refusal there exits 1 (a loud, non-blocking hook error) instead of 2, which on Stop would block every turn end.
-The guards keep exit 2. The pre-push layers judge with the first protected ref whose pins already name the layer's tool,
-else the pushed commit: an existing consumer's adoption push is never locked out, and once master pins a layer, a
+The guards keep exit 2. A vendored runner release that predates `--never-block` is never wired to those hooks (HAND:
+delete it, and init vendors the reviewed one). The pre-push layers run the runner with `python -I` and judge with the
+first protected ref whose pins (parsed as JSON, its `tools` object) already pin the layer's tool, else the pushed commit; a judge that does not pin the tool at all (a branch from before
+the adoption) skips that layer with a notice, since such a judge could drop its own pin anyway: an existing consumer's adoption push is never locked out, and once master pins a layer, a
 branch can no longer re-pin its own judge.
 
 ## Install contract (consumer project)

@@ -132,8 +132,9 @@ def load_config(path: str | None) -> dict:
             continue
         try:
             cfg[k] = _JUDGE[k](raw[k], base)
-        except ConfigError as exc:
-            warn.append(f"{exc}; the default is used")
+        except Exception as exc:  # ConfigError, and what validation itself can raise: 10**400 (OverflowError), a
+            # receipt pattern nested past the regex parser's limit (RecursionError), ...
+            warn.append(f"{k}: {exc.__class__.__name__}: {str(exc)[:160]}; the default is used")
     return cfg
 
 
@@ -466,9 +467,9 @@ def doctrine_periodic(ctx: Ctx, payload: dict, sid: str) -> None:
             if lane.exists():
                 return
             common = ctx.git(cwd, "rev-parse", "--path-format=absolute", "--git-common-dir", deadline=True)
-            if common is None:
-                return                                  # the deadline cut git off: undecided, decide next tick
-            if not common or Path(cwd).resolve() != Path(common).resolve().parent:
+            if not common:
+                return                                  # deadline, failure or no repository: undecided, ask next tick
+            if Path(cwd).resolve() != Path(common).resolve().parent:
                 session_tips().mkdir(parents=True, exist_ok=True)
                 lane.touch()
                 return                                  # not the main checkout: a lane stays silent

@@ -107,6 +107,8 @@ HOOK_KEYS = {"event", "matcher", "tool", "args", "timeout", "never_block"}
 CLAUDE_EVENTS = ("SessionStart", "SessionEnd", "Stop", "SubagentStop", "PreToolUse", "PostToolUse", "UserPromptSubmit",
                  "PreCompact", "Notification")
 GIT_HOOK_KEYS = {"hook", "path", "markers"}
+# How a runner release that supports --never-block declares it (split so this constant is not itself the marker).
+NEVER_BLOCK_ARG = b'ap.add_argument("--never' + b'-block"'
 SEED_DEST = re.compile(r"factory-pins/[A-Za-z0-9][A-Za-z0-9._-]{0,99}\Z")
 GIT_HOOKS = ("pre-push", "pre-commit", "commit-msg")
 HOOK_ARG = re.compile(r"[A-Za-z0-9@/._=:,+-]+\Z")   # no quote, space or shell metacharacter can reach a settings command
@@ -825,17 +827,26 @@ INTERPRETER_WORDS = {"python", "python3", "py", "pythonw", "node", "pwsh", "powe
 ENV_ASSIGN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*=")
 
 
+RUNNER_NAMES = ("pin-runner.py", "pin_runner.py")
+RUNNER_VALUE_OPTS = ("--pins", "--pins-ref", "--bus")
+# The project's own vendored runner, as a hook names it (init writes the first form).
+PROJECT_RUNNER = re.compile(r"(?:\$CLAUDE_PROJECT_DIR/|\$\{CLAUDE_PROJECT_DIR\}/|\./)?factory-pins/pin-runner\.py\Z")
+
+
 def command_scripts(command: str) -> list[list[str]]:
     """For each simple command in a hook command line: [the program it runs, *its arguments]. The program is the
     first word, or the first non-option word after an interpreter (python -I x.py ...). Words are split like a POSIX
-    shell (quotes removed; backslashes read as path separators); env assignments are skipped."""
+    shell with its punctuation (`a;b`, `a&&b`, `a|b`, `(a)`, redirections) as separate tokens: quotes removed,
+    backslashes read as path separators, env assignments skipped."""
     try:
-        words = shlex.split(command.replace("\\", "/"), posix=True)
+        lex = shlex.shlex(command.replace("\\", "/"), posix=True, punctuation_chars=True)
+        lex.whitespace_split = True
+        words = list(lex)
     except ValueError:
         words = command.split()
     simple: list[list[str]] = [[]]
     for w in words:
-        if w in SHELL_SEPARATORS:
+        if w and all(ch in "();<>|&" for ch in w):
             simple.append([])
         else:
             simple[-1].append(w)
@@ -855,16 +866,23 @@ def command_scripts(command: str) -> list[list[str]]:
     return out
 
 
+def runner_tool(c: list[str]) -> tuple[str | None, list[str]]:
+    """When the simple command c runs a pin runner's `run` subcommand: (the tool operand, the runner's own options).
+    Only the subcommand position counts -- `run a -- ... run b` runs a, never b."""
+    if c[0].rsplit("/", 1)[-1].lower() not in RUNNER_NAMES:
+        return None, []
+    i = 1
+    while i < len(c) and c[i].startswith("--"):
+        i += 2 if c[i] in RUNNER_VALUE_OPTS else 1
+    if i + 1 < len(c) and c[i] == "run":
+        return c[i + 1], c[1:i]
+    return None, []
+
+
 def wires_tool(command: str, tool: str, path: str) -> bool:
-    """Does a hook command already run this tool: a copy by file name, or a pin runner by `run <tool>`?"""
+    """Does a hook command already run this tool: a copy by file name, or any pin runner running it?"""
     names = {Path(path).name.lower(), Path(path).name.replace("-", "_").lower()}
-    for c in command_scripts(command):
-        prog = c[0].rsplit("/", 1)[-1].lower()
-        if prog in names:
-            return True
-        if prog in ("pin-runner.py", "pin_runner.py") and any(c[k] == "run" and c[k + 1] == tool for k in range(1, len(c) - 1)):
-            return True
-    return False
+    return any(c[0].rsplit("/", 1)[-1].lower() in names or runner_tool(c)[0] == tool for c in command_scripts(command))
 
 
 def load_settings(path: Path) -> dict[str, Any]:
@@ -883,14 +901,18 @@ def load_settings(path: Path) -> dict[str, Any]:
     return s
 
 
-def by_pin(command: str, tool: str) -> bool:
-    """Is this command the project's vendored runner running <tool> (whatever its other flags and tool args)?"""
-    return any(c[0].rsplit("/", 1)[-1].lower() in ("pin-runner.py", "pin_runner.py")
-               and any(c[k] == "run" and c[k + 1] == tool for k in range(1, len(c) - 1)) for c in command_scripts(command))
+def by_pin(command: str, tool: str, never_block: bool = False) -> bool:
+    """Is this command THIS project's vendored runner running <tool> (any tool args), with --never-block when the
+    profile requires it (a Stop/SessionStart hook that could exit 2 would block)?"""
+    for c in command_scripts(command):
+        t, opts = runner_tool(c)
+        if t == tool and PROJECT_RUNNER.match(c[0]) and (not never_block or "--never-block" in opts):
+            return True
+    return False
 
 
 def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[str, Any]], out: list[str],
-                  hand: list[str]) -> bytes | None:
+                  hand: list[str], never_block_ok: bool = True) -> bytes | None:
     """The merged .claude/settings.json bytes, or None when nothing is added. Existing entries are never edited or
     removed. Every scope Claude Code merges is read: this file, .claude/settings.local.json, the user's
     ~/.claude/settings.json. For each profile hook, the registrations of its tool on its event across those scopes:
@@ -914,6 +936,11 @@ def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[s
     for h in hooks:
         cmd, ev, tool, m = hook_command(h), h["event"], h["tool"], h.get("matcher") or None
         label = f"{ev}{'/' + m if m else ''}"
+        if h.get("never_block") and not never_block_ok:
+            hand.append(f"the vendored runner predates --never-block, so a {label} hook through it would exit 2 on a "
+                        f"refusal (on Stop: block every turn end). Delete factory-pins/pin-runner.py and re-run init: it then "
+                        f"vendors the reviewed runner of this commit, and wires {tool}")
+            continue
         regs = [(p, mm, c) for p, s in scopes for mm, c in registrations(s, ev) if c == cmd or wires_tool(c, tool, reg[tool]["path"])]
         if not regs:
             groups = settings.setdefault("hooks", {}).setdefault(ev, [])
@@ -934,7 +961,7 @@ def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[s
         p, mm, c = regs[0]
         if p != path:
             out.append(f"  kept    hook {label}: {tool} already runs once from {p}" + ("" if by_pin(c, tool) else " (not by pin)"))
-        elif by_pin(c, tool) and mm == m:
+        elif by_pin(c, tool, h.get("never_block", False)) and mm == m:
             out.append(f"  kept    hook {label}: {tool}" + ("" if c == cmd else f" (the project's own form: {c})"))
         else:
             hand.append(f"{tool} already runs on {ev} as {where}  -- replace it with: {cmd}"
@@ -1002,13 +1029,25 @@ def refuse_links(p: Path, base: Path) -> None:
         raise Refused(f"{p} resolves outside {base}; nothing written")
 
 
+def remove_dirs(made: list[Path]) -> None:
+    for d in reversed(made):                            # deepest first; a directory something else filled stays
+        try:
+            d.rmdir()
+        except OSError:
+            pass
+
+
 def commit_writes(staged: list[tuple[Path, bytes, int]]) -> None:
     """Stage every file under a temporary name beside its destination; only when all are staged, rename each into
-    place. A staging failure removes what was staged and refuses: nothing reaches a destination."""
+    place, moving any original aside first. A failure at either step undoes everything done so far (originals restored,
+    new files and temporaries removed) and refuses: no destination keeps a change."""
     temps: list[tuple[Path, Path, int]] = []
+    made: list[Path] = []                               # directories this call created (removed again on refusal)
     try:
         for final, body, mode in staged:
+            missing = [d for d in (final.parent, *final.parent.parents) if not d.exists()]
             final.parent.mkdir(parents=True, exist_ok=True)
+            made += reversed(missing)
             fd, tmp = tempfile.mkstemp(dir=final.parent, prefix=f".{final.name}.init-")
             temps.append((Path(tmp), final, mode))
             with os.fdopen(fd, "wb") as fh:
@@ -1017,9 +1056,33 @@ def commit_writes(staged: list[tuple[Path, bytes, int]]) -> None:
     except OSError as exc:
         for t, _f, _m in temps:
             t.unlink(missing_ok=True)
+        remove_dirs(made)
         raise Refused(f"cannot write {final} ({exc.__class__.__name__}: {exc}); nothing written") from None
-    for t, final, _m in temps:
-        os.replace(t, final)
+    done: list[tuple[Path, Path | None]] = []          # (destination, where its original was moved, or None)
+    try:
+        for t, final, _m in temps:
+            aside = None
+            if final.exists():
+                aside = final.with_name(f".{final.name}.init-orig-{os.getpid()}")
+                os.replace(final, aside)
+            done.append((final, aside))
+            os.replace(t, final)
+    except OSError as exc:
+        for final, aside in reversed(done):
+            try:
+                if aside is not None:
+                    os.replace(aside, final)
+                else:
+                    final.unlink(missing_ok=True)
+            except OSError:
+                pass
+        for t, _f, _m in temps:
+            t.unlink(missing_ok=True)
+        remove_dirs(made)
+        raise Refused(f"cannot replace {final} ({exc.__class__.__name__}: {exc}); every change undone, nothing written") from None
+    for _final, aside in done:
+        if aside is not None:
+            aside.unlink(missing_ok=True)
 
 
 def project_name(root: Path, given: str | None) -> str:
@@ -1034,6 +1097,11 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
     proven to be git's object at --commit (read_blob), exactly as install does; the only tool it executes is the
     profile's pinned check-rule-tags (--emit-map), from those verified bytes. Everything is planned before the first
     write; a file the project already has is never overwritten (a conflict is a HAND step, exit 4). Never commits."""
+    if args.pins:
+        root = Path(args.project_root) if args.project_root else Path.cwd()
+        if os.path.normcase(os.path.abspath(args.pins)) != os.path.normcase(os.path.abspath(root / "factory-pins" / PINS_NAME)):
+            raise Refused(f"init writes the pins at factory-pins/{PINS_NAME} only (its hooks and configs name that place); "
+                          "drop --pins")
     c = Consumer(args, "init")
     top = git(c.root, "rev-parse", "--show-toplevel", timeout=10)
     if top.returncode != 0 or Path(top.stdout.decode().strip()).resolve() != c.root:
@@ -1102,7 +1170,9 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
             out.append(f"  EMITTED factory-pins/rule-map.json ({len(json.loads(body)['rules'])} rule(s), every kind prose)")
 
     settings_path = c.root / ".claude" / "settings.json"
-    sbytes = plan_settings(settings_path, prof.get("claude_hooks", []), reg, out, hand)
+    running = c.runner_bytes if vendor else c.vendored.read_bytes()
+    sbytes = plan_settings(settings_path, prof.get("claude_hooks", []), reg, out, hand,
+                           never_block_ok=NEVER_BLOCK_ARG in running)
     if sbytes is not None:
         writes.append((settings_path, sbytes))
 
@@ -1112,7 +1182,9 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
     hooks_dir = Path(hp.stdout.decode().strip())
     common = git(c.root, "rev-parse", "--path-format=absolute", "--git-common-dir", timeout=10)
     git_dir = Path(common.stdout.decode().strip()) if common.returncode == 0 else c.root / ".git"
-    hooks_ours = any(within(hooks_dir, d) for d in (c.root, git_dir))
+    hooks_ours = any(within(hooks_dir, d) and within(hooks_dir.resolve(), d.resolve()) for d in (c.root, git_dir))
+    if hooks_ours and not within(hooks_dir, c.root):
+        refuse_links(hooks_dir, git_dir)                # <common-dir>/hooks must not be a link to a shared place
     git_modes: list[Path] = []
     for gh in prof.get("git_hooks", []):
         target = hooks_dir / gh["hook"]
@@ -1120,28 +1192,31 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
         lines = body.decode("utf-8", "replace").splitlines()
         if not all(m in lines for m in gh["markers"]):
             raise Refused(f"profile {args.profile!r}: {gh['path']} at {c.commit[:12]} lacks a declared marker line")
-        if not hooks_ours:
-            hand.append(f"the git hooks directory {hooks_dir} (core.hooksPath) is outside this repository; init writes no "
-                        f"hook there. Chain the layers of the bus {gh['path']} at {c.commit[:12]} into {gh['hook']} by hand")
-        elif not target.exists():
+        if hooks_ours and not target.exists():
             writes.append((target, body))
             git_modes.append(target)
             out.append(f"  WROTE   git {gh['hook']}: {target} (bus {gh['path']})")
+            continue
+        # An existing hook (ours, or in a shared core.hooksPath that init never writes) is inspected, read-only: it
+        # counts only when it carries every layer marker AND git will run it (executable on POSIX).
+        have = target.read_bytes().decode("utf-8", "replace").splitlines() if target.is_file() else []
+        missing = [m for m in gh["markers"] if m not in have]
+        runnable = target.is_file() and (os.name == "nt" or os.access(target, os.X_OK))
+        where = "" if hooks_ours else " (a shared core.hooksPath outside this repository: init writes nothing there)"
+        if not missing and runnable:
+            out.append(f"  kept    git {gh['hook']}: {target} carries every layer ({', '.join(gh['markers'])}){where}")
+        elif not missing:
+            hand.append(f"{target} carries every layer but git will not run it: chmod +x {shlex.quote(str(target))}")
         else:
-            have = target.read_bytes().decode("utf-8", "replace").splitlines()
-            missing = [m for m in gh["markers"] if m not in have]
-            if not missing:
-                out.append(f"  kept    git {gh['hook']}: {target} carries every layer ({', '.join(gh['markers'])})")
-            else:
-                hand.append(f"{target} exists without the layer(s) {', '.join(missing)}: chain those layers of the bus "
-                            f"{gh['path']} at {c.commit[:12]} into it by hand (ahead of any layer that consumes stdin); "
-                            "init re-checks each marker line")
+            hand.append(f"{target}{where} {'exists without' if target.is_file() else 'is absent; it needs'} the layer(s) "
+                        f"{', '.join(missing)}: chain those layers of the bus {gh['path']} at {c.commit[:12]} into it by hand "
+                        "(ahead of any layer that consumes stdin, executable); init re-checks each marker line")
 
     # Every destination is a plain file inside the place it is promised to be: no link or junction anywhere on its way
     # (an existing .claude/settings.json symlink must not carry a write elsewhere), and no two writes -- or a write and
     # the runner or the pins -- name the same file, compared case-folded (Windows).
     planned = [(p, c.root if within(p, c.root) else hooks_dir) for p, _b in writes]
-    planned += [(c.vendored, c.root), (c.pfile, c.root)] if within(c.pfile, c.root) else []
+    planned += [(c.vendored, c.root), (c.pfile, c.root)]
     seen: set[str] = set()
     for p, base in planned:
         refuse_links(p, base)
@@ -1188,7 +1263,7 @@ def cmd_init(args: argparse.Namespace, _rest: list[str]) -> int:
                 or git(c.root, "diff", "--quiet", "HEAD", "--", rel, timeout=10).returncode != 0):
             uncommitted.append(rel)
     if uncommitted:
-        print(f"COMMIT (a review decision; init never commits): git add -- {' '.join(uncommitted)}")
+        print(f"COMMIT (a review decision; init never commits): git add -- {' '.join(map(shlex.quote, uncommitted))}")
     print(f"CHECK: python {c.runner_rel()} verify")
     for h in hand:
         print(f"HAND: {h}")
@@ -1325,6 +1400,7 @@ def main(argv: list[str] | None = None) -> int:
     n.add_argument("--name", help="the project's name in the seeded configs (default: the folder name, slugged)")
     n.add_argument("--date")
     n.add_argument("--bus", default=argparse.SUPPRESS)
+    n.add_argument("--pins", default=argparse.SUPPRESS)  # accepted only as the canonical place (cmd_init)
     li = sub.add_parser("list", allow_abbrev=False)
     li.add_argument("--commit", default="HEAD")
     li.add_argument("--bus", default=argparse.SUPPRESS)

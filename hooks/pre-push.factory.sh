@@ -7,20 +7,23 @@ set -e
 # factory-ff-only
 FF_PROTECTED="refs/remotes/origin/master refs/remotes/origin/main"
 FF_REFS=$(cat)
+ff_pins() {
+  git show "$1:factory-pins/factory-pins.json" 2>/dev/null | python -I -c "import json, sys; sys.exit(0 if isinstance(json.load(sys.stdin).get('tools', {}).get(sys.argv[1]), dict) else 1)" pre-push-ff-only 2>/dev/null
+}
 FF_JUDGE=
 for FF_P in $FF_PROTECTED; do
-  if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null \
-     && git show "$FF_P:factory-pins/factory-pins.json" 2>/dev/null | grep -q '"pre-push-ff-only"'; then
-    FF_JUDGE=$FF_P; break
-  fi
+  if git cat-file -e "$FF_P:factory-pins/pin-runner.py" 2>/dev/null && ff_pins "$FF_P"; then FF_JUDGE=$FF_P; break; fi
 done
 [ -n "$FF_JUDGE" ] || FF_JUDGE=$(printf '%s\n' "$FF_REFS" | awk '$2 !~ /^0+$/ { print $2; exit }')
 [ -n "$FF_JUDGE" ] || FF_JUDGE=HEAD
+if ! ff_pins "$FF_JUDGE"; then
+  echo "[ff-only] not applied: $FF_JUDGE does not pin pre-push-ff-only (it applies once a protected branch pins it)" >&2
+else
 FF_TOOL=$(mktemp) && git show "$FF_JUDGE:factory-pins/pin-runner.py" > "$FF_TOOL" \
   || { rm -f "$FF_TOOL"; echo "[ff-only] PUSH REFUSED: cannot read $FF_JUDGE:factory-pins/pin-runner.py" >&2; exit 1; }
 FF_CFG=$(mktemp)
 ff_run() {
-  printf '%s\n' "$FF_REFS" | python "$FF_TOOL" --pins "$(git rev-parse --show-toplevel)/factory-pins/factory-pins.json" \
+  printf '%s\n' "$FF_REFS" | python -I "$FF_TOOL" --pins "$(git rev-parse --show-toplevel)/factory-pins/factory-pins.json" \
       --pins-ref "$FF_JUDGE" run pre-push-ff-only -- "$@"
 }
 FF_RC=0
@@ -31,28 +34,33 @@ else
 fi
 rm -f "$FF_TOOL" "$FF_CFG"
 [ "$FF_RC" -eq 0 ] || { echo "[ff-only] PUSH REFUSED (exit $FF_RC)" >&2; exit 1; }
+fi
 exec 0<<FF_REFS_EOF
 $FF_REFS
 FF_REFS_EOF
 # factory-no-unpinned-tool
 NUT_PROTECTED="refs/remotes/origin/master refs/remotes/origin/main"
 NUT_REFS=$(cat)
+nut_pins() {
+  git show "$1:factory-pins/factory-pins.json" 2>/dev/null | python -I -c "import json, sys; sys.exit(0 if isinstance(json.load(sys.stdin).get('tools', {}).get(sys.argv[1]), dict) else 1)" no-unpinned-tool 2>/dev/null
+}
 NUT_JUDGE=
 for NUT_P in $NUT_PROTECTED; do
-  if git cat-file -e "$NUT_P:factory-pins/pin-runner.py" 2>/dev/null \
-     && git show "$NUT_P:factory-pins/factory-pins.json" 2>/dev/null | grep -q '"no-unpinned-tool"'; then
-    NUT_JUDGE=$NUT_P; break
-  fi
+  if git cat-file -e "$NUT_P:factory-pins/pin-runner.py" 2>/dev/null && nut_pins "$NUT_P"; then NUT_JUDGE=$NUT_P; break; fi
 done
 [ -n "$NUT_JUDGE" ] || NUT_JUDGE=$(printf '%s\n' "$NUT_REFS" | awk '$2 !~ /^0+$/ { print $2; exit }')
 [ -n "$NUT_JUDGE" ] || NUT_JUDGE=HEAD
+if ! nut_pins "$NUT_JUDGE"; then
+  echo "[no-unpinned-tool] not applied: $NUT_JUDGE does not pin no-unpinned-tool (it applies once a protected branch pins it)" >&2
+else
 NUT_TOOL=$(mktemp) && git show "$NUT_JUDGE:factory-pins/pin-runner.py" > "$NUT_TOOL" \
   || { rm -f "$NUT_TOOL"; echo "[no-unpinned-tool] PUSH REFUSED: cannot read $NUT_JUDGE:factory-pins/pin-runner.py" >&2; exit 1; }
 NUT_RC=0
-printf '%s\n' "$NUT_REFS" | python "$NUT_TOOL" --pins "$(git rev-parse --show-toplevel)/factory-pins/factory-pins.json" \
+printf '%s\n' "$NUT_REFS" | python -I "$NUT_TOOL" --pins "$(git rev-parse --show-toplevel)/factory-pins/factory-pins.json" \
     --pins-ref "$NUT_JUDGE" run no-unpinned-tool -- "$@" || NUT_RC=$?
 rm -f "$NUT_TOOL"
 [ "$NUT_RC" -eq 0 ] || { echo "[no-unpinned-tool] PUSH REFUSED (exit $NUT_RC)" >&2; exit 1; }
+fi
 exec 0<<NUT_REFS_EOF
 $NUT_REFS
 NUT_REFS_EOF

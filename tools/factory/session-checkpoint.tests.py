@@ -412,6 +412,19 @@ class Contract(_Tmp):
             r = d("SessionStart", "s3", self.repo)
             self.assertNotIn("doctrine check FAILED", r.stdout, torn)
 
+    def test_values_that_break_validation_itself_cost_only_their_key(self):
+        """Review round 2: 10**400 (OverflowError in isfinite) and a receipt pattern nested past the regex parser's
+        limit (RecursionError) escaped the lenient fallback and the Stop checkpoint was never written."""
+        deep = "(" * 2000 + "x" + ")" * 2000
+        p = self.t / "big.json"
+        p.write_text('{"deadline_seconds": 1' + "0" * 400 + ', "rotation": {"receipt_pattern": "' + deep + '"}}',
+                     encoding="utf-8")
+        r = Impl("x", [str(TOOL), "--config", str(p)], self.t / "home")("Stop", "o1", self.repo)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("deadline_seconds:", r.stdout)
+        self.assertIn("rotation:", r.stdout)
+        self.assertTrue((self.t / "home/.claude/session-checkpoints/proj/SESSION-o1.md").exists(), r.stdout)
+
     def test_fixtures_are_valid_configs(self):
         sys.path.insert(0, str(HERE))
         import importlib.util
@@ -420,6 +433,7 @@ class Contract(_Tmp):
         spec.loader.exec_module(sc)
         for f in sorted(FIX.glob("*.config.json")):
             cfg = sc.load_config(str(f))
+            self.assertEqual(cfg["_warnings"], [], f)       # per-key leniency must not hide a broken fixture key
             self.assertEqual(cfg["deadline_seconds"], 40, f)
         self.assertIsNotNone(sc.load_config(str(FIX / "dng.config.json"))["doctrine"])
         self.assertIsNone(sc.load_config(str(FIX / "default.config.json"))["doctrine"])

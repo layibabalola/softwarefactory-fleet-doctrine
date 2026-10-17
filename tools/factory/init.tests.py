@@ -205,7 +205,7 @@ class Init(_Init):
         self.assertEqual(self.init().returncode, 0)
         r = subprocess.run([pwsh, "-NoProfile", "-File", str(BUS_ROOT / "tools/Get-ProductThroughput.ps1"), "-Repo", str(self.proj),
                             "-Project", "my-project", "-ClassConfig", str(self.proj / "factory-pins/product-throughput-classes.json"),
-                            "-Lines"], capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=180)
+                            "-Lines"], capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=180, env=self.env())
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertNotIn("FAILED", r.stdout)
 
@@ -302,10 +302,11 @@ class NeverOverwrites(_Init):
         self.assertEqual(s["hooks"]["SessionStart"], mine["hooks"]["SessionStart"])        # untouched, not doubled
         self.assertNotIn("Stop", s["hooks"])                                                  # the user level runs it
         self.assertEqual(len(s["hooks"]["PreToolUse"][0]["hooks"]), 2)                       # the guards were added
-        # the person chains the layers and switches to the pinned hook; the same init then completes
+        # the person chains the layers and switches to the pinned hook (as the HAND line printed it); the same init
+        # then completes
         (hooks / "pre-push").write_bytes(before_hook + lf(BUS_ROOT / "hooks/pre-push.factory.sh"))
         s["hooks"]["SessionStart"][0]["hooks"][0]["command"] = (
-            'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run session-checkpoint -- '
+            'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --never-block run session-checkpoint -- '
             '--config "$CLAUDE_PROJECT_DIR/factory-pins/session-checkpoint.config.json"')
         (self.proj / ".claude/settings.json").write_text(json.dumps(s), encoding="utf-8")
         (self.home / ".claude/settings.json").unlink()
@@ -339,23 +340,29 @@ class Refusals(_Init):
         good = json.loads(reg_path.read_text(encoding="utf-8"))
         before = tree_digest(self.proj)
         hook = {"event": "Stop", "tool": "session-checkpoint"}
-        cases = [
-            {"tools": ["no-such-tool"]},
-            {"tools": []},
-            {"seeds": {"../outside.json": "tools/factory/registry.json"}},
-            {"seeds": {"factory-pins/factory-pins.json": "tools/factory/registry.json"}},
-            {"claude_hooks": [{**hook, "tool": "check-doc-size"}]},
-            {"claude_hooks": [{**hook, "args": ["--config", "a b"]}]},
-            {"claude_hooks": [{**hook, "args": ['"$(rm -rf ~)"']}]},
-            {"claude_hooks": [{**hook, "event": "Whenever"}]},
-            {"claude_hooks": [{**hook, "timeout": 0}]},
-            {"git_hooks": [{"hook": "post-merge", "path": "hooks/pre-push.factory.sh", "marker": "#"}]},
-            {"git_hooks": [{"hook": "pre-push", "path": "hooks/pre-push.factory.sh"}]},
-            {"rule_map": True, "tools": ["session-checkpoint"]},
-            {"throughput_stub": "yes"},
-            {"surprise": 1},
+        no_crt = [t for t in good["profiles"]["base"]["tools"] if t != "check-rule-tags"]
+        tools_bad, seeds_bad, hook_bad, git_bad = ("'tools' must be", "'seeds' must map", "malformed claude hook",
+                                                   "'git_hooks' entries need")
+        cases = [   # (the defect, the reason the refusal must give: each case proves its OWN check, not just any refusal)
+            ({"tools": ["no-such-tool"]}, tools_bad),
+            ({"tools": []}, tools_bad),
+            ({"seeds": {"../outside.json": "tools/factory/registry.json"}}, seeds_bad),
+            ({"seeds": {"factory-pins/factory-pins.json": "tools/factory/registry.json"}}, seeds_bad),
+            ({"claude_hooks": [{**hook, "tool": "check-doc-size"}]}, hook_bad),
+            ({"claude_hooks": [{**hook, "args": ["--config", "a b"]}]}, hook_bad),
+            ({"claude_hooks": [{**hook, "args": ['"$(rm -rf ~)"']}]}, hook_bad),
+            ({"claude_hooks": [{**hook, "event": "Whenever"}]}, hook_bad),
+            ({"claude_hooks": [{**hook, "timeout": 0}]}, hook_bad),
+            ({"claude_hooks": [{**hook, "never_block": "yes"}]}, hook_bad),
+            ({"git_hooks": [{"hook": "post-merge", "path": "hooks/pre-push.factory.sh", "markers": ["# factory-ff-only"]}]},
+             git_bad),
+            ({"git_hooks": [{"hook": "pre-push", "path": "hooks/pre-push.factory.sh"}]}, git_bad),
+            ({"git_hooks": [{"hook": "pre-push", "path": "hooks/pre-push.factory.sh", "markers": []}]}, git_bad),
+            ({"rule_map": True, "tools": no_crt}, "'rule_map' needs check-rule-tags"),
+            ({"throughput_stub": "yes"}, "'throughput_stub' must be true or false"),
+            ({"surprise": 1}, "only keys from"),
         ]
-        for bad in cases:
+        for bad, why in cases:
             reg = json.loads(json.dumps(good))
             reg["profiles"]["base"].update(bad)
             reg_path.write_text(json.dumps(reg), encoding="utf-8")
@@ -365,6 +372,7 @@ class Refusals(_Init):
                 p = self.init()
                 self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
                 self.assertIn("profile 'base'", p.stderr)
+                self.assertIn(why, p.stderr)
                 self.assertEqual(tree_digest(self.proj), before)
 
     def test_a_failing_rule_map_tool_refuses_before_any_write(self):
@@ -597,6 +605,167 @@ class ReviewRound1Claude(_Init):
         self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
         self.assertIn("nothing written", p.stderr)
         self.assertEqual(tree_digest(self.proj), before)
+        self.assertFalse((self.proj / "factory-pins").exists(), "a directory created while staging stays behind")
+
+
+class ReviewRound2(_Init):
+    """Regressions for review round 2 (Codex gpt-6.1-sol key)."""
+
+    def load_pr(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("pr", FACTORY / "pin-runner.py")
+        pr = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pr)
+        return pr
+
+    def test_an_older_runner_without_never_block_is_not_wired_to_stop(self):
+        runner = self.bus / "tools/factory/pin-runner.py"
+        runner.write_bytes(runner.read_bytes().replace(b'"--never-block"', b'"--no-such-flag"'))
+        git(self.bus, "commit", "-qam", "a runner release that predates --never-block")
+        self.c1 = git(self.bus, "rev-parse", "HEAD")
+        old = self.elsewhere / "pin-runner.py"
+        old.write_bytes(runner.read_bytes())
+        p = self.init(runner=old)
+        self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+        self.assertEqual(sum("predates --never-block" in l for l in p.stdout.splitlines() if l.startswith("HAND:")), 2)
+        hooks = self.settings()["hooks"]
+        self.assertNotIn("Stop", hooks)
+        self.assertNotIn("SessionStart", hooks)
+
+    def test_a_kept_stop_hook_must_be_never_block(self):
+        (self.proj / ".claude").mkdir()
+        old = ('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run session-checkpoint -- '
+               '--config "$CLAUDE_PROJECT_DIR/factory-pins/session-checkpoint.config.json"')
+        (self.proj / ".claude/settings.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": old}]}]}}), encoding="utf-8")
+        p = self.init()
+        self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+        self.assertTrue(any("session-checkpoint already runs on Stop" in l and "--never-block run session-checkpoint" in l
+                            for l in p.stdout.splitlines() if l.startswith("HAND:")), p.stdout)
+
+    def test_runner_commands_are_parsed_at_the_subcommand(self):
+        pr = self.load_pr()
+        guard = "hooks/claude/exact-path-add.py"
+        smuggled = 'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run git-optional-locks -- --observe-only run exact-path-add'
+        self.assertFalse(pr.wires_tool(smuggled, "exact-path-add", guard))
+        self.assertFalse(pr.by_pin(smuggled, "exact-path-add"))
+        self.assertTrue(pr.by_pin(smuggled, "git-optional-locks"))
+        self.assertFalse(pr.by_pin("python -I /tmp/pin-runner.py run exact-path-add", "exact-path-add"))
+        self.assertTrue(pr.wires_tool("python -I /tmp/pin-runner.py run exact-path-add", "exact-path-add", guard))
+        self.assertTrue(pr.by_pin('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --pins x.json run exact-path-add',
+                                  "exact-path-add"))
+        sc = "tools/factory/session-checkpoint.py"
+        for c in ("python tools/session-checkpoint.py; echo done", "(python tools/session-checkpoint.py)",
+                  "true&&python tools/session-checkpoint.py", "python tools/session-checkpoint.py>/dev/null"):
+            self.assertTrue(pr.wires_tool(c, "session-checkpoint", sc), c)
+
+    def test_publication_failure_restores_every_original(self):
+        pr = self.load_pr()
+        d = self.t / "pub"
+        d.mkdir()
+        (d / "a.json").write_text("original a", encoding="utf-8")
+        real, calls = os.replace, []
+
+        def flaky(src, dst):
+            calls.append(dst)
+            if str(dst).endswith("b.json"):
+                raise PermissionError("locked")
+            return real(src, dst)
+        pr.os.replace = flaky
+        try:
+            with self.assertRaises(pr.Refused) as ctx:
+                pr.commit_writes([(d / "a.json", b"new a", 0o644), (d / "b.json", b"new b", 0o644)])
+        finally:
+            pr.os.replace = real
+        self.assertIn("every change undone", str(ctx.exception))
+        self.assertEqual(sorted(p.name for p in d.iterdir()), ["a.json"])
+        self.assertEqual((d / "a.json").read_text(encoding="utf-8"), "original a")
+
+    def test_a_custom_pins_path_is_refused(self):
+        before = tree_digest(self.proj)
+        p = self.init("--pins", str(self.proj / "elsewhere" / "pins.json"))
+        self.assertEqual(p.returncode, 2, p.stdout + p.stderr)
+        self.assertIn("drop --pins", p.stderr)
+        self.assertEqual(tree_digest(self.proj), before)
+
+    def test_the_judge_reads_pins_not_text(self):
+        """Older master pins that MENTION the layer tool (a comment key) but do not pin it must not become the judge."""
+        r = subprocess.run([sys.executable, str(self.bus / "tools/factory/pin-runner.py"), "install", "check-rule-tags",
+                            "--commit", self.c1, "--reviewer", "t", "--reason", "r", "--project-root", str(self.proj),
+                            "--bus", str(self.bus)], capture_output=True, text=True, env=self.env(), stdin=subprocess.DEVNULL)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        pins = json.loads((self.proj / "factory-pins/factory-pins.json").read_text(encoding="utf-8"))
+        pins["_planned_layers"] = ["pre-push-ff-only", "no-unpinned-tool"]
+        (self.proj / "factory-pins/factory-pins.json").write_text(json.dumps(pins, indent=2), encoding="utf-8")
+        git(self.proj, "add", "--", "factory-pins")
+        git(self.proj, "commit", "-qm", "an earlier consumer that plans the layers")
+        self.assertEqual(self.push("master").returncode, 0)
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.commit_listed(p.stdout)
+        r = self.push("master")
+        self.assertEqual(r.returncode, 0, r.stderr)
+
+    def test_the_layers_run_the_runner_isolated(self):
+        self.assertEqual(self.init().returncode, 0)
+        evil = self.t / "evil"
+        evil.mkdir()
+        (evil / "json.py").write_text("open(r'%s', 'w').write('x')\nfrom importlib import import_module\n"
+                                      % (self.t / "imported.marker").as_posix(), encoding="utf-8")
+        git(self.proj, "add", "--", ".")
+        git(self.proj, "commit", "-qm", "factory")
+        r = subprocess.run(["git", "-C", str(self.proj), "push", "origin", "master"], capture_output=True, text=True,
+                           env=self.env(PYTHONPATH=str(evil)), stdin=subprocess.DEVNULL)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertFalse((self.t / "imported.marker").exists(), "a PYTHONPATH module was imported by a layer")
+
+    def test_a_non_executable_hook_is_not_certified(self):
+        if os.name == "nt":
+            self.skipTest("git for Windows runs hooks without an executable bit")
+        hooks = Path(git(self.proj, "rev-parse", "--path-format=absolute", "--git-path", "hooks"))
+        hooks.mkdir(parents=True, exist_ok=True)
+        (hooks / "pre-push").write_bytes(lf(BUS_ROOT / "hooks/pre-push.factory.sh"))
+        os.chmod(hooks / "pre-push", 0o644)
+        p = self.init()
+        self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+        self.assertIn("git will not run it: chmod +x", p.stdout)
+        os.chmod(hooks / "pre-push", 0o755)
+        self.assertEqual(self.init().returncode, 0)
+
+    def test_a_shared_hooks_dir_converges_once_chained(self):
+        shared = self.t / "shared-hooks"
+        shared.mkdir()
+        git(self.proj, "config", "core.hooksPath", str(shared))
+        self.assertEqual(self.init().returncode, 4)
+        (shared / "pre-push").write_bytes(lf(BUS_ROOT / "hooks/pre-push.factory.sh"))
+        os.chmod(shared / "pre-push", 0o755)
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertIn("a shared core.hooksPath outside this repository", p.stdout)
+
+    def test_a_branch_from_before_the_adoption_still_pushes(self):
+        """Review round 2 (Claude key): until a protected ref pins a layer, the pushed commit judges; a branch that
+        predates init has no pins, and the layer refused every push of it."""
+        git(self.proj, "checkout", "-q", "-b", "old-feature")
+        (self.proj / "feature.txt").write_text("f\n", encoding="utf-8")
+        git(self.proj, "add", "--", "feature.txt")
+        git(self.proj, "commit", "-qm", "work from before the adoption")
+        git(self.proj, "checkout", "-q", "master")
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        r = self.push("old-feature")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("[ff-only] not applied", r.stderr)
+        self.assertIn("[no-unpinned-tool] not applied", r.stderr)
+
+    def test_the_commit_line_is_quoted_for_a_spaced_hooks_dir(self):
+        git(self.proj, "config", "core.hooksPath", ".team hooks")
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        line = next(l for l in p.stdout.splitlines() if l.startswith("COMMIT"))
+        self.assertIn("'.team hooks/pre-push'", line)
+        self.commit_listed(p.stdout)
+        self.assertEqual(git(self.proj, "ls-files", "--", ".team hooks/pre-push"), ".team hooks/pre-push")
 
 
 if __name__ == "__main__":
