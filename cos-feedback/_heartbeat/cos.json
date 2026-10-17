@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T07:25:00Z",
+  "last_beat_utc": "2026-10-17T07:46:00Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "agent-bridge #233 r15 3e759d82 (clean master merge of e05388d0) not-merge-ready unchanged; B1/B2 re-verified; new process ask 6231181467 (landing-prep push with asks open); heartbeat."
+  "note": "MLV-App #470 r4 829db5c9 not-merge-ready on gates only (legs 0/2, CI running); r3 I6-I8, N3, N4, P1 addressed; new nits N5-N7 and process P2, ask 6231352195; heartbeat."
 }
