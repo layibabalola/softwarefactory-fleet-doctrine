@@ -205,6 +205,96 @@ class PinRunner(_Fixture):
         p = self.run_pr("run", "echo", "--", "0", isolated=True)  # bus absent: unavailable, never the tampered copy
         self.assertEqual((p.returncode, "EVIL" in p.stdout), (3, False))
 
+class WorkingCopyFallback(_Fixture):
+    """Regression (Conjugal 2026-10-16): mid-merge, factory-pins.json held conflict markers; every PreToolUse hook
+    run through the runner refused (invalid JSON, exit 2), so every shell command was blocked -- including the
+    ones that resolve the conflict. `run` now judges with the pins committed at HEAD; never with no guard."""
+
+    def commit_pins(self):
+        self.pin_echo()
+        git(self.consumer, "add", "factory-pins")
+        git(self.consumer, "commit", "-qm", "pins")
+
+    def assert_fallback_runs(self, p):
+        self.assertEqual((p.returncode, "v1" in p.stdout), (0, True), p.stderr)
+        self.assertIn("FALLBACK", p.stderr)
+
+    def test_a_real_merge_conflict_in_the_pins_runs_with_heads_pins(self):
+        self.commit_pins()
+        base = git(self.consumer, "rev-parse", "--abbrev-ref", "HEAD")
+        git(self.consumer, "checkout", "-qb", "side")
+        pins = json.loads(self.pins.read_text(encoding="utf-8"))
+        pins["tools"]["echo"]["reason"] = "side"
+        self.pins.write_text(json.dumps(pins, indent=2), encoding="utf-8")
+        git(self.consumer, "commit", "-qam", "side")
+        git(self.consumer, "checkout", "-q", base)
+        pins["tools"]["echo"]["reason"] = "main"
+        self.pins.write_text(json.dumps(pins, indent=2), encoding="utf-8")
+        git(self.consumer, "commit", "-qam", "main")
+        m = subprocess.run(["git", "-C", str(self.consumer), "-c", "user.email=t@example.invalid", "-c", "user.name=t",
+                            "merge", "side"], capture_output=True, text=True)
+        self.assertNotEqual(m.returncode, 0)
+        self.assertIn(b"<<<<<<<", self.pins.read_bytes())
+        for iso in (False, True):
+            self.assert_fallback_runs(self.run_pr("run", "echo", "--", "0", isolated=iso))
+        # verify and status stay strict: they report on the working copy, they do not judge a command
+        self.assertEqual(self.run_pr("verify").returncode, 2)
+
+    def test_torn_json_runs_with_heads_pins(self):
+        self.commit_pins()
+        self.pins.write_bytes(self.pins.read_bytes()[:40])
+        self.assert_fallback_runs(self.run_pr("run", "echo", "--", "0", isolated=True))
+
+    def test_conflict_markers_in_a_linked_worktree_hook_environment(self):
+        self.commit_pins()
+        wt = self.consumer.parent / "wt"
+        git(self.consumer, "worktree", "add", "-q", "--detach", str(wt))
+        wpins = wt / "factory-pins" / "factory-pins.json"
+        wpins.write_bytes(b"<<<<<<< HEAD\n" + wpins.read_bytes() + b"\n=======\n{}\n>>>>>>> side\n")
+        env = {**os.environ, "FACTORY_PINS_CACHE": str(self.cache),
+               "GIT_DIR": git(wt, "rev-parse", "--absolute-git-dir")}
+        env.pop("FACTORY_BUS_CLONE", None)
+        # the main checkout's pins must not be what saves it: empty them so only wt's HEAD can name echo
+        self.pins.write_text(json.dumps({"schema": "factory-pins.v1", "tools": {}}), encoding="utf-8")
+        for iso in ([], ["-I"]):
+            p = subprocess.run([sys.executable, *iso, str(wt / "factory-pins" / "pin-runner.py"), "run", "echo", "--", "0"],
+                               capture_output=True, text=True, cwd=str(wt), env=env)
+            self.assert_fallback_runs(p)
+
+    def test_unusable_head_keeps_refusing(self):
+        marked = b"<<<<<<< HEAD\n{}\n=======\n{}\n>>>>>>> side\n"
+        self.pin_echo()
+        self.pins.write_bytes(marked)  # no commit at all: nothing reviewed to fall back to
+        p = self.run_pr("run", "echo", "--", "0")
+        self.assertEqual((p.returncode, "v1" in p.stdout), (2, False))
+        self.assertIn("no committed pins at HEAD", p.stderr)
+        git(self.consumer, "add", "factory-pins")
+        git(self.consumer, "commit", "-qm", "markers committed")  # HEAD itself carries the markers
+        for iso in (False, True):
+            p = self.run_pr("run", "echo", "--", "0", isolated=iso)
+            self.assertEqual((p.returncode, "v1" in p.stdout), (2, False), p.stderr)
+            self.assertIn("unusable too", p.stderr)
+        self.pins.write_text('{"schema": "factory-pins.v1", "tools": {"echo": {"path": "../x"}}}', encoding="utf-8")
+        git(self.consumer, "commit", "-qam", "schema-invalid at HEAD")
+        self.pins.write_bytes(marked)
+        self.assertEqual(self.run_pr("run", "echo", "--", "0").returncode, 2)
+
+    def test_parseable_but_invalid_pins_never_fall_back(self):
+        self.commit_pins()
+        self.pins.write_text('{"schema": "factory-pins.v1", "tools": {}}', encoding="utf-8")  # a pin decision, not a torn file
+        p = self.run_pr("run", "echo", "--", "0")
+        self.assertEqual((p.returncode, "FALLBACK" in p.stderr), (2, False))
+        self.pins.write_text('{"schema": "factory-pins.v1", "tools": {"echo": {"path": "../x"}}}', encoding="utf-8")
+        self.assertEqual(self.run_pr("run", "echo").returncode, 2)
+
+    def test_pins_ref_never_falls_back(self):
+        self.commit_pins()
+        self.pins.write_bytes(b"<<<<<<< HEAD\n{}\n=======\n{}\n>>>>>>> side\n")
+        git(self.consumer, "commit", "-qam", "markers at HEAD")
+        p = self.run_pr("--pins-ref", "HEAD", "run", "echo", "--", "0")
+        self.assertEqual((p.returncode, "v1" in p.stdout), (2, False))
+
+
 MAIN_G = (b"import importlib.util, sys\nfrom pathlib import Path\n"
           b"s = importlib.util.spec_from_file_location('sib', Path(__file__).with_name('sib.py'))\n"
           b"m = importlib.util.module_from_spec(s); s.loader.exec_module(m)\n"

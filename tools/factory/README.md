@@ -8,11 +8,11 @@ is how it falls. One implementation lives here; a project supplies only **data**
 
 | file | what |
 |---|---|
-| [`pin-runner.py`](pin-runner.py) | the one generic runner: `install`, `list`, `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args` |
+| [`pin-runner.py`](pin-runner.py) | the one generic runner: `install`, `list`, `pin`, `adopt-runner`, `verify`, `status`, `run <tool> -- args`. `run` judges with the pins committed at HEAD (stderr `FALLBACK`) when the working copy is not JSON or carries merge-conflict markers, so a conflicted pins file cannot block the commands that resolve it; an unusable HEAD copy still refuses |
 | [`bootstrap.sh`](bootstrap.sh), [`bootstrap.ps1`](bootstrap.ps1) | write the reviewed runner blob, prove `git hash-object` equals git's tree entry, only then run `install` (refuse otherwise) |
 | [`registry.json`](registry.json) | tool name to bus path, interpreter and purpose: what `install` and `list` resolve (add a tool here in the commit that adds it) |
 | [`check-doc-size.py`](check-doc-size.py) | markdown size budgets; every tier, glob, exemption, scan mode and unit from `--config` |
-| [`session-start-auth.py`](session-start-auth.py) | SessionStart hook: runs the project's CLI auth/parity checker, surfaces the verdict, always exits 0, never re-auths (`--checker`, `--repair-hint`, `--live`) |
+| [`session-start-auth.py`](session-start-auth.py) | SessionStart hook: runs the project's CLI auth/parity checker, surfaces the verdict, always exits 0, never re-auths, then self-tests every Bash/PowerShell PreToolUse guard in `.claude/settings.json` against a must-refuse fixture and reports any that fail open (`--checker`, `--repair-hint`, `--live`, `--config` for fixtures/green text/settings path, `--no-guard-self-test`) |
 | [`fixtures/check-doc-size/`](fixtures/check-doc-size/) | the three projects' tier tables as configs (test fixtures and adoption starting points) |
 | [`check-evidence-dumps.py`](check-evidence-dumps.py) | refuses committed raw evidence; an evidence dir is `SHA256SUMS` + `EVIDENCE-REF` naming the ref that holds the bytes (verified when local) |
 | [`fixtures/check-evidence-dumps/`](fixtures/check-evidence-dumps/) | Cloudvore and Conjugal start configs |

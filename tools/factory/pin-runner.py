@@ -91,6 +91,7 @@ REGISTRY_BUS_PATH = "tools/factory/registry.json"
 REGISTRY_SCHEMA = "factory-registry.v1"
 REGISTRY_KEYS = {"path", "interpreter", "purpose"}
 MAX_PINS_BYTES, MAX_TOOL_BYTES = 256 * 1024, 4 * 1024 * 1024
+CONFLICT = re.compile(rb"^(?:<{7}|={7}|>{7}|\|{7})(?:[ \t]|\r?$)", re.M)
 
 
 class Refused(Exception):
@@ -99,6 +100,11 @@ class Refused(Exception):
 
 class Unavailable(Exception):
     pass
+
+
+class Unparseable(Refused):
+    """The pins bytes are not JSON at all (or carry merge-conflict markers): a broken working copy,
+    not a pin decision. `run` may then judge with the committed pins (see run_pins)."""
 
 
 def blob_id(data: bytes) -> str:
@@ -153,11 +159,13 @@ def load_pins(path: Path, raw: bytes | None = None) -> dict[str, Any]:
             raise Refused(f"pins unreadable at {path}") from None
     if len(raw) > MAX_PINS_BYTES:
         raise Refused("pins: over size cap")
+    if CONFLICT.search(raw):
+        raise Unparseable("pins: merge-conflict markers")
     try:
         pins = json.loads(raw.decode("utf-8-sig"), object_pairs_hook=_no_dupes,
                           parse_constant=lambda c: (_ for _ in ()).throw(Refused("pins: non-finite number")))
     except (UnicodeError, json.JSONDecodeError) as exc:
-        raise Refused(f"pins: invalid JSON ({exc.__class__.__name__})") from exc
+        raise Unparseable(f"pins: invalid JSON ({exc.__class__.__name__})") from exc
     if not isinstance(pins, dict) or pins.get("schema") != SCHEMA:
         raise Refused(f"pins: schema must be {SCHEMA!r}")
     tools = pins.get("tools")
@@ -359,7 +367,7 @@ def cmd_run(args: argparse.Namespace, rest: list[str]) -> int:
     name, tool_args = rest[0], rest[1:]
     if tool_args[:1] == ["--"]:
         tool_args = tool_args[1:]
-    pins = load_pins(pins_path(args), read_pins_ref(args))
+    pins = run_pins(args)
     t = tool_pin(pins, name)
     data = tool_bytes(args, pins, name, t)
     # A group (`with`) loads its members by file name beside itself, so it never runs in-process: there its
@@ -398,6 +406,37 @@ def read_pins_ref(args: argparse.Namespace) -> bytes | None:
     if p.returncode != 0:
         raise Refused(f"cannot read {args.pins_ref}:{rel} (git fetch origin)")
     return p.stdout
+
+
+def run_pins(args: argparse.Namespace) -> dict[str, Any]:
+    """The pins `run` judges with. A working copy that is not JSON at all -- conflict markers mid-merge, a
+    torn write -- would otherwise refuse every hook-guarded command, including the ones that resolve it.
+    Then, and only then, the pins COMMITTED at HEAD are used (already-reviewed bytes, so Law 1 is not
+    weakened), with a notice on stderr. Never "no guard": an unusable HEAD copy keeps the refusal.
+    The index is not consulted: mid-merge the conflicted path has no stage 0 and stage 2 is HEAD's blob,
+    and an uncommitted stage-0 copy is no more reviewed than the working copy that just failed.
+    --pins-ref (pre-push) never falls back: it names its ref explicitly."""
+    ref = read_pins_ref(args)
+    pfile = pins_path(args)
+    try:
+        return load_pins(pfile, ref)
+    except Unparseable as exc:
+        if ref is not None:
+            raise
+        why = str(exc)
+    try:
+        p = git(pfile.parent, "show", f"HEAD:./{pfile.name}", timeout=10)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise Refused(f"{why}; HEAD's committed pins unreadable ({exc.__class__.__name__})") from None
+    if p.returncode != 0:
+        raise Refused(f"{why}; no committed pins at HEAD to fall back to")
+    try:
+        pins = load_pins(pfile, p.stdout)
+    except Refused as exc:
+        raise Refused(f"{why}; HEAD's committed pins are unusable too ({exc})") from None
+    print(f"[factory-pins] FALLBACK: {pfile} is unusable ({why}); judging with the pins committed at HEAD. "
+          f"Resolve the working copy.", file=sys.stderr)
+    return pins
 
 
 def resolve_commit(bus: Path, ref: str) -> str:
