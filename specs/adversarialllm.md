@@ -7,6 +7,11 @@
 > this landing, and its exact provenance commits are cited below where they carry a still-binding
 > posture — this entry is simply the new live copy.
 
+KERNEL: DOGFOOD-PENDING fleet-factory-kernel r5 · profile code@r9 · instance factory/doctrine/kernel-2026-09-29/AdversarialLLM.md · ratifies: a D2 pull request with one review leg per family (factory/RESET-PLAN.md operative amendment point 8) · since 2026-09-29
+
+(First kernel filing, staged at that repository path for bus `adjudications/factory-kernel/AdversarialLLM.md`; pending, not
+adopted, because the operating contract is high-risk class and no subject has yet run end-to-end under the kernel.)
+
 ## What this project is
 
 A Chrome MV3 extension (WXT + React + TypeScript) that sends one prompt to seven AI chat UIs (ChatGPT,
