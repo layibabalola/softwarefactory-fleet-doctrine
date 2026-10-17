@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 4740ff94f8601bee0a0d0e22611e19b8f4162f05
+source_commit: d7883b293929747eb6e8e85307b75cf08647a52e
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -295,7 +295,12 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   document, which the hook enforces (§4).
 - **Two keys, derived from the author, never the lane** (§2): key 1 from the family opposite the author, key 2
   an Anthropic model that is not the author's; both run every round into one finding list; a permissive key
-  never overrides an unrefuted BLOCKER. **Where the rules give a card's approach review and a round's key 1 the
+  never overrides an unrefuted BLOCKER. **Opus never authors a reviewed subject, so an Opus-written subject a
+  router hands over as card-ready is never keyed** (§2): no ruling can name it a key 2, since fleet RULINGS R1
+  makes Opus the floor for a review act and Fable is never a key-2 tier; the cop opens its card as any
+  implementation card at the approach phase under an executor seat, that branch is prior art only, and the
+  subject the keys read is the executor's own commit.
+  **Where the rules give a card's approach review and a round's key 1 the
   SAME model, the key is briefed on what that model already asserted** (§2; docs/13 P-COP Step 2 points at it):
   the pair is derived from the rules at launch, never listed; both keys' briefs carry every approach-review
   finding the approach records as ADOPTED, and key 1 is told its own model asserted them and re-derives each at

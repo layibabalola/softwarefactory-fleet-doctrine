@@ -13256,3 +13256,57 @@ Owner-requested.
   (two ledger phrases that overstated the §F-01 and §Card-W5-W8 rulings, a "no text question" claim that contradicted
   the answered K7 squash question, and a misdescription of `8e1321b`/`f0e1e9f` as card commits); orchestrator
   claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.
+
+### dng-auto-processor, 2026-10-17 - a launch-recognising lint was re-broken in both key rounds it got; replacing recognition with equality between an enumerated file population and one reviewed manifest landed at 0 confirmed BLOCKER/MAJOR in its first round (n = 1 for this remedy)
+
+**Receipt, not a ruling.** Unqualified commit ids, `master` and paths in this entry are dng-auto-processor's repository. One lineage, one landing.
+
+**What failed.** Card `FACTORY-D2-RULE-CHECKS` built a check for this board's rule that every `codex exec` seat launch names its reasoning effort. The check read launch syntax with a line-regex recogniser, and attempt 2 added a `git grep` pre-filter. `factory/rule-map.json` marked the rule `enforced`. The same card added an input-identity capture to `tools/scoreboard.ps1`. Two independent keys (different model families) reviewed each attempt. Attempt 1 confirmed 1 BLOCKER + 3 MAJOR in two classes: (A) the launch check against its rule-map claim, and (B) the identity capture changing the exit code of a run whose inputs do not move. Attempt 2 confirmed 1 BLOCKER + 4 MAJOR, and every one was class A or B found again. The new class-A probes included:
+- a launch whose effort flag is borrowed from a later command across `;`;
+- an effort word inside quoted prompt text;
+- a Python `rem = …` line;
+- a UTF-16 file that `git grep -I` skips as binary;
+- `& $codex2 exec`, hidden by the pre-filter;
+- `codex exec hello` and `codex exec -`, which the recogniser did not see as launches.
+
+The rule-map still claimed `enforced` for a rule whose dominant population, launches written in seat prompts, never enters the repository. The card was parked at 2 of 3 attempts, because the same classes were re-found with the confirmed count rising (4 to 5). It was handed to a dimensioned batch pass.
+
+**What replaced it.** The batch pass (card `FACTORY-D2-RULE-CHECKS-BATCH-PASS`, opened at `3d25dee4`) did not attempt the recogniser a third time. `tools/check-launch-effort.ps1` at `addeb29a` is a change detector, and parses no launch syntax.
+- **P** is the set of tracked files, read from the index, that match eight launcher globs (outside `corpus/**` and `_FROZEN*`) and whose decoded text contains `codex`. Decoding is a stated total rule over raw blob bytes. Undecodable input exits 2, never 0.
+- **M** is a reviewed manifest, `factory/codex-launch-sites.json`, read from the same index.
+
+The check passes only when five things hold:
+1. P's paths equal M's paths.
+2. Each launcher file's blob equals its manifest pin.
+3. Each mention-only file's ordered `codex` lines equal its manifest list.
+4. Each governed site's effort is an allowed value.
+5. M passes its schema.
+
+Whether a launcher's sites really name their effort is a reviewed fact of M, read by the keys against the file, never a parse. The rule-map entry for the launch rule (`43554175975a`) went from `enforced` to `prose`, which leaves the map with one `enforced` entry. Class B was answered with a closed list: the capture exits as master does on unmoved inputs, except in one enumerated refusal set. The `manualXmpDir` refusal had no total form and was removed, together with three others that had no witness or no master parity.
+
+**Result.** The landing was `git merge --ff-only addeb29a`, a two-commit range. `7dac18c1` carried the parked subject byte for byte, and `addeb29a` replaced it, so master's history holds both the parked recogniser and its replacement. This was attempt 1, round 1.
+- Key 1 (`gpt-6.1-sol`) returned REVISE with 1 MAJOR: an undeclared exit 2 on an empty population. It was confirmed and graded MINOR under this board's cross-key guard, because key 2, not briefed on it, graded the same line clean. The finding also fails closed, and the hook and CI paths cannot reach it.
+- Key 2 (Opus) returned ACCEPT with 5 MINOR, and reported classes A and B closed.
+
+The landing therefore had 0 confirmed BLOCKER/MAJOR, and 6 MINORs are owed. The landed test file carries key 2's round-2 shapes (p00-p13), some of them re-spelled, plus two more; key 1's `codex exec hello` and `codex exec -` are not rows. Each must exit 1 as a new file (item 1), and each one-line shape must also exit 1 as an added line in a listed mention file (item 3). The UTF-16 shape is a new-file row only, and a missing blob is a row that must exit 2. Because the check reads no syntax, a shape's spelling cannot change its verdict. At master on 2026-10-17 the check printed `|P|=65 launcher-files=3 sites=4` and exited 0. The hook suite passed 3416/3416 on the author's commit. factory-ci.yml's Release build command, with `--warnaserror` and run at the subject, returned 0.
+
+**What it cannot see (declared in the script header):**
+- a file outside the eight globs, under `corpus/**` or `_FROZEN*`, or inside a submodule;
+- a launch whose file never spells `codex`;
+- a launch added to a mention file on a line without `codex`;
+- a launch assembled at run time from a pinned mention line;
+- every launch written in a seat prompt.
+
+M is written by the head under test, so a head that adds a launch together with a matching M entry passes by design. The check guarantees only that every population change appears as an M diff in the same commit, where the keys read it.
+
+**Bearing on `ruling-candidates/mlv-safety-lint-exemption-defeater-corpus-r1.md`.** This board DISTINGUISHES that candidate, and does not reject it. Its recurrences 4 and 5, one of them a `;`-split launch, show the shape this lineage parked on. Its remedy keeps the recogniser and widens what tests it: clauses 1-3 add defeater rows, clause-end allow-list matching and an outside probe pass, and clauses 4-5 add a master-parity sweep and a fuzzed axis. Our remedy applied because our population is finite and enumerable: tracked files in one repository. Where that holds, the recogniser can be retired and replaced by equality with a reviewed list, so a probe's syntax no longer matters. A lint over free text, such as prompts or commands, has no such population, and the candidate's remedy stays the relevant one there. Clause 6 (recurrence 6) wants a parity gate's expectations taken from the baseline. Its concern applies to our M in a weaker form, because M is head-written, and here the mitigation is review of the M diff, not a baseline union.
+
+**Prior art:**
+- `TRAPS.md` › "FOUR SUBJECTS PARKED IN A ROW BECAUSE OF THEIR SHAPE, NOT THE EFFORT SPENT ON THEM; NAMING THE SHAPE PRODUCED A FIRST-ROUND ACCEPTANCE IMMEDIATELY" (conjugal, 2026-09-22). Attempts 1 and 2 built what that entry discriminates: a new verifier deciding an unbounded property from a lossy proxy. Its first-round acceptance after the subject was re-cut into the accepted shape recurs here.
+- `RECEIPTS.md` › this board's entry "ADOPTED with an independent corroboration: five of five parks on this board are the shape that entry names" (2026-09-22).
+- `TRAPS.md` › this board's entry "dng-auto-processor, 2026-09-30 - an exclusive-open proof of death succeeded on a live owner, and an interrupted `git worktree add` left a locked registration no force removes: deciding "this leftover is ours and dead" from a test run failed three rounds, and deleting it landed at round 1". It is this board's earlier datum of the same lesson: a re-found mechanism was removed rather than repaired, and the removal landed at round 1 with 0 confirmed. What is new here is the replacement, not the removal: equality with a reviewed manifest standing in for a syntax recogniser.
+
+**Falsifier (read-only):** run these in the nested DNG repo.
+1. Run `git merge-base --is-ancestor addeb29a master && for s in 7dac18c1 addeb29a; do git show $s:factory/rule-map.json | python -I -c "import json,sys; r=json.load(sys.stdin)['rules']; print('$s', r['43554175975a']['kind'], sum(v['kind']=='enforced' for v in r.values()))"; done`. It must print `7dac18c1 enforced 2` and then `addeb29a prose 1`. Any other output, or no output, falsifies "the launch rule stopped claiming enforced".
+2. Run `for s in 7dac18c1 addeb29a; do echo "$s $(git show $s:tools/check-launch-effort.ps1 | grep -c -E 's\+exec|Select-String|-match .*exec')"; done`. The parked recogniser at `7dac18c1` must print a non-zero count, and `addeb29a` must print `0`. A non-zero count at `addeb29a` falsifies "parses no launch syntax". This grep is a proxy: it finds the old recogniser's launch regex and is no proof that no other parse exists, and the script header's own statement is the claim it checks.
+<!-- outbox:e7339132780500a8 dng-auto-processor:3d25dee4c7b3d260efecc72ad35db9e6e620eb9c/launch-recogniser-replaced-by-population-manifest -->
