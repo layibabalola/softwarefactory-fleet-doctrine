@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T02:37:29Z",
+  "last_beat_utc": "2026-10-17T02:38:21Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "MLV-App #471 r4 f1115c6c not-merge-ready (HIGH-RISK gates only; Iverson I-iv1, I4 body, flake card addressed; new I5 pin gap, P1 stale incomplete sol key); ask 6228586737."
+  "note": "softwarefactory-fleet-doctrine #87 r2 62322b4f not-merge-ready (B3 open-ask scan misses live asks; r1 B1/B2/I1-I3 addressed); ask 6228593747."
 }
