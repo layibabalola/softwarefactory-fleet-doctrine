@@ -23,7 +23,7 @@
     }
   },
   "census": {
-    "baseCommit": "da3e22dce07b06f1aa519ad66026dcf755948aef",
+    "baseCommit": "89d576bebc80d097769f32b949aa5564339a4e7f",
     "projectSpecGlob": "specs/*.md",
     "nonProjectSpecs": [
       "specs/account-rotation-and-project-continuity.md",
@@ -89,8 +89,8 @@
       "specPath": "specs/adobe-ingester.md",
       "status": "STALE",
       "evidence": {
-        "commit": "73294515fae8011ca468361a31bd281384888835",
-        "gitBlobOid": "b936a297a5748791e0e35c15a566583399b9d3d5",
+        "commit": "16ef646cbe9f70020255cfea430a7fefbe088ba1",
+        "gitBlobOid": "5ec77821b29f1a329ab599e9d09e2d2a2867cc12",
         "disposition": {
           "status": "DISTINGUISH",
           "subjectCommit": "874605e43531c9aa230ee16851f8107a8e0d9cec"
