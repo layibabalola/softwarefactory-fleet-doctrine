@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:29:52Z",
+  "last_beat_utc": "2026-10-17T03:32:10Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "mlv-app #468 r9 b0fed9eb not-merge-ready (gates only; r7 I1/I2/soft note and r8 body-digest note addressed, verified); soft notes stale fixture pair and commented-out call, nits unreachable refusal and test name; ask 6229052441."
+  "note": "adobe-ingester #3 r3 873bce13 not-merge-ready (self-review); r1 B1/I1/I2/N1/N2 addressed; new B1 quoted no-reply phrase drops asks, B2 CLOSED+CoS-ASK in one body drops the ask (same script in doctrine #87, agent-bridge #240, AdvLLM #277, CUS #109); I1 legacy re-surfacing, I2 closed-PR order; ask adci-3-r3 (6229072642)."
 }
