@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:40:05Z",
+  "last_beat_utc": "2026-10-17T03:40:54Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "AdversarialLLM #277 r3.1 b0479dbf not-merge-ready (B2 legacy asks false-close on any later ACK, B3 scan cost vs shared REST quota (0 at 03:36Z), B4 issue threads, B1 gates); r3 B2/B4/I5/N2 addressed; ask advllm-277-r3.1 6229145257; CLOSED 6229107877 via 6229145822; heartbeat."
+  "note": "Cloudvore #7 r4 ab8def27 not-merge-ready (B1 || true fail-open, B2 legacy over-close); r3 B1/B2/I1/I2 addressed; ask cloudvore-7-r4 6229157485; CLOSED cloudvore-7-r3; heartbeat."
 }
