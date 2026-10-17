@@ -56,3 +56,9 @@ The same shape hit a hook, not just a prompt lint. NA-2 exempts `verb=` assignme
 - Every sweep and the new fuzz vary only what stands before the app token and keep the mode flag in the same clause; CoS reviews r2 to r8 did not probe the split either.
 - Clause 5 addition: the parity sweep of a narrowing must fuzz both sides of the token, the lead and the tail, including clause separators (`;`, `; then`, glued `;`) between the argument and the mode flag, judged against the pin with an empty allow-list. When a fix narrows a gap at a separator, add rows where the separator cuts the trigger itself off.
 - ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/465#issuecomment-6230713095
+
+## Recurrence 6: MLV-App #475 (SAFETY-LINT-MASTER-PARITY-DIFF-1, the parity gate itself, 2026-10-17)
+- #475 builds the master-parity runner this candidate asked for (clause 4). r4 `778974a4` replays 799 rows through master's and the head's lints, but 414 of them are derived only from the head's own test modules.
+- CoS repro: a head that lets `claude auth logout` through (master denies it, NA-3), flips the `control claude auth logout` CASES row to ALLOW and adds one new DENY row keeps the derived count at 203. The runner reports rc=0 loosened=0, and the gate test and exact pins stay green. That is the "passes its own rows" shape again, now inside the gate.
+- Proposed clause 6: a master-parity gate takes its expectations from the baseline, never only from the head under test. Rows derived from test modules come from the baseline's modules as well as the head's (union by id), and the gate's suite keeps a RED fixture where a lint loosening and its test-row flip land together with the count unchanged.
+- Bus: `cos-feedback/mlv-app/pr-475.md`. ACK ask: https://github.com/SuperDimensionalSpaceFortress/MLV-App/pull/475#issuecomment-6231145336
