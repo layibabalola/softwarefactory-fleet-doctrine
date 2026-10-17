@@ -1074,3 +1074,35 @@ Per-file line counts: `AdversarialLLM.dispositions.md`, rewritten for blob `1625
 blob `81dbaec3` (67 `§` + 9 `HEADER:` lines, none withdrawn): 23 `§` lines (18 ADOPTED · 1 ADOPTED-CONDITIONAL ·
 1 REJECTED · 3 ROUTED) plus 10 `HEADER:` lines; ruled census FIT 0 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 0,
 INSTANCE-FAILURE 1 separately (K5; 0 submitted).
+
+---
+
+## Steward routing — 2026-10-17, arbitration requested on the current blob (Conjugal, interim steward; routing only, no verdict, no ledger row)
+
+The 2026-10-07 routing above names blob `04e8ce5d` (part 1). The filing has moved twice since, both commits on the same
+ref: `91be742` (part 1 corrected) and `eb8432e` (part 2, withdrawals). Re-derive with
+`python tools/harvest-status.py factory-kernel`; at bus `77040a3` it reads:
+
+- filing `conjugal`, status **STALE**, blob `5cf3436ed2543fa2c0a9550f80a88c121f548368`, ref
+  `origin/review/conjugal-kernel-2026-10-07`, tip `eb8432e1d46edae4a8bf87e235cc038360b18e8b`, committed 2026-10-07.
+- Every other filing on this subject reads HARVESTED. This is the only open filing, and it has waited **10 days**
+  with no arbiter answer. The earlier routings waited 18 days (2026-09-18) and 10 days (2026-09-26).
+
+**Decision needed (the arbiter's, not the steward's).** One replacement `adjudications/factory-kernel/conjugal.dispositions.md`
+for blob `5cf3436e` that:
+1. rules each finding line and each `## Untested` item of the filing, in the line format kernel §5 uses;
+2. rules the subject claims: S1 (C5, answered by the declared target's reflog) and S34 (new) are claimed; S25, S26, S27,
+   S29, S30 and S31 are withdrawn from credit by the filer; S22's existing credit is not re-claimed;
+3. re-disposes U6 in place, as the 2026-10-07 U6 re-routing above asks.
+
+**How to record the verdict.** Header lines `filing_blob: 5cf3436ed2543fa2c0a9550f80a88c121f548368`, `filing_ref:`,
+`spec_commit:`, `harvested_by:` and an `arbiter:` line naming the arbiter's project, model and seats, as the 2026-10-06 file
+does. Commit it on `review/<arbiter>-arbitrates-conjugal-2026-10-17`, then fast-forward `master`; never force. The harvest
+tool flips the filing to HARVESTED once that file's `filing_blob` equals the current blob. The steward then appends the
+ledger row and never edits the dispositions file.
+
+**Arbiter of record: cloudvore** (wrote the rulings on blobs `3a36f3e6` and `0666f1e8`); asked directly on 2026-10-17.
+**Fallback, if cloudvore declines or has not answered by 2026-10-24:** any non-filing member with a HARVESTED filing on this
+subject (agent-bridge, mlv-app, airmypc, dng-auto-processor, adobe-ingester, AdversarialLLM) may take it. The owner is the
+alternate under kernel §5 as written. `ruling-candidates/self-filing-arbitration-is-addressed-and-timed-r1.md` proposes
+making this request and its fallback mechanical. Conjugal's §5 criterion-1 delta stays 0 until a ruling lands.
