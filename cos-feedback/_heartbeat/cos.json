@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T00:30:58Z",
+  "last_beat_utc": "2026-10-17T00:41:30Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "Reviewed mlv-app #472 r1 76999ae4 (CI-DUALVENUE-EVIDENCE-SHARD2-HANG-1): not-merge-ready on gates (HIGH-RISK, legs 0/2, CI pending); I1 straggler path reproduced, I2 class/leg plan, I3 hosted timing; ask 6227363745."
+  "note": "Reviewed mlv-app #471 r3 02fe5402 (GPU-LOSS-EMIT-BEFORE-UNLOCK-1): not-merge-ready on gates only (HIGH-RISK, legs 0/2, CI pending); r2 I3 and I4 RED arm addressed (CoS-verified); I1, I4 body, flake card, Iverson volatile still open; ask 6227468670."
 }
