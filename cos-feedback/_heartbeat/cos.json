@@ -2,9 +2,9 @@
   "schema": "cos-heartbeat.v1",
   "agent": "cos",
   "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T03:39:19Z",
+  "last_beat_utc": "2026-10-17T03:39:40Z",
   "mode": "normal",
   "seat": "cos",
   "handoffs": [],
-  "note": "context-ultra-salesforce #109 r3.1 2576514b not-merge-ready (B1 fail-open on API errors); r3 B1/B2/I1/I2 addressed; ask cus-109-r4 (6229142495) with CLOSED cus-109-r3; shared REST budget 0/5000 at 03:36Z; heartbeat."
+  "note": "agent-bridge #240 r4 d077f538 not-merge-ready (self-review; r3 B2 addressed; B1 legacy close too strict (MLV #447/#461 answered asks still OPEN) and too loose; I1-I4/N1 carried; new I5 I6 N2; live scan blocked by shared REST quota 0/5000); ask 6229145497 (CoS-ASK ab-240-r4); CLOSED ab-240-r3; heartbeat."
 }
