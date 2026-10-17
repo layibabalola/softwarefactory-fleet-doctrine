@@ -2892,3 +2892,30 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
 - **R16.5 — Health checks pin families, not ids.** A sentinel or actuation check that compares a receipt's model to a literal id must compare it to the wake's resolution record and family instead. Otherwise an upgrade breaks the check, and the check blocks the upgrade.
 - **Why (receipt, adobe-ingester).** On 2026-10-12, Adobe's Sol and Luna lanes ran `gpt-5.6-sol` / `gpt-5.6-luna`, 13 and 18 days after CLI-Currency first listed `gpt-6.1-sol` (2026-09-29) and `gpt-6-luna` (2026-09-24). An already-approved owner directive to fix it (Adobe 2026-09-26b) sat behind another work order the whole time, and Adobe's actuation check hard-coded the old ids (R16.5). Probes on 2026-10-12 with codex-cli 0.162.1 and Claude Code 2.1.296: `gpt-6.1-sol` high, `gpt-6-luna` high, `opus`/`sonnet` with `--effort high`, all accepted.
 - **Adoption.** Each board records its R16 state in its own spec (single writer). Adobe's state is in `specs/adobe-ingester.md` (MEASURED 2026-10-12, R16).
+
+## Appended by Chief of Staff (Grok Bot), 2026-10-14
+
+- CANDIDATES filed (not yet ruled): `ruling-candidates/review-key-publication-r1.md` (review-key verdicts
+  are mirrored to the PR as head-bound `[[pub:]]` JSON, and each PR declares its review class) and
+  `ruling-candidates/review-keys-required-status-r1.md` (`factory/review-keys` becomes a required commit status).
+  Spec: `docs/review-key-publication.md`. This grants no authority until hubs adopt it.
+- Amendment (same day, after advisory review): the candidates now pin publisher trust (only hub-identity pubs count,
+  and `factory/review-keys` is a GitHub Actions verifier check, required from that app). The latest round per seat
+  on the head is the effective verdict. The effective class is the stricter of computed and declared, so a PR
+  cannot downgrade itself. The owner ratifies, and hubs then adopt or distinguish.
+- Amendment 2 (same day, second advisory): this supersedes the "until hubs adopt it" wording above. The candidates gain authority only
+  when the owner ratifies them, and hubs then adopt or distinguish. The verifier runs only default-branch code (`pull_request_target`, never
+  `pull_request`). It posts its check with an explicit `head_sha` and reads trust anchors from the base branch. Edited pubs and lower-class
+  approvals don't count.
+- Amendment 3 (same day, CoS review of 8bfb3075): pubs carry a required `prev` (a per-seat hash chain), and the verifier keeps a per-seat
+  high-water mark in its check-run output, so deleting a pub fails closed. The ledger-hash comparison moves to the CoS spot-check, and the
+  verifier checks only what it can observe.
+- Amendment 4 (same day; owner decision "Allow either, App preferred"): the `factory/review-keys` anchor is a dedicated verifier GitHub App
+  (key in an environment restricted to the default branch; check and mark read-back pinned to its App id), or alternatively a ruleset required
+  workflow pinned by path and default-branch ref. Pinning to the plain GitHub Actions app is not sufficient. A pub deleted before any run fails closed
+  via `issue_comment.deleted`; runs queue and marks are monotonic. The hub recovers by re-posting the same id or with `supersedes_deleted`. A
+  non-default base fails closed. Stale code-owner approvals are dismissed on push.
+- Amendment 5 (same day): Amendment 4 supersedes Amendment 1's "required from that app" wording; the check is pinned to the anchor, never the
+  plain Actions app. In Amendment 2, "base branch" means the default branch. Deletion runs have no concurrency group, recomputes use `queue: max`,
+  and the mark is read as the union across every anchor run on the PR. The ruleset required-workflow alternative is an org or enterprise feature,
+  so personal `layibabalola/*` repos must use the verifier App.
