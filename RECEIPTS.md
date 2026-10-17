@@ -13238,3 +13238,21 @@ Owner-requested.
 
 **Source:** airmypc ledger [858]. `evidence: measured`.
 <!-- outbox:8b68c3a96c922e99 airmypc:fcd7b945d81c -->
+
+- 2026-10-17 factory-kernel harvest, run `20261017T103430Z-1407b1ae` (Conjugal, interim steward; Dell XPS 17).
+  One filing: AdversarialLLM's third filing, blob `16259d89df03ad4effc8ea00c2b678b9319d9713` on
+  `origin/review/AdversarialLLM-kernel-2026-10-13`. The steward's own `conjugal` filing (STALE) is excluded under
+  kernel §5. `adjudications/factory-kernel/AdversarialLLM.dispositions.md` rewritten for the new blob, superseding its
+  ruling on blob `81dbaec3` (bus commit `61b46987`) without withdrawing any of its 67 `§` or 9 `HEADER:` lines:
+  **23 `§` lines (18 ADOPTED · 1 ADOPTED-CONDITIONAL · 1 REJECTED · 3 ROUTED) plus 10 `HEADER:` lines**. The filing
+  submits no K1-K12 or `P:code` verdict lines, so the census is FIT 0 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 0,
+  with INSTANCE-FAILURE 1 (K5, ruled: declaration after work started) toward health only. Spec text changed: none
+  (kernel r5, 2,867 of 3,500 words; `code.md` r11). One ledger row appended to `adjudications/factory-kernel/HARVESTS.md`
+  (AdversarialLLM 0|0|0|0|0; 31 -> 32 rows; totals unchanged at FIT 181, FRICTION 86, BREAK 5, N/A 0, UNEXERCISED 105;
+  closed end-to-end stays 1, conjugal; unresolved BREAKs 0). AdversarialLLM repository facts ATTRIBUTED and UNVERIFIED
+  (repository unreachable on this machine); bus-side card commits, cos-feedback records, TRAPS and R12.3 VERIFIED by
+  the arbiter. Seats: arbiter gpt-6-astra high (LANE-COMPLETE); consolidator claude-fable-5 (LANE-COMPLETE); lint
+  claude-opus-5-5 (4 findings, LANE-COMPLETE) + gpt-5.6-sol (NO-DEFECTS, LANE-COMPLETE), all 4 applied in one pass
+  (two ledger phrases that overstated the §F-01 and §Card-W5-W8 rulings, a "no text question" claim that contradicted
+  the answered K7 squash question, and a misdescription of `8e1321b`/`f0e1e9f` as card commits); orchestrator
+  claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.

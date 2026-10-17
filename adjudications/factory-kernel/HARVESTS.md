@@ -1026,3 +1026,51 @@ blob `c9ce19d2` (45 `§` + 6 `HEADER:` lines, none withdrawn; only the §K5/§IF
 46 `§` lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 7 ROUTED) plus 10 `HEADER:` lines (8 ADOPTED ·
 0 REJECTED · 2 ROUTED); ruled census FIT 3 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 9, INSTANCE-FAILURE 8
 separately, as filed.
+
+## 2026-10-17 — harvest 20261017T103430Z-1407b1ae (AdversarialLLM third filing, blob 16259d89)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-17 | 20261017T103430Z-1407b1ae | AdversarialLLM | 16259d89df03ad4effc8ea00c2b678b9319d9713 | r5 (unchanged) | code@r10 as declared; bus code@r11 unchanged | 0 closed end-to-end; 1 examined lineage SLICE-1E-R/R2; late K5 declaration; window-opened-before-kernel=no | 0 | 0 | 0 | 0 | 0 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `python tools/kernel-e2e.py --json`. Before this row: `closed_end_to_end: 1`,
+`ledger_rows: 31`, `ledger_totals: FIT 181 · FRICTION 86 · BREAK 5 · N/A 0 · UNEXERCISED 105` (orchestrator's run at
+bus base `9b26e44f`). After it: 32 rows; totals unchanged at 181 FIT · 86 FRICTION · 5 BREAK · 0 N/A · 105 UNEXERCISED,
+because this row adds 0 to every verdict cell; closed end-to-end stays 1 (conjugal). The row adds 1 INSTANCE-FAILURE
+(K5, ruled by the arbiter; 0 INSTANCE-FAILURE lines submitted) to health only, never to ledger totals, and zero
+unresolved BREAKs. harvest-status before this run: 10 filings, open=2 (AdversarialLLM STALE, conjugal STALE).
+
+**§5 criterion 1 — projects with at least one closed end-to-end subject: 1 of the 5 the kernel requires** (conjugal
+only, on S22); this row contributes zero: SLICE-1E-R and its replacement SLICE-1E-R2 (#264 closed, #268 squash
+`136e8bec`) are one examined lineage whose K5 declaration (2026-10-11T19:07:12Z) came after work started (package
+commit 18:55:55Z, implementation start 18:46:46Z), so it is no qualifying subject. **§5 criterion 2 remains MET** under
+the 2026-09-17 ruling (`code`, `hardware-in-loop`, `measured-objective`). **§5 criterion 3 does not start:** no fresh
+end-to-end evidence meeting criterion 1. **Criterion 4 has never started.**
+**Members due — 1 project has NEVER filed:** `salesforce-tools`. Roster member `adversarialllm` has now filed three
+times as `AdversarialLLM`; F1 persists: `tools/kernel-e2e.py` matches names case-sensitively, so its verified filings
+are hidden and it is not a nonfiler; neither the tool nor the roster key was reconciled. Open filing left for another
+run: the steward's own `conjugal` filing reads STALE and is not adjudicated by the steward (kernel §5); it needs its
+separate authorised arbiter.
+
+**What this round changed: nothing in the spec.** Kernel r5 unchanged at 2,867 of 3,500 words (`6821c4c3`); `code.md`
+unchanged at r11 (`a31b27a7`); the subject is graded against its declared `code@r10`, and a corrected-shape re-filing
+against `code@r11` is owed. A single filing with 0 BREAK and 0 FRICTION, so no amendment basis arose; the K7 squash question is answered by existing
+text (agent-bridge §W8-a/§Request). Key rulings: K5 is
+INSTANCE-FAILURE for this window (declaration after work started; the replacement row and squash message do not cure
+it); K6 gets a narrow attributed answer (the Codex approval bound to `3a1ac9c6` is the distinct-class key, the Claude
+leg corroboration only, proving neither end-to-end credit nor every code-profile requirement); K7's tree-equal squash
+is ADOPTED-CONDITIONAL on a retained delivery witness that the authorized squash became the integration target's tip,
+reading agent-bridge §Request's two-parent predicate as sufficient for its merge form, not universal; the open F-01
+SHOULD is routed to AdversarialLLM's bound-contract bench (APPROVE waives no binding requirement); the R12.3 review floor is routed to
+AdversarialLLM's board authority (the steward sets no floor); the topbuilder user-level hook card is routed for runtime
+applicability; the agent-bridge W5-W8 line is REJECTED for its automatic delivery-failure reading (its no-master-push restriction
+and receipt-attribution stance are preserved; a keyed commit never becoming master tip does not alone fail tree-form
+delivery; §K7's witness and §W8-b apply). Filing-shape HEADER defects: no K1–K12 or `P:code`
+verdict lines (missing lines are not UNEXERCISED; card N-A is not kernel N/A), health not in §4's ordered-pair form
+(ruled `assurance=UNSATISFIED operability=UNEVALUABLE`), posture `POSTURE-NOT-R9-COMPUTED`. Bus facts (`8e1321b`,
+`f0e1e9f`, `cos-feedback/adversarialllm/*`, TRAPS 27901-27908, R12.3) are VERIFIED; AdversarialLLM repository, receipt,
+PR, model-execution and delivery facts remain ATTRIBUTED and UNVERIFIED (repository unreachable on this machine).
+Per-file line counts: `AdversarialLLM.dispositions.md`, rewritten for blob `16259d89` and superseding its ruling on
+blob `81dbaec3` (67 `§` + 9 `HEADER:` lines, none withdrawn): 23 `§` lines (18 ADOPTED · 1 ADOPTED-CONDITIONAL ·
+1 REJECTED · 3 ROUTED) plus 10 `HEADER:` lines; ruled census FIT 0 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 0,
+INSTANCE-FAILURE 1 separately (K5; 0 submitted).
