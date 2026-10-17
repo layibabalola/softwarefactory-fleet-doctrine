@@ -173,3 +173,14 @@ left on master (an append to `TRAPS.md` or `specs/<project>/cards.md`, a classif
 its refreshed tip passed in 16.0 s; `specs/conjugal.md` edit refused in 7.9 s and its refreshed tip passed in
 7.4 s; a new top-level spec refused `PROJECT_CLOSED_SET_MISMATCH` in 10 s. `"drift": []` in `--config` turns the
 checks off.
+
+**When a writer does not run the layer (added 2026-10-17).** Writers on other machines, the web UI and clones
+without the layer still push straight to master. On 2026-10-17 bus `16ef646c` (adobe-ingester fold addendum) left
+R26 intake and the adoption ledger red for 10.6 h before anyone looked. The
+[`Bus drift alarm`](../.github/workflows/bus-drift-alarm.yml) workflow runs after every master run of the three
+workflows that carry these checks, re-runs both checkers on the master tip via
+[`tools/bus-drift-alarm.py`](../tools/bus-drift-alarm.py), and keeps ONE issue titled
+`Bus master drift: a sealed-pin check is red` open while either fails. The issue names the first commit after the
+pin's last re-pin that changed a drifting path, its author, and the exact refresh text above (read from this hook,
+so the two cannot diverge). It closes itself when master is green. It never refreshes. Run it locally with
+`python tools/bus-drift-alarm.py`, which prints the same report and touches nothing.

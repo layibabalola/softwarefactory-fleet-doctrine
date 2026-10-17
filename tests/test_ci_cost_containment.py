@@ -20,6 +20,9 @@ MATRIX_EXEMPT = {
     "disposition-intake.yml",
     # A single trivial offline Node job; it declares no matrix at all.
     "doctrine-sync.yml",
+    # One ubuntu job after the drift-carrying workflows complete on master; it
+    # opens/closes the drift tracking issue and is an alarm, not evidence.
+    "bus-drift-alarm.yml",
 }
 
 MATRIX_RE = re.compile(
