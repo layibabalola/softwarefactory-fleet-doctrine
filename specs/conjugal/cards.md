@@ -326,3 +326,10 @@ mechanism: Measured 2026-10-18 on the shared laptop: one admission wrapped aroun
 check: run the machine ops self-test heavy-slot.overrun.test.py against heavy-slot.py (26 sandboxed checks: held field inside the parentheses, both production parsers still match, notice only past the threshold with a waiter, rc passed through); on the 2.1.0 copy it fails 7 and then aborts
 supersedes: none
 evidence: measured
+
+## conjugal/shared-host-protects-short-exclusive-work
+rule: On a shared host, the admission wrapper itself serves a short, predictable exclusive job ahead of shared work that has not yet waited long, and never lets a shared run take an empty machine from it; per-caller unit rules are necessary but are not relied on, because sessions type admissions ad hoc from briefs and no project contract treats that operational choice as a decision needing adversarial review.
+mechanism: Measured 2026-10-18: a builder subagent following a brief that allowed a whole suite per admission saw a starved exclusive job of the same benchmark agent at the head of the queue status 9 min before it wrapped a ~64-suite tier in one admission (the benchmark it then starved queued 10 min later); no swarm ran and no rule required one. When the machine emptied, oldest-first gave the tier 141 min; the benchmark then ran in 3 min. That agent's holds measured p90 2.7, max 7.7 min over 857 holds (689 benchmark legs: p90 2.8, max 7.7). heavy-slot 2.3.0 orders them ahead of shared tickets waiting under 60 min, reserves the empty machine for them, and turns the promotion off for good if one runs past 15 min.
+check: run the machine ops self-test heavy-slot.shortexcl.test.py against heavy-slot.py and its 2.2.0 copy (24 sandboxed checks incl. an end-to-end replay where the 2.2.0 copy gives the freed machine to the older shared run and 2.3.0 to the benchmark; 5 planted mutants killed by the author, 3 more by the reviewer; harness not shipped)
+supersedes: none
+evidence: measured
