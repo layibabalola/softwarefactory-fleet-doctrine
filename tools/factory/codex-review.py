@@ -66,7 +66,7 @@ would remove the prompt before codex reads it. An `--out` that is the `--prompt-
 opening `--out` truncates it, so codex would read an empty prompt (K122). The path is made absolute before codex sees
 it (codex runs with `-C <worktree>`), any stale file there is deleted BEFORE the
 run (a previous run's answer must not stand in for this one's), and after the
-run a missing or empty file is a failure: `"last_message_ok": false`, a line on
+run a missing, empty or whitespace-only file is a failure: `"last_message_ok": false`, a line on
 stderr, and a non-zero exit, whatever the tier and exit code say.
 K140 (K6 key round 1): the result also carries `last_message_sha256`, `sha256:<hex>` of the final-message file's
 bytes read after the run (null when there is no file). tools/kernel-receipt.py ties the result to the verdict by
@@ -95,11 +95,13 @@ that prints a copy of the measured line at the start of a line reads NOT RUN: a 
 A FAILED, UNANSWERED RUN IS A STOP, NEVER A RETRY (K178; bus K154 packet 2, key round 3)
 ---------------------------------------------------------------------------------------
 Whether the run was ANSWERED is read from structure only: the --last-message file exists, is not the --out file and
-is non-empty (codex writes it only from the agent's final message). Turn-marker lines in the human transcript
+is NON-BLANK (some character other than whitespace; codex writes it only from the agent's final message). Turn-marker lines in the human transcript
 (`thinking`, `codex`, `exec`) are never read for this: a command's output can print any of them.
 
 A run that exited non-zero AND was not answered is a credential stop: `credential_refusal` and `credential_kind` are
-both `unknown`, a CREDENTIAL STOP line goes to stderr, and the exit code stays 1. `unknown` means STOP AND ESCALATE to
+both `unknown` in the JSON and the exit code stays 1. Its stderr line is CREDENTIAL STOP, except when the transcript
+also shows the failed Windows sandbox: then stderr says NOT RUN instead (that check comes first), and the JSON still
+carries `sandbox_failure` and both `unknown` fields. `unknown` means STOP AND ESCALATE to
 the owner, never retry: a consumer project's wrapper must not re-run, re-authenticate or wait it out on its own.
 Why never classified here: a credential or quota refusal can be classified only from a TYPED source, codex's JSON
 event stream (`codex exec --json`: typed `error` / `turn.failed` events) or a stderr that carries nothing but codex's
@@ -483,7 +485,7 @@ def main(argv: list[str] | None = None) -> int:
               f"AND ESCALATE to the owner, never retry and never re-authenticate from a script", file=sys.stderr)
         return 1
     if not result["last_message_ok"]:
-        print(f"codex-review: no final message at {result['last_message']} (missing or empty)", file=sys.stderr)
+        print(f"codex-review: no final message at {result['last_message']} (missing, empty or whitespace only)", file=sys.stderr)
         return 1
     if result["tier"] != "ok":
         return 1

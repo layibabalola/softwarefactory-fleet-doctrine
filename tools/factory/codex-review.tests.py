@@ -811,6 +811,28 @@ class CodexReviewCliTests(unittest.TestCase):
         self.assertEqual(("unknown", "unknown"), (self._result(proc).get("credential_refusal"),
                                                   self._result(proc).get("credential_kind")))
 
+    def test_a_whitespace_only_final_message_is_not_an_answer(self):
+        """Bus key round 4, finding 5: ANSWERED means the final-message file is NON-BLANK (whitespace stripped), so a
+        file of spaces, tabs and newlines is unanswered: on a failed run, an unknown stop."""
+        proc = self._run_transcript([self.TOKEN_401], exit_code=1, no_tail=True, final="  \n\t \n", last="write")
+        result = self._result(proc)
+        self.assertFalse(result["last_message_ok"])
+        self.assertEqual(("unknown", "unknown"), (result.get("credential_refusal"), result.get("credential_kind")))
+        self.assertIn("codex-review: CREDENTIAL STOP (unknown)", proc.stderr)
+
+    def test_a_failed_unanswered_run_with_a_failed_sandbox_prints_not_run_and_carries_the_unknown_stop(self):
+        """Bus key round 4, finding 4: when the transcript also shows the failed Windows sandbox, stderr says NOT RUN
+        (not CREDENTIAL STOP; exit 1), and the JSON carries both the sandbox failure and the two unknown fields, so a
+        consumer reading the JSON still stops and escalates."""
+        proc = self._run_transcript(self.call(" exited 1 in 0ms:", self.LINE), exit_code=1, no_tail=True)
+        result = self._result(proc)
+        self.assertEqual(1, proc.returncode)
+        self.assertIn("codex-review: NOT RUN", proc.stderr)
+        self.assertNotIn("CREDENTIAL STOP", proc.stderr)
+        self.assertEqual((self.LINE, "not_run", False), (result["sandbox_failure"], result["tier"],
+                                                         result["last_message_ok"]))
+        self.assertEqual(("unknown", "unknown"), (result.get("credential_refusal"), result.get("credential_kind")))
+
     def test_a_run_that_exited_0_is_never_a_stop(self):
         """Exit 0 with no final message is the existing `no final message` failure, not a credential stop; exit 0
         with one is healthy, whatever its transcript says."""
