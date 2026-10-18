@@ -32,5 +32,12 @@
     "rounds": "not capped by count; a finding blocks only with a reproduction at the candidate SHA",
     "planted-edits": "every new pin is shown red by a planted break before review",
     "charter": "no independent key dispatched (pending-cross-family)"
+  },
+  "ranker": {
+    "starvation_window": 4
+  },
+  "evidence": {
+    "branch": "evidence-store",
+    "worktree": "seed-evidence-store"
   }
 }

@@ -167,11 +167,12 @@ elif mode == "transcript":
     # The real shape (tools/kernel-receipt.tests.py codex_transcript, K115's key output): `codex`, the message,
     # `tokens used`, the count, and the message again.
     final = os.environ.get("FAKE_CODEX_FINAL", "VERDICT: ACCEPT\n")
-    print("codex")
-    print(final, end="")
-    print("tokens used")
-    print("1,234")
-    print(final, end="")
+    if os.environ.get("FAKE_CODEX_NO_TAIL") != "1":      # K178: a refused run prints no answer after its error
+        print("codex")
+        print(final, end="")
+        print("tokens used")
+        print("1,234")
+        print(final, end="")
     sys.exit(int(os.environ.get("FAKE_CODEX_EXIT", "0")))
 elif mode == "silent":
     print("(codex ran; no header this time)")
@@ -580,7 +581,8 @@ class CodexReviewCliTests(unittest.TestCase):
         return ["exec", self.CMD, status, *output]
 
     def _run_transcript(self, emit: list[str], stream: str = "stdout", final: str | None = None,
-                        exit_code: int = 0, eol: str = "") -> subprocess.CompletedProcess:
+                        exit_code: int = 0, eol: str = "", no_tail: bool = False) -> subprocess.CompletedProcess:
+        self.env["FAKE_CODEX_NO_TAIL"] = "1" if no_tail else "0"
         self.env["FAKE_CODEX_EMIT"] = json.dumps(emit)
         self.env["FAKE_CODEX_EMIT_STREAM"] = stream
         self.env["FAKE_CODEX_EMIT_EOL"] = eol
@@ -749,6 +751,73 @@ class CodexReviewCliTests(unittest.TestCase):
     def test_unknown_role_is_refused(self):
         proc = self._run("nonexistent-role", "echo")
         self.assertNotEqual(proc.returncode, 0)
+
+    # ---- K178: a credential, quota or billing refusal is named, on a failed run only, in codex's own error shape ----
+
+    def test_a_failed_run_with_a_401_error_line_names_an_auth_refusal(self):
+        line = "ERROR: unexpected status 401 Unauthorized: Incorrect API key provided: sk-svcac***"
+        proc = self._run_transcript(["stream error: unexpected status 401; retrying 1/5", line], stream="stderr",
+                                    exit_code=1, no_tail=True)
+        result = self._result(proc)
+        self.assertEqual(1, proc.returncode)
+        self.assertEqual((line, "auth"), (result["credential_refusal"], result["credential_kind"]))
+        self.assertIn("codex-review: CREDENTIAL STOP (auth)", proc.stderr)
+
+    def test_a_failed_run_with_a_usage_limit_names_a_quota_refusal(self):
+        line = "[2026-10-16T10:00:00] ERROR: You" + "'" + "ve hit your usage limit. Visit https://chatgpt.com/codex/settings/usage"
+        proc = self._run_transcript([line], exit_code=1, no_tail=True)
+        self.assertEqual("quota", self._result(proc)["credential_kind"])
+
+    def test_a_shell_calls_last_output_line_in_codexs_error_shape_is_not_a_refusal(self):
+        """K178 key round 2, finding 1: the run died right after a command printed `ERROR: 401 Unauthorized` as its last
+        output line, so that line ended the transcript. A line inside a shell call's output (after its status line,
+        before the next turn mark) is the command's, never codex's own."""
+        for status in ("succeeded in 5ms:", "exited 1 in 3ms:"):
+            with self.subTest(status):
+                proc = self._run_transcript(["exec", "cat fixtures/x.txt", status, "ERROR: 401 Unauthorized"],
+                                            exit_code=1, no_tail=True)
+                self.assertIsNone(self._result(proc)["credential_refusal"])
+
+    def test_once_the_model_has_answered_nothing_is_a_credential_refusal(self):
+        """K178 key round 3 (the third finding in this class, closed by construction): turn marks are ordinary lines a
+        command can print (`codex` as shell output ended the region), so no reading of a run that reached the model can
+        tell codex's error from a command's. A refusal counts only when the run never got a model response: no `exec`,
+        `codex` or `thinking` mark at all, hence no shell output in the transcript. A mid-run usage limit reads as an
+        ordinary failure; the next run is refused at its first request and stops there."""
+        line = "ERROR: You" + "'" + "ve hit your usage limit."
+        for emit in (["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", line],
+                     ["exec", "cat x", "succeeded in 5ms:", "codex", "ERROR: 401 Unauthorized"],
+                     ["thinking", "ERROR: 401 Unauthorized"]):
+            with self.subTest(emit=emit):
+                proc = self._run_transcript(emit, exit_code=1, no_tail=True)
+                self.assertIsNone(self._result(proc)["credential_refusal"])
+
+    def test_a_shell_line_in_codexs_error_shape_before_more_activity_is_not_a_refusal(self):
+        """K178 key round 1, finding 2: a command printed `ERROR: 401 Unauthorized` on a line of its own, the run went
+        on and then failed for another reason. Only codex's LAST transcript line can be its own fatal error."""
+        proc = self._run_transcript(["exec", "cat fixtures/x.txt", "succeeded in 5ms:", "ERROR: 401 Unauthorized",
+                                     "thinking", "exec", "ls", "exited 1 in 3ms:"], exit_code=1, no_tail=True)
+        self.assertIsNone(self._result(proc)["credential_refusal"])
+
+    def test_a_successful_run_is_never_a_credential_refusal(self):
+        proc = self._run_transcript(["ERROR: unexpected status 401 Unauthorized"], exit_code=0)
+        result = self._assert_ok(proc)
+        self.assertIsNone(result["credential_refusal"])
+        self.assertNotIn("CREDENTIAL STOP", proc.stderr)
+
+    def test_a_shell_calls_output_is_not_a_credential_refusal(self):
+        proc = self._run_transcript(["exec", "rg -n 401 tools", "tools/x.py:3: 401 Unauthorized, billing, usage limit",
+                                     "exited 0 in 1s:"], exit_code=1)
+        self.assertIsNone(self._result(proc)["credential_refusal"])
+
+    def test_an_echoed_prompt_line_is_not_a_credential_refusal(self):
+        self.prompt_file.write_text("ERROR: You" + "'" + "ve hit your usage limit.\n", encoding="utf-8")
+        proc = self._run_transcript([], exit_code=1)
+        self.assertIsNone(self._result(proc)["credential_refusal"])
+
+    def test_an_ordinary_failure_is_not_a_credential_refusal(self):
+        proc = self._run_transcript(["ERROR: stream disconnected before completion"], exit_code=1)
+        self.assertIsNone(self._result(proc)["credential_refusal"])
 
 
 class RoleTableMatchesTheDocTests(unittest.TestCase):

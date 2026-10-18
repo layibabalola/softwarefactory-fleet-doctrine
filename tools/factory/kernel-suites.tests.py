@@ -2,7 +2,7 @@
 """Run the factory kernel's own suites on the bus.   python tools/factory/kernel-suites.tests.py [suite ...]
 
 kernel-subjects.tests.py, kernel-receipt.tests.py and codex-review.tests.py came from Cloudvore (origin/master
-31315b2, bus K154) unchanged. They load their tool beside themselves and the tool reads factory-config.json beside
+31315b2, bus K154; synced to c305770, bus K154 packet 2) unchanged. They load their tool beside themselves and the tool reads factory-config.json beside
 itself, so this harness stages each run in a private directory laid out as a project's tools/ directory: the three
 tools, the three suites, and fixtures/kernel/cloudvore.factory-config.json as factory-config.json.
 FACTORY_KERNEL_CONFIG is removed from the suites' environment (several suites copy a tool beside a config of their

@@ -1277,6 +1277,14 @@ class FactoryConfigTests(unittest.TestCase):
             ("a contract default missing", dict(mutate=_drop(["contract_defaults", "seats"])),
              "contract_defaults.seats"),
             ("another schema", dict(mutate=_put(["schema"], "factory-config/2")), "schema"),
+            # K151: the ranker's starvation window is a positive integer, never defaulted
+            ("no ranker", dict(mutate=_drop(["ranker"])), "has no ranker"),
+            ("no window", dict(mutate=_drop(["ranker", "starvation_window"])), "ranker.starvation_window"),
+            ("a zero window", dict(mutate=_put(["ranker", "starvation_window"], 0)), "ranker.starvation_window"),
+            ("a string window", dict(mutate=_put(["ranker", "starvation_window"], "4")), "ranker.starvation_window"),
+            ("a boolean window", dict(mutate=_put(["ranker", "starvation_window"], True)), "ranker.starvation_window"),
+            ("a float window", dict(mutate=_put(["ranker", "starvation_window"], 4.0)), "ranker.starvation_window"),
+            ("an unknown ranker key", dict(mutate=_put(["ranker", "window"], 4)), "unknown key ranker.window"),
             # K137 mutants (ledger, Mutants): each case below kills a loader break the cases above let through
             ("a boolean schema", dict(mutate=_put(["schema"], True)), "schema True"),
             ("an unknown top-level key", dict(mutate=_put(["extra"], 1)), "unknown key extra"),
@@ -1335,6 +1343,18 @@ class FactoryConfigTests(unittest.TestCase):
             ("one workflow for both bars", dict(mutate=_put(["bar", "product_workflow"], "tools-bar")),
              "bar.product_workflow"),
             ("a subject prefix not ASCII", dict(mutate=_put(["subject", "prefix"], "cl\u00f6udvore/")), "subject.prefix"),
+            # K179: the evidence store's branch and worktree are NAMES, checked as names
+            ("the evidence section missing", dict(mutate=_drop(["evidence"])), "has no evidence"),
+            ("an evidence branch with a slash", dict(mutate=_put(["evidence", "branch"], "claude/evidence")),
+             "evidence.branch"),
+            ("an evidence branch that is the delivery branch", dict(mutate=_put(["evidence", "branch"], "master")),
+             "evidence.branch"),
+            ("an evidence worktree that is a path", dict(mutate=_put(["evidence", "worktree"], "../store")),
+             "evidence.worktree"),
+            ("an evidence worktree with a separator", dict(mutate=_put(["evidence", "worktree"], "a/b")),
+             "evidence.worktree"),
+            ("an evidence key the store does not read", dict(mutate=_put(["evidence", "limit_bytes"], "16384")),
+             "unknown key evidence.limit_bytes"),
         )
         for why, kw, says in cases:
             with self.subTest(why):

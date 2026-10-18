@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "about": "K137: the project constants tools/kernel-subjects.py and tools/kernel-receipt.py read. A missing or malformed file is refused (exit 2), never defaulted. Every key is required and no other key is allowed. Paths are repository-relative with forward slashes; patterns are Python regular expressions.",
+  "about": "K137: the project constants tools/kernel-subjects.py and tools/kernel-receipt.py read; K151: tools/next.py reads subject.row, subject.default_products and ranker through the same loader. K179: tools/evidence-store.py reads evidence.branch and evidence.worktree, names only. A missing or malformed file is refused (exit 2), never defaulted. Every key is required and no other key is allowed. Paths are repository-relative with forward slashes; patterns are Python regular expressions.",
   "subject": {
     "prefix": "cloudvore/",
     "row": "[A-Z]+\\d+[A-Z]?",
@@ -32,5 +32,12 @@
     "rounds": "not capped by count; a finding blocks only with a reproduction at the candidate SHA (operating-contract-swarm-rules.md section 2)",
     "planted-edits": "every new pin is shown red by a planted break and mutants are executed before review (operating-contract-swarm-rules.md section 1, items 3 and 5)",
     "charter": "no independent key dispatched (pending-cross-family); a key's charter, execution or static review, is declared here before dispatch"
+  },
+  "ranker": {
+    "starvation_window": 4
+  },
+  "evidence": {
+    "branch": "evidence-store",
+    "worktree": "cloudvore-evidence-store"
   }
 }

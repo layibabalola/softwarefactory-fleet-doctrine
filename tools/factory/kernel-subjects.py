@@ -83,6 +83,11 @@ _STR, _DIRS, _REGEX, _DIR, _FILE, _RUNNER, _PREFIX = (
     "a nonempty string", "a nonempty list of distinct repository directories", "a regular expression",
     "a repository directory (relative, forward slashes, ending in /)", "a repository file (relative, forward slashes)",
     "a runner name", "an ASCII subject prefix ending in /")
+# K179: the evidence store's names. A branch name with no `/` (never a packet branch), and one path segment for the
+# store worktree, which tools/evidence-store.py places inside the repository's git common directory.
+_BRANCH, _NAME = "a branch name of [a-z0-9-] with no /", "one path segment of [A-Za-z0-9._-], not . or .."
+_BRANCH_FORM = re.compile(r"[a-z0-9][a-z0-9-]*")
+_NAME_FORM = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 # Review round 1 (seat A): a repository path is relative ASCII segments joined by `/`; no drive letter, no `.` or `..`
 # segment, no backslash, no space. A directory ends in `/`, a file does not.
 _PATH_FORM = re.compile(r"[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*/?")
@@ -102,7 +107,13 @@ _CONFIG_KEYS = {
     "bar": {"runner": _RUNNER, "hosted_runner": _REGEX, "tools_workflow": _STR, "product_workflow": _STR,
             "workflow_suffix": _STR},
     "contract_defaults": {k: _STR for k in CONTRACT_KEYS if k != "filter"},
+    "evidence": {"branch": _BRANCH, "worktree": _NAME},
 }
+
+# K151: tools/next.py's starvation window, the number of recent landings its two-way guard reads. A count that NAMES
+# how far back to look, never a value that decides credit. Its own block, so a later section merges beside it.
+_COUNT = "a positive integer"
+_CONFIG_KEYS["ranker"] = {"starvation_window": _COUNT}
 
 
 class ConfigError(ValueError):
@@ -209,6 +220,10 @@ def load_config(path: Path | None) -> dict:
     if not _HOSTED_FORM.fullmatch(hosted):
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which is not a literal prefix "
                           "followed by [0-9]+ (e.g. `GitHub Actions [0-9]+`)")
+    # K179: the store branch is never a delivery or packet branch (the subject's delivery names master)
+    branch = data["evidence"]["branch"]
+    if branch in ("master", "main") or branch in data["subject"]["delivery"].split():
+        raise ConfigError(f"the config {where} has evidence.branch {branch!r}, which is the delivery branch")
     if re.fullmatch(hosted, bar["runner"]):
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which matches bar.runner "
                           f"{bar['runner']!r}")
@@ -218,6 +233,10 @@ def load_config(path: Path | None) -> dict:
 def _check_value(where: str, name: str, value, kind: str) -> None:
     def bad() -> ConfigError:
         return ConfigError(f"the config {where} has {name} {value!r}, which is not {kind}")
+    if kind == _COUNT:                      # K151: an int, never a bool, a float or a string that looks like one
+        if type(value) is not int or value < 1:
+            raise bad()
+        return
     if kind == _DIRS:
         if not isinstance(value, list) or not value or len(set(map(str, value))) != len(value):
             raise bad()
@@ -240,6 +259,12 @@ def _check_value(where: str, name: str, value, kind: str) -> None:
             raise bad()
     elif kind == _RUNNER:
         if not re.fullmatch(RUNNER_WORDS, value):
+            raise bad()
+    elif kind == _BRANCH:
+        if not _BRANCH_FORM.fullmatch(value):
+            raise bad()
+    elif kind == _NAME:
+        if not _NAME_FORM.fullmatch(value):
             raise bad()
 
 

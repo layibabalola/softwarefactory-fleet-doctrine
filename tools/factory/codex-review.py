@@ -92,6 +92,17 @@ may exit non-zero in a healthy review (rg with no match), and a status-shaped li
 as one. Not caught: a failure that prints any other text, or this text after a prefix (no card shows one). A command
 that prints a copy of the measured line at the start of a line reads NOT RUN: a refused run, the safe side.
 
+A CREDENTIAL REFUSAL IS NAMED, NEVER RETRIED (K178)
+-------------------------------------------------
+On a FAILED run only (codex exit non-zero, or no final message), `credential_refusal` is the transcript's last line
+of a run that never got a model response (no `exec`, `codex` or `thinking` mark, so no shell output can be in it)
+when that line is in codex's own error shape
+(`ERROR: ...` or `stream error: ...`, optionally after a bracketed timestamp) that names a 401,
+an API key, a sign-in, a usage limit, a quota or billing, with the prompt block and the final-message blocks removed
+first (as for the sandbox line); `credential_kind` is `auth` or `quota`. A CREDENTIAL STOP line goes to stderr; the exit
+code is unchanged (1). It never makes a run pass. `tools/codex-key-admitted.ps1`, the only way a drain wake runs this
+tool, turns it into a standing stop: an `auth` stop until the owner re-authenticates, a `quota` stop for six hours.
+
 NEVER `-p`/`--profile`. A profile is a name that resolves against the config
 file this tool exists to route AROUND; passing one would silently reintroduce
 the exact ambient dependency being removed here.
@@ -256,6 +267,46 @@ def shell_calls(transcript: str, prompt: str = "", final_message: str = "") -> d
     return {"calls": calls, "succeeded": succeeded, "failed": failed, "failure": hit}
 
 
+# K178: what a Codex refusal on credentials, quota or billing prints. Matched only on a FAILED run (exit non-zero or no
+# final message), only on the transcript's LAST line, only in codex's own error shape (`ERROR: ...` or `stream error: ...`, optionally after a
+# bracketed timestamp), and only after the echoed prompt block and the final message blocks are removed (the same
+# removal as shell_calls). A shell call's output (a file that names "401 Unauthorized", a grep for "billing") is not in
+# that shape, and a review that merely discusses a refusal and succeeds is never classified. Measured: "You've hit your
+# usage limit. Visit https://chatgpt.com/codex/settings/usage ..." (~/.codex rollout error, 2026-08); "401 Unauthorized:
+# Incorrect API key provided" (2026-09-25). Two kinds: `auth` (the owner re-authenticates) and `quota` (a usage limit or
+# billing refusal, which passes with time or money). A hit names a stop; it never makes a run pass. Not caught: a refusal
+# printed in any other shape reads as an ordinary failure (the run still fails; nothing lands).
+CREDENTIAL_MARKERS: dict[str, tuple[str, ...]] = {
+    "auth": ("401 unauthorized", "status 401", "incorrect api key", "invalid api key", "invalid_api_key",
+             "sign in again", "log in again", "codex login", "refresh token"),
+    "quota": ("usage limit", "insufficient_quota", "quota exceeded", "exceeded your current quota", "billing"),
+}
+_ANSWER_MARKS = ("exec", "codex", "thinking")    # any of these means the model answered (and shell output may follow)
+_ERROR_LINE_RE = re.compile(r"(?:\[[^\]]*\]\s*)?(?:error|stream error):", re.I)
+
+
+def credential_refusal(transcript: str, prompt: str = "", final_message: str = "") -> tuple[str, str] | None:
+    """K178: (kind, line) when the run never got a model response and the transcript's LAST non-blank line (after
+    the prompt and final-message blocks are removed) is a codex error line naming a credential, quota or billing
+    refusal, else None. Call on a failed run only."""
+    lines = transcript.splitlines()
+    lines = _remove_blocks(lines, _block(prompt), 1, from_end=False)
+    lines = _remove_blocks(lines, _block(final_message), 2, from_end=True)
+    lines = [line.strip() for line in lines if line.strip()]
+    # Key rounds 1-3 (three findings in one class, closed by construction): a command's output is printed raw, and turn
+    # marks are ordinary lines a command can print, so no reading of a run that reached the model can tell codex's error
+    # from a command's. A refusal counts only when the run never got a model response: no `exec`, `codex` or `thinking`
+    # mark at all, hence no shell output in the transcript. A mid-run limit reads as an ordinary failure; the next run is
+    # refused at its first request and stops there.
+    if not lines or any(line.casefold() in _ANSWER_MARKS for line in lines) or not _ERROR_LINE_RE.match(lines[-1]):
+        return None
+    folded = lines[-1].casefold()
+    for kind, markers in CREDENTIAL_MARKERS.items():
+        if any(marker in folded for marker in markers):
+            return kind, lines[-1]
+    return None
+
+
 def _read(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8", errors="replace")
@@ -347,6 +398,8 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
             "last_message_sha256": None,
             "reviewed_head": head,
             "sandbox_failure": None,
+            "credential_refusal": None,
+            "credential_kind": None,
             "shell_calls": 0,
             "shell_succeeded": 0,
             "shell_failed": 0,
@@ -380,6 +433,11 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
     if failure is not None:
         tier = "not_run"
     seen = banner or {}
+    answered = last_message_ok(last_path) and not same_file(last_path, Path(out_path))
+    # K178: on a failed run only, the line that says the account was refused (credentials, quota, billing).
+    refusal = None
+    if proc.returncode != 0 or not answered:
+        refusal = credential_refusal(out_text, _read(Path(prompt_file)), _read(last_path))
 
     return {
         "role": role,
@@ -393,10 +451,12 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         "out": str(out_path),
         "tier": tier,
         "last_message": str(last_path),
-        "last_message_ok": last_message_ok(last_path) and not same_file(last_path, Path(out_path)),
+        "last_message_ok": answered,
         "last_message_sha256": last_message_sha256(last_path),
         "reviewed_head": head,
         "sandbox_failure": failure,
+        "credential_refusal": refusal[1] if refusal else None,
+        "credential_kind": refusal[0] if refusal else None,
         "shell_calls": shell["calls"],
         "shell_succeeded": shell["succeeded"],
         "shell_failed": shell["failed"],
@@ -432,6 +492,10 @@ def main(argv: list[str] | None = None) -> int:
               f"({result['sandbox_failure']!r}; shell calls {result['shell_calls']}, succeeded "
               f"{result['shell_succeeded']}, failed {result['shell_failed']}): the review could not read the tree, "
               f"whatever its verdict says", file=sys.stderr)
+        return 1
+    if result["credential_refusal"] is not None:
+        print(f"codex-review: CREDENTIAL STOP ({result['credential_kind']}): {result['credential_refusal']!r} in "
+              f"{result['out']}: the account was refused; never re-authenticate from a script", file=sys.stderr)
         return 1
     if not result["last_message_ok"]:
         print(f"codex-review: no final message at {result['last_message']} (missing or empty)", file=sys.stderr)

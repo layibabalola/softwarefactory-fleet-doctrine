@@ -172,7 +172,7 @@ unavailable (no clone, or the clone lacks the blob: fetch it; non-blocking for C
 
 ## The factory kernel (bus K154)
 
-The kernel tools came from Cloudvore (origin/master `31315b2`) with one change: kernel-subjects.py reads its
+The kernel tools came from Cloudvore (origin/master `31315b2`, synced to `c305770` by K154 packet 2: K151 `ranker`, K179 `evidence` config sections, K178 credential refusal in codex-review) with one change: kernel-subjects.py reads its
 config from the file `$FACTORY_KERNEL_CONFIG` names (relative to the caller's cwd), else `factory-config.json`
 beside itself as before. A pinned tool runs from a private directory, so a consumer always sets the variable.
 
