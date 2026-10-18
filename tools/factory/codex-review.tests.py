@@ -871,13 +871,17 @@ class CodexReviewCliTests(unittest.TestCase):
     }
 
     def master_lines(self) -> dict:
-        """Each GOLDEN_SCENARIOS input run through the module-level TOOL; the JSON line, normalised."""
-        root = json.dumps(str(self.root))[1:-1]
+        """Each GOLDEN_SCENARIOS input run through the module-level TOOL; the JSON line, normalised: every spelling of
+        the run's temporary root (root_spellings) is written <ROOT>, then JSON's escaped backslash is written `/`.
+        Nothing else is normalised."""
+        spellings = root_spellings(self.root)
         out = {}
         for name, emit, code in self.GOLDEN_SCENARIOS:
             proc = self._run_transcript(emit, exit_code=code)
             raw = proc.stdout.strip().splitlines()[-1]
-            out[name] = raw.replace(root, "<ROOT>").replace("\\\\", "/")
+            for spelling in spellings:
+                raw = raw.replace(spelling, "<ROOT>")
+            out[name] = raw.replace("\\\\", "/")
         return out
 
     def test_a_healthy_or_ordinary_failed_runs_json_line_equals_bus_masters_golden_line(self):
@@ -894,6 +898,53 @@ class CodexReviewCliTests(unittest.TestCase):
         proc = self._run_transcript(["ERROR: HTTP 401: token expired"], exit_code=1, no_tail=True)
         self.assertEqual(self.MASTER_RESULT_KEYS + ["credential_refusal", "credential_kind"],
                          list(self._result(proc)))
+
+
+def root_spellings(root) -> list[str]:
+    """Every spelling of the directory `root` a tool may print, longest first, each also with `/` separators and as JSON
+    escapes it: as given, absolute, realpath (junctions and symlinks followed) and Path.resolve(), and on Windows its
+    long and 8.3 short forms. Hosted tools bar at Cloudvore e7e52be: TEMP was an 8.3 short path
+    (C:\\Users\\OBABAL~1\\...) while codex-review printed --last-message resolved to the long form, so a test that replaced
+    only the spelling it built never matched its golden line."""
+    forms = {str(root), os.path.abspath(root), os.path.realpath(root), str(Path(root).resolve())}
+    if os.name == "nt":
+        import ctypes
+        for name in ("GetLongPathNameW", "GetShortPathNameW"):
+            for form in list(forms):
+                buf = ctypes.create_unicode_buffer(32768)
+                if getattr(ctypes.windll.kernel32, name)(form, buf, 32768):
+                    forms.add(buf.value)
+    out = set()
+    for form in forms:
+        for spelled in (form, form.replace("\\", "/")):
+            out.update((spelled, json.dumps(spelled)[1:-1]))
+    return sorted(out, key=len, reverse=True)
+
+
+class RootSpellingsTests(unittest.TestCase):
+    """The helper itself: a root reached through a junction (two spellings of one directory) yields both, so a line
+    naming either reads <ROOT>."""
+
+    def test_a_junction_and_its_target_are_both_spellings_and_a_sibling_is_not(self):
+        with tempfile.TemporaryDirectory() as d:
+            target = Path(d) / "a long target directory name"
+            target.mkdir()
+            link = Path(d) / "jn"
+            if os.name == "nt":
+                made = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], capture_output=True)
+                self.assertEqual(0, made.returncode, made.stdout + made.stderr)
+            else:
+                link.symlink_to(target)
+            got = root_spellings(link)
+            for form in (str(link), str(target.resolve()), str(target.resolve()).replace("\\", "/")):
+                self.assertIn(form, got)
+            line = json.dumps({"a": str(target.resolve() / "x.txt"), "b": str(link / "y.txt")})
+            for spelling in got:
+                line = line.replace(spelling, "<ROOT>")
+            self.assertEqual({"a": "<ROOT>\\x.txt" if os.name == "nt" else "<ROOT>/x.txt",
+                              "b": "<ROOT>\\y.txt" if os.name == "nt" else "<ROOT>/y.txt"}, json.loads(line))
+            if os.name == "nt":
+                os.rmdir(link)
 
 
 class RoleTableMatchesTheDocTests(unittest.TestCase):
