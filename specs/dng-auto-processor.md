@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: aa30dd7c042e074c8fe6424fc40c8f9b62d516d3
+source_commit: d0533525f3df5e4b98c32f929e3aaed2b2c735d2
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -236,8 +236,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   card's such driver PROCESS is live, between its batches too, because the shorter window always preempts the longer
   and equal windows would run two batteries at once and turn a load RED into a false kill; the hold is read off the
   driver process alone, so it ends when that driver exits, and it holds no build, key or author. **Such a phase is
-  dispatched last** (§4): only by a tick that dispatched no build- or decode-heavy seat that tick and, after its other
-  dispatches, still reads no suite or build live, because a hold read at one instant is otherwise released into the
+  dispatched last** (§4; docs/13 P-COP Step 3 skips it in its priority walk and decides it after): only by a tick
+  that dispatched no build- or decode-heavy seat and, after its other dispatches, still reads no suite or build live,
+  because a hold read at one instant is otherwise released into the
   load the same tick then starts; it is a priority, not a hold, so no other card waits for it and it waits READY at
   its attempt, and the load other sessions add stays the phase's own gate to wait out. **A job this factory did not start is NAMED, never held for** (§4): walk each
   process's parent chain to its root; a root that is the SSH service or a service other than this board's own runner
