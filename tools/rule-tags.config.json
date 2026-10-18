@@ -25,6 +25,49 @@
         { "date": "2026-10-16", "backed": 1 },
         { "date": "2026-10-23", "backed": 3 }
       ]
+    },
+    {
+      "name": "cloudvore",
+      "_comment": "Cloudvore's operating contract and its children (K155, landed at Cloudvore c305770, 2026-10-18). A rule is a '-' or numbered item or a '**'-led paragraph; a '*' item is context, not a rule. Cloudvore's own gate is tools/rule-tags.py (tools bar REQUIRED), which also refuses a lost, demoted or un-enforced rule against the base commit; this census is the fleet's read of the same grammar. The main checkout can lag origin/master: measure with --root at a checkout of origin/master. No invocation_surfaces and no floor yet: Cloudvore credits wiring at runtime (tools/run-tools-bar.py required_names(), which names suites without the tools/ prefix), which this census's text match cannot see, so the 16 backed rules are existence-checked here only; a Cloudvore row teaches the census that wiring before a floor is set.",
+      "root": "C:/code/DropBox Vault",
+      "root_candidates": [
+        "C:/code/DropBox Vault",
+        "../DropBox Vault"
+      ],
+      "files": [
+        {
+          "path": "docs/operating-contract.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        },
+        {
+          "path": "docs/operating-contract-adjudication.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        },
+        {
+          "path": "docs/operating-contract-doctrine.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        },
+        {
+          "path": "docs/operating-contract-integrator.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        },
+        {
+          "path": "docs/operating-contract-model-routing.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        },
+        {
+          "path": "docs/operating-contract-product-topology.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        },
+        {
+          "path": "docs/operating-contract-rotation.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        },
+        {
+          "path": "docs/operating-contract-swarm-rules.md",
+          "bullet": "^(-|\\d+\\.)\\s|^\\*\\*"
+        }
+      ]
     }
   ]
 }
