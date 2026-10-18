@@ -1192,8 +1192,8 @@ class FactoryConfigTests(unittest.TestCase):
 
     def test_the_ranker_and_evidence_sections_are_optional_and_absent_means_off(self):
         """Bus K154 packet 2 (coordinator ruling 2026-10-18; bus key finding 5): another project's config without
-        `ranker` or `evidence` loads with nothing defaulted in, and since no bus tool consumes either section, the
-        tool's output is byte-identical to the same copy's under the full config, naming neither."""
+        `ranker` or `evidence` loads with nothing defaulted in, and since no kernel-subjects command's output depends on either section
+        (the loader validates them; it does not print them), the output is byte-identical to the same copy's under the full config, naming neither."""
         def block(tools):
             p = subprocess.run([sys.executable, str(tools / "kernel-subjects.py"), "block", "--row", "H1",
                                 "--filter", FILTER, "--bus-sha", BUS], capture_output=True, env=copy_env(tools))

@@ -4,8 +4,10 @@
     python tools/factory/kernel-config.py check <factory-config.json>
     pin-runner.py run kernel-config -- check factory-pins/factory-config.json     # pinned with --with kernel-subjects
 
-The loader of record is `load_config` in kernel-subjects.py (K137: every key required, no other key, each value of
-its kind, contradicting keys refused). This entry point loads kernel-subjects.py from beside itself with
+The loader of record is `load_config` in kernel-subjects.py (K137): the sections schema, about, subject, paths,
+bar and contract_defaults are required, each with every key the schema lists; the ranker and evidence sections are
+optional (absent: that feature is off, nothing defaulted), and a section present carries every key it lists. No
+other key is allowed, each value is checked for its kind, and contradicting keys are refused. This entry point loads kernel-subjects.py from beside itself with
 FACTORY_KERNEL_CONFIG naming the file to check, so a config is judged by exactly the code that will read it, never by
 a second implementation. factory-config.schema.json describes the same layout for editors; the bus suite
 tools/factory/kernel-tools.tests.py keeps the two key sets equal.

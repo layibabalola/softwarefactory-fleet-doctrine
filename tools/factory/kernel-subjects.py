@@ -83,7 +83,7 @@ _STR, _DIRS, _REGEX, _DIR, _FILE, _RUNNER, _PREFIX = (
     "a repository directory (relative, forward slashes, ending in /)", "a repository file (relative, forward slashes)",
     "a runner name", "an ASCII subject prefix ending in /")
 # K179: the evidence store's names. A branch name with no `/` (never a packet branch), and one path segment for the
-# store worktree, which tools/evidence-store.py places inside the repository's git common directory.
+# store worktree, which a consumer project's evidence-store tool places inside the repository's git common directory.
 _BRANCH, _NAME = "a branch name of [a-z0-9-] with no /", "one path segment of [A-Za-z0-9._-], not . or .."
 _BRANCH_FORM = re.compile(r"[a-z0-9][a-z0-9-]*")
 _NAME_FORM = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
@@ -99,7 +99,8 @@ _WORKFLOW_FORM = re.compile(r"[a-z0-9][a-z0-9-]*")
 _PRODUCT_ROOTS = ("src/", "tests/", "tools/")
 # K137 key round 2 (integrator closure 4): a hosted runner's log name is a literal prefix and a number
 _HOSTED_FORM = re.compile(r"[A-Za-z0-9 _-]+\[0-9\]\+")
-# Every key the config must carry, and nothing else: (section, key) -> what its value must be.
+# Every section and key the config may carry, and nothing else: (section, key) -> what its value must be. Every
+# section is required except _OPTIONAL_SECTIONS below, which may be absent; a section present carries every key.
 _CONFIG_KEYS = {
     "subject": {"prefix": _PREFIX, "row": _REGEX, "branch_prefix": _STR, "delivery": _STR, "default_products": _DIRS},
     "paths": {"briefs": _DIR, "review": _DIR, "receipts": _DIR, "subjects_tool": _FILE, "tools_bar_runner": _FILE},
@@ -227,8 +228,11 @@ def load_config(path: Path | None) -> dict:
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which is not a literal prefix "
                           "followed by [0-9]+ (e.g. `GitHub Actions [0-9]+`)")
     # K179: the store branch is never a delivery or packet branch (the subject's delivery names master)
+    # Bus key round 2, finding 3: compared with the delivery BRANCH (the first word of subject.delivery, e.g. `master`
+    # in "master via --no-ff landing"), never with any word of its prose.
     branch = data["evidence"]["branch"] if "evidence" in data else None
-    if branch is not None and (branch in ("master", "main") or branch in data["subject"]["delivery"].split()):
+    delivery_branch = (data["subject"]["delivery"].split() or [""])[0]
+    if branch is not None and branch in ("master", "main", delivery_branch):
         raise ConfigError(f"the config {where} has evidence.branch {branch!r}, which is the delivery branch")
     if re.fullmatch(hosted, bar["runner"]):
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which matches bar.runner "

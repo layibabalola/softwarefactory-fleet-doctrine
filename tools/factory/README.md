@@ -176,14 +176,18 @@ The kernel tools came from Cloudvore (origin/master `31315b2`; synced to `c30577
 kernel-subjects.py reads its config ONLY from the file `$FACTORY_KERNEL_CONFIG` names (relative to the caller's
 cwd); unset or empty is refused (exit 2, naming the variable), never a `factory-config.json` beside the tool, so a
 consumer always sets the variable. codex-review.py adds `credential_refusal` / `credential_kind` to its JSON only on
-a credential stop (K178), so every other run's line is unchanged.
+a credential stop (K178), so every other run's line is byte-identical to bus master's (pinned against a golden line
+in `codex-review.tests.py`).
 
-**Optional sections (`ranker`, `evidence`).** Cloudvore's K151 starvation window and K179 evidence-store names. On
-the bus both are OPTIONAL: absent means that feature is off for the project and nothing is defaulted in; present, a
-section is checked strictly (every key, no other, each value of its kind). No bus tool reads either section, and
-kernel-subjects' output does not change with them (pinned byte for byte against bus master's in
-`kernel-tools.tests.py`). A CONSUMER that needs one (Cloudvore's `next.py` and `evidence-store.py`) must check
-for the section itself and refuse when it is absent; the bus loader no longer does that for it.
+**Optional sections (`ranker`, `evidence`).** A queue ranker's starvation window and an evidence store's names.
+Both are OPTIONAL: absent means that feature is off for the project and nothing is defaulted in. kernel-subjects.py
+reads and validates them when present: every key the schema lists, no other key, each value of its kind (a positive
+integer window; an evidence branch that is not master, main or the delivery branch, the first word of
+subject.delivery; a one-segment worktree name), and it refuses a malformed section (exit 2, naming the key). A
+present section is loaded into the module's `CONFIG` for a consumer that imports the loader; none of
+kernel-subjects' command outputs (check, advisory, block) changes with them (pinned byte for byte against bus
+master's in `kernel-tools.tests.py`). A consumer project's ranker or evidence tool that needs a section must check
+for it itself and refuse when it is absent; the bus loader does not require it.
 
 ```
 # install from the registry (members first; the registry's `with` makes kernel-receipt and kernel-config groups)

@@ -778,19 +778,21 @@ class CodexReviewCliTests(unittest.TestCase):
                                             exit_code=1, no_tail=True)
                 self.assertNotIn("credential_refusal", self._result(proc))
 
-    def test_once_the_model_has_answered_nothing_is_a_credential_refusal(self):
-        """K178 key round 3 (the third finding in this class, closed by construction): turn marks are ordinary lines a
-        command can print (`codex` as shell output ended the region), so no reading of a run that reached the model can
-        tell codex's error from a command's. A refusal counts only when the run never got a model response: no `exec`,
-        `codex` or `thinking` mark at all, hence no shell output in the transcript. A mid-run usage limit reads as an
-        ordinary failure; the next run is refused at its first request and stops there."""
-        line = "ERROR: You" + "'" + "ve hit your usage limit."
-        for emit in (["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", line],
-                     ["exec", "cat x", "succeeded in 5ms:", "codex", "ERROR: 401 Unauthorized"],
-                     ["thinking", "ERROR: 401 Unauthorized"]):
+    def test_the_runs_final_error_line_is_classified_whatever_came_before_it(self):
+        """Bus key round 2 on K154 packet 2, finding 1 (reverses K178 key round 3's closure by the coordinator's
+        ruling): a failed run's FINAL line, in codex's error shape, names the stop whatever output came before it
+        (`thinking`, `codex`, an earlier shell call). Only a line still inside a shell call's output (after its status
+        line, before the next turn mark) is the command's, never codex's own."""
+        quota = "ERROR: You" + "'" + "ve hit your usage limit."
+        for emit, kind in ((["thinking", "ERROR: HTTP 401: token expired"], "auth"),
+                           (["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", quota], "quota"),
+                           (["exec", "cat x", "succeeded in 5ms:", "codex", "ERROR: 401 Unauthorized"], "auth"),
+                           (["thinking", "ERROR: 401 Unauthorized"], "auth")):
             with self.subTest(emit=emit):
                 proc = self._run_transcript(emit, exit_code=1, no_tail=True)
-                self.assertNotIn("credential_refusal", self._result(proc))
+                result = self._result(proc)
+                self.assertEqual((emit[-1], kind), (result.get("credential_refusal"), result.get("credential_kind")))
+                self.assertIn(f"codex-review: CREDENTIAL STOP ({kind})", proc.stderr)
 
     def test_a_shell_line_in_codexs_error_shape_before_more_activity_is_not_a_refusal(self):
         """K178 key round 1, finding 2: a command printed `ERROR: 401 Unauthorized` on a line of its own, the run went
@@ -823,7 +825,9 @@ class CodexReviewCliTests(unittest.TestCase):
         """Bus key on K154 packet 2, finding 3: `ERROR: HTTP 401: token expired` on a failed, unanswered run got no
         credential stop. Any HTTP 401 or 403, and the token-expired and unauthorized forms, in codex's error shape."""
         for line in ("ERROR: HTTP 401: token expired", "ERROR: HTTP 403 Forbidden", "ERROR: unexpected status 403",
-                     "ERROR: token has expired", "ERROR: expired token", "stream error: Unauthorized"):
+                     "ERROR: token has expired", "ERROR: expired token", "stream error: Unauthorized",
+                     "ERROR: status 401", "ERROR: 401 Unauthorized", "ERROR: 403 Forbidden", "ERROR: http 403",
+                     "ERROR: status code 401"):
             with self.subTest(line=line):
                 proc = self._run_transcript([line], stream="stderr", exit_code=1, no_tail=True)
                 result = self._result(proc)
@@ -831,8 +835,13 @@ class CodexReviewCliTests(unittest.TestCase):
                 self.assertEqual((line, "auth"), (result.get("credential_refusal"), result.get("credential_kind")))
                 self.assertIn("codex-review: CREDENTIAL STOP (auth)", proc.stderr)
 
-    def test_a_4xx_number_that_is_not_401_or_403_is_not_a_refusal(self):
-        for line in ("ERROR: HTTP 404 not found", "ERROR: stream closed after 4013 bytes", "ERROR: HTTP 4031"):
+    def test_a_4xx_number_that_is_not_an_http_401_or_403_is_not_a_refusal(self):
+        """Bus key round 2, finding 2: a bare 401 or 403 (a path, a byte count) is not an HTTP status; neither is a
+        credential word inside a path."""
+        for line in ("ERROR: HTTP 404 not found", "ERROR: stream closed after 4013 bytes", "ERROR: HTTP 4031",
+                     "ERROR: failed to read /tmp/401/AGENTS.md", "ERROR: failed to read C:\\tmp\\403\\x.md",
+                     "ERROR: retry 401 of 900 failed", "ERROR: failed to open /srv/unauthorized/a.txt",
+                     "ERROR: cannot read /data/token expired/x"):
             with self.subTest(line=line):
                 proc = self._run_transcript([line], exit_code=1, no_tail=True)
                 self.assertNotIn("credential_refusal", self._result(proc))
@@ -842,18 +851,48 @@ class CodexReviewCliTests(unittest.TestCase):
                           "actual_effort", "actual_sandbox", "exit", "out", "tier", "last_message", "last_message_ok",
                           "last_message_sha256", "reviewed_head", "sandbox_failure", "shell_calls", "shell_succeeded",
                           "shell_failed"]
+    # GOLDEN: the JSON line bus origin/master 60349a0f's codex-review.py printed for each saved input below (the same
+    # fake codex, prompt and transcript), the run's temporary root written as <ROOT> and path separators as `/`.
+    # Written once by running that blob (`git show 60349a0f:tools/factory/codex-review.py`) through master_lines().
+    GOLDEN_SCENARIOS = (("healthy", [], 0), ("ordinary-failure", ["ERROR: stream disconnected before completion"], 1))
+    GOLDEN_LINES = {
+        'healthy': (
+            '{"role": "counterpart", "requested_model": "gpt-6-sol", "requested_effort": "high", "requested_s'
+            'andbox": "read-only", "actual_model": "gpt-6-sol", "actual_effort": "high", "actual_sandbox": "r'
+            'ead-only", "exit": 0, "out": "<ROOT>/out.txt", "tier": "ok", "last_message": "<ROOT>/out.txt.las'
+            't.txt", "last_message_ok": true, "last_message_sha256": "sha256:a6e2e6326b74735f1b33a2b8e96f452d'
+            '0302d53de74a610029ef4572ed2c796c", "reviewed_head": null, "sandbox_failure": null, "shell_calls"'
+            ': 0, "shell_succeeded": 0, "shell_failed": 0}'
+        ),
+        'ordinary-failure': (
+            '{"role": "counterpart", "requested_model": "gpt-6-sol", "requested_effort": "high", "requested_s'
+            'andbox": "read-only", "actual_model": "gpt-6-sol", "actual_effort": "high", "actual_sandbox": "r'
+            'ead-only", "exit": 1, "out": "<ROOT>/out.txt", "tier": "ok", "last_message": "<ROOT>/out.txt.las'
+            't.txt", "last_message_ok": true, "last_message_sha256": "sha256:a6e2e6326b74735f1b33a2b8e96f452d'
+            '0302d53de74a610029ef4572ed2c796c", "reviewed_head": null, "sandbox_failure": null, "shell_calls"'
+            ': 0, "shell_succeeded": 0, "shell_failed": 0}'
+        ),
+    }
 
-    def test_a_healthy_or_ordinary_failed_runs_json_keeps_bus_masters_keys_byte_for_byte(self):
-        """Bus key on K154 packet 2, finding 2: the credential keys appear ONLY on a credential stop, so a healthy run's
-        JSON line (and an ordinary failure's) is byte-compatible with bus master's: the same keys in the same order,
-        serialised the same way."""
-        for emit, code in (([], 0), (["ERROR: stream disconnected before completion"], 1)):
-            with self.subTest(emit=emit):
-                proc = self._run_transcript(emit, exit_code=code)
-                raw = proc.stdout.strip().splitlines()[-1]
-                result = json.loads(raw)
-                self.assertEqual(self.MASTER_RESULT_KEYS, list(result))
-                self.assertEqual(json.dumps(result), raw)
+    def master_lines(self) -> dict:
+        """Each GOLDEN_SCENARIOS input run through the module-level TOOL; the JSON line, normalised."""
+        root = json.dumps(str(self.root))[1:-1]
+        out = {}
+        for name, emit, code in self.GOLDEN_SCENARIOS:
+            proc = self._run_transcript(emit, exit_code=code)
+            raw = proc.stdout.strip().splitlines()[-1]
+            out[name] = raw.replace(root, "<ROOT>").replace("\\\\", "/")
+        return out
+
+    def test_a_healthy_or_ordinary_failed_runs_json_line_equals_bus_masters_golden_line(self):
+        """Bus key rounds 1-2, finding 2/4: the credential keys appear ONLY on a credential stop, so a healthy run's
+        JSON line (and an ordinary failure's) is byte-identical to the line bus master's codex-review.py printed on the
+        same saved input (GOLDEN_LINES), values included."""
+        got = self.master_lines()
+        for name, _emit, _code in self.GOLDEN_SCENARIOS:
+            with self.subTest(run=name):
+                self.assertEqual(self.GOLDEN_LINES[name], got[name])
+                self.assertEqual(self.MASTER_RESULT_KEYS, list(json.loads(got[name])))
 
     def test_a_credential_stop_appends_its_two_keys_after_bus_masters(self):
         proc = self._run_transcript(["ERROR: HTTP 401: token expired"], exit_code=1, no_tail=True)

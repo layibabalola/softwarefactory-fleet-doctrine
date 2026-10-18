@@ -182,6 +182,27 @@ class OptionalSections(unittest.TestCase):
         self.assertEqual((4, "evidence-store"), (ks.CONFIG["ranker"]["starvation_window"],
                                                  ks.CONFIG["evidence"]["branch"]))
 
+    def test_the_evidence_branch_is_compared_with_the_delivery_branch_not_the_delivery_text(self):
+        """Bus key round 2, finding 3: subject.delivery is prose whose FIRST word is the delivery branch ("master via
+        --no-ff landing"). An evidence branch named like a later word (`landing`, `via`) is not the delivery branch and
+        loads; the delivery branch itself, master and main are refused."""
+        delivery = self.stub["subject"]["delivery"]
+        self.assertEqual("master via --no-ff landing", delivery)
+        for branch in ("landing", "via", "no-ff"):
+            with self.subTest(accepted=branch):
+                good = self.write({**self.stub, "evidence": {"branch": branch, "worktree": "w"}}, "good.json")
+                p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(good)],
+                                   capture_output=True, text=True, env=env_without())
+                self.assertEqual(0, p.returncode, p.stderr)
+        trunk = {**self.stub, "subject": {**self.stub["subject"], "delivery": "trunk via squash"}}
+        for data, branch in ((trunk, "trunk"), (self.stub, "master"), (self.stub, "main")):
+            with self.subTest(refused=branch):
+                bad = self.write({**data, "evidence": {"branch": branch, "worktree": "w"}}, "bad.json")
+                p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(bad)],
+                                   capture_output=True, text=True, env=env_without())
+                self.assertEqual(2, p.returncode, p.stdout)
+                self.assertIn("which is the delivery branch", p.stderr)
+
 
 STUB_GOLDEN = HERE / "fixtures" / "kernel" / "stub-golden"
 # What bus origin/master 69d7d63e's kernel-subjects.py printed for the stub project (the seed config, which carries

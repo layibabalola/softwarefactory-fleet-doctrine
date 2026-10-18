@@ -94,16 +94,16 @@ that prints a copy of the measured line at the start of a line reads NOT RUN: a 
 
 A CREDENTIAL REFUSAL IS NAMED, NEVER RETRIED (K178)
 -------------------------------------------------
-On a FAILED run only (codex exit non-zero, or no final message), `credential_refusal` is the transcript's last line
-of a run that never got a model response (no `exec`, `codex` or `thinking` mark, so no shell output can be in it)
-when that line is in codex's own error shape
-(`ERROR: ...` or `stream error: ...`, optionally after a bracketed timestamp) that names an HTTP 401 or 403,
-an expired token, unauthorized, an API key, a sign-in, a usage limit, a quota or billing, with the prompt block and
-the final-message blocks removed first (as for the sandbox line); `credential_kind` is `auth` or `quota`. The two
-keys are in the JSON ONLY on such a stop (every other run's line keeps the earlier keys, byte for byte). A CREDENTIAL
-STOP line goes to stderr; the exit code is unchanged (1). It never makes a run pass. A project's admitted-key wrapper
-(Cloudvore's is tools/codex-key-admitted.ps1) turns it into a standing stop: an `auth` stop until the owner
-re-authenticates, a `quota` stop for six hours.
+On a FAILED run only (codex exit non-zero, or no final message), `credential_refusal` is the transcript's FINAL
+line, whatever output came before it, when that line is in codex's own error shape (`ERROR: ...` or
+`stream error: ...`, optionally after a bracketed timestamp) and is not still inside a shell call's output (after
+its status line, before the next turn mark), and its error text (path-like tokens dropped) names an HTTP 401 or 403
+(`HTTP 401`, `status 401`, `401 Unauthorized`, `403 Forbidden`), an expired token, unauthorized, an API key, a
+sign-in, a usage limit, a quota or billing; the prompt block and the final-message blocks are removed first (as for
+the sandbox line). `credential_kind` is `auth` or `quota`. The two keys are in the JSON ONLY on such a stop (every
+other run's line is byte-identical to the line before K178). A CREDENTIAL STOP line goes to stderr; the exit code is
+unchanged (1). It never makes a run pass. A consumer project's admitted-key wrapper can turn it into a standing stop
+(for example an `auth` stop until the owner re-authenticates, a `quota` stop for six hours).
 
 NEVER `-p`/`--profile`. A profile is a name that resolves against the config
 file this tool exists to route AROUND; passing one would silently reintroduce
@@ -270,7 +270,7 @@ def shell_calls(transcript: str, prompt: str = "", final_message: str = "") -> d
 
 
 # K178: what a Codex refusal on credentials, quota or billing prints. Matched only on a FAILED run (exit non-zero or no
-# final message), only on the transcript's LAST line, only in codex's own error shape (`ERROR: ...` or `stream error: ...`, optionally after a
+# final message), only on the transcript's LAST line (not inside a shell call's output), only in codex's own error shape (`ERROR: ...` or `stream error: ...`, optionally after a
 # bracketed timestamp), and only after the echoed prompt block and the final message blocks are removed (the same
 # removal as shell_calls). A shell call's output (a file that names "401 Unauthorized", a grep for "billing") is not in
 # that shape, and a review that merely discusses a refusal and succeeds is never classified. Measured: "You've hit your
@@ -280,14 +280,17 @@ def shell_calls(transcript: str, prompt: str = "", final_message: str = "") -> d
 # printed in any other shape reads as an ordinary failure (the run still fails; nothing lands).
 CREDENTIAL_MARKERS: dict[str, tuple[str, ...]] = {
     "auth": ("401 unauthorized", "status 401", "incorrect api key", "invalid api key", "invalid_api_key",
-             "sign in again", "log in again", "codex login", "refresh token", "unauthorized", "forbidden",
+             "sign in again", "log in again", "codex login", "refresh token", "unauthorized",
              "token expired", "token has expired", "expired token", "token_expired"),
     "quota": ("usage limit", "insufficient_quota", "quota exceeded", "exceeded your current quota", "billing"),
 }
 _ANSWER_MARKS = ("exec", "codex", "thinking")    # any of these means the model answered (and shell output may follow)
-# Bus key on K154 packet 2, finding 3: any HTTP 401 or 403 in codex's error line is an auth refusal (a whole number:
-# not 4013, not 404).
-_AUTH_STATUS_RE = re.compile(r"(?<![0-9])40[13](?![0-9])")
+# Bus key on K154 packet 2 (round 1 finding 3, round 2 finding 2): an HTTP 401 or 403 in its status forms only
+# (`HTTP 401`, `status 401`, `status code 403`, `401 Unauthorized`, `403 Forbidden`), never a bare number (a path, a
+# count). Matched on the error text after codex's prefix, with path-like tokens (any containing / or \) dropped.
+_AUTH_STATUS_RE = re.compile(r"(?:\bhttp\s*|\bstatus(?:\s+code)?\s*)40[13](?![0-9])|\b401\s+unauthorized\b|"
+                             r"\b403\s+forbidden\b")
+_PATH_TOKEN_RE = re.compile(r"\S*[/\\]\S*")
 _ERROR_LINE_RE = re.compile(r"(?:\[[^\]]*\]\s*)?(?:error|stream error):", re.I)
 
 
@@ -299,14 +302,21 @@ def credential_refusal(transcript: str, prompt: str = "", final_message: str = "
     lines = _remove_blocks(lines, _block(prompt), 1, from_end=False)
     lines = _remove_blocks(lines, _block(final_message), 2, from_end=True)
     lines = [line.strip() for line in lines if line.strip()]
-    # Key rounds 1-3 (three findings in one class, closed by construction): a command's output is printed raw, and turn
-    # marks are ordinary lines a command can print, so no reading of a run that reached the model can tell codex's error
-    # from a command's. A refusal counts only when the run never got a model response: no `exec`, `codex` or `thinking`
-    # mark at all, hence no shell output in the transcript. A mid-run limit reads as an ordinary failure; the next run is
-    # refused at its first request and stops there.
-    if not lines or any(line.casefold() in _ANSWER_MARKS for line in lines) or not _ERROR_LINE_RE.match(lines[-1]):
+    # Bus key round 2 on K154 packet 2, finding 1 (the coordinator's ruling; it reverses K178 key round 3, which
+    # counted a refusal only when the run had no `exec`, `codex` or `thinking` mark at all): the FINAL line is
+    # classified whatever came before it. A line still inside a shell call's output region (after the call's status
+    # line, before the next turn mark) is the command's and never a refusal. Known residue, accepted by that ruling: a
+    # command whose output prints a turn mark and then an error-shaped line as the run's last line reads as codex's.
+    in_output = False
+    for line in lines:
+        if line.casefold() in _ANSWER_MARKS:
+            in_output = False
+        elif _STATUS_RE.fullmatch(line):
+            in_output = True
+    match = _ERROR_LINE_RE.match(lines[-1]) if lines else None
+    if match is None or in_output:
         return None
-    folded = lines[-1].casefold()
+    folded = _PATH_TOKEN_RE.sub(" ", lines[-1][match.end():]).casefold()
     if _AUTH_STATUS_RE.search(folded):
         return "auth", lines[-1]
     for kind, markers in CREDENTIAL_MARKERS.items():
