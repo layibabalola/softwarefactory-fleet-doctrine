@@ -1,0 +1,13 @@
+{
+  "schema": "fleet-defender-policy.v1",
+  "_comment": "EXAMPLE per-machine override. Copy it OUTSIDE the bus clone (it names this machine's folders, which never travel), edit, and pass it to the installer with -LocalPolicy. Only these three keys are accepted; every entry is added to the shipped defaults. allowedParents admit anything strictly below them; allowedExactRoots admit that one path (a wildcard is allowed in the last segment only).",
+  "allowedParents": [
+    "%SystemDrive%\\scratch",
+    "%USERPROFILE%\\source\\repos"
+  ],
+  "allowedExactRoots": [
+    "%SystemDrive%\\scratch",
+    "%LOCALAPPDATA%\\Temp\\MSBuildTemp*"
+  ],
+  "deniedPrefixes": []
+}

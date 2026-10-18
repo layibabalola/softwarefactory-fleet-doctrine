@@ -1,0 +1,18 @@
+{
+  "schema": "fleet-defender-policy.v1",
+  "_comment": "Shipped, machine-neutral defaults. The installer merges this with an optional per-machine override (policy.local.json, -LocalPolicy) and writes the ADMIN-ONLY result to %ProgramData%\\FleetDefender\\policy.json. A local override can only ADD entries; these deny prefixes always survive. %TOKEN% values expand to the installing owner's environment.",
+  "allowedParents": [
+    "%LOCALAPPDATA%\\Temp\\claude"
+  ],
+  "allowedExactRoots": [
+    "%LOCALAPPDATA%\\Temp\\claude"
+  ],
+  "deniedPrefixes": [
+    "%SystemRoot%",
+    "%ProgramFiles%",
+    "%ProgramFiles(x86)%",
+    "%ProgramData%",
+    "%LOCALAPPDATA%\\Microsoft",
+    "%LOCALAPPDATA%\\Packages"
+  ]
+}

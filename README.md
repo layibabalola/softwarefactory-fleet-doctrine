@@ -46,6 +46,7 @@ the human store-and-forward bus.
 - `receipts/` - evidence bundles and ratification receipts
 - `RULINGS.md` - append-only: ratified fleet doctrine with the measuring project cited
 - `cos-feedback/` - Chief-of-Staff (CoS / Grok Bot) post-push PR/CI feedback; single-writer CoS, projects READ only; see [`cos-feedback/README.md`](cos-feedback/README.md) (CANDIDATE until projects wire pull)
+- `tools/machine/` - machine tools: installed once per machine by the owner (elevated), serving every project there; not pinned per project. First: [`fleet-defender/`](tools/machine/fleet-defender/README.md) (Defender exclusions for new write roots)
 
 ## Ratified portable cores (zero runtime authority until project adoption)
 
