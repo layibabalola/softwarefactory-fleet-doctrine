@@ -1,10 +1,16 @@
 {
-  "schema": "cos-heartbeat.v1",
-  "agent": "cos",
-  "writer": "Chief of Staff (Grok Bot)",
-  "last_beat_utc": "2026-10-17T07:56:21Z",
-  "mode": "normal",
-  "seat": "cos",
-  "handoffs": [],
-  "note": "mlv-app #475 r5 9931280c not-merge-ready; B1, I1, I2, N1, N2 addressed (verified); new B2 id-keyed union lets an in-place row edit or corpus rewrite escape (repro rc=0); Recurrence 6 clause 6 amended; ask 6231443986; heartbeat."
+  "schema": "cos-heartbeat-retirement.v1",
+  "status": "retired",
+  "mode": "retired",
+  "seat": "retired",
+  "retired_at_utc": "2026-10-18T14:38:50Z",
+  "effective_utc": "2026-10-18T14:35:00Z",
+  "replacement": "cos-feedback/_heartbeat/dot.json",
+  "primary_seat": "dot",
+  "transition_id": "amendment5-primary-dot-20261018T1435Z",
+  "previous_last_beat_utc": "2026-10-17T07:56:21Z",
+  "previous_blob_sha": "129a0452b93fe1e8ba31c0be1a414331fa8d26ef",
+  "previous_record": "https://github.com/layibabalola/softwarefactory-fleet-doctrine/blob/1d854c355699d0729ff675aa2e8551cacc9193cc/cos-feedback/_heartbeat/cos.json",
+  "coordination_log": "https://docs.google.com/document/d/1XX6uCfU0PJIMMZwBSgJ8rPRLPOlqmgctrecACvb2H9Y/edit",
+  "note": "Retirement record, not an active heartbeat or staleness signal. Amendment 5 transfers permanent primary ownership to dot. Watch dot.json for the primary heartbeat. Grok is failover only; its return alone does not reclaim the seat."
 }

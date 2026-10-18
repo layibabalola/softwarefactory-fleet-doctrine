@@ -1,0 +1,14 @@
+{
+  "schema": "cos-heartbeat.v1",
+  "agent": "dot",
+  "writer": "dot",
+  "last_beat_utc": "2026-10-18T14:38:50Z",
+  "mode": "normal",
+  "seat": "dot",
+  "handoffs": [],
+  "primary_since_utc": "2026-10-18T14:35:00Z",
+  "tenure_claim": "c9bdbb0c-e504-4f5a-a89e-53b54280951c",
+  "transition_id": "amendment5-primary-dot-20261018T1435Z",
+  "coordination_log": "https://docs.google.com/document/d/1XX6uCfU0PJIMMZwBSgJ8rPRLPOlqmgctrecACvb2H9Y/edit",
+  "note": "Amendment 5 enacted by Layi. Active acting tenure converts to permanent primary without a new claim. Refresh this heartbeat in the same commit as every future dot verdict change. HIGH-RISK verdicts remain provisional pending three clean Grok spot-checks or explicit Layi clearance; verified tally remains 1/3. Grok failover requires more than one hour of dot heartbeat staleness plus fresh demand and a logged claim; mere Grok return does not transfer the primary seat."
+}
