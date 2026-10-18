@@ -2,6 +2,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -19,6 +20,20 @@ sys.modules[SPEC.name] = MODULE
 SPEC.loader.exec_module(MODULE)
 
 HISTORICAL_PUBLICATION = "53a48a6a0be5eade253ce1a508872d6874fd474a"
+
+# Every `git commit` spawns `git maintenance run --auto --detach`, which takes
+# `.git/objects/maintenance.lock` in the background. If it is still alive when
+# TemporaryDirectory cleanup reaches `.git/objects`, rmdir fails with ENOTEMPTY
+# and an otherwise-passing test errors (run 39110225087, ubuntu/3.13 only).
+# Disposable repositories therefore never run auto maintenance.
+SYNTHETIC_REPO_CONFIG = ("maintenance.auto=false", "gc.auto=0")
+
+
+def synthetic_clone_config_args():
+    args = []
+    for item in SYNTHETIC_REPO_CONFIG:
+        args.extend(["--config", item])
+    return args
 
 
 class AdoptionLedgerTests(unittest.TestCase):
@@ -269,9 +284,20 @@ class AdoptionLedgerTests(unittest.TestCase):
         project = self._project(ledger, "dng-auto-processor")
         receipt_path = next(iter(receipt_blobs))
 
+        # Every porcelain write (commit, etc.) ends with `git maintenance run
+        # --auto --detach`, which daemonizes a child that holds
+        # .git/objects/maintenance.lock. That child can outlive the command and
+        # race TemporaryDirectory cleanup ("Directory not empty: .../objects").
+        # Disable auto-maintenance so every fixture Git call is synchronous.
+        no_auto_maintenance = (
+            "-c", "maintenance.auto=false",
+            "-c", "gc.auto=0",
+            "-c", "gc.autoDetach=false",
+        )
+
         def git(repo, *args):
             run = subprocess.run(
-                ["git", *args],
+                ["git", *no_auto_maintenance, *args],
                 cwd=repo,
                 check=False,
                 capture_output=True,
@@ -323,10 +349,12 @@ class AdoptionLedgerTests(unittest.TestCase):
                     "git",
                     "-c",
                     "safe.directory=*",
+                    *no_auto_maintenance,
                     "clone",
                     "--quiet",
                     "--no-checkout",
                     "--no-hardlinks",
+                    *synthetic_clone_config_args(),
                     str(ROOT),
                     str(repo),
                 ],
@@ -409,6 +437,54 @@ class AdoptionLedgerTests(unittest.TestCase):
                 MODULE.verify_ledger(committed_ledger, treeish)
             finally:
                 MODULE.ROOT = original_root
+
+    def test_synthetic_repo_commit_never_spawns_detached_maintenance(self):
+        def maintenance_spawned(extra_clone_args):
+            with tempfile.TemporaryDirectory(prefix="r26-maint-") as temp:
+                origin = Path(temp) / "origin"
+                repo = Path(temp) / "repo"
+                env = {
+                    key: value
+                    for key, value in os.environ.items()
+                    if not key.startswith("GIT_")
+                }
+                env.update(
+                    GIT_AUTHOR_NAME="r26",
+                    GIT_AUTHOR_EMAIL="r26@example.invalid",
+                    GIT_COMMITTER_NAME="r26",
+                    GIT_COMMITTER_EMAIL="r26@example.invalid",
+                )
+                subprocess.run(
+                    ["git", "init", "-q", str(origin)], check=True, env=env
+                )
+                subprocess.run(
+                    ["git", "-C", str(origin), "commit", "-q",
+                     "--allow-empty", "-m", "seed"],
+                    check=True,
+                    env={**env, "GIT_CONFIG_COUNT": "1",
+                         "GIT_CONFIG_KEY_0": "maintenance.auto",
+                         "GIT_CONFIG_VALUE_0": "false"},
+                )
+                subprocess.run(
+                    ["git", "clone", "-q", "--no-hardlinks", *extra_clone_args,
+                     str(origin), str(repo)],
+                    check=True,
+                    env=env,
+                )
+                trace = Path(temp) / "trace.txt"
+                subprocess.run(
+                    ["git", "-C", str(repo), "commit", "-q", "--allow-empty",
+                     "-m", "probe"],
+                    check=True,
+                    env={**env, "GIT_TRACE2": str(trace)},
+                )
+                return "maintenance run --auto" in trace.read_text(
+                    encoding="utf-8", errors="replace"
+                )
+
+        # Positive control: the instrument sees the spawn when it happens.
+        self.assertTrue(maintenance_spawned([]))
+        self.assertFalse(maintenance_spawned(synthetic_clone_config_args()))
 
     def test_canonical_ledger_matches_closed_project_owned_evidence(self):
         MODULE.verify_ledger(self._copy(), HISTORICAL_PUBLICATION)

@@ -32,9 +32,9 @@
       "sha256": "ad2943d8b645525f3aa7b63902ed300d36a3a8ee7e2aa37068ece169f7d0ece1"
     },
     "tests/test_adoption_ledger.py": {
-      "gitBlobOid": "687b9586d1dd1e6a360cb24a2ee630817cfb1419",
-      "bytes": 42663,
-      "sha256": "d06b7c6272cb29a4496bc235bc89fd6faa0c4f6024f0cfcf8bc3d86a367a369f"
+      "gitBlobOid": "1c1f59dcfb6810308d3915d4b5e885a8a349c5a7",
+      "bytes": 46035,
+      "sha256": "d757daeb077982e8ff5c465d8fde4efdd661a80bad36b6738ddedc3d37dc7587"
     },
     "tests/test_adversarialllm_utilization_shadow_doctrine.py": {
       "gitBlobOid": "1a12e0586453c0e3604aaf1732d1f6b102187aa6",
