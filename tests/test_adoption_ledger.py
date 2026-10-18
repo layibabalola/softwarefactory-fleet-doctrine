@@ -284,9 +284,20 @@ class AdoptionLedgerTests(unittest.TestCase):
         project = self._project(ledger, "dng-auto-processor")
         receipt_path = next(iter(receipt_blobs))
 
+        # Every porcelain write (commit, etc.) ends with `git maintenance run
+        # --auto --detach`, which daemonizes a child that holds
+        # .git/objects/maintenance.lock. That child can outlive the command and
+        # race TemporaryDirectory cleanup ("Directory not empty: .../objects").
+        # Disable auto-maintenance so every fixture Git call is synchronous.
+        no_auto_maintenance = (
+            "-c", "maintenance.auto=false",
+            "-c", "gc.auto=0",
+            "-c", "gc.autoDetach=false",
+        )
+
         def git(repo, *args):
             run = subprocess.run(
-                ["git", *args],
+                ["git", *no_auto_maintenance, *args],
                 cwd=repo,
                 check=False,
                 capture_output=True,
@@ -338,6 +349,7 @@ class AdoptionLedgerTests(unittest.TestCase):
                     "git",
                     "-c",
                     "safe.directory=*",
+                    *no_auto_maintenance,
                     "clone",
                     "--quiet",
                     "--no-checkout",
