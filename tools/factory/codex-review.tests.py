@@ -925,7 +925,7 @@ class RootSpellingsTests(unittest.TestCase):
     """The helper itself: a root reached through a junction (two spellings of one directory) yields both, so a line
     naming either reads <ROOT>."""
 
-    def test_a_junction_and_its_target_are_both_spellings_and_a_sibling_is_not(self):
+    def test_a_junction_and_its_target_are_both_spellings(self):
         with tempfile.TemporaryDirectory() as d:
             target = Path(d) / "a long target directory name"
             target.mkdir()
