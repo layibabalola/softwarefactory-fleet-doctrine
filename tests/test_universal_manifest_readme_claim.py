@@ -119,7 +119,8 @@ class Fixture(unittest.TestCase):
         self.repo = Path(self.temp.name)
         _git(self.repo, "init", "-q")
         for key, value in (("core.autocrlf", "false"), ("user.name", "fixture"),
-                           ("user.email", "fixture@example.invalid"), ("core.hooksPath", os.devnull)):
+                           ("user.email", "fixture@example.invalid"), ("core.hooksPath", os.devnull),
+                           ("maintenance.auto", "false"), ("gc.auto", "0")):
             _git(self.repo, "config", key, value)
         self.write("README.md", BASE_README)
         self.write("tools/universal_provider_control.py", "RUNTIME = 'refuse'\n")
@@ -281,9 +282,11 @@ class ActiveLayerScratchCommitTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name) / "bus"
         head = _git(ROOT, "rev-parse", "HEAD")
-        _git(ROOT, "clone", "-q", "--local", "--no-hardlinks", "--no-checkout", str(ROOT), str(self.repo))
+        _git(ROOT, "clone", "-q", "--local", "--no-hardlinks", "--no-checkout",
+             "--config", "maintenance.auto=false", "--config", "gc.auto=0", str(ROOT), str(self.repo))
         for key, value in (("core.autocrlf", "false"), ("user.name", "fixture"),
-                           ("user.email", "fixture@example.invalid"), ("core.hooksPath", os.devnull)):
+                           ("user.email", "fixture@example.invalid"), ("core.hooksPath", os.devnull),
+                           ("maintenance.auto", "false"), ("gc.auto", "0")):
             _git(self.repo, "config", key, value)
         _git(self.repo, "checkout", "-q", "--detach", head)
 
