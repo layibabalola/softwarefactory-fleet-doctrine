@@ -94,8 +94,9 @@ that prints a copy of the measured line at the start of a line reads NOT RUN: a 
 
 A CREDENTIAL REFUSAL IS NAMED, NEVER RETRIED (K178)
 -------------------------------------------------
-On a FAILED run only (codex exit non-zero, or no final message), `credential_refusal` is the transcript's FINAL
-line, whatever output came before it, when that line is in codex's own error shape (`ERROR: ...` or
+On an UNANSWERED failed run only (codex exit non-zero AND no final answer: an empty or missing final message and
+no `codex` answer block in the transcript; `thinking` is not an answer), `credential_refusal` is the transcript's
+FINAL line when that line is in codex's own error shape (`ERROR: ...` or
 `stream error: ...`, optionally after a bracketed timestamp) and is not still inside a shell call's output (after
 its status line, before the next turn mark), and its error text (path-like tokens dropped) names an HTTP 401 or 403
 (`HTTP 401`, `status 401`, `401 Unauthorized`, `403 Forbidden`), an expired token, unauthorized, an API key, a
@@ -302,11 +303,13 @@ def credential_refusal(transcript: str, prompt: str = "", final_message: str = "
     lines = _remove_blocks(lines, _block(prompt), 1, from_end=False)
     lines = _remove_blocks(lines, _block(final_message), 2, from_end=True)
     lines = [line.strip() for line in lines if line.strip()]
-    # Bus key round 2 on K154 packet 2, finding 1 (the coordinator's ruling; it reverses K178 key round 3, which
-    # counted a refusal only when the run had no `exec`, `codex` or `thinking` mark at all): the FINAL line is
-    # classified whatever came before it. A line still inside a shell call's output region (after the call's status
-    # line, before the next turn mark) is the command's and never a refusal. Known residue, accepted by that ruling: a
-    # command whose output prints a turn mark and then an error-shaped line as the run's last line reads as codex's.
+    # K154p2 r4 (the coordinator's corrected rule, keeping K178 key round 3): only an UNANSWERED run is classified.
+    # A `codex` answer block anywhere means the model answered: never a stop (K178 round 3's case, a `codex` line then
+    # an error-shaped line, stays a non-stop). `thinking` is not an answer, so a run with only thinking output and a
+    # final codex error line stops. The caller also requires a non-zero exit and no final message. A line still inside
+    # a shell call's output region (after its status line, before the next turn mark) is the command's, never a stop.
+    if any(line.casefold() == "codex" for line in lines):
+        return None
     in_output = False
     for line in lines:
         if line.casefold() in _ANSWER_MARKS:
@@ -450,9 +453,10 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         tier = "not_run"
     seen = banner or {}
     answered = last_message_ok(last_path) and not same_file(last_path, Path(out_path))
-    # K178: on a failed run only, the line that says the account was refused (credentials, quota, billing).
+    # K178, K154p2 r4: on an UNANSWERED failed run only (non-zero exit and no final message), the line that says the
+    # account was refused (credentials, quota, billing).
     refusal = None
-    if proc.returncode != 0 or not answered:
+    if proc.returncode != 0 and not answered:
         refusal = credential_refusal(out_text, _read(Path(prompt_file)), _read(last_path))
 
     result = {

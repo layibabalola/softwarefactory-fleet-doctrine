@@ -581,7 +581,8 @@ class CodexReviewCliTests(unittest.TestCase):
         return ["exec", self.CMD, status, *output]
 
     def _run_transcript(self, emit: list[str], stream: str = "stdout", final: str | None = None,
-                        exit_code: int = 0, eol: str = "", no_tail: bool = False) -> subprocess.CompletedProcess:
+                        exit_code: int = 0, eol: str = "", no_tail: bool = False,
+                        last: str | None = None) -> subprocess.CompletedProcess:
         self.env["FAKE_CODEX_NO_TAIL"] = "1" if no_tail else "0"
         self.env["FAKE_CODEX_EMIT"] = json.dumps(emit)
         self.env["FAKE_CODEX_EMIT_STREAM"] = stream
@@ -590,7 +591,8 @@ class CodexReviewCliTests(unittest.TestCase):
         self.env.pop("FAKE_CODEX_FINAL", None)
         if final is not None:
             self.env["FAKE_CODEX_FINAL"] = final
-        return self._run("counterpart", "transcript")
+        # K154p2 r4: a run that prints no answer (no_tail) writes no final message unless a test says otherwise
+        return self._run("counterpart", "transcript", last=last if last is not None else ("none" if no_tail else "write"))
 
     def _assert_not_run(self, proc: subprocess.CompletedProcess) -> dict:
         self.assertNotEqual(0, proc.returncode, proc.stdout + proc.stderr)
@@ -778,21 +780,34 @@ class CodexReviewCliTests(unittest.TestCase):
                                             exit_code=1, no_tail=True)
                 self.assertNotIn("credential_refusal", self._result(proc))
 
-    def test_the_runs_final_error_line_is_classified_whatever_came_before_it(self):
-        """Bus key round 2 on K154 packet 2, finding 1 (reverses K178 key round 3's closure by the coordinator's
-        ruling): a failed run's FINAL line, in codex's error shape, names the stop whatever output came before it
-        (`thinking`, `codex`, an earlier shell call). Only a line still inside a shell call's output (after its status
-        line, before the next turn mark) is the command's, never codex's own."""
+    def test_an_unanswered_failed_run_is_classified_on_its_final_error_line(self):
+        """K154p2 r4 (coordinator's corrected rule): a credential stop fires only for an UNANSWERED failed run, a
+        non-zero exit with no final answer (no --last-message content, no `codex` answer block). `thinking` is not an
+        answer, so thinking then `ERROR: HTTP 401: token expired` stops; the final error line is what is classified."""
         quota = "ERROR: You" + "'" + "ve hit your usage limit."
         for emit, kind in ((["thinking", "ERROR: HTTP 401: token expired"], "auth"),
-                           (["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", quota], "quota"),
-                           (["exec", "cat x", "succeeded in 5ms:", "codex", "ERROR: 401 Unauthorized"], "auth"),
-                           (["thinking", "ERROR: 401 Unauthorized"], "auth")):
+                           (["thinking", "ERROR: 401 Unauthorized"], "auth"),
+                           (["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", quota], "quota")):
             with self.subTest(emit=emit):
                 proc = self._run_transcript(emit, exit_code=1, no_tail=True)
                 result = self._result(proc)
+                self.assertFalse(result["last_message_ok"])
                 self.assertEqual((emit[-1], kind), (result.get("credential_refusal"), result.get("credential_kind")))
                 self.assertIn(f"codex-review: CREDENTIAL STOP ({kind})", proc.stderr)
+
+    def test_an_answered_run_never_stops_whatever_its_last_line(self):
+        """K154p2 r4: a run that printed a `codex` answer block, or wrote a final message, then an error-shaped line,
+        is answered: no credential stop. K178 key round 3's original case (`codex` printed after a shell call, then
+        `ERROR: 401 Unauthorized`) stays a non-stop."""
+        token = "ERROR: HTTP 401: token expired"
+        cases = (("a codex answer block", ["codex", "VERDICT: ACCEPT", token], "none"),
+                 ("K178 round 3", ["exec", "cat x", "succeeded in 5ms:", "codex", "ERROR: 401 Unauthorized"], "none"),
+                 ("a written final message", ["thinking", token], "write"))
+        for why, emit, last in cases:
+            with self.subTest(why):
+                proc = self._run_transcript(emit, exit_code=1, no_tail=True, last=last)
+                self.assertNotIn("credential_refusal", self._result(proc))
+                self.assertNotIn("CREDENTIAL STOP", proc.stderr)
 
     def test_a_shell_line_in_codexs_error_shape_before_more_activity_is_not_a_refusal(self):
         """K178 key round 1, finding 2: a command printed `ERROR: 401 Unauthorized` on a line of its own, the run went
