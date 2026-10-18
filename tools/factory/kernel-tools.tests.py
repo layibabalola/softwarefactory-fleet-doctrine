@@ -95,8 +95,9 @@ class SchemaMatchesTheLoader(unittest.TestCase):
     def test_same_sections_and_keys(self):
         ks = load_subjects(str(SEED / "factory-config.json"))
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-        self.assertEqual({"schema", "about", *ks._CONFIG_KEYS}, set(schema["required"]))
-        self.assertEqual(set(schema["required"]), set(schema["properties"]))
+        self.assertEqual({"ranker", "evidence"}, set(ks._OPTIONAL_SECTIONS))
+        self.assertEqual({"schema", "about", *ks._CONFIG_KEYS} - ks._OPTIONAL_SECTIONS, set(schema["required"]))
+        self.assertEqual({"schema", "about", *ks._CONFIG_KEYS}, set(schema["properties"]))
         self.assertEqual(ks.CONFIG_SCHEMA, schema["properties"]["schema"]["const"])
         for section, keys in ks._CONFIG_KEYS.items():
             with self.subTest(section=section):
@@ -109,6 +110,67 @@ class SchemaMatchesTheLoader(unittest.TestCase):
         for cfg in (SEED / "factory-config.json", CLOUDVORE_CONFIG):
             with self.subTest(config=cfg.name):
                 self.assertIn("subject", load_subjects(str(cfg)).CONFIG)
+
+
+class OptionalSections(unittest.TestCase):
+    """Bus K154 packet 2 (coordinator ruling 2026-10-18): `ranker` and `evidence` are optional. A project's stub
+    config without them runs the kernel at exit 0 with both features off (nothing defaulted in); a section that is
+    present is validated strictly and a malformed one is refused, naming the key."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        self.stub = json.loads((SEED / "factory-config.json").read_text(encoding="utf-8"))
+        for section in ("ranker", "evidence"):
+            self.stub.pop(section, None)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def write(self, data: dict, name: str = "stub.json") -> Path:
+        path = self.tmp / name
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return path
+
+    def test_a_stub_without_ranker_or_evidence_reaches_exit_0_with_both_features_off(self):
+        stub = self.write(self.stub)
+        p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(stub)], capture_output=True,
+                           text=True, env=env_without())
+        self.assertEqual((0, True), (p.returncode, p.stdout.startswith("CONFIG OK ")), p.stderr)
+        ks = load_subjects(str(stub))
+        self.assertEqual(set(), {"ranker", "evidence"} & set(ks.CONFIG))      # off: nothing defaulted in
+        p = subprocess.run([sys.executable, str(HERE / "kernel-subjects.py"), "block", "--row", "S2", "--filter",
+                            "tests/x.py", "--bus-sha", "abcdef0"], capture_output=True, text=True,
+                           env=env_without(FACTORY_KERNEL_CONFIG=str(stub)))
+        self.assertEqual((0, True), (p.returncode, "- subject: seed/S2\n" in p.stdout), p.stderr)
+        for word in ("evidence-store", "evidence.", "ranker", "starvation"):
+            self.assertNotIn(word, p.stdout)
+
+    def test_a_malformed_present_section_is_refused_naming_the_key(self):
+        cases = (
+            ("ranker", {"starvation_window": 0}, "ranker.starvation_window"),
+            ("ranker", {"starvation_window": True}, "ranker.starvation_window"),
+            ("ranker", {}, "has no ranker.starvation_window"),
+            ("ranker", [4], "has ranker that is not an object"),
+            ("evidence", {"branch": "master", "worktree": "w"}, "evidence.branch"),
+            ("evidence", {"branch": "evidence-store"}, "has no evidence.worktree"),
+            ("evidence", {"branch": "evidence-store", "worktree": "w", "limit": 1}, "unknown key evidence.limit"),
+            ("evidence", {"branch": "evidence-store", "worktree": "../w"}, "evidence.worktree"),
+        )
+        for section, value, says in cases:
+            with self.subTest(section=section, value=value):
+                bad = self.write({**self.stub, section: value}, "bad.json")
+                p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(bad)],
+                                   capture_output=True, text=True, env=env_without())
+                self.assertEqual(2, p.returncode, p.stdout)
+                self.assertIn(says, p.stderr)
+
+    def test_both_sections_present_and_well_formed_load(self):
+        good = self.write({**self.stub, "ranker": {"starvation_window": 4},
+                           "evidence": {"branch": "evidence-store", "worktree": "seed-evidence-store"}})
+        ks = load_subjects(str(good))
+        self.assertEqual((4, "evidence-store"), (ks.CONFIG["ranker"]["starvation_window"],
+                                                 ks.CONFIG["evidence"]["branch"]))
 
 
 class KernelConfigTool(unittest.TestCase):
@@ -191,6 +253,8 @@ class SeedProjectThroughThePinRunner(unittest.TestCase):
             p = self.pr("run", "kernel-subjects", "--", "check", "HEAD", "--json", isolated=iso)
             got = json.loads(p.stdout)
             self.assertEqual(("seed/S1", "OK", [], False), (got["subject"], got["status"], got["flags"], got["landing"]))
+            # the seed config carries neither optional section: both features off, no field for either
+            self.assertEqual(set(), {"evidence", "ranker", "starvation_window"} & set(got))
             p = self.pr("run", "kernel-subjects", "--", "check", "HEAD", isolated=iso)
             self.assertTrue(p.stdout.startswith("seed/S1 OK branch="), p.stdout)
 

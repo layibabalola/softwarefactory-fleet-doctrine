@@ -115,6 +115,11 @@ _CONFIG_KEYS = {
 _COUNT = "a positive integer"
 _CONFIG_KEYS["ranker"] = {"starvation_window": _COUNT}
 
+# Bus K154 packet 2 (coordinator ruling 2026-10-18): `ranker` and `evidence` are OPTIONAL sections. Absent means the
+# feature is off for that project (no starvation guard, no evidence store); nothing is defaulted in. Present, a
+# section is checked exactly as a required one: every key, no other key, each value of its kind.
+_OPTIONAL_SECTIONS = frozenset({"ranker", "evidence"})
+
 
 class ConfigError(ValueError):
     """The config is missing, unreadable or malformed: refused, never defaulted (K137)."""
@@ -161,7 +166,7 @@ def load_config(path: Path | None) -> dict:
     if not isinstance(data, dict):
         raise ConfigError(f"the config {where} is not a JSON object")
     want = {"schema", "about", *_CONFIG_KEYS}
-    for key in sorted(want - set(data)):
+    for key in sorted(want - _OPTIONAL_SECTIONS - set(data)):
         raise ConfigError(f"the config {where} has no {key}")
     for key in sorted(set(data) - want):
         raise ConfigError(f"the config {where} has an unknown key {key}")
@@ -170,6 +175,8 @@ def load_config(path: Path | None) -> dict:
     if not isinstance(data["about"], str):
         raise ConfigError(f"the config {where} has about that is not a string")
     for section, keys in _CONFIG_KEYS.items():
+        if section in _OPTIONAL_SECTIONS and section not in data:
+            continue                        # optional and absent: the feature is off, nothing defaulted
         node = data[section]
         if not isinstance(node, dict):
             raise ConfigError(f"the config {where} has {section} that is not an object")
@@ -221,8 +228,8 @@ def load_config(path: Path | None) -> dict:
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which is not a literal prefix "
                           "followed by [0-9]+ (e.g. `GitHub Actions [0-9]+`)")
     # K179: the store branch is never a delivery or packet branch (the subject's delivery names master)
-    branch = data["evidence"]["branch"]
-    if branch in ("master", "main") or branch in data["subject"]["delivery"].split():
+    branch = data["evidence"]["branch"] if "evidence" in data else None
+    if branch is not None and (branch in ("master", "main") or branch in data["subject"]["delivery"].split()):
         raise ConfigError(f"the config {where} has evidence.branch {branch!r}, which is the delivery branch")
     if re.fullmatch(hosted, bar["runner"]):
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which matches bar.runner "

@@ -1176,6 +1176,24 @@ class FactoryConfigTests(unittest.TestCase):
                     for lit in CLOUDVORE_LITERALS:
                         self.assertNotIn(lit, value)
 
+    def test_the_ranker_and_evidence_sections_are_optional_and_absent_means_off(self):
+        """Bus K154 packet 2 (coordinator ruling 2026-10-18): another project's config without `ranker` or
+        `evidence` loads, and nothing is defaulted in; the tool answers exit 0 with no evidence or ranker output."""
+        for drop in (["ranker"], ["evidence"], ["ranker", "evidence"]):
+            with self.subTest(absent=drop):
+                def strip(data, drop=drop):
+                    for section in drop:
+                        del data[section]
+                tools = tool_copy(self, strip)
+                ks = load_copy(tools)
+                for section in drop:
+                    self.assertNotIn(section, ks.CONFIG)
+                p = subprocess.run([sys.executable, str(tools / "kernel-subjects.py"), "block", "--row", "H1",
+                                    "--filter", FILTER, "--bus-sha", BUS], capture_output=True, text=True)
+                self.assertEqual(0, p.returncode, p.stderr)
+                for word in ("evidence-store", "starvation"):
+                    self.assertNotIn(word, p.stdout)
+
     def test_a_changed_config_value_changes_what_the_tool_does(self):
         """The production wiring, not a helper: a copy of the tool beside a config naming another project's briefs
         directory, subject prefix, delivery and runner reads a Cloudvore packet as unbriefed, and renders its own."""
@@ -1278,7 +1296,8 @@ class FactoryConfigTests(unittest.TestCase):
              "contract_defaults.seats"),
             ("another schema", dict(mutate=_put(["schema"], "factory-config/2")), "schema"),
             # K151: the ranker's starvation window is a positive integer, never defaulted
-            ("no ranker", dict(mutate=_drop(["ranker"])), "has no ranker"),
+            ("a ranker that is not an object", dict(mutate=_put(["ranker"], 4)),
+             "has ranker that is not an object"),
             ("no window", dict(mutate=_drop(["ranker", "starvation_window"])), "ranker.starvation_window"),
             ("a zero window", dict(mutate=_put(["ranker", "starvation_window"], 0)), "ranker.starvation_window"),
             ("a string window", dict(mutate=_put(["ranker", "starvation_window"], "4")), "ranker.starvation_window"),
@@ -1344,7 +1363,8 @@ class FactoryConfigTests(unittest.TestCase):
              "bar.product_workflow"),
             ("a subject prefix not ASCII", dict(mutate=_put(["subject", "prefix"], "cl\u00f6udvore/")), "subject.prefix"),
             # K179: the evidence store's branch and worktree are NAMES, checked as names
-            ("the evidence section missing", dict(mutate=_drop(["evidence"])), "has no evidence"),
+            ("an evidence section that is not an object", dict(mutate=_put(["evidence"], "evidence-store")),
+             "has evidence that is not an object"),
             ("an evidence branch with a slash", dict(mutate=_put(["evidence", "branch"], "claude/evidence")),
              "evidence.branch"),
             ("an evidence branch that is the delivery branch", dict(mutate=_put(["evidence", "branch"], "master")),
