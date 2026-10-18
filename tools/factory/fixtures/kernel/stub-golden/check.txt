@@ -1,0 +1,2 @@
+exit=0
+seed/S1 OK branch=7d2623930 brief=review/briefs/s1.md block=31a45bfb9 first-product=7d2623930 products=src/,tests/ contract=recomputes

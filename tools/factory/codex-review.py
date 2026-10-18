@@ -97,11 +97,13 @@ A CREDENTIAL REFUSAL IS NAMED, NEVER RETRIED (K178)
 On a FAILED run only (codex exit non-zero, or no final message), `credential_refusal` is the transcript's last line
 of a run that never got a model response (no `exec`, `codex` or `thinking` mark, so no shell output can be in it)
 when that line is in codex's own error shape
-(`ERROR: ...` or `stream error: ...`, optionally after a bracketed timestamp) that names a 401,
-an API key, a sign-in, a usage limit, a quota or billing, with the prompt block and the final-message blocks removed
-first (as for the sandbox line); `credential_kind` is `auth` or `quota`. A CREDENTIAL STOP line goes to stderr; the exit
-code is unchanged (1). It never makes a run pass. `tools/codex-key-admitted.ps1`, the only way a drain wake runs this
-tool, turns it into a standing stop: an `auth` stop until the owner re-authenticates, a `quota` stop for six hours.
+(`ERROR: ...` or `stream error: ...`, optionally after a bracketed timestamp) that names an HTTP 401 or 403,
+an expired token, unauthorized, an API key, a sign-in, a usage limit, a quota or billing, with the prompt block and
+the final-message blocks removed first (as for the sandbox line); `credential_kind` is `auth` or `quota`. The two
+keys are in the JSON ONLY on such a stop (every other run's line keeps the earlier keys, byte for byte). A CREDENTIAL
+STOP line goes to stderr; the exit code is unchanged (1). It never makes a run pass. A project's admitted-key wrapper
+(Cloudvore's is tools/codex-key-admitted.ps1) turns it into a standing stop: an `auth` stop until the owner
+re-authenticates, a `quota` stop for six hours.
 
 NEVER `-p`/`--profile`. A profile is a name that resolves against the config
 file this tool exists to route AROUND; passing one would silently reintroduce
@@ -272,16 +274,20 @@ def shell_calls(transcript: str, prompt: str = "", final_message: str = "") -> d
 # bracketed timestamp), and only after the echoed prompt block and the final message blocks are removed (the same
 # removal as shell_calls). A shell call's output (a file that names "401 Unauthorized", a grep for "billing") is not in
 # that shape, and a review that merely discusses a refusal and succeeds is never classified. Measured: "You've hit your
-# usage limit. Visit https://chatgpt.com/codex/settings/usage ..." (~/.codex rollout error, 2026-08); "401 Unauthorized:
-# Incorrect API key provided" (2026-09-25). Two kinds: `auth` (the owner re-authenticates) and `quota` (a usage limit or
+# usage limit. Visit https://chatgpt.com/codex/settings/usage ..." (a codex rollout error, 2026-08); "401 Unauthorized:
+# Incorrect API key provided" (2026-09-25); bus key 2026-10-18: "HTTP 401: token expired". Two kinds: `auth` (the owner re-authenticates) and `quota` (a usage limit or
 # billing refusal, which passes with time or money). A hit names a stop; it never makes a run pass. Not caught: a refusal
 # printed in any other shape reads as an ordinary failure (the run still fails; nothing lands).
 CREDENTIAL_MARKERS: dict[str, tuple[str, ...]] = {
     "auth": ("401 unauthorized", "status 401", "incorrect api key", "invalid api key", "invalid_api_key",
-             "sign in again", "log in again", "codex login", "refresh token"),
+             "sign in again", "log in again", "codex login", "refresh token", "unauthorized", "forbidden",
+             "token expired", "token has expired", "expired token", "token_expired"),
     "quota": ("usage limit", "insufficient_quota", "quota exceeded", "exceeded your current quota", "billing"),
 }
 _ANSWER_MARKS = ("exec", "codex", "thinking")    # any of these means the model answered (and shell output may follow)
+# Bus key on K154 packet 2, finding 3: any HTTP 401 or 403 in codex's error line is an auth refusal (a whole number:
+# not 4013, not 404).
+_AUTH_STATUS_RE = re.compile(r"(?<![0-9])40[13](?![0-9])")
 _ERROR_LINE_RE = re.compile(r"(?:\[[^\]]*\]\s*)?(?:error|stream error):", re.I)
 
 
@@ -301,6 +307,8 @@ def credential_refusal(transcript: str, prompt: str = "", final_message: str = "
     if not lines or any(line.casefold() in _ANSWER_MARKS for line in lines) or not _ERROR_LINE_RE.match(lines[-1]):
         return None
     folded = lines[-1].casefold()
+    if _AUTH_STATUS_RE.search(folded):
+        return "auth", lines[-1]
     for kind, markers in CREDENTIAL_MARKERS.items():
         if any(marker in folded for marker in markers):
             return kind, lines[-1]
@@ -398,8 +406,6 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
             "last_message_sha256": None,
             "reviewed_head": head,
             "sandbox_failure": None,
-            "credential_refusal": None,
-            "credential_kind": None,
             "shell_calls": 0,
             "shell_succeeded": 0,
             "shell_failed": 0,
@@ -439,7 +445,7 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
     if proc.returncode != 0 or not answered:
         refusal = credential_refusal(out_text, _read(Path(prompt_file)), _read(last_path))
 
-    return {
+    result = {
         "role": role,
         "requested_model": model,
         "requested_effort": effort,
@@ -455,12 +461,15 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         "last_message_sha256": last_message_sha256(last_path),
         "reviewed_head": head,
         "sandbox_failure": failure,
-        "credential_refusal": refusal[1] if refusal else None,
-        "credential_kind": refusal[0] if refusal else None,
         "shell_calls": shell["calls"],
         "shell_succeeded": shell["succeeded"],
         "shell_failed": shell["failed"],
     }
+    # Bus key on K154 packet 2, finding 2: the two K178 keys exist ONLY on a credential stop, appended after the
+    # others, so every other run's JSON line is byte-compatible with the result before K178.
+    if refusal:
+        result["credential_refusal"], result["credential_kind"] = refusal[1], refusal[0]
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -493,7 +502,7 @@ def main(argv: list[str] | None = None) -> int:
               f"{result['shell_succeeded']}, failed {result['shell_failed']}): the review could not read the tree, "
               f"whatever its verdict says", file=sys.stderr)
         return 1
-    if result["credential_refusal"] is not None:
+    if result.get("credential_refusal") is not None:
         print(f"codex-review: CREDENTIAL STOP ({result['credential_kind']}): {result['credential_refusal']!r} in "
               f"{result['out']}: the account was refused; never re-authenticate from a script", file=sys.stderr)
         return 1

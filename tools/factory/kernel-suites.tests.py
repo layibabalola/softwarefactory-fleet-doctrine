@@ -2,11 +2,12 @@
 """Run the factory kernel's own suites on the bus.   python tools/factory/kernel-suites.tests.py [suite ...]
 
 kernel-subjects.tests.py, kernel-receipt.tests.py and codex-review.tests.py came from Cloudvore (origin/master
-31315b2, bus K154; synced to c305770, bus K154 packet 2) unchanged. They load their tool beside themselves and the tool reads factory-config.json beside
-itself, so this harness stages each run in a private directory laid out as a project's tools/ directory: the three
-tools, the three suites, and fixtures/kernel/cloudvore.factory-config.json as factory-config.json.
-FACTORY_KERNEL_CONFIG is removed from the suites' environment (several suites copy a tool beside a config of their
-own; the variable would override that copy's config).
+31315b2, bus K154; synced to c305770 and then changed on the bus by K154 packet 2: optional sections, an explicit
+config, the credential keys only on a stop). They load their tool beside themselves, so this harness stages each run
+in a private directory laid out as a project's tools/ directory: the three tools, the three suites, and
+fixtures/kernel/cloudvore.factory-config.json as factory-config.json.
+FACTORY_KERNEL_CONFIG names the staged config in the suites' environment (the kernel never reads a config beside
+itself); a suite that copies a tool beside a config of its own names that copy's config per call (copy_env).
 
 A few tests read the project tree around tools/ (its workflows, docs, ledgers, evidence and real landing history).
 They cannot run here and are EXCLUDED BY NAME below, each with the file it reads; they stay pins in the adopting
@@ -102,11 +103,13 @@ def main(argv: list[str]) -> int:
     if unknown:
         print(f"unknown suite(s): {', '.join(unknown)}; choose from {', '.join(SUITES)}", file=sys.stderr)
         return 2
-    env = {k: v for k, v in os.environ.items() if k != "FACTORY_KERNEL_CONFIG"}
     worst = 0
     with tempfile.TemporaryDirectory(prefix="kernel-suites-") as tmp:
         work = Path(tmp)
         tools = stage(work)
+        # Bus key on K154 packet 2, finding 4: the kernel never falls back to a config beside itself, so the staged
+        # config is named explicitly (a suite that copies a tool beside a config of its own names that one per call).
+        env = {**os.environ, "FACTORY_KERNEL_CONFIG": str(tools / "factory-config.json")}
         for suite in chosen:
             print(f"== {suite}", flush=True)
             p = subprocess.run([sys.executable, str(work / "run_suite.py"), str(tools / suite),

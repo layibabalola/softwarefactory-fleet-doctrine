@@ -755,7 +755,7 @@ class CodexReviewCliTests(unittest.TestCase):
     # ---- K178: a credential, quota or billing refusal is named, on a failed run only, in codex's own error shape ----
 
     def test_a_failed_run_with_a_401_error_line_names_an_auth_refusal(self):
-        line = "ERROR: unexpected status 401 Unauthorized: Incorrect API key provided: sk-svcac***"
+        line = "ERROR: unexpected status 401 Unauthorized: Incorrect API key provided: FAKE-KEY-FOR-TEST"
         proc = self._run_transcript(["stream error: unexpected status 401; retrying 1/5", line], stream="stderr",
                                     exit_code=1, no_tail=True)
         result = self._result(proc)
@@ -776,7 +776,7 @@ class CodexReviewCliTests(unittest.TestCase):
             with self.subTest(status):
                 proc = self._run_transcript(["exec", "cat fixtures/x.txt", status, "ERROR: 401 Unauthorized"],
                                             exit_code=1, no_tail=True)
-                self.assertIsNone(self._result(proc)["credential_refusal"])
+                self.assertNotIn("credential_refusal", self._result(proc))
 
     def test_once_the_model_has_answered_nothing_is_a_credential_refusal(self):
         """K178 key round 3 (the third finding in this class, closed by construction): turn marks are ordinary lines a
@@ -790,34 +790,75 @@ class CodexReviewCliTests(unittest.TestCase):
                      ["thinking", "ERROR: 401 Unauthorized"]):
             with self.subTest(emit=emit):
                 proc = self._run_transcript(emit, exit_code=1, no_tail=True)
-                self.assertIsNone(self._result(proc)["credential_refusal"])
+                self.assertNotIn("credential_refusal", self._result(proc))
 
     def test_a_shell_line_in_codexs_error_shape_before_more_activity_is_not_a_refusal(self):
         """K178 key round 1, finding 2: a command printed `ERROR: 401 Unauthorized` on a line of its own, the run went
         on and then failed for another reason. Only codex's LAST transcript line can be its own fatal error."""
         proc = self._run_transcript(["exec", "cat fixtures/x.txt", "succeeded in 5ms:", "ERROR: 401 Unauthorized",
                                      "thinking", "exec", "ls", "exited 1 in 3ms:"], exit_code=1, no_tail=True)
-        self.assertIsNone(self._result(proc)["credential_refusal"])
+        self.assertNotIn("credential_refusal", self._result(proc))
 
     def test_a_successful_run_is_never_a_credential_refusal(self):
         proc = self._run_transcript(["ERROR: unexpected status 401 Unauthorized"], exit_code=0)
         result = self._assert_ok(proc)
-        self.assertIsNone(result["credential_refusal"])
+        self.assertNotIn("credential_refusal", result)
         self.assertNotIn("CREDENTIAL STOP", proc.stderr)
 
     def test_a_shell_calls_output_is_not_a_credential_refusal(self):
         proc = self._run_transcript(["exec", "rg -n 401 tools", "tools/x.py:3: 401 Unauthorized, billing, usage limit",
                                      "exited 0 in 1s:"], exit_code=1)
-        self.assertIsNone(self._result(proc)["credential_refusal"])
+        self.assertNotIn("credential_refusal", self._result(proc))
 
     def test_an_echoed_prompt_line_is_not_a_credential_refusal(self):
         self.prompt_file.write_text("ERROR: You" + "'" + "ve hit your usage limit.\n", encoding="utf-8")
         proc = self._run_transcript([], exit_code=1)
-        self.assertIsNone(self._result(proc)["credential_refusal"])
+        self.assertNotIn("credential_refusal", self._result(proc))
 
     def test_an_ordinary_failure_is_not_a_credential_refusal(self):
         proc = self._run_transcript(["ERROR: stream disconnected before completion"], exit_code=1)
-        self.assertIsNone(self._result(proc)["credential_refusal"])
+        self.assertNotIn("credential_refusal", self._result(proc))
+
+    def test_an_http_401_or_403_or_an_expired_token_names_an_auth_refusal(self):
+        """Bus key on K154 packet 2, finding 3: `ERROR: HTTP 401: token expired` on a failed, unanswered run got no
+        credential stop. Any HTTP 401 or 403, and the token-expired and unauthorized forms, in codex's error shape."""
+        for line in ("ERROR: HTTP 401: token expired", "ERROR: HTTP 403 Forbidden", "ERROR: unexpected status 403",
+                     "ERROR: token has expired", "ERROR: expired token", "stream error: Unauthorized"):
+            with self.subTest(line=line):
+                proc = self._run_transcript([line], stream="stderr", exit_code=1, no_tail=True)
+                result = self._result(proc)
+                self.assertEqual(1, proc.returncode)
+                self.assertEqual((line, "auth"), (result.get("credential_refusal"), result.get("credential_kind")))
+                self.assertIn("codex-review: CREDENTIAL STOP (auth)", proc.stderr)
+
+    def test_a_4xx_number_that_is_not_401_or_403_is_not_a_refusal(self):
+        for line in ("ERROR: HTTP 404 not found", "ERROR: stream closed after 4013 bytes", "ERROR: HTTP 4031"):
+            with self.subTest(line=line):
+                proc = self._run_transcript([line], exit_code=1, no_tail=True)
+                self.assertNotIn("credential_refusal", self._result(proc))
+
+    # bus origin/master 60349a0f's codex-review.py: the result keys of every run, in order (before K178 came over)
+    MASTER_RESULT_KEYS = ["role", "requested_model", "requested_effort", "requested_sandbox", "actual_model",
+                          "actual_effort", "actual_sandbox", "exit", "out", "tier", "last_message", "last_message_ok",
+                          "last_message_sha256", "reviewed_head", "sandbox_failure", "shell_calls", "shell_succeeded",
+                          "shell_failed"]
+
+    def test_a_healthy_or_ordinary_failed_runs_json_keeps_bus_masters_keys_byte_for_byte(self):
+        """Bus key on K154 packet 2, finding 2: the credential keys appear ONLY on a credential stop, so a healthy run's
+        JSON line (and an ordinary failure's) is byte-compatible with bus master's: the same keys in the same order,
+        serialised the same way."""
+        for emit, code in (([], 0), (["ERROR: stream disconnected before completion"], 1)):
+            with self.subTest(emit=emit):
+                proc = self._run_transcript(emit, exit_code=code)
+                raw = proc.stdout.strip().splitlines()[-1]
+                result = json.loads(raw)
+                self.assertEqual(self.MASTER_RESULT_KEYS, list(result))
+                self.assertEqual(json.dumps(result), raw)
+
+    def test_a_credential_stop_appends_its_two_keys_after_bus_masters(self):
+        proc = self._run_transcript(["ERROR: HTTP 401: token expired"], exit_code=1, no_tail=True)
+        self.assertEqual(self.MASTER_RESULT_KEYS + ["credential_refusal", "credential_kind"],
+                         list(self._result(proc)))
 
 
 class RoleTableMatchesTheDocTests(unittest.TestCase):

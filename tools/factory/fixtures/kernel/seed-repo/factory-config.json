@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "about": "Seed project config for the factory kernel tools (tools/factory/kernel-subjects.py, kernel-receipt.py). Every key is required and no other key is allowed (K137). Copy it, then rename every value to your project's own; it NAMES things, it never decides credit.",
+  "about": "Seed project config for the factory kernel tools (tools/factory/kernel-subjects.py, kernel-receipt.py). The sections here are required, every key in each (K137); the optional ranker and evidence sections are absent, so those features are off. No other key is allowed. Copy it, then rename every value to your project's own; it NAMES things, it never decides credit.",
   "subject": {
     "prefix": "seed/",
     "row": "S[0-9]+",

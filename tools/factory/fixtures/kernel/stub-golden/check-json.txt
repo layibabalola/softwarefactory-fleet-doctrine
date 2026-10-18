@@ -1,0 +1,30 @@
+exit=0
+{
+  "base": "1da9d540134ac5b2b58eb8db9d360f634c4a2472",
+  "block_commit": "31a45bfb91f49914e9ebb85df5fb5ae6a2ed4a98",
+  "brief": "review/briefs/s1.md",
+  "briefs": [
+    "review/briefs/s1.md"
+  ],
+  "commits": 2,
+  "contract": "sha256:e2bf22de9c047a3347ebd3fac3d9ff45f1d44245b486d52c5b55fa6feab1d58e",
+  "first_product": "7d2623930890f483ba1c16c75da0f7eb7cb7c761",
+  "flags": [],
+  "landing": false,
+  "manifest": null,
+  "name": "S1",
+  "problems": [],
+  "products": [
+    "src/",
+    "tests/"
+  ],
+  "receipt": null,
+  "recomputed": "sha256:e2bf22de9c047a3347ebd3fac3d9ff45f1d44245b486d52c5b55fa6feab1d58e",
+  "row": "S1",
+  "status": "OK",
+  "subject": "seed/S1",
+  "target": "7d2623930890f483ba1c16c75da0f7eb7cb7c761",
+  "tip": "7d2623930890f483ba1c16c75da0f7eb7cb7c761",
+  "undeclared": [],
+  "violators": []
+}

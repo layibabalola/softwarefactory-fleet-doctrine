@@ -46,8 +46,8 @@ variable that relocates the repository, and GIT_NO_REPLACE_OBJECTS=1.
 
 K137: the project's constants (the subject prefix, the row and branch patterns, the delivery, the briefs, review and
 receipts paths, the default products, the bar's runner and workflows, the runner script's path and the default
-contract text) are read from ONE committed config, factory-config.json beside this file (or the file
-$FACTORY_KERNEL_CONFIG names, the form a pinned run through tools/factory/pin-runner.py uses), which
+contract text) are read from ONE committed config, the file $FACTORY_KERNEL_CONFIG names (set explicitly, as a
+pinned run through tools/factory/pin-runner.py does; never a file beside this one, and unset is refused), which
 tools/kernel-receipt.py reads through this module. A missing, unreadable or malformed config is refused (exit 2,
 `REFUSE kernel-subjects: ...`), never defaulted: `load_config` names the key that is wrong.
 """
@@ -64,14 +64,13 @@ from pathlib import Path
 
 CONFIG_NAME = "factory-config.json"
 # Bus K154: run by pin (tools/factory/pin-runner.py) the tool sits in a private directory, so the project names its
-# config in FACTORY_KERNEL_CONFIG (a path; relative resolves against the caller's cwd). Unset or empty: beside this
-# file, as a project copy has always read it. Either way the file is loaded strictly below, never defaulted.
+# config in FACTORY_KERNEL_CONFIG (a path; relative resolves against the caller's cwd). Bus key on K154 packet 2,
+# finding 4: unset or empty REFUSES (exit 2 naming the variable), even run by absolute path beside a
+# factory-config.json; a project copy that read the file beside itself must now name it. Loaded strictly below.
 CONFIG_ENV = "FACTORY_KERNEL_CONFIG"
-# Bus review of K154: in-process under pin-runner (python -I, no `with`) __file__ is the RELATIVE bus path, so "beside
-# this file" would silently read <caller's cwd>/tools/factory/factory-config.json. Beside-the-file needs an absolute
-# __file__; otherwise CONFIG_PATH is None and load_config refuses, naming the variable.
-CONFIG_PATH = (Path(os.environ[CONFIG_ENV]) if os.environ.get(CONFIG_ENV)
-               else Path(__file__).with_name(CONFIG_NAME) if Path(__file__).is_absolute() else None)
+# (Bus review of K154 had already closed the in-process case, where __file__ is relative and "beside this file" read
+# the caller's tree; this closes the rest.) Unset: CONFIG_PATH is None and load_config refuses, naming the variable.
+CONFIG_PATH = Path(os.environ[CONFIG_ENV]) if os.environ.get(CONFIG_ENV) else None
 CONFIG_SCHEMA = 1                     # the config layout this code reads
 # K120 round 1 (tools/kernel-receipt.py): the one runner-name domain, words of [0-9A-Za-z._-] joined by single spaces.
 RUNNER_WORDS = r"[0-9A-Za-z._-]+(?: [0-9A-Za-z._-]+)*"
@@ -133,8 +132,8 @@ def row_in_subject(row: str) -> re.Pattern:
 def load_config(path: Path | None) -> dict:
     """The parsed config at `path`, every key checked; ConfigError naming the file and the key otherwise."""
     if path is None:
-        raise ConfigError(f"no config: ${CONFIG_ENV} is unset and this file has no directory of its own (a pinned run "
-                          f"names its config in ${CONFIG_ENV}; K137, never defaulted)")
+        raise ConfigError(f"no config: ${CONFIG_ENV} is unset or empty; name the project's config in it (the kernel "
+                          f"never reads a {CONFIG_NAME} beside itself; K137, never defaulted)")
     where = f"{path}"
     try:
         raw = path.read_bytes()

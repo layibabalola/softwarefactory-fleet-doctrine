@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "about": "K137: the project constants tools/kernel-subjects.py and tools/kernel-receipt.py read; K151: tools/next.py reads subject.row, subject.default_products and ranker through the same loader. K179: tools/evidence-store.py reads evidence.branch and evidence.worktree, names only. A missing or malformed file is refused (exit 2), never defaulted. Every key is required and no other key is allowed. Paths are repository-relative with forward slashes; patterns are Python regular expressions.",
+  "about": "K137: the project constants tools/kernel-subjects.py and tools/kernel-receipt.py read; K151: tools/next.py reads subject.row, subject.default_products and ranker through the same loader. K179: tools/evidence-store.py reads evidence.branch and evidence.worktree, names only. A missing or malformed file is refused (exit 2), never defaulted. Every section here is required except ranker and evidence, which are optional (absent: that feature off); a section present carries every key, and no other key is allowed. Paths are repository-relative with forward slashes; patterns are Python regular expressions.",
   "subject": {
     "prefix": "cloudvore/",
     "row": "[A-Z]+\\d+[A-Z]?",
@@ -38,6 +38,6 @@
   },
   "evidence": {
     "branch": "evidence-store",
-    "worktree": "cloudvore-evidence-store"
+    "worktree": "evidence-worktree"
   }
 }

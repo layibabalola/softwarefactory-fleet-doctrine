@@ -172,9 +172,18 @@ unavailable (no clone, or the clone lacks the blob: fetch it; non-blocking for C
 
 ## The factory kernel (bus K154)
 
-The kernel tools came from Cloudvore (origin/master `31315b2`, synced to `c305770` by K154 packet 2: K151 `ranker` and K179 `evidence` as OPTIONAL config sections (absent = that feature off, nothing defaulted; present = checked strictly), K178 credential refusal in codex-review) with one change: kernel-subjects.py reads its
-config from the file `$FACTORY_KERNEL_CONFIG` names (relative to the caller's cwd), else `factory-config.json`
-beside itself as before. A pinned tool runs from a private directory, so a consumer always sets the variable.
+The kernel tools came from Cloudvore (origin/master `31315b2`; synced to `c305770` by K154 packet 2). Bus changes:
+kernel-subjects.py reads its config ONLY from the file `$FACTORY_KERNEL_CONFIG` names (relative to the caller's
+cwd); unset or empty is refused (exit 2, naming the variable), never a `factory-config.json` beside the tool, so a
+consumer always sets the variable. codex-review.py adds `credential_refusal` / `credential_kind` to its JSON only on
+a credential stop (K178), so every other run's line is unchanged.
+
+**Optional sections (`ranker`, `evidence`).** Cloudvore's K151 starvation window and K179 evidence-store names. On
+the bus both are OPTIONAL: absent means that feature is off for the project and nothing is defaulted in; present, a
+section is checked strictly (every key, no other, each value of its kind). No bus tool reads either section, and
+kernel-subjects' output does not change with them (pinned byte for byte against bus master's in
+`kernel-tools.tests.py`). A CONSUMER that needs one (Cloudvore's `next.py` and `evidence-store.py`) must check
+for the section itself and refuse when it is absent; the bus loader no longer does that for it.
 
 ```
 # install from the registry (members first; the registry's `with` makes kernel-receipt and kernel-config groups)
@@ -192,8 +201,10 @@ FACTORY_KERNEL_CONFIG=factory-pins/factory-config.json python factory-pins/pin-r
 FACTORY_KERNEL_CONFIG=factory-pins/factory-config.json python factory-pins/pin-runner.py run kernel-subjects -- check HEAD --json
 ```
 
-**Config contract.** One JSON file, `schema: 1`; every key in `factory-config.schema.json` is required and no
-other key is allowed; contradicting keys are refused (the schema's description lists them). The config NAMES
+**Config contract.** One JSON file, `schema: 1`. Required: `schema`, `about`, `subject`, `paths`, `bar` and
+`contract_defaults`, each with every key `factory-config.schema.json` lists for it. Optional: the `ranker` and
+`evidence` sections; when present, every key the schema lists for them is required. No other key is allowed
+anywhere; contradicting keys are refused (the schema's description lists them). The config NAMES
 project things (subject prefix, row pattern, paths, runner and workflow names, default contract text); what
 decides credit stays in code, the bar runner and the workflows (K137). Start from
 `fixtures/kernel/seed-repo/factory-config.json`.

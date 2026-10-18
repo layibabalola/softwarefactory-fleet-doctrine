@@ -1757,7 +1757,7 @@ def run_copy(test, tools: Path, r, merge, barred, *extra, runs=AT_MERGE_ALL):
             "--barred", barred, "--ledger", LEDGER]
     for x in runs:
         argv += ["--run", x.format(barred=barred, merge=merge, runner=RUNNER)]
-    p = subprocess.run(argv + list(extra), capture_output=True, text=True)
+    p = subprocess.run(argv + list(extra), capture_output=True, text=True, env=T.copy_env(tools))
     return p.returncode, p.stdout, p.stderr
 
 

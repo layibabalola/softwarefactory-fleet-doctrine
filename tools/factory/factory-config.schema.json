@@ -65,7 +65,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["branch", "worktree"],
-      "description": "OPTIONAL (absent: no evidence store, nothing defaulted). Cloudvore K179: the evidence store's names (an orphan branch for machine logs and the one-segment name of its worktree inside the git common directory); names only, never credit. The loader also refuses a branch equal to master, main or a subject.delivery word.",
+      "description": "OPTIONAL (absent: no evidence store, nothing defaulted). the evidence store's names (an orphan branch for machine logs and the one-segment name of its worktree inside the git common directory); names only, never credit. The loader also refuses a branch equal to master, main or a subject.delivery word.",
       "properties": {
         "branch": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
         "worktree": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"}
@@ -75,7 +75,7 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["starvation_window"],
-      "description": "OPTIONAL (absent: no starvation guard, nothing defaulted). Cloudvore K151: how many recent landings a queue ranker's two-way starvation guard reads; a count that names how far back to look, never a value that decides credit.",
+      "description": "OPTIONAL (absent: no starvation guard, nothing defaulted). how many recent landings a queue ranker's two-way starvation guard reads; a count that names how far back to look, never a value that decides credit.",
       "properties": {
         "starvation_window": {"type": "integer", "minimum": 1}
       }
