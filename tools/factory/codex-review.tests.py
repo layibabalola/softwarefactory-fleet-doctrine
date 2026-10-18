@@ -871,17 +871,12 @@ class CodexReviewCliTests(unittest.TestCase):
     }
 
     def master_lines(self) -> dict:
-        """Each GOLDEN_SCENARIOS input run through the module-level TOOL; the JSON line, normalised: every spelling of
-        the run's temporary root (root_spellings) is written <ROOT>, then JSON's escaped backslash is written `/`.
-        Nothing else is normalised."""
+        """Each GOLDEN_SCENARIOS input run through the module-level TOOL; the JSON line through normalise_root()."""
         spellings = root_spellings(self.root)
         out = {}
         for name, emit, code in self.GOLDEN_SCENARIOS:
             proc = self._run_transcript(emit, exit_code=code)
-            raw = proc.stdout.strip().splitlines()[-1]
-            for spelling in spellings:
-                raw = raw.replace(spelling, "<ROOT>")
-            out[name] = raw.replace("\\\\", "/")
+            out[name] = normalise_root(proc.stdout.strip().splitlines()[-1], spellings)
         return out
 
     def test_a_healthy_or_ordinary_failed_runs_json_line_equals_bus_masters_golden_line(self):
@@ -903,9 +898,9 @@ class CodexReviewCliTests(unittest.TestCase):
 def root_spellings(root) -> list[str]:
     """Every spelling of the directory `root` a tool may print, longest first, each also with `/` separators and as JSON
     escapes it: as given, absolute, realpath (junctions and symlinks followed) and Path.resolve(), and on Windows its
-    long and 8.3 short forms. Hosted tools bar at Cloudvore e7e52be: TEMP was an 8.3 short path
-    (C:\\Users\\OBABAL~1\\...) while codex-review printed --last-message resolved to the long form, so a test that replaced
-    only the spelling it built never matched its golden line."""
+    long and 8.3 short forms. Hosted tools bar at Cloudvore e7e52be: TEMP was an 8.3 short form (like C:\\HOME~1\\...)
+    while codex-review printed --last-message resolved to the long form, so a test that replaced only the spelling it
+    built never matched its golden line."""
     forms = {str(root), os.path.abspath(root), os.path.realpath(root), str(Path(root).resolve())}
     if os.name == "nt":
         import ctypes
@@ -919,6 +914,16 @@ def root_spellings(root) -> list[str]:
         for spelled in (form, form.replace("\\", "/")):
             out.update((spelled, json.dumps(spelled)[1:-1]))
     return sorted(out, key=len, reverse=True)
+
+
+def normalise_root(line: str, spellings: list[str]) -> str:
+    """`line` with every root spelling written <ROOT>, and the one path separator right after it (`/`, `\\`, or JSON's
+    escaped backslash) written `/`. Nothing else is touched: a backslash anywhere but right after the root stays."""
+    for spelling in spellings:
+        for sep in ("\\\\", "\\", "/"):
+            line = line.replace(spelling + sep, "<ROOT>/")
+        line = line.replace(spelling, "<ROOT>")
+    return line
 
 
 class RootSpellingsTests(unittest.TestCase):
@@ -945,6 +950,15 @@ class RootSpellingsTests(unittest.TestCase):
                               "b": "<ROOT>\\y.txt" if os.name == "nt" else "<ROOT>/y.txt"}, json.loads(line))
             if os.name == "nt":
                 os.rmdir(link)
+
+    def test_only_the_root_and_the_separator_after_it_are_normalised(self):
+        """Bus key on 5f10db9b, finding 2: a global backslash replace rewrote values outside the root. GOLDEN: the
+        root's file reads <ROOT>/out.txt; a backslash elsewhere in the line is kept byte for byte."""
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            line = json.dumps({"out": str(root / "out.txt"), "x": "a\\b", "y": "C:\\other\\place"})
+            self.assertEqual('{"out": "<ROOT>/out.txt", "x": "a\\\\b", "y": "C:\\\\other\\\\place"}',
+                             normalise_root(line, root_spellings(root)))
 
 
 class RoleTableMatchesTheDocTests(unittest.TestCase):
