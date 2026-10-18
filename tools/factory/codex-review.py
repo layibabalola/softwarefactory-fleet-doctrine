@@ -92,19 +92,28 @@ may exit non-zero in a healthy review (rg with no match), and a status-shaped li
 as one. Not caught: a failure that prints any other text, or this text after a prefix (no card shows one). A command
 that prints a copy of the measured line at the start of a line reads NOT RUN: a refused run, the safe side.
 
-A CREDENTIAL REFUSAL IS NAMED, NEVER RETRIED (K178)
--------------------------------------------------
-On an UNANSWERED failed run only (codex exit non-zero AND no final answer: an empty or missing final message and
-no `codex` answer block in the transcript; `thinking` is not an answer), `credential_refusal` is the transcript's
-FINAL line when that line is in codex's own error shape (`ERROR: ...` or
-`stream error: ...`, optionally after a bracketed timestamp) and is not still inside a shell call's output (after
-its status line, before the next turn mark), and its error text (path-like tokens dropped) names an HTTP 401 or 403
-(`HTTP 401`, `status 401`, `401 Unauthorized`, `403 Forbidden`), an expired token, unauthorized, an API key, a
-sign-in, a usage limit, a quota or billing; the prompt block and the final-message blocks are removed first (as for
-the sandbox line). `credential_kind` is `auth` or `quota`. The two keys are in the JSON ONLY on such a stop (every
-other run's line is byte-identical to the line before K178). A CREDENTIAL STOP line goes to stderr; the exit code is
-unchanged (1). It never makes a run pass. A consumer project's admitted-key wrapper can turn it into a standing stop
-(for example an `auth` stop until the owner re-authenticates, a `quota` stop for six hours).
+A FAILED, UNANSWERED RUN IS A STOP, NEVER A RETRY (K178; bus K154 packet 2, key round 3)
+---------------------------------------------------------------------------------------
+Whether the run was ANSWERED is read from structure only: the --last-message file exists, is not the --out file and
+is non-empty (codex writes it only from the agent's final message). Turn-marker lines in the human transcript
+(`thinking`, `codex`, `exec`) are never read for this: a command's output can print any of them.
+
+A run that exited non-zero AND was not answered is a credential stop: `credential_refusal` and `credential_kind` are
+both `unknown`, a CREDENTIAL STOP line goes to stderr, and the exit code stays 1. `unknown` means STOP AND ESCALATE to
+the owner, never retry: a consumer project's wrapper must not re-run, re-authenticate or wait it out on its own.
+Why never classified here: a credential or quota refusal can be classified only from a TYPED source, codex's JSON
+event stream (`codex exec --json`: typed `error` / `turn.failed` events) or a stderr that carries nothing but codex's
+own errors. This tool runs codex in human mode (its tier check reads the human banner), whose transcript mixes codex's
+lines with every command's output, so no reading of it can tell codex's error from a command's (key rounds 1-3 of
+K178 and three rounds of the bus key found such evasions: `thinking` or `codex` printed by a command, `status 4013`,
+`billing.txt`). Until a typed source is wired (a follow-up that needs one live run to record the event shapes), every
+failed, unanswered run is `unknown`. When one is wired, its error text is matched only by the strictly anchored
+patterns `\bHTTP (401|403)\b`, `\b(401 Unauthorized|403 Forbidden)\b`, `\btoken (expired|revoked)\b`,
+`\binsufficient_quota\b`, `\bquota exceeded\b`, `\bbilling hard limit\b` (auth for the first three, quota for the
+rest), and anything else stays `unknown`.
+
+The two keys are in the JSON ONLY on such a stop (every other run's line is byte-identical to the line before K178).
+A stop never makes a run pass.
 
 NEVER `-p`/`--profile`. A profile is a name that resolves against the config
 file this tool exists to route AROUND; passing one would silently reintroduce
@@ -270,61 +279,16 @@ def shell_calls(transcript: str, prompt: str = "", final_message: str = "") -> d
     return {"calls": calls, "succeeded": succeeded, "failed": failed, "failure": hit}
 
 
-# K178: what a Codex refusal on credentials, quota or billing prints. Matched only on a FAILED run (exit non-zero or no
-# final message), only on the transcript's LAST line (not inside a shell call's output), only in codex's own error shape (`ERROR: ...` or `stream error: ...`, optionally after a
-# bracketed timestamp), and only after the echoed prompt block and the final message blocks are removed (the same
-# removal as shell_calls). A shell call's output (a file that names "401 Unauthorized", a grep for "billing") is not in
-# that shape, and a review that merely discusses a refusal and succeeds is never classified. Measured: "You've hit your
-# usage limit. Visit https://chatgpt.com/codex/settings/usage ..." (a codex rollout error, 2026-08); "401 Unauthorized:
-# Incorrect API key provided" (2026-09-25); bus key 2026-10-18: "HTTP 401: token expired". Two kinds: `auth` (the owner re-authenticates) and `quota` (a usage limit or
-# billing refusal, which passes with time or money). A hit names a stop; it never makes a run pass. Not caught: a refusal
-# printed in any other shape reads as an ordinary failure (the run still fails; nothing lands).
-CREDENTIAL_MARKERS: dict[str, tuple[str, ...]] = {
-    "auth": ("401 unauthorized", "status 401", "incorrect api key", "invalid api key", "invalid_api_key",
-             "sign in again", "log in again", "codex login", "refresh token", "unauthorized",
-             "token expired", "token has expired", "expired token", "token_expired"),
-    "quota": ("usage limit", "insufficient_quota", "quota exceeded", "exceeded your current quota", "billing"),
-}
-_ANSWER_MARKS = ("exec", "codex", "thinking")    # any of these means the model answered (and shell output may follow)
-# Bus key on K154 packet 2 (round 1 finding 3, round 2 finding 2): an HTTP 401 or 403 in its status forms only
-# (`HTTP 401`, `status 401`, `status code 403`, `401 Unauthorized`, `403 Forbidden`), never a bare number (a path, a
-# count). Matched on the error text after codex's prefix, with path-like tokens (any containing / or \) dropped.
-_AUTH_STATUS_RE = re.compile(r"(?:\bhttp\s*|\bstatus(?:\s+code)?\s*)40[13](?![0-9])|\b401\s+unauthorized\b|"
-                             r"\b403\s+forbidden\b")
-_PATH_TOKEN_RE = re.compile(r"\S*[/\\]\S*")
-_ERROR_LINE_RE = re.compile(r"(?:\[[^\]]*\]\s*)?(?:error|stream error):", re.I)
+# K178, bus K154 packet 2 key round 3: the stop is decided from structure only (exit code, final-message file).
+UNKNOWN = "unknown"
 
 
-def credential_refusal(transcript: str, prompt: str = "", final_message: str = "") -> tuple[str, str] | None:
-    """K178: (kind, line) when the run never got a model response and the transcript's LAST non-blank line (after
-    the prompt and final-message blocks are removed) is a codex error line naming a credential, quota or billing
-    refusal, else None. Call on a failed run only."""
-    lines = transcript.splitlines()
-    lines = _remove_blocks(lines, _block(prompt), 1, from_end=False)
-    lines = _remove_blocks(lines, _block(final_message), 2, from_end=True)
-    lines = [line.strip() for line in lines if line.strip()]
-    # K154p2 r4 (the coordinator's corrected rule, keeping K178 key round 3): only an UNANSWERED run is classified.
-    # A `codex` answer block anywhere means the model answered: never a stop (K178 round 3's case, a `codex` line then
-    # an error-shaped line, stays a non-stop). `thinking` is not an answer, so a run with only thinking output and a
-    # final codex error line stops. The caller also requires a non-zero exit and no final message. A line still inside
-    # a shell call's output region (after its status line, before the next turn mark) is the command's, never a stop.
-    if any(line.casefold() == "codex" for line in lines):
-        return None
-    in_output = False
-    for line in lines:
-        if line.casefold() in _ANSWER_MARKS:
-            in_output = False
-        elif _STATUS_RE.fullmatch(line):
-            in_output = True
-    match = _ERROR_LINE_RE.match(lines[-1]) if lines else None
-    if match is None or in_output:
-        return None
-    folded = _PATH_TOKEN_RE.sub(" ", lines[-1][match.end():]).casefold()
-    if _AUTH_STATUS_RE.search(folded):
-        return "auth", lines[-1]
-    for kind, markers in CREDENTIAL_MARKERS.items():
-        if any(marker in folded for marker in markers):
-            return kind, lines[-1]
+def credential_refusal(returncode: int, answered: bool) -> tuple[str, str] | None:
+    """(kind, refusal) for a failed (non-zero exit), unanswered (no final message) run, else None. Both are
+    `unknown`: with no typed event stream there is nothing safe to classify from (see the module doc), so the caller
+    stops and escalates. No transcript text is read."""
+    if returncode != 0 and not answered:
+        return UNKNOWN, UNKNOWN
     return None
 
 
@@ -453,11 +417,8 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         tier = "not_run"
     seen = banner or {}
     answered = last_message_ok(last_path) and not same_file(last_path, Path(out_path))
-    # K178, K154p2 r4: on an UNANSWERED failed run only (non-zero exit and no final message), the line that says the
-    # account was refused (credentials, quota, billing).
-    refusal = None
-    if proc.returncode != 0 and not answered:
-        refusal = credential_refusal(out_text, _read(Path(prompt_file)), _read(last_path))
+    # K178, bus K154 packet 2 key round 3: a failed, unanswered run is a stop, decided from structure only.
+    refusal = credential_refusal(proc.returncode, answered)
 
     result = {
         "role": role,
@@ -517,8 +478,9 @@ def main(argv: list[str] | None = None) -> int:
               f"whatever its verdict says", file=sys.stderr)
         return 1
     if result.get("credential_refusal") is not None:
-        print(f"codex-review: CREDENTIAL STOP ({result['credential_kind']}): {result['credential_refusal']!r} in "
-              f"{result['out']}: the account was refused; never re-authenticate from a script", file=sys.stderr)
+        print(f"codex-review: CREDENTIAL STOP ({result['credential_kind']}): codex exited {result['exit']} with no final "
+              f"message (transcript {result['out']}); the cause is not classified without a typed event stream: STOP "
+              f"AND ESCALATE to the owner, never retry and never re-authenticate from a script", file=sys.stderr)
         return 1
     if not result["last_message_ok"]:
         print(f"codex-review: no final message at {result['last_message']} (missing or empty)", file=sys.stderr)

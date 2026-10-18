@@ -754,112 +754,71 @@ class CodexReviewCliTests(unittest.TestCase):
         proc = self._run("nonexistent-role", "echo")
         self.assertNotEqual(proc.returncode, 0)
 
-    # ---- K178: a credential, quota or billing refusal is named, on a failed run only, in codex's own error shape ----
+    # ---- K178 / bus K154 packet 2 key round 3: a failed, unanswered run is an UNKNOWN stop, from structure only ----
 
-    def test_a_failed_run_with_a_401_error_line_names_an_auth_refusal(self):
-        line = "ERROR: unexpected status 401 Unauthorized: Incorrect API key provided: FAKE-KEY-FOR-TEST"
-        proc = self._run_transcript(["stream error: unexpected status 401; retrying 1/5", line], stream="stderr",
-                                    exit_code=1, no_tail=True)
-        result = self._result(proc)
-        self.assertEqual(1, proc.returncode)
-        self.assertEqual((line, "auth"), (result["credential_refusal"], result["credential_kind"]))
-        self.assertIn("codex-review: CREDENTIAL STOP (auth)", proc.stderr)
+    TOKEN_401 = "ERROR: HTTP 401: token expired"
+    QUOTA = "ERROR: You" + "'" + "ve hit your usage limit."
+    # Every transcript the key rounds used, each a run that exited 1. Round 3's five inputs first, then round 2's and
+    # K178 key round 3's. None of their text may decide anything: the stop is read from the exit code and the
+    # final-message file alone.
+    TRANSCRIPTS = (
+        ("r3: a shell call's output fakes `thinking`", ["exec", "cat x", "succeeded in 5ms:", "thinking", TOKEN_401]),
+        ("r3: a bare `codex` line in a command's output", ["exec", "cat x", "succeeded in 5ms:", "codex",
+                                                          "ERROR: 401 Unauthorized"]),
+        ("r3: status 4013", ["ERROR: status 4013"]),
+        ("r3: billing.txt", ["ERROR: failed to read billing.txt"]),
+        ("r3: the true 401", [TOKEN_401]),
+        ("r2: thinking then the 401", ["thinking", TOKEN_401]),
+        ("r2: a path naming 401", ["ERROR: failed to read /tmp/401/AGENTS.md"]),
+        ("r2: a usage limit after a shell call", ["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", QUOTA]),
+        ("K178 r3: codex after a shell call, then the 401", ["exec", "cat x", "succeeded in 5ms:", "codex",
+                                                             "ERROR: 401 Unauthorized"]),
+        ("an ordinary failure", ["ERROR: stream disconnected before completion"]),
+        ("nothing at all", []),
+    )
 
-    def test_a_failed_run_with_a_usage_limit_names_a_quota_refusal(self):
-        line = "[2026-10-16T10:00:00] ERROR: You" + "'" + "ve hit your usage limit. Visit https://chatgpt.com/codex/settings/usage"
-        proc = self._run_transcript([line], exit_code=1, no_tail=True)
-        self.assertEqual("quota", self._result(proc)["credential_kind"])
+    def test_a_failed_unanswered_run_is_an_unknown_stop_whatever_its_transcript_says(self):
+        """Bus key round 3 (the H40 lesson: a text reader is an endless evasion surface): with no final message and a
+        non-zero exit, every transcript reads the same, `unknown` / `unknown`, STOP AND ESCALATE. Neither a true 401
+        nor a forged one is classified; a stray `codex` line never makes the run answered."""
+        for why, emit in self.TRANSCRIPTS:
+            for stream in ("stdout", "stderr"):
+                with self.subTest(why, stream=stream):
+                    proc = self._run_transcript(emit, stream=stream, exit_code=1, no_tail=True)
+                    result = self._result(proc)
+                    self.assertEqual(1, proc.returncode)
+                    self.assertFalse(result["last_message_ok"])
+                    self.assertEqual(("unknown", "unknown"),
+                                     (result.get("credential_refusal"), result.get("credential_kind")))
+                    self.assertIn("codex-review: CREDENTIAL STOP (unknown)", proc.stderr)
+                    self.assertIn("STOP AND ESCALATE", proc.stderr)
+                    self.assertIn("never retry", proc.stderr)
 
-    def test_a_shell_calls_last_output_line_in_codexs_error_shape_is_not_a_refusal(self):
-        """K178 key round 2, finding 1: the run died right after a command printed `ERROR: 401 Unauthorized` as its last
-        output line, so that line ended the transcript. A line inside a shell call's output (after its status line,
-        before the next turn mark) is the command's, never codex's own."""
-        for status in ("succeeded in 5ms:", "exited 1 in 3ms:"):
-            with self.subTest(status):
-                proc = self._run_transcript(["exec", "cat fixtures/x.txt", status, "ERROR: 401 Unauthorized"],
-                                            exit_code=1, no_tail=True)
-                self.assertNotIn("credential_refusal", self._result(proc))
-
-    def test_an_unanswered_failed_run_is_classified_on_its_final_error_line(self):
-        """K154p2 r4 (coordinator's corrected rule): a credential stop fires only for an UNANSWERED failed run, a
-        non-zero exit with no final answer (no --last-message content, no `codex` answer block). `thinking` is not an
-        answer, so thinking then `ERROR: HTTP 401: token expired` stops; the final error line is what is classified."""
-        quota = "ERROR: You" + "'" + "ve hit your usage limit."
-        for emit, kind in ((["thinking", "ERROR: HTTP 401: token expired"], "auth"),
-                           (["thinking", "ERROR: 401 Unauthorized"], "auth"),
-                           (["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", quota], "quota")):
-            with self.subTest(emit=emit):
-                proc = self._run_transcript(emit, exit_code=1, no_tail=True)
-                result = self._result(proc)
-                self.assertFalse(result["last_message_ok"])
-                self.assertEqual((emit[-1], kind), (result.get("credential_refusal"), result.get("credential_kind")))
-                self.assertIn(f"codex-review: CREDENTIAL STOP ({kind})", proc.stderr)
-
-    def test_an_answered_run_never_stops_whatever_its_last_line(self):
-        """K154p2 r4: a run that printed a `codex` answer block, or wrote a final message, then an error-shaped line,
-        is answered: no credential stop. K178 key round 3's original case (`codex` printed after a shell call, then
-        `ERROR: 401 Unauthorized`) stays a non-stop."""
-        token = "ERROR: HTTP 401: token expired"
-        cases = (("a codex answer block", ["codex", "VERDICT: ACCEPT", token], "none"),
-                 ("K178 round 3", ["exec", "cat x", "succeeded in 5ms:", "codex", "ERROR: 401 Unauthorized"], "none"),
-                 ("a written final message", ["thinking", token], "write"))
-        for why, emit, last in cases:
+    def test_an_answered_run_is_never_a_stop_whatever_its_transcript_says(self):
+        """The final-message file is the answer: a run that wrote one is answered, whatever error-shaped line its
+        transcript ends with, and a failed exit is reported as an ordinary failure, never a credential stop."""
+        for why, emit in self.TRANSCRIPTS:
             with self.subTest(why):
-                proc = self._run_transcript(emit, exit_code=1, no_tail=True, last=last)
-                self.assertNotIn("credential_refusal", self._result(proc))
+                proc = self._run_transcript(emit, exit_code=1, no_tail=True, last="write")
+                result = self._result(proc)
+                self.assertTrue(result["last_message_ok"])
+                self.assertNotIn("credential_refusal", result)
                 self.assertNotIn("CREDENTIAL STOP", proc.stderr)
 
-    def test_a_shell_line_in_codexs_error_shape_before_more_activity_is_not_a_refusal(self):
-        """K178 key round 1, finding 2: a command printed `ERROR: 401 Unauthorized` on a line of its own, the run went
-        on and then failed for another reason. Only codex's LAST transcript line can be its own fatal error."""
-        proc = self._run_transcript(["exec", "cat fixtures/x.txt", "succeeded in 5ms:", "ERROR: 401 Unauthorized",
-                                     "thinking", "exec", "ls", "exited 1 in 3ms:"], exit_code=1, no_tail=True)
-        self.assertNotIn("credential_refusal", self._result(proc))
+    def test_an_empty_final_message_is_not_an_answer(self):
+        proc = self._run_transcript(["codex", "VERDICT: ACCEPT", self.TOKEN_401], exit_code=1, no_tail=True,
+                                    last="empty")
+        self.assertEqual(("unknown", "unknown"), (self._result(proc).get("credential_refusal"),
+                                                  self._result(proc).get("credential_kind")))
 
-    def test_a_successful_run_is_never_a_credential_refusal(self):
-        proc = self._run_transcript(["ERROR: unexpected status 401 Unauthorized"], exit_code=0)
-        result = self._assert_ok(proc)
-        self.assertNotIn("credential_refusal", result)
-        self.assertNotIn("CREDENTIAL STOP", proc.stderr)
-
-    def test_a_shell_calls_output_is_not_a_credential_refusal(self):
-        proc = self._run_transcript(["exec", "rg -n 401 tools", "tools/x.py:3: 401 Unauthorized, billing, usage limit",
-                                     "exited 0 in 1s:"], exit_code=1)
-        self.assertNotIn("credential_refusal", self._result(proc))
-
-    def test_an_echoed_prompt_line_is_not_a_credential_refusal(self):
-        self.prompt_file.write_text("ERROR: You" + "'" + "ve hit your usage limit.\n", encoding="utf-8")
-        proc = self._run_transcript([], exit_code=1)
-        self.assertNotIn("credential_refusal", self._result(proc))
-
-    def test_an_ordinary_failure_is_not_a_credential_refusal(self):
-        proc = self._run_transcript(["ERROR: stream disconnected before completion"], exit_code=1)
-        self.assertNotIn("credential_refusal", self._result(proc))
-
-    def test_an_http_401_or_403_or_an_expired_token_names_an_auth_refusal(self):
-        """Bus key on K154 packet 2, finding 3: `ERROR: HTTP 401: token expired` on a failed, unanswered run got no
-        credential stop. Any HTTP 401 or 403, and the token-expired and unauthorized forms, in codex's error shape."""
-        for line in ("ERROR: HTTP 401: token expired", "ERROR: HTTP 403 Forbidden", "ERROR: unexpected status 403",
-                     "ERROR: token has expired", "ERROR: expired token", "stream error: Unauthorized",
-                     "ERROR: status 401", "ERROR: 401 Unauthorized", "ERROR: 403 Forbidden", "ERROR: http 403",
-                     "ERROR: status code 401"):
-            with self.subTest(line=line):
-                proc = self._run_transcript([line], stream="stderr", exit_code=1, no_tail=True)
-                result = self._result(proc)
-                self.assertEqual(1, proc.returncode)
-                self.assertEqual((line, "auth"), (result.get("credential_refusal"), result.get("credential_kind")))
-                self.assertIn("codex-review: CREDENTIAL STOP (auth)", proc.stderr)
-
-    def test_a_4xx_number_that_is_not_an_http_401_or_403_is_not_a_refusal(self):
-        """Bus key round 2, finding 2: a bare 401 or 403 (a path, a byte count) is not an HTTP status; neither is a
-        credential word inside a path."""
-        for line in ("ERROR: HTTP 404 not found", "ERROR: stream closed after 4013 bytes", "ERROR: HTTP 4031",
-                     "ERROR: failed to read /tmp/401/AGENTS.md", "ERROR: failed to read C:\\tmp\\403\\x.md",
-                     "ERROR: retry 401 of 900 failed", "ERROR: failed to open /srv/unauthorized/a.txt",
-                     "ERROR: cannot read /data/token expired/x"):
-            with self.subTest(line=line):
-                proc = self._run_transcript([line], exit_code=1, no_tail=True)
+    def test_a_run_that_exited_0_is_never_a_stop(self):
+        """Exit 0 with no final message is the existing `no final message` failure, not a credential stop; exit 0
+        with one is healthy, whatever its transcript says."""
+        for last in ("none", "write"):
+            with self.subTest(last=last):
+                proc = self._run_transcript([self.TOKEN_401], exit_code=0, no_tail=True, last=last)
                 self.assertNotIn("credential_refusal", self._result(proc))
+                self.assertNotIn("CREDENTIAL STOP", proc.stderr)
 
     # bus origin/master 60349a0f's codex-review.py: the result keys of every run, in order (before K178 came over)
     MASTER_RESULT_KEYS = ["role", "requested_model", "requested_effort", "requested_sandbox", "actual_model",

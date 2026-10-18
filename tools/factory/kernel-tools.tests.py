@@ -188,6 +188,10 @@ class OptionalSections(unittest.TestCase):
         loads; the delivery branch itself, master and main are refused."""
         delivery = self.stub["subject"]["delivery"]
         self.assertEqual("master via --no-ff landing", delivery)
+        # bus key round 3 (e): the schema describes this exact check, the delivery branch being the FIRST word
+        described = json.loads(SCHEMA.read_text(encoding="utf-8"))["properties"]["evidence"]["description"]
+        self.assertIn("the delivery branch, which is the FIRST word of subject.delivery", described)
+        self.assertNotIn("a subject.delivery word", described)
         for branch in ("landing", "via", "no-ff"):
             with self.subTest(accepted=branch):
                 good = self.write({**self.stub, "evidence": {"branch": branch, "worktree": "w"}}, "good.json")

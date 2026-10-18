@@ -177,7 +177,11 @@ kernel-subjects.py reads its config ONLY from the file `$FACTORY_KERNEL_CONFIG` 
 cwd); unset or empty is refused (exit 2, naming the variable), never a `factory-config.json` beside the tool, so a
 consumer always sets the variable. codex-review.py adds `credential_refusal` / `credential_kind` to its JSON only on
 a credential stop (K178), so every other run's line is byte-identical to bus master's (pinned against a golden line
-in `codex-review.tests.py`).
+in `codex-review.tests.py`). A stop is decided from structure only: codex exited non-zero AND wrote no final message
+(`-o` file missing or empty); no transcript text is read. Both keys are then `unknown`, which a consumer project's
+wrapper must treat as STOP AND ESCALATE to the owner, never as a retry: the human transcript mixes codex's errors
+with command output, so an auth or quota cause is classified only from a typed source (`codex exec --json` events),
+which this tool does not use yet (a follow-up that needs one live run to record the event shapes).
 
 **Optional sections (`ranker`, `evidence`).** A queue ranker's starvation window and an evidence store's names.
 Both are OPTIONAL: absent means that feature is off for the project and nothing is defaulted in. kernel-subjects.py
