@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: d7883b293929747eb6e8e85307b75cf08647a52e
+source_commit: aa30dd7c042e074c8fe6424fc40c8f9b62d516d3
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -235,7 +235,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   measurement phase whose rows each wait for a machine-quiet window of their own is not dispatched while another
   card's such driver PROCESS is live, between its batches too, because the shorter window always preempts the longer
   and equal windows would run two batteries at once and turn a load RED into a false kill; the hold is read off the
-  driver process alone, so it ends when that driver exits, and it holds no build, key or author. **A job this factory did not start is NAMED, never held for** (§4): walk each
+  driver process alone, so it ends when that driver exits, and it holds no build, key or author. **Such a phase is
+  dispatched last** (§4): only by a tick that dispatched no build- or decode-heavy seat that tick and, after its other
+  dispatches, still reads no suite or build live, because a hold read at one instant is otherwise released into the
+  load the same tick then starts; it is a priority, not a hold, so no other card waits for it and it waits READY at
+  its attempt, and the load other sessions add stays the phase's own gate to wait out. **A job this factory did not start is NAMED, never held for** (§4): walk each
   process's parent chain to its root; a root that is the SSH service or a service other than this board's own runner
   is FOREIGN, named in the receipt with that root, and that resolves its UNREADABLE term — this board's own CI runner
   is held for like any factory suite (fleet `TRAPS.md`, "A quiet gate that counts every live test host defers forever
@@ -298,7 +302,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   never overrides an unrefuted BLOCKER. **Opus never authors a reviewed subject, so an Opus-written subject a
   router hands over as card-ready is never keyed** (§2): no ruling can name it a key 2, since fleet RULINGS R1
   makes Opus the floor for a review act and Fable is never a key-2 tier; the cop opens its card as any
-  implementation card at the approach phase under an executor seat, that branch is prior art only, and the
+  implementation card at attempt 1's approach phase under an executor seat, the router's branch is prior art only, and the
   subject the keys read is the executor's own commit.
   **Where the rules give a card's approach review and a round's key 1 the
   SAME model, the key is briefed on what that model already asserted** (§2; docs/13 P-COP Step 2 points at it):
