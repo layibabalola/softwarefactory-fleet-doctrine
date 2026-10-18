@@ -319,3 +319,10 @@ mechanism: "Was this tree ever the tip" cannot see a tree that was the tip only 
 check: python tools/factory/delivery-at-identity.tests.py
 supersedes: none
 evidence: measured
+
+## conjugal/heavy-slot-admission-is-one-unit
+rule: A machine-wide heavy-slot admission covers one bounded unit of work (a test file, a mutant set, a benchmark leg, or a bar measured to finish in minutes), never a multi-hour batch or a whole tier; a batch runner takes one admission per unit so an exclusive waiter can start between units, and refuses to run whole inside an outer admission (a nested admission passes straight through).
+mechanism: Measured 2026-10-18 on the shared laptop: one admission wrapped around a ~60-file tools bar (1200 s per-file timeout) held a slot 2 h+ while an exclusive CUDA benchmark waited ~3.0 h, over 2 h of it at the queue head, and three shared runs queued behind it. The free slot stayed idle because the joiner heat gate was correctly closed (0 of 90 minutes passable), so backfill or a drain change would not have helped, and a kill ceiling would have killed a legitimate 136-min bar. heavy-slot 2.2.0 prints each holder's age inside the slot line's parentheses ("since S, held M min)") and warns the holder on stderr once it has held 60 min while others wait; neither changes admission.
+check: run the machine ops self-test heavy-slot.overrun.test.py against heavy-slot.py (26 sandboxed checks: held field inside the parentheses, both production parsers still match, notice only past the threshold with a waiter, rc passed through); on the 2.1.0 copy it fails 7 and then aborts
+supersedes: none
+evidence: measured
