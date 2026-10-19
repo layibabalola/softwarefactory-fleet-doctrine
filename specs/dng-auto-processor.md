@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: d0533525f3df5e4b98c32f929e3aaed2b2c735d2
+source_commit: 9a2d39f2718b4a11bdc4d2e547ea96484bf34e03
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -232,10 +232,13 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   unelevated reader can see into never gives either exit. A hook
   rejection naming a locked build output is a load reading: retry once, then defer, never `--no-verify`. A hold derives from
   processes, never from card state, **save one case** (§4; docs/13 P-COP Step 3 reads it before any dispatch): a
-  measurement phase whose rows each wait for a machine-quiet window of their own is not dispatched while another
-  card's such driver PROCESS is live, between its batches too, because the shorter window always preempts the longer
-  and equal windows would run two batteries at once and turn a load RED into a false kill; the hold is read off the
-  driver process alone, so it ends when that driver exits, and it holds no build, key or author. **Such a phase is
+  measurement phase whose rows each wait for a machine-quiet window of their own (a K battery's gate) is not dispatched
+  while another card's driver PROCESS is live — such a gate's driver, or a detached driver whose pid that card's state
+  line records (a decode or compute pass) — between its batches too, because the shorter window always preempts the
+  longer, equal windows would run two batteries at once and turn a load RED into a false kill, and a recorded decode
+  driver keeps the gate shut while it decodes; a foreign campaign's driver, whose pid no card records, stays the phase's own gate to
+  wait out; the hold is read off the driver process alone, so it ends when that driver exits, and it holds no build,
+  key or author. **Such a phase is
   dispatched last** (§4; docs/13 P-COP Step 3 skips it in its priority walk and decides it after): only by a tick
   that dispatched no build- or decode-heavy seat and, after its other dispatches, still reads no suite or build live,
   because a hold read at one instant is otherwise released into the
