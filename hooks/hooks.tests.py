@@ -318,6 +318,33 @@ class NoUnpinnedTool(unittest.TestCase):
         head = self.commit("copy on a branch")
         self.assertEqual(self.judge(f"refs/heads/feature {head} refs/heads/feature {Z}").returncode, 1)
 
+    def test_merging_the_mainline_into_an_old_branch_is_not_the_branch_s_change(self):
+        # Cloudvore 2026-10-19: a packet branch cut before the mainline turned tools/kernel-subjects.py into a forwarder
+        # merged origin/master (the "merge, never rebase" rule) and its push was refused for the mainline's edits.
+        _g(self.repo, "checkout", "-q", "-b", "feature")
+        self.write("src/ok.py", "x\n")
+        old_tip = self.commit("feature work")
+        _g(self.repo, "push", "-q", "origin", "feature")
+        _g(self.repo, "checkout", "-q", "master")
+        self.write("tools/kernel-subjects.py", "forward()\n")       # landed on the mainline under its own review
+        self.write("tools/doctrine-outbox.py", "print(9)\n")        # a census copy the mainline added
+        self.commit("mainline lands a forwarder")
+        _g(self.repo, "push", "-q", "origin", "master")
+        _g(self.repo, "checkout", "-q", "feature")
+        _g(self.repo, "merge", "-q", "--no-ff", "-m", "merge origin/master", "origin/master")
+        head = _g(self.repo, "rev-parse", "HEAD")
+        line = f"refs/heads/feature {head} refs/heads/feature {old_tip}"
+        r = self.judge(line)
+        self.assertEqual(r.returncode, 0, "files that equal the mainline were judged when they landed: " + r.stderr)
+        self.write("tools/kernel-subjects.py", "forward()  # the branch's own edit\n")
+        head = self.commit("edit the forwarder on the branch")
+        r = self.judge(f"refs/heads/feature {head} refs/heads/feature {old_tip}")
+        self.assertEqual(r.returncode, 1, "the branch's own edit to a canonical copy is still refused")
+        self.assertIn("tools/kernel-subjects.py -- a copy of the shared tool", r.stderr)
+        self.assertEqual(self.judge(f"refs/heads/master {head} refs/heads/master "
+                                    f"{_g(self.repo, 'rev-parse', 'origin/master')}").returncode, 1,
+                         "the same tip pushed to the mainline itself is judged against the mainline")
+
     def test_real_push_from_a_linked_worktree(self):
         # git runs the hook with GIT_DIR exported when the push starts in a linked worktree (58017fbbe).
         hooks = Path(_g(self.repo, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "hooks"
