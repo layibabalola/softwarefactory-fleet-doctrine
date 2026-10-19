@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 9a2d39f2718b4a11bdc4d2e547ea96484bf34e03
+source_commit: b0a2f01d418a40a140fd9b9f30fa2ad4b8e0f419
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -397,7 +397,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   re-labelling a local-kind value as UTC moves it by the host's offset.
 - **Worktrees are sparse; a free-space floor holds creation, and an unreadable reading holds it**; HELD-FOR-DISK
   spends no attempt; the item worktree goes on landing, a key's once its verdict is written (§10 "Task
-  worktrees", a USER unfreeze in §0). **A lock file that the factory's own mandated restore — or any build that restores — rewrites is never the
+  worktrees", a USER unfreeze in §0). **A worktree is verified before use, and its existence check covers only those of
+  the card's corpus paths that its checked-out commit already holds**, so a card that creates a corpus file is not
+  refused for that file's absence before its own commit adds it. **A lock file that the factory's own mandated restore — or any build that restores — rewrites is never the
   card's byte**: no seat stages it, no allowlist check counts it, and a git operation that refuses a dirty tree, a
   rebase or a removal, is preceded by reverting exactly that path (for a removal, after the census has captured
   it), which loses nothing a restore does not rewrite; a card whose allowlist names that file is untouched. A
