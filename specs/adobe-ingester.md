@@ -1488,3 +1488,28 @@ Still OWED from earlier addenda, re-checked on 2026-10-18: R16.5 and R16.3 (abov
 (`tools/session-checkpoint.py` is still tracked with `AUTO_RESUME_ENABLED = True` at `:15` and registered in
 `.claude/settings.json:6,13`, Sol); the auditor's falsifier pin (`.claude-state/tools/codex-auditor.ps1:8` is still
 `0.160.1`, auditor). None counts as done until its owner records it.
+
+## Fold addendum, 2026-10-19 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `4ff3a35..d9492a1` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `4ff3a35`; the 2026-10-18
+addendum already disposed everything up to `69d7d63`, so the new rows start after it). Binding: none (no commit to
+`RULINGS.md` or `specs/fleet-*`). Sibling: 7 commits touching `TRAPS.md` or another board's `specs/`; heartbeats, CoS
+feedback and Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-10-19 against
+Adobe HEAD `30d2905`. Every `git grep` ran over tracked files only, outside `.factory/evidence`, so a 0 is bounded to
+that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| airmypc trap: the shared check-doc-size drops a file it cannot read | `66e722e` | DISTINGUISH: Adobe tracks no `check-doc-size` (`git ls-files`, 0). Adobe's size cap is the 200-line RESUME contract (`~/.claude/hooks/Test-ResumeContract.ps1:34`). Measured: report mode on a 400-line file under a `FileShare.None` lock exits 1 with a sharing-violation error and prints no PASS, so it fails closed. The PreToolUse path (`check-continuity-boundaries.py:442-468`) checks the tool's own content and reads no file. |
+| conjugal card: a Windows append is not atomic across processes | `d92d661` | DISTINGUISH: Adobe's tracked Python has 0 `open(..., "a")` calls. Its shared JSONL writers open `[IO.FileMode]::Append` with `[IO.FileShare]::Read` (for example `.factory/tools/FactoryValueLedger.Common.psm1:53`, `FactoryRoleRegistry.Common.psm1:195`, `FactoryClaudeAccountPool.Common.psm1:354`). Measured: a second opener of that kind gets an IOException sharing violation, so a concurrent writer fails loudly and never tears a line. The `Add-Content` log hits are test fixtures and one single-process phase log (`Test-FactoryClaudeControlPlane.ps1:25,135`). Not traced: whether every caller retries that IOException. |
+| conjugal card: a shared host protects short exclusive work | `6e8ad80` | NOT-APPLICABLE: a `heavy-slot.py` admission-wrapper rule. Adobe tracks no `heavy-slot` (0), and a bounded search of `~\bin`, `~\.claude` and `C:\ProgramData` (depth 3) found no `heavy-slot*.py` on VIRTUAL-TEN. |
+| conjugal card: a heavy-slot admission is one unit | `fb20f01` | NOT-APPLICABLE: same wrapper, same evidence as `6e8ad80`. |
+| mlv-app card: an SMB listing that opens files feeds the AV scanner | `6a14ebf` | DISTINGUISH: `git grep` finds 0 `ls -t`, `ls -l` or `find -newer` in tracked `*.ps1`, `*.psm1`, `*.sh`, `*.mjs`, `*.py`, and 0 UNC paths in tracked `*.ps1`/`*.psm1`. Adobe lists no SMB mailbox. |
+| mlv-app card: the pin-runner cache never repairs same-size corruption | `441151e` | NOT-APPLICABLE: Adobe tracks no `pin-runner` or `factory-pins/` (`git ls-files`, 0). The repair belongs to the bus owner. |
+| dng spec posture: P-COP Step 3 decides a "dispatched last" phase | `41f07b7` | NOT-APPLICABLE: dng-auto-processor's own spec. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-19: R16.3 (`.factory/tools/Invoke-FactoryClaudeLane.ps1` has
+0 `effort` hits, Sol), R16.5 (`.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and
+`gpt-5.6-luna`, Sol), `43e29cc` and `83dd546` (`tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`
+and `.claude/settings.json:6,13` still registers it, Sol), and the auditor's falsifier pin
+(`.claude-state/tools/codex-auditor.ps1` still pins `0.160.1`, auditor). None counts as done until its owner records it.
