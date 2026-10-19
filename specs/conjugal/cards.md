@@ -333,3 +333,10 @@ mechanism: Measured 2026-10-18: a builder subagent following a brief that allowe
 check: run the machine ops self-test heavy-slot.shortexcl.test.py against heavy-slot.py and its 2.2.0 copy (24 sandboxed checks incl. an end-to-end replay where the 2.2.0 copy gives the freed machine to the older shared run and 2.3.0 to the benchmark; 5 planted mutants killed by the author, 3 more by the reviewer; harness not shipped)
 supersedes: none
 evidence: measured
+
+## conjugal/windows-append-is-not-atomic-across-processes
+rule: On Windows, a file that more than one process appends to (a JSONL ledger, a shadow log, a test fake's record) is written through a handle opened for FILE_APPEND_DATA only, one WriteFile per record, or else one file per writer; Python's open(path, "a") is never relied on for concurrent appends.
+mechanism: The MS C runtime emulates O_APPEND as seek-to-end then write, so two processes can write at one offset and overwrite or tear each other's lines. Measured 2026-10-18 on the shared laptop: 8 writers x 1500 JSON lines through "a" kept 10,566 and 10,948 of 12,000 lines intact; the same load through a FILE_APPEND_DATA handle kept 12,000 of 12,000 twice. A live machine-wide admission log already held two torn tails written within one second of a second appender, and a sibling project's test flaked from the same race.
+check: run the machine ops self-test heavy-slot.append.test.py against heavy-slot.py (8 processes x 1500 lines through the atomic append: all intact and unique; a planted mutant that falls back to plain append loses lines and is caught)
+supersedes: none
+evidence: measured
