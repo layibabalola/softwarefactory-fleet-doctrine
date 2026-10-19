@@ -340,3 +340,16 @@ mechanism: The MS C runtime emulates O_APPEND as seek-to-end then write, so two 
 check: run the machine ops self-test heavy-slot.append.test.py against heavy-slot.py (8 processes x 1500 lines through the atomic append: all intact and unique; a planted mutant that falls back to plain append loses lines and is caught)
 supersedes: none
 evidence: measured
+
+## conjugal/reservation-parks-never-halts
+rule: a reserved class parks the subject that needs it, and the next subject proceeds. No list, report or
+  interpretation may turn reservations into a queue-wide stop, and a limit that rests only on a recorder's
+  interpretation, not on the owner's words, is never grounds for one.
+mechanism: a drafter read one line of a directive's "recorder's interpretation (not the owner's words)"
+  section as reserving every item outside an audit. It reserved every remaining product, control and
+  doctrine-adopt candidate for an owner register row and wrote that the loop waits. The owner's own words
+  were "I dont want to be in the loop", so the loop stopped against the owner's grant.
+check: a file that lists owner decisions must say it does not block the loop, and must contain no statement
+  that nothing is declarable until the owner answers; such a statement is a halt.
+supersedes: none
+evidence: measured
