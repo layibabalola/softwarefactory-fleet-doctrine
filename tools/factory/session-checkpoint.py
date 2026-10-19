@@ -224,12 +224,15 @@ class Ctx:
             return ""
 
     def dirt(self, cwd, deadline=False):
-        """Modified tracked files plus untracked ones; None when the deadline cut either call off."""
+        """Modified tracked files (worktree vs index, and staged: index vs HEAD) plus untracked ones; None when the
+        deadline cut any call off. v2 and v3 read the first and last only, so a staged-only file was in neither the
+        snapshot nor the Stop inventory."""
         diff = self.git(cwd, "diff", "--name-only", deadline=deadline)
+        staged = self.git(cwd, "diff", "--cached", "--name-only", deadline=deadline)
         others = self.git(cwd, "ls-files", "--others", "--exclude-standard", deadline=deadline)
-        if diff is None or others is None:
+        if diff is None or staged is None or others is None:
             return None
-        return set(diff.splitlines()) | set(others.splitlines())
+        return set(diff.splitlines()) | set(staged.splitlines()) | set(others.splitlines())
 
     def worktree_scan(self, repo):
         listing = self.git(repo, "worktree", "list", "--porcelain", deadline=True)

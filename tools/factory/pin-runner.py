@@ -914,6 +914,42 @@ def by_pin(command: str, tool: str, never_block: bool = False) -> bool:
     return False
 
 
+def not_by_pin_because(command: str, tool: str, never_block: bool = False) -> list[str]:
+    """Why by_pin(command, tool, never_block) is False, one reason per defect, naming the disqualifying option."""
+    runs = [(sc[0], runner_tool(sc)[1]) for sc in command_scripts(command) if runner_tool(sc)[0] == tool]
+    if not runs:
+        return ["a copy, not run by pin"]
+    why: list[str] = []
+    for word, opts in runs:
+        if not PROJECT_RUNNER.match(word):
+            why.append(f"through {word}, not this project's factory-pins/pin-runner.py")
+            continue
+        extra = [o for o in opts if o.startswith("--") and o != "--never-block"]
+        if extra:
+            why.append(f"runner option {', '.join(extra)}: init judges with the pins it writes, so no runner option but "
+                       f"--never-block may precede `run`")
+        if never_block and "--never-block" not in opts:
+            why.append("without --never-block: a runner refusal would exit 2 (on Stop: block every turn end)")
+    return why
+
+
+def runner_never_blocks(word: str, root: Path) -> bool | None:
+    """Does the runner a hook command names support --never-block? None when its path does not resolve here (an
+    unset variable, a missing or unreadable file). This project's own runner does: plan_settings is only asked
+    about it once the vendored runner is known to."""
+    if PROJECT_RUNNER.match(word):
+        return True
+    s = word.replace("${CLAUDE_PROJECT_DIR}", root.as_posix()).replace("$CLAUDE_PROJECT_DIR", root.as_posix())
+    s = os.path.expandvars(os.path.expanduser(s))
+    if "$" in s or "%" in s:
+        return None
+    p = Path(s) if Path(s).is_absolute() else root / s    # Claude Code runs a hook in the project directory
+    try:
+        return NEVER_BLOCK_ARG in p.read_bytes()
+    except OSError:
+        return None
+
+
 def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[str, Any]], out: list[str],
                   hand: list[str], never_block_ok: bool = True) -> bytes | None:
     """The merged .claude/settings.json bytes, or None when nothing is added. Existing entries are never edited or
@@ -923,9 +959,11 @@ def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[s
       exactly one, and it is this file running the tool BY PIN under the profile's matcher (any flags or tool args:
       `-- --observe-only` is the project's choice)   -> kept
       exactly one, in another scope (settings.local.json or the user's settings; a copy or a pin)
-                                -> kept: it already runs once, and adding ours would run it twice
+                                -> kept: it already runs once, and adding ours would run it twice; but a never_block
+                                   hook there by pin without --never-block -> HAND: add the flag when that entry's
+                                   runner supports it, else run it through this project's runner
       exactly one here that is a copy (not by pin) or under another matcher, or two or more anywhere
-                                -> HAND (replace the copy by the pin / keep exactly one)
+                                -> HAND (replace the copy by the pin, naming what disqualifies it / keep exactly one)
     Every HAND step can be cleared by the person, and the same init then exits 0."""
     settings = load_settings(path)
     scopes: list[tuple[Path, dict[str, Any]]] = [(path, settings)]
@@ -962,16 +1000,26 @@ def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[s
                         + (f", matcher {m}" if m else "") + f", in {path})")
             continue
         p, mm, c = regs[0]
-        if p != path and h.get("never_block") and any(
-                runner_tool(sc)[0] == tool and "--never-block" not in runner_tool(sc)[1] for sc in command_scripts(c)):
-            hand.append(f"{tool} runs on {ev} from {p} by pin without --never-block: a runner refusal there exits 2 "
-                        f"(on Stop: blocks every turn end). Add --never-block before `run` in that entry: {c}")
+        lacking = [sc[0] for sc in command_scripts(c) if runner_tool(sc)[0] == tool and "--never-block" not in runner_tool(sc)[1]]
+        if p != path and h.get("never_block") and lacking:
+            # Adding the flag is only a fix when that entry's runner accepts it: an older runner rejects it (exit 2).
+            if all(runner_never_blocks(w, path.parent.parent) for w in lacking):
+                hand.append(f"{tool} runs on {ev} from {p} by pin without --never-block: a runner refusal there exits 2 "
+                            f"(on Stop: blocks every turn end). Add --never-block before `run` in that entry: {c}")
+            else:
+                hand.append(f"{tool} runs on {ev} from {p} by pin without --never-block, through a runner that does not "
+                            f"support it or does not resolve here ({', '.join(lacking)}): a refusal there exits 2 (on Stop: "
+                            f"blocks every turn end), and adding the flag would exit 2 on every run. Run it through this "
+                            f"project's runner: replace that entry with {cmd}, or remove it and re-run init (it then wires "
+                            f"that form in {path})")
         elif p != path:
             out.append(f"  kept    hook {label}: {tool} already runs once from {p}" + ("" if by_pin(c, tool) else " (not by pin)"))
         elif by_pin(c, tool, h.get("never_block", False)) and mm == m:
             out.append(f"  kept    hook {label}: {tool}" + ("" if c == cmd else f" (the project's own form: {c})"))
         else:
-            hand.append(f"{tool} already runs on {ev} as {where}  -- replace it with: {cmd}"
+            why = ([f"matcher {mm or 'none'}, not {m or 'none'}"] if mm != m else []) + (
+                [] if by_pin(c, tool, h.get("never_block", False)) else not_by_pin_because(c, tool, h.get("never_block", False)))
+            hand.append(f"{tool} already runs on {ev} as {where} ({'; '.join(why)})  -- replace it with: {cmd}"
                         + (f" with matcher {m}" if m else "") + f" in {path}")
     return (json.dumps(settings, indent=2, ensure_ascii=False) + "\n").encode("utf-8") if added else None
 

@@ -826,5 +826,108 @@ class ReviewRound2(_Init):
         self.assertEqual(git(self.proj, "ls-files", "--", ".team hooks/pre-push"), ".team hooks/pre-push")
 
 
+class ReviewMinors(_Init):
+    """Regressions for the MINOR findings the LAND verdict left open."""
+
+    STOP = "session-checkpoint"
+
+    def user_stop_hook(self, runner: str) -> None:
+        (self.home / ".claude" / "settings.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": f'python -I "{runner}" run {self.STOP}'}]}]}}), encoding="utf-8")
+
+    def stop_hand(self) -> str:
+        p = self.init()
+        self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+        lines = [l for l in p.stdout.splitlines() if l.startswith("HAND:") and f"{self.STOP} runs on Stop" in l]
+        self.assertEqual(len(lines), 1, p.stdout)
+        return lines[0]
+
+    def test_an_older_runner_elsewhere_is_never_told_to_add_never_block(self):
+        """MINOR 1: a user-level Stop hook by pin through an older vendored runner was told to add --never-block, a
+        flag that runner rejects (exit 2 on every Stop). Gate the advice on the runner's own bytes."""
+        old = self.t / "old-project" / "factory-pins" / "pin-runner.py"
+        old.parent.mkdir(parents=True)
+        old.write_bytes((self.bus / "tools/factory/pin-runner.py").read_bytes().replace(b'"--never-block"', b'"--no-such-flag"'))
+        self.user_stop_hook(old.as_posix())
+        line = self.stop_hand()
+        self.assertNotIn("Add --never-block", line)
+        self.assertIn("Run it through this project's runner", line)
+        self.assertIn('factory-pins/pin-runner.py" --never-block run session-checkpoint', line)
+        # an unresolvable runner path is not presumed to support the flag either
+        self.user_stop_hook("$FACTORY_NO_SUCH_VAR/factory-pins/pin-runner.py")
+        self.assertIn("Run it through this project's runner", self.stop_hand())
+        # a runner that supports it: adding the flag is the fix, and the fixed entry is kept
+        new = self.t / "new-project" / "factory-pins" / "pin-runner.py"
+        new.parent.mkdir(parents=True)
+        new.write_bytes((self.bus / "tools/factory/pin-runner.py").read_bytes())
+        self.user_stop_hook(new.as_posix())
+        self.assertIn("Add --never-block before `run` in that entry", self.stop_hand())
+        (self.home / ".claude" / "settings.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [
+            {"type": "command", "command": f'python -I "{new.as_posix()}" --never-block run {self.STOP}'}]}]}}), encoding="utf-8")
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+
+    def test_the_hand_line_names_what_disqualifies_a_project_hook(self):
+        """MINOR 2: a project hook through the project's runner with a runner option other than --never-block (--bus)
+        was told only "replace it with ..."; the HAND line now names the option (and any other defect)."""
+        cases = (('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" --bus /x run exact-path-add', "Bash|PowerShell",
+                  "runner option --bus"),
+                 ('python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run exact-path-add', "Read",
+                  "matcher Read, not Bash|PowerShell"),
+                 ('python "$CLAUDE_PROJECT_DIR/hooks/exact-path-add.py"', "Bash|PowerShell", "a copy, not run by pin"),
+                 ('python -I /opt/pin-runner.py run exact-path-add', "Bash|PowerShell",
+                  "through /opt/pin-runner.py, not this project's factory-pins/pin-runner.py"))
+        for cmd, matcher, why in cases:
+            shutil.rmtree(self.proj / ".claude", ignore_errors=True)
+            (self.proj / ".claude").mkdir()
+            (self.proj / ".claude/settings.json").write_text(json.dumps({"hooks": {"PreToolUse": [
+                {"matcher": matcher, "hooks": [{"type": "command", "command": cmd}]}]}}), encoding="utf-8")
+            with self.subTest(cmd=cmd, matcher=matcher):
+                p = self.init()
+                self.assertEqual(p.returncode, 4, p.stdout + p.stderr)
+                line = next(l for l in p.stdout.splitlines() if l.startswith("HAND: exact-path-add already runs on"))
+                self.assertIn(f"({why}", line)
+                self.assertIn("-- replace it with:", line)
+        # a kept Stop hook in this file without --never-block names that defect
+        shutil.rmtree(self.proj / ".claude")
+        (self.proj / ".claude").mkdir()
+        (self.proj / ".claude/settings.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [{"type": "command",
+            "command": f'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run {self.STOP}'}]}]}}), encoding="utf-8")
+        p = self.init()
+        self.assertIn("(without --never-block: a runner refusal would exit 2", p.stdout)
+
+    def test_torn_pins_on_origin_master_follow_the_documented_recourse(self):
+        """MINOR 4 (hooks/README.md layer 3): torn pins that reach origin/master refuse every later push, the repair
+        included, and the documented recourse -- `git push --no-verify` after review -- lands it; the push after
+        the repair is judged by the repaired pins again. Pins the README's claim to the hook's behaviour."""
+        p = self.init()
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.commit_listed(p.stdout)
+        self.assertEqual(self.push("master").returncode, 0)
+        pins = self.proj / "factory-pins" / "factory-pins.json"
+        good = pins.read_bytes()
+        pins.write_text("{not json", encoding="utf-8")
+        git(self.proj, "commit", "-qam", "torn pins")
+        r = self.push("master")
+        self.assertEqual(r.returncode, 0, "origin/master's good pins judge this push: " + r.stderr)
+        pins.write_bytes(good)
+        git(self.proj, "commit", "-qam", "repair the pins")
+        r = self.push("master")
+        self.assertNotEqual(r.returncode, 0, "the judge is origin/master's torn pins: the repair is refused too")
+        self.assertNotIn("not applied", r.stderr)
+        self.assertIn("PUSH REFUSED", r.stderr)
+        r = self.push("--no-verify", "master")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        (self.proj / "after.txt").write_text("a\n", encoding="utf-8")
+        git(self.proj, "add", "--", "after.txt")
+        git(self.proj, "commit", "-qm", "after the repair")
+        r = self.push("master")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertNotIn("not applied", r.stderr)
+        readme = (BUS_ROOT / "hooks" / "README.md").read_text(encoding="utf-8")
+        self.assertIn("torn pins, every push is refused, the repair included; land the repair with `git push --no-verify`",
+                      " ".join(readme.split()))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

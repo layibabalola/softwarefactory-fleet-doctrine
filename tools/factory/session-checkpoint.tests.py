@@ -100,6 +100,35 @@ class _Tmp(unittest.TestCase):
         self.assertEqual(can.mask(can_r.stdout), ref.mask(ref_r.stdout), f"{step}: stdout differs")
         return ref.mask(ref_r.stdout)
 
+    def staged_only_is_the_intended_difference(self, cwd: Path, slug: str):
+        """The ONE intended difference from both references (init review, MINOR 3): v2 and v3 read `git diff`
+        (worktree vs index) and untracked files only, so a staged-only file (index vs HEAD) was missing from the
+        SessionStart snapshot, the worktree dirty count and the Stop inventory. The canonical adds `git diff --cached`;
+        every other byte still matches the reference."""
+        lane = self.t / "lane"
+        (lane / "staged.txt").write_text("s\n", encoding="utf-8")
+        g(lane, "add", "--", "staged.txt")                     # the lane: dirty=1 (wip.txt) in both, plus staged.txt here
+        (self.repo / "pre.txt").write_text("p\n", encoding="utf-8")
+        g(self.repo, "add", "--", "pre.txt")                   # staged BEFORE the session: never this session's
+        ref_r, can_r = self.ref("SessionStart", "s1", cwd), self.can("SessionStart", "s1", cwd)
+        self.assertEqual((ref_r.returncode, can_r.returncode), (0, 0), ref_r.stderr + can_r.stderr)
+        ref_l, can_l = self.ref.mask(ref_r.stdout).splitlines(), self.can.mask(can_r.stdout).splitlines()
+        only_ref = [l for l in ref_l if l not in can_l]
+        only_can = [l for l in can_l if l not in ref_l]
+        self.assertEqual(len(only_ref), 1, only_ref)
+        self.assertTrue(only_ref[0].endswith("/lane: dirty=1 ahead-of-master=0"), only_ref)
+        self.assertEqual(len(only_can), 2, only_can)
+        self.assertIn(only_ref[0].replace("dirty=1", "dirty=2"), only_can)
+        self.assertTrue(any(l.endswith(f"/{self.repo.name}: dirty=1 ahead-of-master=0") for l in only_can), only_can)
+        (self.repo / "new.txt").write_text("n\n", encoding="utf-8")                  # untracked: both see it
+        (self.repo / "mine.txt").write_text("m\n", encoding="utf-8")
+        g(self.repo, "add", "--", "mine.txt")                                        # staged-only: v2/v3 miss it
+        (self.repo / "pre.txt").write_text("p2\n", encoding="utf-8")                 # v2/v3 call it this session's
+        self.same(self.ref, self.can, "stop", self.ref("Stop", "s1", cwd), self.can("Stop", "s1", cwd))
+        ref_cp, can_cp = self.ref.checkpoint(slug, "s1"), self.can.checkpoint(slug, "s1")
+        self.assertIn("(2):\n  - new.txt\n  - pre.txt\n", ref_cp)
+        self.assertEqual(can_cp, ref_cp.replace("  - new.txt\n  - pre.txt\n", "  - mine.txt\n  - new.txt\n"))
+
 
 class V2Parity(_Tmp):
     """With no config the canonical is the install prompt's v2: same lines, same checkpoint file."""
@@ -135,6 +164,9 @@ class V2Parity(_Tmp):
         self.both("other event", "UserPromptSubmit", "s3")
         out = self.both("not a repo", "SessionStart", "s4", self.t)
         self.assertEqual(out, "")
+
+    def test_staged_only_dirt_is_the_one_difference_from_v2(self):
+        self.staged_only_is_the_intended_difference(self.repo, "Proj-One")
 
     def test_negative_control_a_different_notice_is_caught(self):
         self.can = Impl("canonical+receipts", [str(TOOL), "--config", str(self.cfg())], self.t / "h-can2")
@@ -253,6 +285,9 @@ class V3Parity(_Tmp):
         self.assertIn("DATA: STALE - the box doctrine sweep last ran", out)
         out = self.both("stale sweep start", "SessionStart", "s5")
         self.assertIn("DATA: STALE", out)
+
+    def test_staged_only_dirt_is_the_one_difference_from_v3(self):
+        self.staged_only_is_the_intended_difference(self.ws, "Proj")
 
     def test_bus_unreadable_fails_open_and_matches(self):
         shutil.rmtree(self.bus / ".git", onerror=lambda f, p, e: (os.chmod(p, 0o700), f(p)))
