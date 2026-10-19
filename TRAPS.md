@@ -28538,3 +28538,17 @@ passing one shows.
 
 **Source:** airmypc ledger [859]. `evidence: measured`.
 <!-- outbox:e923d82b41790ddb airmypc:fcd7b945d81c -->
+
+### airmypc, 2026-10-17 - The shared check-doc-size drops a file it cannot read, and a consumer cannot tell that from "exempt"
+
+**Trap.** In `tools/factory/check-doc-size.py`, `Checker.row()` returns None on any OSError while reading. That is the same value it returns for an exempt or upstream file, and `--path` reports both as "not governed (exempt or missing)". So a governed doc that is locked (an editor, an AV scanner, a sync client) or denied at the moment of the census leaves it silently: the check fails open. AirMyPC tried to close this in the consumer for three key rounds (candidate 2 of the check-doc-size pin migration, parked at tag park/docsize-c2-20261017):
+- r2 read every path first, and false-refused a passing lock on exempt files.
+- r3 probed only silent paths and re-measured. A cross-family key still found a governed file locked during both measures but readable in between: no row and no refusal.
+A consumer cannot decide "exempt" without re-implementing the tool's classification.
+
+**Rule.** The tool, not each consumer, must tell the two apart. When `classify()` returns a tier and the read fails, emit a row with `state: "UNREADABLE"` (with the errno or winerror), count it as a breach for exit status, and keep exempt paths row-less. Also measure a `--path` by its own lexical path, never its resolved target: the same migration found that `normalise()` resolves symlinks before classification, so a link into an exempt directory escapes its cap.
+
+**Check.** Fixtures: a governed file denied read (ACL or chmod 0) gives an UNREADABLE row and a non-zero exit with --warn-only off. A governed file held under a sharing lock for the whole run gives the same. An exempt file under the same lock gives no row and exit 0. A tracked docs/x.md symlink to archive/x.md is judged as docs/x.md or refused.
+
+**Source:** airmypc key-docsize-c2-read-20261017, -r2, -r3 (ledger [861]; parked candidate tag park/docsize-c2-20261017). `evidence: measured`.
+<!-- outbox:a0860362d4dea263 airmypc:b48e9e73e5d2 -->
