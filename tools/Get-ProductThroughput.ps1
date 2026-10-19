@@ -49,7 +49,9 @@ these when you have a third category (vendored code, docs you consider product-a
 .PARAMETER Lines
 LINE MODE (added 2026-10-11, owner defect D3 "paperwork outweighs product"). Counts CHANGED LINES
 (adds + deletes from `git log --numstat`; merge commits excluded; binary files: lines not counted, counted separately as binary_files; their bytes are counted) per project over the window, bucketed into product / tests / factory-tooling /
-coordination-paperwork / vendored-copies using the per-project path classes in -ClassConfig.
+coordination-paperwork / vendored-copies / runtime-data using the per-project path classes in -ClassConfig.
+runtime-data (added 2026-10-19, E3 r2 N1) = machine-written stores the product reads at run time (learned profiles,
+caches): not product engineering, so not product share. A commit touching only runtime-data is commit class 'other'.
 Unmatched paths are reported as 'unclassified', never dropped. Emits product share
 (= product / total) and a table ranked by product lines per week. Walks the configured ref of each
 project only, never --all (TRAPS 2026-09-25: --all counts unlanded work). DIAGNOSTIC ONLY, per
@@ -137,7 +139,7 @@ $RepoArgGiven = $PSBoundParameters.ContainsKey('Root')
 $SinceArgGiven = -not [string]::IsNullOrWhiteSpace($Since)
 
 if ($Lines) {
-    $Buckets = @('product', 'tests', 'vendored-copies', 'factory-tooling', 'coordination-paperwork')
+    $Buckets = @('product', 'tests', 'vendored-copies', 'factory-tooling', 'coordination-paperwork', 'runtime-data')
     $measuredUtc = (Get-Date).ToUniversalTime()
     $nowUtc = $measuredUtc
     if (-not [string]::IsNullOrWhiteSpace($Until)) {
@@ -504,12 +506,12 @@ if ($Lines) {
         } | ConvertTo-Json -Depth 6
     } else {
         Write-Output ("=========== PRODUCT SHARE BY CHANGED LINES (since {0}, {1:N1} d) ===========" -f $sinceIso, $days)
-        Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,8} {11,8} {12,7}' -f 'rank', 'project', 'prod/wk', 'product', 'tests', 'tooling', 'paper', 'vendored', 'unclass', 'total', 'share', 'bshare', 'pc/ac')
+        Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,9} {11,8} {12,8} {13,7}' -f 'rank', 'project', 'prod/wk', 'product', 'tests', 'tooling', 'paper', 'vendored', 'rtdata', 'unclass', 'total', 'share', 'bshare', 'pc/ac')
         foreach ($r in $ranking) {
             $p = @($rows | Where-Object { $_.project -eq $r.project })[0]
-            Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,8} {11,8} {12,7}' -f $r.rank, $r.project, $r.product_lines_per_week,
+            Write-Output ('{0,-4} {1,-16} {2,10} {3,9} {4,9} {5,9} {6,9} {7,9} {8,9} {9,9} {10,9} {11,8} {12,8} {13,7}' -f $r.rank, $r.project, $r.product_lines_per_week,
                 $p.lines.product, $p.lines.tests, $p.lines.'factory-tooling', $p.lines.'coordination-paperwork', $p.lines.'vendored-copies',
-                $p.lines.unclassified, $p.total_lines, $(if ($null -ne $p.product_share) { '{0:P1}' -f $p.product_share } else { 'n/a' }),
+                $p.lines.'runtime-data', $p.lines.unclassified, $p.total_lines, $(if ($null -ne $p.product_share) { '{0:P1}' -f $p.product_share } else { 'n/a' }),
                 $(if ($null -ne $p.product_share_bytes) { '{0:P2}' -f $p.product_share_bytes } else { 'n/a' }),
                 $(if ($null -ne $p.paperwork_tooling_commits_per_product_commit) { $p.paperwork_tooling_commits_per_product_commit } else { 'n/a' }))
         }

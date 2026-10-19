@@ -314,8 +314,10 @@ governance controls all reported PASS throughout.
 **Line mode (`-Lines`, added 2026-10-11 for owner defect D3, "paperwork outweighs product").**
 Commit counts hide size; this counts changed lines (adds + deletes, `--numstat`, merges excluded,
 binaries ignored) per project and buckets them into product / tests / factory-tooling /
-coordination-paperwork / vendored-copies from `tools/product-throughput-classes.json`, then ranks
+coordination-paperwork / vendored-copies / runtime-data from `tools/product-throughput-classes.json`, then ranks
 projects by product lines per week. Unmatched paths are reported as `unclassified`, never dropped.
+`runtime-data` (added 2026-10-19) holds machine-written stores the product reads at run time, such as DNG's
+`profiles/` learned stores. These used to count as product and made up 93% of DNG's product lines at 105 days.
 It is DIAGNOSTIC ONLY (`metrics/README.md` law 1): it never exits 1 and must not be wired as a gate.
 
 ```bash
