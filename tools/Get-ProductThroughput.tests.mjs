@@ -175,6 +175,7 @@ try {
   // table output carries the new columns
   const dt = run(['-Lines', '-ClassConfig', dcfg, '-Repo', d, '-Project', 'dng']);
   assert.equal(dt.code, 0, dt.out); assert.match(dt.out, /bshare/); assert.match(dt.out, /pc\/ac/); assert.match(dt.out, /0\.04%/);
+  assert.match(dt.out, /vendored\s+rtdata\s+unclass/);
   // -NoBytes keeps the default fields and nulls the byte ones
   const nb = JSON.parse(run(['-Lines', '-ClassConfig', dcfg, '-Repo', d, '-Project', 'dng', '-NoBytes', '-Json']).out).projects[0];
   assert.equal(nb.bytes, null); assert.equal(nb.product_share_bytes, null); assert.equal(nb.product_share, D.product_share);

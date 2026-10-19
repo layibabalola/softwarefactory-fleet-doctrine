@@ -336,7 +336,7 @@ counts old size + new size when its blob changed (`binary_files`; `binary_files_
 deprecated alias): binary files add no lines. Paths are read from `git log --raw --numstat -z` (NUL
 separated), never from `Binary files a/x and b/y differ` prose, so a name with ` and `, spaces or a tab
 lands in the right bucket. `commit_classes` (product / tests / paperwork-only / tooling-only /
-paperwork-and-tooling / other, by the buckets a commit touches) and
+paperwork-and-tooling / other, by the buckets a commit touches; a commit touching only vendored-copies or runtime-data is `other`) and
 `paperwork_tooling_commits_per_product_commit` count commits. `-NoBytes` skips the bytes pass (a second
 `git log -p`). All of it is additive to the row schema below, `-AsRows` rows included. `-Repo <path>`
 (alias of `-Root`) measures any checkout: classes come from the config entry whose root is that repo, or
