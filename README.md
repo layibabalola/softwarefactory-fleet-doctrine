@@ -314,10 +314,8 @@ governance controls all reported PASS throughout.
 **Line mode (`-Lines`, added 2026-10-11 for owner defect D3, "paperwork outweighs product").**
 Commit counts hide size; this counts changed lines (adds + deletes, `--numstat`, merges excluded,
 binaries ignored) per project and buckets them into product / tests / factory-tooling /
-coordination-paperwork / vendored-copies / runtime-data from `tools/product-throughput-classes.json`, then ranks
+coordination-paperwork / vendored-copies from `tools/product-throughput-classes.json`, then ranks
 projects by product lines per week. Unmatched paths are reported as `unclassified`, never dropped.
-`runtime-data` (added 2026-10-19) holds machine-written stores the product reads at run time, such as DNG's
-`profiles/` learned stores. These used to count as product and made up 93% of DNG's product lines at 105 days.
 It is DIAGNOSTIC ONLY (`metrics/README.md` law 1): it never exits 1 and must not be wired as a gate.
 
 ```bash
@@ -336,7 +334,7 @@ counts old size + new size when its blob changed (`binary_files`; `binary_files_
 deprecated alias): binary files add no lines. Paths are read from `git log --raw --numstat -z` (NUL
 separated), never from `Binary files a/x and b/y differ` prose, so a name with ` and `, spaces or a tab
 lands in the right bucket. `commit_classes` (product / tests / paperwork-only / tooling-only /
-paperwork-and-tooling / other, by the buckets a commit touches; a commit touching only vendored-copies or runtime-data is `other`) and
+paperwork-and-tooling / other, by the buckets a commit touches) and
 `paperwork_tooling_commits_per_product_commit` count commits. `-NoBytes` skips the bytes pass (a second
 `git log -p`). All of it is additive to the row schema below, `-AsRows` rows included. `-Repo <path>`
 (alias of `-Root`) measures any checkout: classes come from the config entry whose root is that repo, or
