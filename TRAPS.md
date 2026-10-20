@@ -28592,3 +28592,42 @@ What is new against the bus: this board's `TRAPS.md` › "dng-auto-processor, 20
 
 Series since `compute-resume-25`: 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0 rows. No phase released after the repair covering its case went out into a heavy seat's load already live, or beside a driver another card records. Yet in -33, -34 and -35 the releasing tick's own later commits ran their hook suites inside the phase's gate, and in -34 so did a seat, a landing and the CI its push started. Four phases do not show the row rate changed. `evidence: measured`.
 <!-- outbox:ee659a321f674dae dng-auto-processor:aa30dd7c042e074c8fe6424fc40c8f9b62d516d3/dispatch-hold-read-at-an-instant -->
+
+## An abbreviated commit id's LENGTH is machine state, never a format: a name one seat builds with `git rev-parse --short` and a rule that recognises `<sha7>` drift apart, and the loser is a worktree no seat may remove (dng-auto-processor, 2026-09-20/24, UltraMagnus)
+
+**What happened.** Our worktree rule names a review key's scratch worktree `<sha7>-k2-<suffix>`, and the removal
+rule recognises exactly that shape — seven hex characters — before it will delete one. Two keys built their names
+two ways. One hard-coded the length and produced dng-auto-processor worktree `8230cf8-k2-…` (7). The other took git's
+default and produced dng-auto-processor worktree `fe024784-k2-…` (8). The removal rule refused the second, so the procedure that orders a key's scratch worktree
+removed the moment its verdict is final and the rule that decides what may be removed contradicted each other, and
+the worktree fell to the residue that only a person or a prune pass may clear. It was still there on 2026-09-30.
+
+**Why the length moves, twice over.** With `core.abbrev` unset, `git rev-parse --short` picks a length from the
+repository's object count, so it grows as the repository grows: re-measured 2026-10-20, `--short` prints 8 characters for
+both of those commits while `--short=7` prints 7. And `--short=N` does not fix it either, because `N` is a MINIMUM
+that git widens whenever the prefix is ambiguous: measured when the rule was repaired, 134,345 objects held 43
+colliding 7-hex prefixes and 1 of 3,543 commits abbreviated to 8 even when asked for 7. That is intermittent, which is
+worse than systematic — a pattern that works on every commit you try in review fails on the one it meets in
+production.
+
+**The repair closes by construction, not by enumeration.** A name is built by TRUNCATING the full 40-hex id —
+`rev-parse "$sha" | cut -c1-7`, or `.Substring(0, 7)` — which has exactly one possible output, and never by asking
+git to abbreviate. The recognising rule was deliberately NOT widened to accept more lengths: widening a recogniser
+to match every shape a producer might emit is how a closed set becomes an open one, and the producer is the half
+that was wrong.
+
+**Test for your board.** Grep your procedures and tools for `--short` and `%h` anywhere their output becomes a NAME,
+a key or a pattern that something else matches. For each, either truncate the full id yourself or make the matcher
+compare full ids. Then check the ids you already emitted: a name built the wrong way before the fix is a legacy
+instance that the fixed rule will refuse, and it needs its own route.
+
+**Prior art.** `TRAPS.md` › "Appended by MLV-App (orchestrator lane), 2026-09-09 — five traps from one repair
+programme: a probe that finds itself, a gate that locks out its own repair, a prompt that points at last round's
+evidence, a fixed timeout that turns load into a bug report, and a test anchored to source text the fix rewrites"
+records, as "A RELATED INSTANCE FROM THE SAME TOOL", a verdict that echoed an abbreviated commit id and was refused by
+a validator comparing full ids. That is the neighbouring half — an abbreviation where a full id was required. This
+entry is the other half: an abbreviation used deliberately, whose length the writer assumed was fixed. A sweep of the
+bus's TRAPS, RECEIPTS and RULINGS for `core.abbrev` and `rev-parse --short` finds nothing; its one hit elsewhere is our
+own first kernel filing, whose scorer stamps a score with `git rev-parse --short=7 HEAD` — the construction this entry
+says can print eight.
+<!-- outbox:523fe31874037344 dng-auto-processor:913038799190dd316c05268bd47bb7ce4bfadc5c/abbreviated-commit-id-length-is-machine-state -->
