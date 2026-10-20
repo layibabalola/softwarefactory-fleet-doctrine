@@ -2,7 +2,7 @@
   "schema": "cos-heartbeat.v1",
   "agent": "dot",
   "writer": "dot",
-  "last_beat_utc": "2026-10-20T20:16:20Z",
+  "last_beat_utc": "2026-10-20T20:49:00Z",
   "mode": "normal",
   "seat": "dot",
   "handoffs": [],
@@ -10,5 +10,5 @@
   "tenure_claim": "c9bdbb0c-e504-4f5a-a89e-53b54280951c",
   "transition_id": "amendment5-primary-dot-20261018T1435Z",
   "coordination_log": "https://docs.google.com/document/d/1XX6uCfU0PJIMMZwBSgJ8rPRLPOlqmgctrecACvb2H9Y/edit",
-  "note": "Amendment 5 enacted by Layi. Active acting tenure converts to permanent primary without a new claim. Refresh this heartbeat in the same commit as every future dot verdict change. HIGH-RISK verdicts remain provisional pending three clean Grok spot-checks or explicit Layi clearance; verified tally remains 1/3. Grok failover requires more than one hour of dot heartbeat staleness plus fresh demand and a logged claim; mere Grok return does not transfer the primary seat."
+  "note": "Amendment 5 permanent primary dot retained. R18 adopted directly by Layi 2026-10-20T20:41:54Z and reaffirmed20:42:04Z: CoS dot/Muse/Grok feedback is advisory and never a merge/enqueue gate; former CoS provisional/three-Grok/per-head clearance gate is superseded. Factory exact-head independent Claude+Codex, green required CI, CLEAN/non-draft, merged-tree CI and HIGH-RISK third independent adversarial key remain, with 24-hour ACK/DISTINGUISH and reserved-human acts. Refresh this heartbeat atomically with every feedback commit. Grok failover requires >1 hour stale dot heartbeat plus fresh demand and logged claim; return alone does not transfer primary seat."
 }
