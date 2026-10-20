@@ -374,3 +374,11 @@ evidence: measured
 - **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 3fe7827b4908b50d6fdda0fe98cdf3d2c31f4f44d44ed448efd82cd13c19f8ca.
 - **Pin:** each project reviews that bus SHA, then runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`, runs it as `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`, sets `"tool_pin": "doctrine-outbox"`, runs `install-hooks` that way once. OUTBOX-PIN-AWARE-TOOL-AT-REF-1 shipped the pin-aware hook; only after the pin is reviewed does a project delete its copy. Without `tool_pin` it KEEPS it.
 - **Outbox:** outbox:438c85d9a9a914d8 mlv-app:1edef88f0792
+
+## mlv-app/dot-is-advisory-factory-quality-compensates
+rule: In mlv-app, CoS (Dot) review is advisory, never a merge precondition: the fleet CoS merge-gate is DISTINGUISHED here. Merge bar: two authenticated exact-head keys, green hosted CI, CLEAN, not draft, plus a third adversarial key on HIGH-RISK paths. The 24 h ACK/DISTINGUISH reply duty stays.
+mechanism: Owner ruling 2026-10-20, verbatim: "I dont want dot to be a blocker. Dot's review is a nice to have but the software factory should be shipping good code. Id rather improve factory's quality than let dot be a blocker. Lets update the posture so we keep throughput and quality somehow". Compensation: (1) key3, primed with the key attack catalogue and the Dot record as data, on HIGH-RISK paths; (2) Dot findings naming a concrete defect become a fix round (open PR) or a P1 fix card plus revert card (merged PR); (3) 7-day escape metric, Dot-demonstrated defects on merged PRs plus reverts: above 2 widens the catalogue and the key3 path list.
+check: git grep -n -i "never merge a card" -- CLAUDE.md AGENTS.md returns nothing
+supersedes: none
+evidence: reported
+- **Outbox:** outbox:b71720954432baa5 mlv-app:b1230561f724
