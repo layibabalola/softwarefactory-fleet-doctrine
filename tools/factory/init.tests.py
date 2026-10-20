@@ -904,6 +904,11 @@ class ReviewMinors(_Init):
         line = next(l for l in p.stdout.splitlines() if l.startswith("HAND: exact-path-add already runs on"))
         self.assertIn(f"(names this project's runner as {self.runner.as_posix()}; the pinned form is "
                       "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py)", line)
+        # ... and its option defects are still named (review round 2)
+        (self.proj / ".claude/settings.json").write_text(json.dumps({"hooks": {"PreToolUse": [{"matcher": "Bash|PowerShell",
+            "hooks": [{"type": "command", "command": own.replace(" run ", " --bus /x run ")}]}]}}), encoding="utf-8")
+        line = next(l for l in self.init().stdout.splitlines() if l.startswith("HAND: exact-path-add already runs on"))
+        self.assertIn("pin-runner.py; runner option --bus:", line)
 
     def test_torn_pins_on_origin_master_follow_the_documented_recourse(self):
         """MINOR 4 (hooks/README.md layer 3): torn pins that reach origin/master refuse every later push, the repair

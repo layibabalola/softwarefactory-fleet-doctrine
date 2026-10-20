@@ -938,9 +938,10 @@ def not_by_pin_because(command: str, tool: str, root: Path, never_block: bool = 
                 same = p is not None and p.exists() and own.exists() and os.path.samefile(p, own)
             except OSError:
                 same = False
-            why.append(f"names this project's runner as {word}; the pinned form is $CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py"
-                       if same else f"through {word}, not this project's factory-pins/pin-runner.py")
-            continue
+            if not same:
+                why.append(f"through {word}, not this project's factory-pins/pin-runner.py")
+                continue
+            why.append(f"names this project's runner as {word}; the pinned form is $CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py")
         extra = [o for o in opts if o.startswith("--") and o != "--never-block"]
         if extra:
             why.append(f"runner option {', '.join(extra)}: init judges with the pins it writes, so no runner option but "
