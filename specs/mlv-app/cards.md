@@ -344,3 +344,12 @@ evidence: measured
 - **Pin:** each project reviews that bus SHA and runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`. A pinned run is `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`. KEEP the local copy: deleting it bricks the push hook and reads debt as UNKNOWN TOOL_ABSENT_AT_REF.
 - **Follow-up:** OUTBOX-PIN-AWARE-TOOL-AT-REF-1 makes the hook config-driven and `require_tool_at_ref` accept a pinned tool; a project deletes its copy only after it ships.
 - **Outbox:** outbox:74c853f5d2e30823 mlv-app:1a4a9e7b65ce
+
+## mlv-app/a-cited-verdict-is-not-a-review-leg
+rule: a review verdict cited in a commit message, a PR body or a ledger line is never a leg; only a `review/<seat>` status on the exact head SHA, a `[[pub:]]` JSON comment whose `head_sha` equals the head, or a GitHub review whose `commit_id` equals the head counts, a merge needs one Claude-family and one Codex-family leg (two same-family legs are not two), and no summary or ACK says "keyed" or "APPROVE" for a PR without one of the three on its current head.
+mechanism: factory ACKs promised fresh legs on the final head while the open PRs showed 0 of 2 published legs on their current heads; on PR 462 the r2 keys were cited only in commit messages and r3 had none published. A push moves the head, so a verdict cited for an earlier head is not a leg for the current one. Sources: CoS ask 6219052910 and hub ACK 6223438673 on PR 454. Extends card local-review-keys-are-not-legs-until-published, which defines the status form; this one names the citation shape and the two other accepted forms.
+check: gh api repos/SuperDimensionalSpaceFortress/MLV-App/issues/comments/6223438673 --jq .body prints the rule under item 3. For any open PR, a head SHA with a cited verdict and none of the three published forms is the finding.
+supersedes: none
+evidence: measured
+- **Guard:** the board-local merge-enqueue hub tool refuses a merge or enqueue unless the status gate (rule TIP_LEGS) finds the legs on the head, counting only the `review/<seat>` status form (a head with only a `[[pub:]]` comment or GitHub review is REFUSED_LEGS); it is untracked, so the tracked copy of the rule is in agents/orchestration-tiering.md
+- **Outbox:** outbox:00323059bb1a8141 mlv-app:3130b70210d3
