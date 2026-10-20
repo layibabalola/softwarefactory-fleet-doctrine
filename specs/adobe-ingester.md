@@ -1513,3 +1513,27 @@ Still OWED from earlier addenda, re-checked on 2026-10-19: R16.3 (`.factory/tool
 `gpt-5.6-luna`, Sol), `43e29cc` and `83dd546` (`tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`
 and `.claude/settings.json:6,13` still registers it, Sol), and the auditor's falsifier pin
 (`.claude-state/tools/codex-auditor.ps1` still pins `0.160.1`, auditor). None counts as done until its owner records it.
+
+## Fold addendum, 2026-10-20 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `d9492a1..229e4c0` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `d9492a1`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` outside Adobe's own). Sibling: 10 commits touching `TRAPS.md` or another
+board's `specs/`; heartbeats, CoS feedback and Adobe's own commits (`229e4c0` included) are excluded. Each claim was
+checked read-only on VIRTUAL-TEN on 2026-10-20 against Adobe HEAD `6c4fbbc`. Every `git grep` ran over tracked files
+only, outside `.factory/evidence`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| dng trap: an abbreviated commit id's length is machine state, never a format | `d62027b` | DISTINGUISH: `git grep` over tracked `*.ps1`, `*.psm1`, `*.mjs`, `*.py`, `*.sh` finds no `%h` and one `rev-parse --short`, `tools/session-checkpoint.py:189`, whose value is only printed into a checkpoint line (`:207`, `branch: <b> @ <head>`) that nothing matches. `:94` slices `commit_hash[:7]` for a message only. No Adobe name, key or pattern is built from an abbreviated id. |
+| dng trap: a dispatch hold read at one instant released a phase that needs a quiet window | `3333c94` | DISTINGUISH: Adobe has no multi-row measurement phase. Its quiet-host gates guard one bounded action each: a 30-s mean CPU sample below 80 percent rechecked immediately before each rehearsal, with LunaExec paused (`.factory/prompts/sol.md:5260-5264`), and "no other factory lane is running" plus two fast heartbeats before one commit (`sol.md:6197`). `QuietCheck` in the HUB (for example line 64366) is an auditor-summary text check, not a load gate. Not traced: whether a Sol wake dispatches load of its own before those reads. |
+| dng trap: a sparse worktree's existence check refuses a card that creates a file | `ed149a2` | NOT-APPLICABLE: `git grep -E "sparse-checkout\|core.sparseCheckout"` finds 0 hits in tracked `*.ps1`, `*.psm1`, `*.mjs`, `*.py`, `*.sh`. Adobe cuts no sparse worktree. |
+| dng spec posture: worktree verify exempts CREATE corpus paths; the K-gate hold covers a recorded detached driver | `0898d42`, `154d15d` | NOT-APPLICABLE: dng-auto-processor's own spec. |
+| conjugal card: a console pop-up census must count terminal-hosted window classes | `d4a47b2` | DISTINGUISH: Adobe runs no console census. 0 hits for `ConsoleWindowClass`, `CASCADIA_HOSTING_WINDOW_CLASS` or `PseudoConsoleWindow` in tracked files, `.claude-state/tools`, `~/.claude/hooks` or `~/bin` (depth 1). VIRTUAL-TEN is Windows 10 Enterprise 19045, `HKCU\Console\%%Startup` `DelegationConsole` and `DelegationTerminal` are the all-zero GUID, and no `WindowsTerminal` process was live. If a census is ever built here, this card's class list applies. |
+| conjugal card: a reservation parks its subject and never halts the queue | `7f35a27` | DISTINGUISH, partly held: the escalation generator states the owner item it raises "is an owner item, never a product, review, transition, or acceptance blocker" (`.claude-state/tools/Invoke-EscalationBudget.ps1:474`). Adobe keeps no owner-decision register file (0 in `git ls-files` and in `.claude-state` to depth 2). Not traced: whether any HUB `OWNER_ITEM` record parks more than its own subject. |
+| mlv-app cards: one config-driven `doctrine_outbox.py` (exercise 3, ruling-supersedes, pin-aware hook) | `b9a45a7`, `918e8e4`, `3892561` | NOT-APPLICABLE: `applies:` names mlv-app, airmypc, agent-bridge and conjugal. Adobe tracks no `doctrine_outbox`, `pin-runner`, `factory-pins/` or `doctrine-outbox.config` (`git ls-files`, 0). |
+
+Still OWED from earlier addenda, re-checked on 2026-10-20: R16.3 (`.factory/tools/Invoke-FactoryClaudeLane.ps1` has
+0 `effort` hits, Sol), R16.5 (`.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and
+`gpt-5.6-luna`, Sol), `43e29cc` and `83dd546` (`tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`
+and `.claude/settings.json:6,13` still registers it, Sol), and the auditor's falsifier pin
+(`.claude-state/tools/codex-auditor.ps1` still pins `0.160.1`, auditor). None counts as done until its owner records it.
