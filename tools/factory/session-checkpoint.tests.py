@@ -118,8 +118,11 @@ class _Tmp(unittest.TestCase):
         self.assertEqual(len(only_ref), 1, only_ref)
         self.assertTrue(only_ref[0].endswith("/lane: dirty=1 ahead-of-master=0"), only_ref)
         self.assertEqual(len(only_can), 2, only_can)
-        self.assertIn(only_ref[0].replace("dirty=1", "dirty=2"), only_can)
-        self.assertTrue(any(l.endswith(f"/{self.repo.name}: dirty=1 ahead-of-master=0") for l in only_can), only_can)
+        main = [l for l in only_can if l.endswith(f"/{self.repo.name}: dirty=1 ahead-of-master=0")]
+        self.assertEqual(len(main), 1, only_can)
+        # every other line, and the order (`git worktree list`: the main checkout first), is the reference's
+        i = ref_l.index(only_ref[0])
+        self.assertEqual(can_l, ref_l[:i] + main + [only_ref[0].replace("dirty=1", "dirty=2")] + ref_l[i + 1:])
         (self.repo / "new.txt").write_text("n\n", encoding="utf-8")                  # untracked: both see it
         (self.repo / "mine.txt").write_text("m\n", encoding="utf-8")
         g(self.repo, "add", "--", "mine.txt")                                        # staged-only: v2/v3 miss it

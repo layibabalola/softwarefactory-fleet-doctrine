@@ -914,15 +914,32 @@ def by_pin(command: str, tool: str, never_block: bool = False) -> bool:
     return False
 
 
-def not_by_pin_because(command: str, tool: str, never_block: bool = False) -> list[str]:
+def runner_path(word: str, root: Path) -> Path | None:
+    """The file a hook command's runner word names, or None when it does not resolve here (an unset variable).
+    Claude Code runs a hook in the project directory, so a relative word resolves against root."""
+    s = word.replace("${CLAUDE_PROJECT_DIR}", root.as_posix()).replace("$CLAUDE_PROJECT_DIR", root.as_posix())
+    s = os.path.expandvars(os.path.expanduser(s))
+    if "$" in s or "%" in s:
+        return None
+    return Path(s) if Path(s).is_absolute() else root / s
+
+
+def not_by_pin_because(command: str, tool: str, root: Path, never_block: bool = False) -> list[str]:
     """Why by_pin(command, tool, never_block) is False, one reason per defect, naming the disqualifying option."""
     runs = [(sc[0], runner_tool(sc)[1]) for sc in command_scripts(command) if runner_tool(sc)[0] == tool]
     if not runs:
         return ["a copy, not run by pin"]
     why: list[str] = []
+    own = root / "factory-pins" / "pin-runner.py"
     for word, opts in runs:
         if not PROJECT_RUNNER.match(word):
-            why.append(f"through {word}, not this project's factory-pins/pin-runner.py")
+            p = runner_path(word, root)
+            try:
+                same = p is not None and p.exists() and own.exists() and os.path.samefile(p, own)
+            except OSError:
+                same = False
+            why.append(f"names this project's runner as {word}; the pinned form is $CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py"
+                       if same else f"through {word}, not this project's factory-pins/pin-runner.py")
             continue
         extra = [o for o in opts if o.startswith("--") and o != "--never-block"]
         if extra:
@@ -936,14 +953,13 @@ def not_by_pin_because(command: str, tool: str, never_block: bool = False) -> li
 def runner_never_blocks(word: str, root: Path) -> bool | None:
     """Does the runner a hook command names support --never-block? None when its path does not resolve here (an
     unset variable, a missing or unreadable file). This project's own runner does: plan_settings is only asked
-    about it once the vendored runner is known to."""
+    about it once the vendored runner is known to. NEVER_BLOCK_ARG is how a runner release declares the flag (the
+    same contract the vendored runner's own gate reads)."""
     if PROJECT_RUNNER.match(word):
         return True
-    s = word.replace("${CLAUDE_PROJECT_DIR}", root.as_posix()).replace("$CLAUDE_PROJECT_DIR", root.as_posix())
-    s = os.path.expandvars(os.path.expanduser(s))
-    if "$" in s or "%" in s:
+    p = runner_path(word, root)
+    if p is None:
         return None
-    p = Path(s) if Path(s).is_absolute() else root / s    # Claude Code runs a hook in the project directory
     try:
         return NEVER_BLOCK_ARG in p.read_bytes()
     except OSError:
@@ -1018,7 +1034,8 @@ def plan_settings(path: Path, hooks: list[dict[str, Any]], reg: dict[str, dict[s
             out.append(f"  kept    hook {label}: {tool}" + ("" if c == cmd else f" (the project's own form: {c})"))
         else:
             why = ([f"matcher {mm or 'none'}, not {m or 'none'}"] if mm != m else []) + (
-                [] if by_pin(c, tool, h.get("never_block", False)) else not_by_pin_because(c, tool, h.get("never_block", False)))
+                [] if by_pin(c, tool, h.get("never_block", False))
+                else not_by_pin_because(c, tool, path.parent.parent, h.get("never_block", False)))
             hand.append(f"{tool} already runs on {ev} as {where} ({'; '.join(why)})  -- replace it with: {cmd}"
                         + (f" with matcher {m}" if m else "") + f" in {path}")
     return (json.dumps(settings, indent=2, ensure_ascii=False) + "\n").encode("utf-8") if added else None

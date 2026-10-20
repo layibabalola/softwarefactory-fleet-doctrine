@@ -895,6 +895,15 @@ class ReviewMinors(_Init):
             "command": f'python -I "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py" run {self.STOP}'}]}]}}), encoding="utf-8")
         p = self.init()
         self.assertIn("(without --never-block: a runner refusal would exit 2", p.stdout)
+        # this project's own runner named by an absolute path is called that, not "another runner" (review round 1)
+        self.assertTrue(self.runner.is_file())
+        own = f'python -I "{self.runner.as_posix()}" run exact-path-add'
+        (self.proj / ".claude/settings.json").write_text(json.dumps({"hooks": {"PreToolUse": [
+            {"matcher": "Bash|PowerShell", "hooks": [{"type": "command", "command": own}]}]}}), encoding="utf-8")
+        p = self.init()
+        line = next(l for l in p.stdout.splitlines() if l.startswith("HAND: exact-path-add already runs on"))
+        self.assertIn(f"(names this project's runner as {self.runner.as_posix()}; the pinned form is "
+                      "$CLAUDE_PROJECT_DIR/factory-pins/pin-runner.py)", line)
 
     def test_torn_pins_on_origin_master_follow_the_documented_recourse(self):
         """MINOR 4 (hooks/README.md layer 3): torn pins that reach origin/master refuse every later push, the repair
@@ -924,6 +933,15 @@ class ReviewMinors(_Init):
         r = self.push("master")
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertNotIn("not applied", r.stderr)
+        # judging resumed: the repaired pins refuse what they exist to refuse (a copy of a shared tool)
+        (self.proj / "tools").mkdir()
+        (self.proj / "tools" / "session-checkpoint.py").write_text("print('copy')\n", encoding="utf-8")
+        git(self.proj, "add", "--", "tools/session-checkpoint.py")
+        git(self.proj, "commit", "-qm", "a copy")
+        r = self.push("master")
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn("[no-unpinned-tool] PUSH REFUSED", r.stderr)
+        self.assertNotIn("invalid JSON", r.stderr)
         readme = (BUS_ROOT / "hooks" / "README.md").read_text(encoding="utf-8")
         self.assertIn("torn pins, every push is refused, the repair included; land the repair with `git push --no-verify`",
                       " ".join(readme.split()))
