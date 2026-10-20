@@ -332,3 +332,15 @@ evidence: measured
 - **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 2b50558037d2d0d472162676d04ed077e0c09bd191d7cce85391e75e7a9fa84e.
 - **Pin:** each project reviews that bus SHA, then runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`, runs it as `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`, sets `"tool_pin": "doctrine-outbox"`, runs `install-hooks` that way once. OUTBOX-PIN-AWARE-TOOL-AT-REF-1 shipped the pin-aware hook; only after the pin is reviewed does a project delete its copy. Without `tool_pin` it KEEPS it.
 - **Outbox:** outbox:73caf5cfc6ef728c mlv-app:cee9631abe0a
+
+## mlv-app/one-config-driven-doctrine-outbox-exercise-3
+rule: the fleet carries ONE doctrine_outbox.py, in the bus at tools/factory/, pinned by each project through factory-pins; every project value sits in doctrine-outbox.config.json at the project root. A project never edits the tool and keeps its local copy (see Pin).
+mechanism: tool-census hashes whole files, so per-project copies drift. The mlv-app copy is the candidate for tools/factory/doctrine_outbox.py: the config-driven superset of the hook commands, with a fail-closed `validate --exercise` (routes are checked in a scratch clone, never the live bus; the clone and read-only git routes run with no host git config, filter or hook; the rest are existence-checked).
+applies: mlv-app, airmypc, agent-bridge, conjugal
+check: on the bus run `node tools/tool-census.mjs`; once projects pin tools/factory/ and drop their copies, the family reads 1 distinct version.
+supersedes: mlv-app/one-config-driven-doctrine-outbox-pr-470 (its digest; same file plus route check)
+evidence: measured
+- **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py from MLV-App card CARD-ROUTE-EXERCISE-3 as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 5967e137cdfbc39893d8e1f8fc624a50fe0ef75e5776a4595245418fcf9c1ad1.
+- **Pin:** each project reviews that bus SHA and runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`. A pinned run is `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`. KEEP the local copy: deleting it bricks the push hook and reads debt as UNKNOWN TOOL_ABSENT_AT_REF.
+- **Follow-up:** OUTBOX-PIN-AWARE-TOOL-AT-REF-1 makes the hook config-driven and `require_tool_at_ref` accept a pinned tool; a project deletes its copy only after it ships.
+- **Outbox:** outbox:74c853f5d2e30823 mlv-app:1a4a9e7b65ce
