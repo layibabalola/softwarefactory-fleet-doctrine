@@ -167,11 +167,12 @@ elif mode == "transcript":
     # The real shape (tools/kernel-receipt.tests.py codex_transcript, K115's key output): `codex`, the message,
     # `tokens used`, the count, and the message again.
     final = os.environ.get("FAKE_CODEX_FINAL", "VERDICT: ACCEPT\n")
-    print("codex")
-    print(final, end="")
-    print("tokens used")
-    print("1,234")
-    print(final, end="")
+    if os.environ.get("FAKE_CODEX_NO_TAIL") != "1":      # K178: a refused run prints no answer after its error
+        print("codex")
+        print(final, end="")
+        print("tokens used")
+        print("1,234")
+        print(final, end="")
     sys.exit(int(os.environ.get("FAKE_CODEX_EXIT", "0")))
 elif mode == "silent":
     print("(codex ran; no header this time)")
@@ -580,7 +581,9 @@ class CodexReviewCliTests(unittest.TestCase):
         return ["exec", self.CMD, status, *output]
 
     def _run_transcript(self, emit: list[str], stream: str = "stdout", final: str | None = None,
-                        exit_code: int = 0, eol: str = "") -> subprocess.CompletedProcess:
+                        exit_code: int = 0, eol: str = "", no_tail: bool = False,
+                        last: str | None = None) -> subprocess.CompletedProcess:
+        self.env["FAKE_CODEX_NO_TAIL"] = "1" if no_tail else "0"
         self.env["FAKE_CODEX_EMIT"] = json.dumps(emit)
         self.env["FAKE_CODEX_EMIT_STREAM"] = stream
         self.env["FAKE_CODEX_EMIT_EOL"] = eol
@@ -588,7 +591,8 @@ class CodexReviewCliTests(unittest.TestCase):
         self.env.pop("FAKE_CODEX_FINAL", None)
         if final is not None:
             self.env["FAKE_CODEX_FINAL"] = final
-        return self._run("counterpart", "transcript")
+        # K154p2 r4: a run that prints no answer (no_tail) writes no final message unless a test says otherwise
+        return self._run("counterpart", "transcript", last=last if last is not None else ("none" if no_tail else "write"))
 
     def _assert_not_run(self, proc: subprocess.CompletedProcess) -> dict:
         self.assertNotEqual(0, proc.returncode, proc.stdout + proc.stderr)
@@ -749,6 +753,212 @@ class CodexReviewCliTests(unittest.TestCase):
     def test_unknown_role_is_refused(self):
         proc = self._run("nonexistent-role", "echo")
         self.assertNotEqual(proc.returncode, 0)
+
+    # ---- K178 / bus K154 packet 2 key round 3: a failed, unanswered run is an UNKNOWN stop, from structure only ----
+
+    TOKEN_401 = "ERROR: HTTP 401: token expired"
+    QUOTA = "ERROR: You" + "'" + "ve hit your usage limit."
+    # Every transcript the key rounds used, each a run that exited 1. Round 3's five inputs first, then round 2's and
+    # K178 key round 3's. None of their text may decide anything: the stop is read from the exit code and the
+    # final-message file alone.
+    TRANSCRIPTS = (
+        ("r3: a shell call's output fakes `thinking`", ["exec", "cat x", "succeeded in 5ms:", "thinking", TOKEN_401]),
+        ("r3: a bare `codex` line in a command's output", ["exec", "cat x", "succeeded in 5ms:", "codex",
+                                                          "ERROR: 401 Unauthorized"]),
+        ("r3: status 4013", ["ERROR: status 4013"]),
+        ("r3: billing.txt", ["ERROR: failed to read billing.txt"]),
+        ("r3: the true 401", [TOKEN_401]),
+        ("r2: thinking then the 401", ["thinking", TOKEN_401]),
+        ("r2: a path naming 401", ["ERROR: failed to read /tmp/401/AGENTS.md"]),
+        ("r2: a usage limit after a shell call", ["exec", "ls", "succeeded in 5ms:", "a.txt", "thinking", QUOTA]),
+        ("K178 r3: codex after a shell call, then the 401", ["exec", "cat x", "succeeded in 5ms:", "codex",
+                                                             "ERROR: 401 Unauthorized"]),
+        ("an ordinary failure", ["ERROR: stream disconnected before completion"]),
+        ("nothing at all", []),
+    )
+
+    def test_a_failed_unanswered_run_is_an_unknown_stop_whatever_its_transcript_says(self):
+        """Bus key round 3 (the H40 lesson: a text reader is an endless evasion surface): with no final message and a
+        non-zero exit, every transcript reads the same, `unknown` / `unknown`, STOP AND ESCALATE. Neither a true 401
+        nor a forged one is classified; a stray `codex` line never makes the run answered."""
+        for why, emit in self.TRANSCRIPTS:
+            for stream in ("stdout", "stderr"):
+                with self.subTest(why, stream=stream):
+                    proc = self._run_transcript(emit, stream=stream, exit_code=1, no_tail=True)
+                    result = self._result(proc)
+                    self.assertEqual(1, proc.returncode)
+                    self.assertFalse(result["last_message_ok"])
+                    self.assertEqual(("unknown", "unknown"),
+                                     (result.get("credential_refusal"), result.get("credential_kind")))
+                    self.assertIn("codex-review: CREDENTIAL STOP (unknown)", proc.stderr)
+                    self.assertIn("STOP AND ESCALATE", proc.stderr)
+                    self.assertIn("never retry", proc.stderr)
+
+    def test_an_answered_run_is_never_a_stop_whatever_its_transcript_says(self):
+        """The final-message file is the answer: a run that wrote one is answered, whatever error-shaped line its
+        transcript ends with, and a failed exit is reported as an ordinary failure, never a credential stop."""
+        for why, emit in self.TRANSCRIPTS:
+            with self.subTest(why):
+                proc = self._run_transcript(emit, exit_code=1, no_tail=True, last="write")
+                result = self._result(proc)
+                self.assertTrue(result["last_message_ok"])
+                self.assertNotIn("credential_refusal", result)
+                self.assertNotIn("CREDENTIAL STOP", proc.stderr)
+
+    def test_an_empty_final_message_is_not_an_answer(self):
+        proc = self._run_transcript(["codex", "VERDICT: ACCEPT", self.TOKEN_401], exit_code=1, no_tail=True,
+                                    last="empty")
+        self.assertEqual(("unknown", "unknown"), (self._result(proc).get("credential_refusal"),
+                                                  self._result(proc).get("credential_kind")))
+
+    def test_a_whitespace_only_final_message_is_not_an_answer(self):
+        """Bus key round 4, finding 5: ANSWERED means the final-message file is NON-BLANK (whitespace stripped), so a
+        file of spaces, tabs and newlines is unanswered: on a failed run, an unknown stop."""
+        proc = self._run_transcript([self.TOKEN_401], exit_code=1, no_tail=True, final="  \n\t \n", last="write")
+        result = self._result(proc)
+        self.assertFalse(result["last_message_ok"])
+        self.assertEqual(("unknown", "unknown"), (result.get("credential_refusal"), result.get("credential_kind")))
+        self.assertIn("codex-review: CREDENTIAL STOP (unknown)", proc.stderr)
+
+    def test_a_failed_unanswered_run_with_a_failed_sandbox_prints_not_run_and_carries_the_unknown_stop(self):
+        """Bus key round 4, finding 4: when the transcript also shows the failed Windows sandbox, stderr says NOT RUN
+        (not CREDENTIAL STOP; exit 1), and the JSON carries both the sandbox failure and the two unknown fields, so a
+        consumer reading the JSON still stops and escalates."""
+        proc = self._run_transcript(self.call(" exited 1 in 0ms:", self.LINE), exit_code=1, no_tail=True)
+        result = self._result(proc)
+        self.assertEqual(1, proc.returncode)
+        self.assertIn("codex-review: NOT RUN", proc.stderr)
+        self.assertNotIn("CREDENTIAL STOP", proc.stderr)
+        self.assertEqual((self.LINE, "not_run", False), (result["sandbox_failure"], result["tier"],
+                                                         result["last_message_ok"]))
+        self.assertEqual(("unknown", "unknown"), (result.get("credential_refusal"), result.get("credential_kind")))
+
+    def test_a_run_that_exited_0_is_never_a_stop(self):
+        """Exit 0 with no final message is the existing `no final message` failure, not a credential stop; exit 0
+        with one is healthy, whatever its transcript says."""
+        for last in ("none", "write"):
+            with self.subTest(last=last):
+                proc = self._run_transcript([self.TOKEN_401], exit_code=0, no_tail=True, last=last)
+                self.assertNotIn("credential_refusal", self._result(proc))
+                self.assertNotIn("CREDENTIAL STOP", proc.stderr)
+
+    # bus origin/master 60349a0f's codex-review.py: the result keys of every run, in order (before K178 came over)
+    MASTER_RESULT_KEYS = ["role", "requested_model", "requested_effort", "requested_sandbox", "actual_model",
+                          "actual_effort", "actual_sandbox", "exit", "out", "tier", "last_message", "last_message_ok",
+                          "last_message_sha256", "reviewed_head", "sandbox_failure", "shell_calls", "shell_succeeded",
+                          "shell_failed"]
+    # GOLDEN: the JSON line bus origin/master 60349a0f's codex-review.py printed for each saved input below (the same
+    # fake codex, prompt and transcript), the run's temporary root written as <ROOT> and path separators as `/`.
+    # Written once by running that blob (`git show 60349a0f:tools/factory/codex-review.py`) through master_lines().
+    GOLDEN_SCENARIOS = (("healthy", [], 0), ("ordinary-failure", ["ERROR: stream disconnected before completion"], 1))
+    GOLDEN_LINES = {
+        'healthy': (
+            '{"role": "counterpart", "requested_model": "gpt-6-sol", "requested_effort": "high", "requested_s'
+            'andbox": "read-only", "actual_model": "gpt-6-sol", "actual_effort": "high", "actual_sandbox": "r'
+            'ead-only", "exit": 0, "out": "<ROOT>/out.txt", "tier": "ok", "last_message": "<ROOT>/out.txt.las'
+            't.txt", "last_message_ok": true, "last_message_sha256": "sha256:a6e2e6326b74735f1b33a2b8e96f452d'
+            '0302d53de74a610029ef4572ed2c796c", "reviewed_head": null, "sandbox_failure": null, "shell_calls"'
+            ': 0, "shell_succeeded": 0, "shell_failed": 0}'
+        ),
+        'ordinary-failure': (
+            '{"role": "counterpart", "requested_model": "gpt-6-sol", "requested_effort": "high", "requested_s'
+            'andbox": "read-only", "actual_model": "gpt-6-sol", "actual_effort": "high", "actual_sandbox": "r'
+            'ead-only", "exit": 1, "out": "<ROOT>/out.txt", "tier": "ok", "last_message": "<ROOT>/out.txt.las'
+            't.txt", "last_message_ok": true, "last_message_sha256": "sha256:a6e2e6326b74735f1b33a2b8e96f452d'
+            '0302d53de74a610029ef4572ed2c796c", "reviewed_head": null, "sandbox_failure": null, "shell_calls"'
+            ': 0, "shell_succeeded": 0, "shell_failed": 0}'
+        ),
+    }
+
+    def master_lines(self) -> dict:
+        """Each GOLDEN_SCENARIOS input run through the module-level TOOL; the JSON line through normalise_root()."""
+        spellings = root_spellings(self.root)
+        out = {}
+        for name, emit, code in self.GOLDEN_SCENARIOS:
+            proc = self._run_transcript(emit, exit_code=code)
+            out[name] = normalise_root(proc.stdout.strip().splitlines()[-1], spellings)
+        return out
+
+    def test_a_healthy_or_ordinary_failed_runs_json_line_equals_bus_masters_golden_line(self):
+        """Bus key rounds 1-2, finding 2/4: the credential keys appear ONLY on a credential stop, so a healthy run's
+        JSON line (and an ordinary failure's) is byte-identical to the line bus master's codex-review.py printed on the
+        same saved input (GOLDEN_LINES), values included."""
+        got = self.master_lines()
+        for name, _emit, _code in self.GOLDEN_SCENARIOS:
+            with self.subTest(run=name):
+                self.assertEqual(self.GOLDEN_LINES[name], got[name])
+                self.assertEqual(self.MASTER_RESULT_KEYS, list(json.loads(got[name])))
+
+    def test_a_credential_stop_appends_its_two_keys_after_bus_masters(self):
+        proc = self._run_transcript(["ERROR: HTTP 401: token expired"], exit_code=1, no_tail=True)
+        self.assertEqual(self.MASTER_RESULT_KEYS + ["credential_refusal", "credential_kind"],
+                         list(self._result(proc)))
+
+
+def root_spellings(root) -> list[str]:
+    """Every spelling of the directory `root` a tool may print, longest first, each also with `/` separators and as JSON
+    escapes it: as given, absolute, realpath (junctions and symlinks followed) and Path.resolve(), and on Windows its
+    long and 8.3 short forms. Hosted tools bar at Cloudvore e7e52be: TEMP was an 8.3 short form (like C:\\HOME~1\\...)
+    while codex-review printed --last-message resolved to the long form, so a test that replaced only the spelling it
+    built never matched its golden line."""
+    forms = {str(root), os.path.abspath(root), os.path.realpath(root), str(Path(root).resolve())}
+    if os.name == "nt":
+        import ctypes
+        for name in ("GetLongPathNameW", "GetShortPathNameW"):
+            for form in list(forms):
+                buf = ctypes.create_unicode_buffer(32768)
+                if getattr(ctypes.windll.kernel32, name)(form, buf, 32768):
+                    forms.add(buf.value)
+    out = set()
+    for form in forms:
+        for spelled in (form, form.replace("\\", "/")):
+            out.update((spelled, json.dumps(spelled)[1:-1]))
+    return sorted(out, key=len, reverse=True)
+
+
+def normalise_root(line: str, spellings: list[str]) -> str:
+    """`line` with every root spelling written <ROOT>, and the one path separator right after it (`/`, `\\`, or JSON's
+    escaped backslash) written `/`. Nothing else is touched: a backslash anywhere but right after the root stays."""
+    for spelling in spellings:
+        for sep in ("\\\\", "\\", "/"):
+            line = line.replace(spelling + sep, "<ROOT>/")
+        line = line.replace(spelling, "<ROOT>")
+    return line
+
+
+class RootSpellingsTests(unittest.TestCase):
+    """The helper itself: a root reached through a junction (two spellings of one directory) yields both, so a line
+    naming either reads <ROOT>."""
+
+    def test_a_junction_and_its_target_are_both_spellings(self):
+        with tempfile.TemporaryDirectory() as d:
+            target = Path(d) / "a long target directory name"
+            target.mkdir()
+            link = Path(d) / "jn"
+            if os.name == "nt":
+                made = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)], capture_output=True)
+                self.assertEqual(0, made.returncode, made.stdout + made.stderr)
+            else:
+                link.symlink_to(target)
+            got = root_spellings(link)
+            for form in (str(link), str(target.resolve()), str(target.resolve()).replace("\\", "/")):
+                self.assertIn(form, got)
+            line = json.dumps({"a": str(target.resolve() / "x.txt"), "b": str(link / "y.txt")})
+            for spelling in got:
+                line = line.replace(spelling, "<ROOT>")
+            self.assertEqual({"a": "<ROOT>\\x.txt" if os.name == "nt" else "<ROOT>/x.txt",
+                              "b": "<ROOT>\\y.txt" if os.name == "nt" else "<ROOT>/y.txt"}, json.loads(line))
+            if os.name == "nt":
+                os.rmdir(link)
+
+    def test_only_the_root_and_the_separator_after_it_are_normalised(self):
+        """Bus key on 5f10db9b, finding 2: a global backslash replace rewrote values outside the root. GOLDEN: the
+        root's file reads <ROOT>/out.txt; a backslash elsewhere in the line is kept byte for byte."""
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            line = json.dumps({"out": str(root / "out.txt"), "x": "a\\b", "y": "C:\\other\\place"})
+            self.assertEqual('{"out": "<ROOT>/out.txt", "x": "a\\\\b", "y": "C:\\\\other\\\\place"}',
+                             normalise_root(line, root_spellings(root)))
 
 
 class RoleTableMatchesTheDocTests(unittest.TestCase):

@@ -291,3 +291,44 @@ evidence: measured
 - **Order:** the disable (and a stop of any daemon already running there) runs BEFORE the first git command that reads the worktree's index, on every path that reuses an existing worktree, including the continuation branch that refuses a dirty tree. Pinned by an order test.
 - **Limits:** a daemon started in a live lane by something other than the lane keeps running until the lane ends; the helper skips when the extension is off. `Retire -WhatIf` writes the worktree-scoped setting (the sweep already stamped config).
 - **Outbox:** outbox:bbee54a0b3de8308 mlv-app:d754de31bf5d
+
+## mlv-app/pin-runner-cache-never-repairs-same-size-corruption
+rule: a blob cache that is re-verified on read must also be repaired on write: when the bus clone supplies verified bytes, `cache_put` replaces a cached file that is present but not the pinned bytes, whatever its size.
+mechanism: bus tools/factory/pin-runner.py (pin 28fc1ee1; vendored at MLV-App factory-pins/pin-runner.py:312-331): `cache_get` ignores a cached blob that fails its hash, `pinned_bytes` then reads the bus and calls `cache_put`, which returns early when the cached file has the same size as the new bytes. A same-size corrupt entry (one flipped byte) survives every bus-backed run. Measured 2026-10-18: a run with a bus clone exits 0 and leaves the entry corrupt; the next run with no clone exits 3 UNAVAILABLE although the pin had run cleanly on that box. Never wrong bytes (the failure is loud), but the docstring promise that a seen pin keeps running without the clone does not hold.
+check: `py -3 -m pytest tests/coordination/test_check_doc_size_by_pin.py -k same_size_corrupt -q` asserts the safe half (corrupt bytes never run). The repair is the bus owner's: in `cache_put`, skip only when the cached file passes `check_bytes`; then re-pin.
+supersedes: none
+evidence: measured
+- **MLV meanwhile:** it edits no pinned bus artifact. A corrupt entry costs one offline failure (exit 3, nothing runs); cure: delete `%LOCALAPPDATA%/factory-pins/blobs/<blob id>`, run once with the clone present (docs/22 "Pinned runs").
+- **Origin:** CoS #491 I1, folded into CHECK-DOC-SIZE-SINGLE-SOURCE-1.
+- **Outbox:** outbox:eee5adb67a4d6939 mlv-app:577aff6fd4af
+
+## mlv-app/smb-listing-that-opens-files-feeds-the-av-scanner
+rule: Never list a large SMB directory with a tool that stats every entry (Git for Windows `ls -t`, `ls -l`, `find -newer`); enumerate names and times from the directory listing (.NET `EnumerateFileSystemInfos`), keep the newest N, and rotate mailbox directories into dated archive folders.
+mechanism: The MSYS coreutils stat opens each file to read its times, and real-time antivirus scans every open, file by file over the network. A directory enumeration returns the same metadata without opening anything. A process-name exclusion for git.exe does not cover usr\bin\ls.exe. Measured 2026-10-17: `ls -t` of a 20.7k-file job mailbox ran over 10 minutes at about 48 s of scan time per minute; the enumeration listed it in about 2.5 s.
+check: pwsh -NoProfile -File tools/testing/test-agent-share-rotation.ps1 (MLV-App; bounded lister plus whole-job rotation)
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:9a30098636db2db4 mlv-app:d22b6cf2ba5d
+
+## mlv-app/pin-aware-doctrine-outbox-hook-and-ref-check
+rule: a project that runs doctrine_outbox.py by pin sets `tool_pin` in doctrine-outbox.config.json; the installed pre-push hook then runs the pin through factory-pins/pin-runner.py and the debt and drain ref check accepts the pin, so the project can drop its local copy.
+mechanism: the hook ran `$REPO_ROOT/<tool_rel>` and require_tool_at_ref demanded `tool_rel` at the ref, so a project that pinned the shared outbox and deleted its copy bricked its own pushes (CoS repro on a4480947). A config without `tool_pin` behaves exactly as before. The file changed, so the digest below replaces the earlier card's.
+applies: mlv-app, airmypc, agent-bridge, conjugal
+check: `py -3 -m pytest -q tests/coordination/test_doctrine_outbox_hooks.py -k pin` in MLV-App: the fixture pins the tool, holds no copy, installs the hook and pushes through it.
+supersedes: mlv-app/one-config-driven-doctrine-outbox-pr-470 (its digest; the tool gained `tool_pin`)
+evidence: measured
+- **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py from the MLV-App PR OUTBOX-PIN-AWARE-TOOL-AT-REF-1 as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 980884caa698efd4352e776300876d90edfd65c39dfbd8ad38627ecd9b5bb10a.
+- **Pin:** each project reviews that bus SHA, then runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`. A pinned run is `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`. Then set `"tool_pin": "doctrine-outbox"` in the config and run `install-hooks` through that pinned command once.
+- **Follow-up:** OUTBOX-PIN-AWARE-TOOL-AT-REF-1 shipped the hook and ref check. Only after the bus holds the file and the project's pin is reviewed does that project delete its copy.
+- **Outbox:** outbox:1f4aecacdff90fe5 mlv-app:f5015de9fb77
+
+## mlv-app/one-config-driven-doctrine-outbox-ruling-supersedes-1
+rule: the fleet carries ONE doctrine_outbox.py, in the bus at tools/factory/, pinned by each project through factory-pins; every project value sits in doctrine-outbox.config.json. A project never edits the tool; it sets `tool_pin` in its config once its pin is reviewed.
+mechanism: per-project copies drift under tool-census. The mlv-app copy is the candidate: a config-driven superset of the old hook commands, a pin-aware hook and ref check (doctrine-outbox/README.md), and a `validate` refusal of a ruling candidate with no `touches/supersedes:` list of rule ids or bus paths at the bus tip. No `tool_pin` behaves as before.
+applies: mlv-app, airmypc, agent-bridge, conjugal
+check: on the bus run `node tools/tool-census.mjs`; once projects pin and drop their copies, the family reads 1 distinct version. In MLV-App `py -3 -m pytest -q tests/coordination/test_doctrine_outbox_hooks.py -k pin` pushes through the hook with no copy.
+supersedes: mlv-app/one-config-driven-doctrine-outbox-pr-470 (its digest), mlv-app/pin-aware-doctrine-outbox-hook-and-ref-check (its digest)
+evidence: measured
+- **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 2b50558037d2d0d472162676d04ed077e0c09bd191d7cce85391e75e7a9fa84e.
+- **Pin:** each project reviews that bus SHA, then runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`, runs it as `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`, sets `"tool_pin": "doctrine-outbox"`, runs `install-hooks` that way once. OUTBOX-PIN-AWARE-TOOL-AT-REF-1 shipped the pin-aware hook; only after the pin is reviewed does a project delete its copy. Without `tool_pin` it KEEPS it.
+- **Outbox:** outbox:73caf5cfc6ef728c mlv-app:cee9631abe0a

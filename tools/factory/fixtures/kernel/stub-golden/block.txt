@@ -1,0 +1,23 @@
+exit=0
+## Kernel subject
+
+- subject: seed/S2
+- kernel: r5
+- profile: code@r10 (bus abcdef0)
+- contract: sha256:056cdd4e488542f7b53ca791031c0878d7b69661f42dc5386a5c6570b48e1e56
+- key: pending-cross-family
+- delivery: master via --no-ff landing
+- identity: default (the landed merge's tree, the contract's passes all run there; no manifest declared; tools/kernel-receipt.py says which identity it used)
+
+```contract
+bar: the CI bar workflows (product-bar and tools-bar) dispatched at the exact candidate SHA and at the landing merge; each run is the bar of record for its SHA
+filter: tests/x.py
+passes: 3 identical green passes at one SHA; passed, failed, skipped and excluded counted separately
+env: the bar workflow's runs-on as resolved at the run (Runner name seed-runner); its Python
+harness-limits: the bar workflow's job timeout, as committed at the candidate SHA
+seats: 2-3 non-author read-only review seats, each with a different attack question
+review-scope: the packet's diff against master at the candidate SHA, and every reader of what it changes
+rounds: not capped by count; a finding blocks only with a reproduction at the candidate SHA
+planted-edits: every new pin is shown red by a planted break before review
+charter: no independent key dispatched (pending-cross-family)
+```

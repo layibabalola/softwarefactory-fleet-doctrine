@@ -66,7 +66,7 @@ would remove the prompt before codex reads it. An `--out` that is the `--prompt-
 opening `--out` truncates it, so codex would read an empty prompt (K122). The path is made absolute before codex sees
 it (codex runs with `-C <worktree>`), any stale file there is deleted BEFORE the
 run (a previous run's answer must not stand in for this one's), and after the
-run a missing or empty file is a failure: `"last_message_ok": false`, a line on
+run a missing, empty or whitespace-only file is a failure: `"last_message_ok": false`, a line on
 stderr, and a non-zero exit, whatever the tier and exit code say.
 K140 (K6 key round 1): the result also carries `last_message_sha256`, `sha256:<hex>` of the final-message file's
 bytes read after the run (null when there is no file). tools/kernel-receipt.py ties the result to the verdict by
@@ -91,6 +91,31 @@ the JSON line (`shell_calls`, `shell_succeeded`, `shell_failed`) are information
 may exit non-zero in a healthy review (rg with no match), and a status-shaped line inside a call's output is counted
 as one. Not caught: a failure that prints any other text, or this text after a prefix (no card shows one). A command
 that prints a copy of the measured line at the start of a line reads NOT RUN: a refused run, the safe side.
+
+A FAILED, UNANSWERED RUN IS A STOP, NEVER A RETRY (K178; bus K154 packet 2, key round 3)
+---------------------------------------------------------------------------------------
+Whether the run was ANSWERED is read from structure only: the --last-message file exists, is not the --out file and
+is NON-BLANK (some character other than whitespace; codex writes it only from the agent's final message). Turn-marker lines in the human transcript
+(`thinking`, `codex`, `exec`) are never read for this: a command's output can print any of them.
+
+A run that exited non-zero AND was not answered is a credential stop: `credential_refusal` and `credential_kind` are
+both `unknown` in the JSON and the exit code stays 1. Its stderr line is CREDENTIAL STOP, except when the transcript
+also shows the failed Windows sandbox: then stderr says NOT RUN instead (that check comes first), and the JSON still
+carries `sandbox_failure` and both `unknown` fields. `unknown` means STOP AND ESCALATE to
+the owner, never retry: a consumer project's wrapper must not re-run, re-authenticate or wait it out on its own.
+Why never classified here: a credential or quota refusal can be classified only from a TYPED source, codex's JSON
+event stream (`codex exec --json`: typed `error` / `turn.failed` events) or a stderr that carries nothing but codex's
+own errors. This tool runs codex in human mode (its tier check reads the human banner), whose transcript mixes codex's
+lines with every command's output, so no reading of it can tell codex's error from a command's (key rounds 1-3 of
+K178 and three rounds of the bus key found such evasions: `thinking` or `codex` printed by a command, `status 4013`,
+`billing.txt`). Until a typed source is wired (a follow-up that needs one live run to record the event shapes), every
+failed, unanswered run is `unknown`. When one is wired, its error text is matched only by the strictly anchored
+patterns `\bHTTP (401|403)\b`, `\b(401 Unauthorized|403 Forbidden)\b`, `\btoken (expired|revoked)\b`,
+`\binsufficient_quota\b`, `\bquota exceeded\b`, `\bbilling hard limit\b` (auth for the first three, quota for the
+rest), and anything else stays `unknown`.
+
+The two keys are in the JSON ONLY on such a stop (every other run's line is byte-identical to the line before K178).
+A stop never makes a run pass.
 
 NEVER `-p`/`--profile`. A profile is a name that resolves against the config
 file this tool exists to route AROUND; passing one would silently reintroduce
@@ -256,6 +281,19 @@ def shell_calls(transcript: str, prompt: str = "", final_message: str = "") -> d
     return {"calls": calls, "succeeded": succeeded, "failed": failed, "failure": hit}
 
 
+# K178, bus K154 packet 2 key round 3: the stop is decided from structure only (exit code, final-message file).
+UNKNOWN = "unknown"
+
+
+def credential_refusal(returncode: int, answered: bool) -> tuple[str, str] | None:
+    """(kind, refusal) for a failed (non-zero exit), unanswered (no final message) run, else None. Both are
+    `unknown`: with no typed event stream there is nothing safe to classify from (see the module doc), so the caller
+    stops and escalates. No transcript text is read."""
+    if returncode != 0 and not answered:
+        return UNKNOWN, UNKNOWN
+    return None
+
+
 def _read(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8", errors="replace")
@@ -380,8 +418,11 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
     if failure is not None:
         tier = "not_run"
     seen = banner or {}
+    answered = last_message_ok(last_path) and not same_file(last_path, Path(out_path))
+    # K178, bus K154 packet 2 key round 3: a failed, unanswered run is a stop, decided from structure only.
+    refusal = credential_refusal(proc.returncode, answered)
 
-    return {
+    result = {
         "role": role,
         "requested_model": model,
         "requested_effort": effort,
@@ -393,7 +434,7 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         "out": str(out_path),
         "tier": tier,
         "last_message": str(last_path),
-        "last_message_ok": last_message_ok(last_path) and not same_file(last_path, Path(out_path)),
+        "last_message_ok": answered,
         "last_message_sha256": last_message_sha256(last_path),
         "reviewed_head": head,
         "sandbox_failure": failure,
@@ -401,6 +442,11 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         "shell_succeeded": shell["succeeded"],
         "shell_failed": shell["failed"],
     }
+    # Bus key on K154 packet 2, finding 2: the two K178 keys exist ONLY on a credential stop, appended after the
+    # others, so every other run's JSON line is byte-compatible with the result before K178.
+    if refusal:
+        result["credential_refusal"], result["credential_kind"] = refusal[1], refusal[0]
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -433,8 +479,13 @@ def main(argv: list[str] | None = None) -> int:
               f"{result['shell_succeeded']}, failed {result['shell_failed']}): the review could not read the tree, "
               f"whatever its verdict says", file=sys.stderr)
         return 1
+    if result.get("credential_refusal") is not None:
+        print(f"codex-review: CREDENTIAL STOP ({result['credential_kind']}): codex exited {result['exit']} with no final "
+              f"message (transcript {result['out']}); the cause is not classified without a typed event stream: STOP "
+              f"AND ESCALATE to the owner, never retry and never re-authenticate from a script", file=sys.stderr)
+        return 1
     if not result["last_message_ok"]:
-        print(f"codex-review: no final message at {result['last_message']} (missing or empty)", file=sys.stderr)
+        print(f"codex-review: no final message at {result['last_message']} (missing, empty or whitespace only)", file=sys.stderr)
         return 1
     if result["tier"] != "ok":
         return 1

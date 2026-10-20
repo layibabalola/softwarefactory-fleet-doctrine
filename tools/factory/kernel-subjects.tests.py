@@ -1081,10 +1081,24 @@ def tool_copy(test: unittest.TestCase, mutate=None, config: bool = True, raw: by
     return tools
 
 
+def copy_env(tools: Path) -> dict:
+    """Bus key on K154 packet 2, finding 4: the kernel never reads a config beside itself, so a copy is told which
+    config is its own through FACTORY_KERNEL_CONFIG, exactly as a pinned run is."""
+    return {**os.environ, "FACTORY_KERNEL_CONFIG": str(tools / "factory-config.json")}
+
+
 def load_copy(tools: Path, name: str = "kernel-subjects.py"):
     spec = importlib.util.spec_from_file_location(f"k137_copy_{name.replace('-', '_')}_{id(tools)}", tools / name)
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    saved = os.environ.get("FACTORY_KERNEL_CONFIG")
+    os.environ["FACTORY_KERNEL_CONFIG"] = str(tools / "factory-config.json")
+    try:
+        spec.loader.exec_module(mod)
+    finally:
+        if saved is None:
+            os.environ.pop("FACTORY_KERNEL_CONFIG", None)
+        else:
+            os.environ["FACTORY_KERNEL_CONFIG"] = saved
     return mod
 
 
@@ -1176,6 +1190,30 @@ class FactoryConfigTests(unittest.TestCase):
                     for lit in CLOUDVORE_LITERALS:
                         self.assertNotIn(lit, value)
 
+    def test_the_ranker_and_evidence_sections_are_optional_and_absent_means_off(self):
+        """Bus K154 packet 2 (coordinator ruling 2026-10-18; bus key finding 5): another project's config without
+        `ranker` or `evidence` loads with nothing defaulted in, and since no kernel-subjects command's output depends on either section
+        (the loader validates them; it does not print them), the output is byte-identical to the same copy's under the full config, naming neither."""
+        def block(tools):
+            p = subprocess.run([sys.executable, str(tools / "kernel-subjects.py"), "block", "--row", "H1",
+                                "--filter", FILTER, "--bus-sha", BUS], capture_output=True, env=copy_env(tools))
+            self.assertEqual(0, p.returncode, p.stderr)
+            return p.stdout
+        full = block(tool_copy(self))
+        for drop in (["ranker"], ["evidence"], ["ranker", "evidence"]):
+            with self.subTest(absent=drop):
+                def strip(data, drop=drop):
+                    for section in drop:
+                        del data[section]
+                tools = tool_copy(self, strip)
+                ks = load_copy(tools)
+                for section in drop:
+                    self.assertNotIn(section, ks.CONFIG)
+                out = block(tools)
+                self.assertEqual(full, out)
+                for word in (b"evidence-store", b"starvation", b"ranker"):
+                    self.assertNotIn(word, out)
+
     def test_a_changed_config_value_changes_what_the_tool_does(self):
         """The production wiring, not a helper: a copy of the tool beside a config naming another project's briefs
         directory, subject prefix, delivery and runner reads a Cloudvore packet as unbriefed, and renders its own."""
@@ -1228,7 +1266,7 @@ class FactoryConfigTests(unittest.TestCase):
                            ("kernel-receipt.py", ["--merge", "x", "--barred", "y", "--ledger", "z"])):
             with self.subTest(tool=name):
                 p = subprocess.run([sys.executable, str(tools / name), "--repo", str(tools), *args],
-                                   capture_output=True, text=True)
+                                   capture_output=True, text=True, env=copy_env(tools))
                 self.assertEqual((2, ""), (p.returncode, p.stdout), p.stderr)
                 self.assertIn(f"REFUSE {name[:-3]}: ", p.stderr)
                 self.assertIn("factory-config.json", p.stderr)
@@ -1244,7 +1282,7 @@ class FactoryConfigTests(unittest.TestCase):
             with self.subTest(why):
                 tools = tool_copy(self, **kw)
                 p = subprocess.run([sys.executable, str(tools / "kernel-receipt.py"), "--merge", "x", "--barred", "y",
-                                    "--ledger", "z"], capture_output=True, text=True)
+                                    "--ledger", "z"], capture_output=True, text=True, env=copy_env(tools))
                 self.assertEqual((2, ""), (p.returncode, p.stdout), p.stderr)
                 self.assertIn("REFUSE kernel-receipt: ", p.stderr)
                 self.assertIn(says, p.stderr)
@@ -1277,6 +1315,15 @@ class FactoryConfigTests(unittest.TestCase):
             ("a contract default missing", dict(mutate=_drop(["contract_defaults", "seats"])),
              "contract_defaults.seats"),
             ("another schema", dict(mutate=_put(["schema"], "factory-config/2")), "schema"),
+            # K151: the ranker's starvation window is a positive integer, never defaulted
+            ("a ranker that is not an object", dict(mutate=_put(["ranker"], 4)),
+             "has ranker that is not an object"),
+            ("no window", dict(mutate=_drop(["ranker", "starvation_window"])), "ranker.starvation_window"),
+            ("a zero window", dict(mutate=_put(["ranker", "starvation_window"], 0)), "ranker.starvation_window"),
+            ("a string window", dict(mutate=_put(["ranker", "starvation_window"], "4")), "ranker.starvation_window"),
+            ("a boolean window", dict(mutate=_put(["ranker", "starvation_window"], True)), "ranker.starvation_window"),
+            ("a float window", dict(mutate=_put(["ranker", "starvation_window"], 4.0)), "ranker.starvation_window"),
+            ("an unknown ranker key", dict(mutate=_put(["ranker", "window"], 4)), "unknown key ranker.window"),
             # K137 mutants (ledger, Mutants): each case below kills a loader break the cases above let through
             ("a boolean schema", dict(mutate=_put(["schema"], True)), "schema True"),
             ("an unknown top-level key", dict(mutate=_put(["extra"], 1)), "unknown key extra"),
@@ -1335,6 +1382,19 @@ class FactoryConfigTests(unittest.TestCase):
             ("one workflow for both bars", dict(mutate=_put(["bar", "product_workflow"], "tools-bar")),
              "bar.product_workflow"),
             ("a subject prefix not ASCII", dict(mutate=_put(["subject", "prefix"], "cl\u00f6udvore/")), "subject.prefix"),
+            # K179: the evidence store's branch and worktree are NAMES, checked as names
+            ("an evidence section that is not an object", dict(mutate=_put(["evidence"], "evidence-store")),
+             "has evidence that is not an object"),
+            ("an evidence branch with a slash", dict(mutate=_put(["evidence", "branch"], "claude/evidence")),
+             "evidence.branch"),
+            ("an evidence branch that is the delivery branch", dict(mutate=_put(["evidence", "branch"], "master")),
+             "evidence.branch"),
+            ("an evidence worktree that is a path", dict(mutate=_put(["evidence", "worktree"], "../store")),
+             "evidence.worktree"),
+            ("an evidence worktree with a separator", dict(mutate=_put(["evidence", "worktree"], "a/b")),
+             "evidence.worktree"),
+            ("an evidence key the store does not read", dict(mutate=_put(["evidence", "limit_bytes"], "16384")),
+             "unknown key evidence.limit_bytes"),
         )
         for why, kw, says in cases:
             with self.subTest(why):
@@ -1342,7 +1402,7 @@ class FactoryConfigTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, re.escape(says)):
                     load_copy(tools)
                 p = subprocess.run([sys.executable, str(tools / "kernel-subjects.py"), "advisory"],
-                                   capture_output=True, text=True)
+                                   capture_output=True, text=True, env=copy_env(tools))
                 self.assertEqual((2, ""), (p.returncode, p.stdout), p.stderr)
                 self.assertIn("REFUSE kernel-subjects: ", p.stderr)
                 self.assertIn(says, p.stderr)

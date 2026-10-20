@@ -22,7 +22,10 @@ class SnapshotTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="r45-refresh-fixture-")
         self.addCleanup(self.temp.cleanup)
         self.repo = Path(self.temp.name) / "repo"
-        self.run_git("clone", "--local", "--no-hardlinks", "--no-checkout", str(ROOT), str(self.repo), cwd=ROOT)
+        self.run_git("clone", "--local", "--no-hardlinks", "--no-checkout",
+                     # A detached auto-maintenance lock races TemporaryDirectory cleanup.
+                     "--config", "maintenance.auto=false", "--config", "gc.auto=0",
+                     str(ROOT), str(self.repo), cwd=ROOT)
         self.run_git("config", "core.autocrlf", "false")
         self.run_git("config", "user.name", "Manifest fixture")
         self.run_git("config", "user.email", "fixture@example.invalid")

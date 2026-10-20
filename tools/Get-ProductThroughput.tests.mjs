@@ -4,9 +4,10 @@
 // merge exclusion (including an evil merge), the -Since window edge, the cross-project ranking,
 // fail-closed inputs, and that the classic commit-count mode is unchanged. Added 2026-10-16: the changed-BYTES
 // column (a 50 KB packet line rewrite vs 10 app lines), commit classes, the DNG class entry, and -Repo/-Days.
+// Added 2026-10-19 (review E3 r2): DNG profiles/ is runtime-data, not product (N1); both git passes delete their temp files (N2).
 import assert from 'node:assert/strict';
 import { spawnSync, execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, appendFileSync, readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync, appendFileSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -83,7 +84,7 @@ try {
   const A = j.projects.find((p) => p.project === 'alpha');
   // bucket attribution
   assert.deepEqual({ ...A.lines }, { product: 13, tests: 5, 'vendored-copies': 6, 'factory-tooling': 20,
-    'coordination-paperwork': 37, unclassified: 7 }, JSON.stringify(A.lines));
+    'coordination-paperwork': 37, 'runtime-data': 0, unclassified: 7 }, JSON.stringify(A.lines));
   // product = main.c 10 + side.c 3 (main.c's later move is tests' +1 edit; the rename itself is free)
   assert.equal(A.total_lines, 88);
   assert.equal(A.product_share, Math.round((13 / 88) * 1e4) / 1e4);
@@ -174,6 +175,7 @@ try {
   // table output carries the new columns
   const dt = run(['-Lines', '-ClassConfig', dcfg, '-Repo', d, '-Project', 'dng']);
   assert.equal(dt.code, 0, dt.out); assert.match(dt.out, /bshare/); assert.match(dt.out, /pc\/ac/); assert.match(dt.out, /0\.04%/);
+  assert.match(dt.out, /vendored\s+rtdata\s+unclass/);
   // -NoBytes keeps the default fields and nulls the byte ones
   const nb = JSON.parse(run(['-Lines', '-ClassConfig', dcfg, '-Repo', d, '-Project', 'dng', '-NoBytes', '-Json']).out).projects[0];
   assert.equal(nb.bytes, null); assert.equal(nb.product_share_bytes, null); assert.equal(nb.product_share, D.product_share);
@@ -181,7 +183,8 @@ try {
   // DNG class mapping, one file per path class, through the REAL dng class entry.
   const m = newRepo('dng-map');
   const one = (rel) => put(m, rel, 'x\n');
-  ['DngAutoProcessor.Core/a.cs', 'DngAutoProcessor.CorpusBridge/b.cs', 'DngAutoProcessor.App/c.cs', 'DngAutoProcessor.Future/d.cs', 'profiles/house-style-profile.json'].forEach(one); // product 5
+  ['DngAutoProcessor.Core/a.cs', 'DngAutoProcessor.CorpusBridge/b.cs', 'DngAutoProcessor.App/c.cs', 'DngAutoProcessor.Future/d.cs'].forEach(one); // product 4
+  one('profiles/house-style-profile.json');                                                                                                     // runtime-data 1 (E3 r2 N1: never product)
   ['DngAutoProcessor.Tests/t.cs', 'corpus/c.txt'].forEach(one);                                                                                 // tests 2 (corpus = validation data)
   ['tools/a.ps1', 'scripts/b.ps1', '.githooks/pre-commit', '.github/w.yml', 'DngAutoProcessor.sln', 'global.json', 'analysis/a.py'].forEach(one); // tooling 7
   ['WORK.md', 'WORK-DONE.md', 'packets/p.md', 'metrics/ratify/c/receipt.json', 'docs/d.md', 'review/r.md', 'receipts/x.txt', 'README.md',
@@ -190,15 +193,23 @@ try {
   one('weird/x.txt');                                                                                                                           // unclassified 1
   writeFileSync(join(m, 'DngAutoProcessor.Core', 'blob.bin'), Buffer.alloc(100));                                                               // binary: added, 100 B to product bytes
   commit(m, 'one of each');
+  // a learned-store sync alone (the 3b2aff37 shape: one multi-MB store rewritten by script) is not a product commit
+  put(m, 'profiles/look-teaching-store.json', lines(50, 'store'));
+  commit(m, 'profiles synced back via sanctioned script');
   const mr = run(['-Lines', '-ClassConfig', dcfg, '-Repo', m, '-Project', 'dng', '-Json']);
   assert.equal(mr.code, 0, mr.out);
   const M = JSON.parse(mr.out).projects[0];
-  assert.deepEqual({ ...M.lines }, { product: 5, tests: 2, 'vendored-copies': 0, 'factory-tooling': 7, 'coordination-paperwork': 19, unclassified: 1 }, JSON.stringify(M.lines));
-  assert.equal(M.bytes.product, 5 * 2 + 100);                             // 5 text lines of 'x\n' (marker-inclusive = 2) + the 100-byte binary
+  assert.deepEqual({ ...M.lines }, { product: 4, tests: 2, 'vendored-copies': 0, 'factory-tooling': 7, 'coordination-paperwork': 19, 'runtime-data': 51, unclassified: 1 }, JSON.stringify(M.lines));
+  assert.equal(M.product_share, Math.round((4 / 84) * 1e4) / 1e4);
+  assert.equal(M.bytes.product, 4 * 2 + 100);                             // 4 text lines of 'x\n' (marker-inclusive = 2) + the 100-byte binary
+  assert.equal(M.bytes['runtime-data'], 2 + 10 * 8 + 40 * 9);           // 'x\n' + 'store 0'..'store 9' (8 B each) + 'store 10'..'store 49' (9 B each)
   assert.equal(M.bytes['coordination-paperwork'], 38);
   assert.equal(M.binary_files, 1); assert.equal(M.binary_files_ignored, 1);  // deprecated alias keeps its value
   assert.deepEqual(M.top_unclassified.map((u) => u.prefix), ['weird/']);
-  assert.equal(M.commit_classes.product, 1);
+  assert.deepEqual({ ...M.commit_classes }, { product: 1, tests: 0, 'paperwork-only': 0, 'tooling-only': 0, 'paperwork-and-tooling': 0, other: 1 }, JSON.stringify(M.commit_classes));
+  // and the real entry says so directly: no product pattern reaches profiles/, runtime-data names it
+  assert.deepEqual(dngEntry.classes['runtime-data'], ['profiles/']);
+  assert.ok(!dngEntry.classes.product.some((p) => p.startsWith('profiles')), JSON.stringify(dngEntry.classes.product));
 
   // RAW bytes: CRLF, a lone CR, Latin-1 0xE9 and a final line with no EOL are counted as git stores them;
   // a same-size binary REPLACEMENT counts old + new (200), not the net size delta (0).
@@ -221,6 +232,27 @@ try {
   assert.equal(R.lines.product, 5);
   assert.equal(R.bytes.product, 3 + 15 + 2 + 3 + 200, JSON.stringify(R.bytes));
   assert.equal(R.binary_files, 1);
+
+  // Temp-file hygiene (E3 r2 N2): both git passes capture stdout in a temp file and must delete it. TMP/TEMP/TMPDIR point
+  // at a private empty dir. A copy of the tool whose cleanup is a no-op must leave its two files there, which proves the
+  // redirect took effect, so the real tool's empty dir is not a vacuous pass.
+  const tmpRun = (script, dir) => {
+    mkdirSync(dir);
+    const t = spawnSync('pwsh', ['-NoProfile', '-NonInteractive', '-File', script, '-Lines', '-ClassConfig', rawCfg, '-Days', '14', '-Json'],
+      { encoding: 'utf8', env: { ...env, TMP: dir, TEMP: dir, TMPDIR: dir }, timeout: 120000 });
+    assert.equal(t.status, 0, t.stdout + t.stderr);
+    assert.equal(JSON.parse(t.stdout).projects[0].bytes.product, R.bytes.product);   // both passes ran
+    return readdirSync(dir);
+  };
+  const cleanup = 'finally { Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue }';
+  const toolSrc = readFileSync(tool, 'utf8');
+  assert.equal(toolSrc.split(cleanup).length, 2, 'exactly one temp-file cleanup site in the tool');
+  mkdirSync(join(root, 'mutant'));
+  const mutant = join(root, 'mutant', 'Get-ProductThroughput.ps1');
+  writeFileSync(mutant, toolSrc.replace(cleanup, 'finally { $null = 1 }'));
+  const leaked = tmpRun(mutant, join(root, 'tmp-mutant'));
+  assert.equal(leaked.length, 2, `the no-op-cleanup mutant leaves one file per git pass: ${JSON.stringify(leaked)}`);
+  assert.deepEqual(tmpRun(tool, join(root, 'tmp-real')), [], 'the tool leaves no temp files behind');
 
   // Odd paths: ' and ', spaces, a TAB in the name (made through the index, NTFS cannot hold one on disk) and a rename.
   // Paths come from `git log --raw --numstat -z`, never from the 'Binary files a/x and b/y differ' prose.
@@ -249,8 +281,8 @@ try {
   const oj = run(['-Lines', '-ClassConfig', odCfg, '-Days', '14', '-Json']);
   assert.equal(oj.code, 0, oj.out);
   const O = JSON.parse(oj.out).projects[0];
-  assert.deepEqual({ ...O.lines }, { product: 4, tests: 1, 'vendored-copies': 0, 'factory-tooling': 0, 'coordination-paperwork': 0, unclassified: 0 }, JSON.stringify(O.lines));
-  assert.deepEqual({ ...O.bytes }, { product: 100 + 12 + 30 + 3, tests: 50 + 6, 'vendored-copies': 0, 'factory-tooling': 0, 'coordination-paperwork': 0, unclassified: 0 }, JSON.stringify(O.bytes));
+  assert.deepEqual({ ...O.lines }, { product: 4, tests: 1, 'vendored-copies': 0, 'factory-tooling': 0, 'coordination-paperwork': 0, 'runtime-data': 0, unclassified: 0 }, JSON.stringify(O.lines));
+  assert.deepEqual({ ...O.bytes }, { product: 100 + 12 + 30 + 3, tests: 50 + 6, 'vendored-copies': 0, 'factory-tooling': 0, 'coordination-paperwork': 0, 'runtime-data': 0, unclassified: 0 }, JSON.stringify(O.bytes));
   assert.equal(O.binary_files, 3);
   // -AsRows carries the bytes additively beside upstream's reproducing command
   const orow = JSON.parse(run(['-Lines', '-AsRows', '-ClassConfig', odCfg, '-Days', '14']).out.trim());

@@ -24,7 +24,10 @@ Not refused:
 
 Which commits: for each pushed ref, the files that differ between the pushed tip and its base --
 the remote tip when it is known locally, else the merge-base with refs/remotes/<remote>/HEAD,
-master or main, else (no base at all) every file in the tip. Deleting a ref is never judged.
+master or main, else (no base at all) every file in the tip.
+A file whose blob at the pushed tip equals the same path on a remote-tracking mainline ref (HEAD, master, main)
+is not judged: it already landed and was judged then, so merging the mainline into an older branch is not that
+branch's change (Cloudvore 2026-10-19). Deleting a ref is never judged.
 git hands the hook `<remote> <url>` as argv and `<local-ref> <local-sha> <remote-ref> <remote-sha>`
 lines on stdin. git calls inherit the hook's environment (GIT_DIR is set when the push runs from a
 linked worktree, and names that worktree's repository correctly) and run in --repo (default cwd).
@@ -105,6 +108,25 @@ def base_of(repo: str, remote: str, lsha: str, rsha: str) -> str | None:
     return None
 
 
+def mainline_refs(repo: str, remote: str) -> list[str]:
+    """The remote-tracking mainline refs that resolve: what has already landed (and was judged when it did)."""
+    out = []
+    for ref in (f"refs/remotes/{remote}/HEAD", f"refs/remotes/{remote}/master", f"refs/remotes/{remote}/main",
+                "refs/remotes/origin/HEAD", "refs/remotes/origin/master", "refs/remotes/origin/main"):
+        if ref not in out and git(repo, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}").returncode == 0:
+            out.append(ref)
+    return out
+
+
+def on_mainline(repo: str, refs: list[str], lsha: str, path: str) -> bool:
+    """True when `path` at the pushed tip is byte-identical to the same path on a mainline ref. A branch that merged
+    the mainline carries the mainline's own edits; those were judged when they landed, so they are not this push's."""
+    have = git(repo, "rev-parse", "--verify", "--quiet", f"{lsha}:{path}").stdout.strip()
+    if not have:
+        return False
+    return any(git(repo, "rev-parse", "--verify", "--quiet", f"{ref}:{path}").stdout.strip() == have for ref in refs)
+
+
 def changed(repo: str, base: str | None, lsha: str) -> list[tuple[str, str]]:
     if base is None:
         p = git(repo, "ls-tree", "-r", "--name-only", "-z", lsha)
@@ -171,6 +193,9 @@ def judge(lines: list[str], args: argparse.Namespace, today: _dt.date) -> list[s
             continue  # deletion: nothing is added
         hits = [(st, p, family_of(p)) for st, p in changed(args.repo, base_of(args.repo, args.remote or "origin", lsha, rsha), lsha)]
         hits = [(st, p, f) for st, p, f in hits if f and (f[1] == "canonical" or st == "A")]
+        if hits:
+            mainline = mainline_refs(args.repo, args.remote or "origin")
+            hits = [(st, p, f) for st, p, f in hits if not on_mainline(args.repo, mainline, lsha, p)]
         if not hits:
             continue
         allowed, bad = allowlist(args.repo, lsha, args.allowlist, today, args.max_days)

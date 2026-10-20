@@ -46,8 +46,8 @@ variable that relocates the repository, and GIT_NO_REPLACE_OBJECTS=1.
 
 K137: the project's constants (the subject prefix, the row and branch patterns, the delivery, the briefs, review and
 receipts paths, the default products, the bar's runner and workflows, the runner script's path and the default
-contract text) are read from ONE committed config, factory-config.json beside this file (or the file
-$FACTORY_KERNEL_CONFIG names, the form a pinned run through tools/factory/pin-runner.py uses), which
+contract text) are read from ONE committed config, the file $FACTORY_KERNEL_CONFIG names (set explicitly, as a
+pinned run through tools/factory/pin-runner.py does; never a file beside this one, and unset is refused), which
 tools/kernel-receipt.py reads through this module. A missing, unreadable or malformed config is refused (exit 2,
 `REFUSE kernel-subjects: ...`), never defaulted: `load_config` names the key that is wrong.
 """
@@ -64,14 +64,13 @@ from pathlib import Path
 
 CONFIG_NAME = "factory-config.json"
 # Bus K154: run by pin (tools/factory/pin-runner.py) the tool sits in a private directory, so the project names its
-# config in FACTORY_KERNEL_CONFIG (a path; relative resolves against the caller's cwd). Unset or empty: beside this
-# file, as a project copy has always read it. Either way the file is loaded strictly below, never defaulted.
+# config in FACTORY_KERNEL_CONFIG (a path; relative resolves against the caller's cwd). Bus key on K154 packet 2,
+# finding 4: unset or empty REFUSES (exit 2 naming the variable), even run by absolute path beside a
+# factory-config.json; a project copy that read the file beside itself must now name it. Loaded strictly below.
 CONFIG_ENV = "FACTORY_KERNEL_CONFIG"
-# Bus review of K154: in-process under pin-runner (python -I, no `with`) __file__ is the RELATIVE bus path, so "beside
-# this file" would silently read <caller's cwd>/tools/factory/factory-config.json. Beside-the-file needs an absolute
-# __file__; otherwise CONFIG_PATH is None and load_config refuses, naming the variable.
-CONFIG_PATH = (Path(os.environ[CONFIG_ENV]) if os.environ.get(CONFIG_ENV)
-               else Path(__file__).with_name(CONFIG_NAME) if Path(__file__).is_absolute() else None)
+# (Bus review of K154 had already closed the in-process case, where __file__ is relative and "beside this file" read
+# the caller's tree; this closes the rest.) Unset: CONFIG_PATH is None and load_config refuses, naming the variable.
+CONFIG_PATH = Path(os.environ[CONFIG_ENV]) if os.environ.get(CONFIG_ENV) else None
 CONFIG_SCHEMA = 1                     # the config layout this code reads
 # K120 round 1 (tools/kernel-receipt.py): the one runner-name domain, words of [0-9A-Za-z._-] joined by single spaces.
 RUNNER_WORDS = r"[0-9A-Za-z._-]+(?: [0-9A-Za-z._-]+)*"
@@ -83,6 +82,11 @@ _STR, _DIRS, _REGEX, _DIR, _FILE, _RUNNER, _PREFIX = (
     "a nonempty string", "a nonempty list of distinct repository directories", "a regular expression",
     "a repository directory (relative, forward slashes, ending in /)", "a repository file (relative, forward slashes)",
     "a runner name", "an ASCII subject prefix ending in /")
+# K179: the evidence store's names. A branch name with no `/` (never a packet branch), and one path segment for the
+# store worktree, which a consumer project's evidence-store tool places inside the repository's git common directory.
+_BRANCH, _NAME = "a branch name of [a-z0-9-] with no /", "one path segment of [A-Za-z0-9._-], not . or .."
+_BRANCH_FORM = re.compile(r"[a-z0-9][a-z0-9-]*")
+_NAME_FORM = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 # Review round 1 (seat A): a repository path is relative ASCII segments joined by `/`; no drive letter, no `.` or `..`
 # segment, no backslash, no space. A directory ends in `/`, a file does not.
 _PATH_FORM = re.compile(r"[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*/?")
@@ -95,14 +99,26 @@ _WORKFLOW_FORM = re.compile(r"[a-z0-9][a-z0-9-]*")
 _PRODUCT_ROOTS = ("src/", "tests/", "tools/")
 # K137 key round 2 (integrator closure 4): a hosted runner's log name is a literal prefix and a number
 _HOSTED_FORM = re.compile(r"[A-Za-z0-9 _-]+\[0-9\]\+")
-# Every key the config must carry, and nothing else: (section, key) -> what its value must be.
+# Every section and key the config may carry, and nothing else: (section, key) -> what its value must be. Every
+# section is required except _OPTIONAL_SECTIONS below, which may be absent; a section present carries every key.
 _CONFIG_KEYS = {
     "subject": {"prefix": _PREFIX, "row": _REGEX, "branch_prefix": _STR, "delivery": _STR, "default_products": _DIRS},
     "paths": {"briefs": _DIR, "review": _DIR, "receipts": _DIR, "subjects_tool": _FILE, "tools_bar_runner": _FILE},
     "bar": {"runner": _RUNNER, "hosted_runner": _REGEX, "tools_workflow": _STR, "product_workflow": _STR,
             "workflow_suffix": _STR},
     "contract_defaults": {k: _STR for k in CONTRACT_KEYS if k != "filter"},
+    "evidence": {"branch": _BRANCH, "worktree": _NAME},
 }
+
+# K151: tools/next.py's starvation window, the number of recent landings its two-way guard reads. A count that NAMES
+# how far back to look, never a value that decides credit. Its own block, so a later section merges beside it.
+_COUNT = "a positive integer"
+_CONFIG_KEYS["ranker"] = {"starvation_window": _COUNT}
+
+# Bus K154 packet 2 (coordinator ruling 2026-10-18): `ranker` and `evidence` are OPTIONAL sections. Absent means the
+# feature is off for that project (no starvation guard, no evidence store); nothing is defaulted in. Present, a
+# section is checked exactly as a required one: every key, no other key, each value of its kind.
+_OPTIONAL_SECTIONS = frozenset({"ranker", "evidence"})
 
 
 class ConfigError(ValueError):
@@ -117,8 +133,8 @@ def row_in_subject(row: str) -> re.Pattern:
 def load_config(path: Path | None) -> dict:
     """The parsed config at `path`, every key checked; ConfigError naming the file and the key otherwise."""
     if path is None:
-        raise ConfigError(f"no config: ${CONFIG_ENV} is unset and this file has no directory of its own (a pinned run "
-                          f"names its config in ${CONFIG_ENV}; K137, never defaulted)")
+        raise ConfigError(f"no config: ${CONFIG_ENV} is unset or empty; name the project's config in it (the kernel "
+                          f"never reads a {CONFIG_NAME} beside itself; K137, never defaulted)")
     where = f"{path}"
     try:
         raw = path.read_bytes()
@@ -150,7 +166,7 @@ def load_config(path: Path | None) -> dict:
     if not isinstance(data, dict):
         raise ConfigError(f"the config {where} is not a JSON object")
     want = {"schema", "about", *_CONFIG_KEYS}
-    for key in sorted(want - set(data)):
+    for key in sorted(want - _OPTIONAL_SECTIONS - set(data)):
         raise ConfigError(f"the config {where} has no {key}")
     for key in sorted(set(data) - want):
         raise ConfigError(f"the config {where} has an unknown key {key}")
@@ -159,6 +175,8 @@ def load_config(path: Path | None) -> dict:
     if not isinstance(data["about"], str):
         raise ConfigError(f"the config {where} has about that is not a string")
     for section, keys in _CONFIG_KEYS.items():
+        if section in _OPTIONAL_SECTIONS and section not in data:
+            continue                        # optional and absent: the feature is off, nothing defaulted
         node = data[section]
         if not isinstance(node, dict):
             raise ConfigError(f"the config {where} has {section} that is not an object")
@@ -209,6 +227,13 @@ def load_config(path: Path | None) -> dict:
     if not _HOSTED_FORM.fullmatch(hosted):
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which is not a literal prefix "
                           "followed by [0-9]+ (e.g. `GitHub Actions [0-9]+`)")
+    # K179: the store branch is never a delivery or packet branch (the subject's delivery names master)
+    # Bus key round 2, finding 3: compared with the delivery BRANCH (the first word of subject.delivery, e.g. `master`
+    # in "master via --no-ff landing"), never with any word of its prose.
+    branch = data["evidence"]["branch"] if "evidence" in data else None
+    delivery_branch = (data["subject"]["delivery"].split() or [""])[0]
+    if branch is not None and branch in ("master", "main", delivery_branch):
+        raise ConfigError(f"the config {where} has evidence.branch {branch!r}, which is the delivery branch")
     if re.fullmatch(hosted, bar["runner"]):
         raise ConfigError(f"the config {where} has bar.hosted_runner {hosted!r}, which matches bar.runner "
                           f"{bar['runner']!r}")
@@ -218,6 +243,10 @@ def load_config(path: Path | None) -> dict:
 def _check_value(where: str, name: str, value, kind: str) -> None:
     def bad() -> ConfigError:
         return ConfigError(f"the config {where} has {name} {value!r}, which is not {kind}")
+    if kind == _COUNT:                      # K151: an int, never a bool, a float or a string that looks like one
+        if type(value) is not int or value < 1:
+            raise bad()
+        return
     if kind == _DIRS:
         if not isinstance(value, list) or not value or len(set(map(str, value))) != len(value):
             raise bad()
@@ -240,6 +269,12 @@ def _check_value(where: str, name: str, value, kind: str) -> None:
             raise bad()
     elif kind == _RUNNER:
         if not re.fullmatch(RUNNER_WORDS, value):
+            raise bad()
+    elif kind == _BRANCH:
+        if not _BRANCH_FORM.fullmatch(value):
+            raise bad()
+    elif kind == _NAME:
+        if not _NAME_FORM.fullmatch(value):
             raise bad()
 
 

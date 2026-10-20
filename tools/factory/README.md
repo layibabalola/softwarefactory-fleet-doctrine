@@ -172,9 +172,27 @@ unavailable (no clone, or the clone lacks the blob: fetch it; non-blocking for C
 
 ## The factory kernel (bus K154)
 
-The kernel tools came from Cloudvore (origin/master `31315b2`) with one change: kernel-subjects.py reads its
-config from the file `$FACTORY_KERNEL_CONFIG` names (relative to the caller's cwd), else `factory-config.json`
-beside itself as before. A pinned tool runs from a private directory, so a consumer always sets the variable.
+The kernel tools came from Cloudvore (origin/master `31315b2`; synced to `c305770` by K154 packet 2). Bus changes:
+kernel-subjects.py reads its config ONLY from the file `$FACTORY_KERNEL_CONFIG` names (relative to the caller's
+cwd); unset or empty is refused (exit 2, naming the variable), never a `factory-config.json` beside the tool, so a
+consumer always sets the variable. codex-review.py adds `credential_refusal` / `credential_kind` to its JSON only on
+a credential stop (K178), so every other run's line is byte-identical to bus master's (pinned against a golden line
+in `codex-review.tests.py`). A stop is decided from structure only: codex exited non-zero AND wrote no final message
+(`-o` file missing, empty or whitespace only); no transcript text is read. Both keys are then `unknown` (stderr
+says CREDENTIAL STOP, or NOT RUN when the transcript also shows a failed Windows sandbox), which a consumer project's
+wrapper must treat as STOP AND ESCALATE to the owner, never as a retry: the human transcript mixes codex's errors
+with command output, so an auth or quota cause is classified only from a typed source (`codex exec --json` events),
+which this tool does not use yet (a follow-up that needs one live run to record the event shapes).
+
+**Optional sections (`ranker`, `evidence`).** A queue ranker's starvation window and an evidence store's names.
+Both are OPTIONAL: absent means that feature is off for the project and nothing is defaulted in. kernel-subjects.py
+reads and validates them when present: every key the schema lists, no other key, each value of its kind (a positive
+integer window; an evidence branch that is not master, main or the delivery branch, the first word of
+subject.delivery; a one-segment worktree name), and it refuses a malformed section (exit 2, naming the key). A
+present section is loaded into the module's `CONFIG` for a consumer that imports the loader; none of
+kernel-subjects' command outputs (check, advisory, block) changes with them (pinned byte for byte against bus
+master's in `kernel-tools.tests.py`). A consumer project's ranker or evidence tool that needs a section must check
+for it itself and refuse when it is absent; the bus loader does not require it.
 
 ```
 # install from the registry (members first; the registry's `with` makes kernel-receipt and kernel-config groups)
@@ -192,8 +210,10 @@ FACTORY_KERNEL_CONFIG=factory-pins/factory-config.json python factory-pins/pin-r
 FACTORY_KERNEL_CONFIG=factory-pins/factory-config.json python factory-pins/pin-runner.py run kernel-subjects -- check HEAD --json
 ```
 
-**Config contract.** One JSON file, `schema: 1`; every key in `factory-config.schema.json` is required and no
-other key is allowed; contradicting keys are refused (the schema's description lists them). The config NAMES
+**Config contract.** One JSON file, `schema: 1`. Required: `schema`, `about`, `subject`, `paths`, `bar` and
+`contract_defaults`, each with every key `factory-config.schema.json` lists for it. Optional: the `ranker` and
+`evidence` sections; when present, every key the schema lists for them is required. No other key is allowed
+anywhere; contradicting keys are refused (the schema's description lists them). The config NAMES
 project things (subject prefix, row pattern, paths, runner and workflow names, default contract text); what
 decides credit stays in code, the bar runner and the workflows (K137). Start from
 `fixtures/kernel/seed-repo/factory-config.json`.

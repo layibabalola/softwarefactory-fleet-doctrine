@@ -69,7 +69,10 @@ class ConfigLocation(unittest.TestCase):
         ks = load_subjects(str(CLOUDVORE_CONFIG))
         self.assertEqual(("cloudvore/", "ultra-magnus-cloudvore"), (ks.SUBJECT_PREFIX, ks.BAR_RUNNER))
 
-    def test_unset_or_empty_reads_beside_the_file_and_a_missing_named_file_is_refused(self):
+    def test_unset_or_empty_refuses_naming_the_variable_and_a_missing_named_file_is_refused(self):
+        """Bus key on K154 packet 2, finding 4: an unset (or empty) FACTORY_KERNEL_CONFIG never falls back to a
+        factory-config.json beside the tool, even run by absolute path with one sitting there: exit 2 naming the
+        variable, nothing printed on stdout."""
         kit = self.tmp / "kit"
         kit.mkdir()
         shutil.copyfile(HERE / "kernel-subjects.py", kit / "kernel-subjects.py")
@@ -77,7 +80,14 @@ class ConfigLocation(unittest.TestCase):
         for env in (env_without(), env_without(FACTORY_KERNEL_CONFIG="")):
             p = subprocess.run([sys.executable, str(kit / "kernel-subjects.py"), "block", "--row", "S2", "--filter",
                                 "tests/x.py", "--bus-sha", "abcdef0"], capture_output=True, text=True, env=env)
-            self.assertEqual((0, True), (p.returncode, "- subject: seed/S2\n" in p.stdout), p.stderr)
+            self.assertEqual((2, ""), (p.returncode, p.stdout), p.stderr)
+            self.assertIn("REFUSE kernel-subjects: ", p.stderr)
+            self.assertIn("FACTORY_KERNEL_CONFIG", p.stderr)
+            self.assertNotIn("Traceback", p.stderr)
+        p = subprocess.run([sys.executable, str(kit / "kernel-subjects.py"), "block", "--row", "S2", "--filter",
+                            "tests/x.py", "--bus-sha", "abcdef0"], capture_output=True, text=True,
+                           env=env_without(FACTORY_KERNEL_CONFIG=str(kit / "factory-config.json")))
+        self.assertEqual((0, True), (p.returncode, "- subject: seed/S2\n" in p.stdout), p.stderr)
         p = subprocess.run([sys.executable, str(kit / "kernel-subjects.py"), "advisory"], capture_output=True,
                            text=True, env=env_without(FACTORY_KERNEL_CONFIG=str(self.tmp / "absent.json")))
         self.assertEqual(2, p.returncode)
@@ -95,8 +105,9 @@ class SchemaMatchesTheLoader(unittest.TestCase):
     def test_same_sections_and_keys(self):
         ks = load_subjects(str(SEED / "factory-config.json"))
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
-        self.assertEqual({"schema", "about", *ks._CONFIG_KEYS}, set(schema["required"]))
-        self.assertEqual(set(schema["required"]), set(schema["properties"]))
+        self.assertEqual({"ranker", "evidence"}, set(ks._OPTIONAL_SECTIONS))
+        self.assertEqual({"schema", "about", *ks._CONFIG_KEYS} - ks._OPTIONAL_SECTIONS, set(schema["required"]))
+        self.assertEqual({"schema", "about", *ks._CONFIG_KEYS}, set(schema["properties"]))
         self.assertEqual(ks.CONFIG_SCHEMA, schema["properties"]["schema"]["const"])
         for section, keys in ks._CONFIG_KEYS.items():
             with self.subTest(section=section):
@@ -109,6 +120,166 @@ class SchemaMatchesTheLoader(unittest.TestCase):
         for cfg in (SEED / "factory-config.json", CLOUDVORE_CONFIG):
             with self.subTest(config=cfg.name):
                 self.assertIn("subject", load_subjects(str(cfg)).CONFIG)
+
+
+class OptionalSections(unittest.TestCase):
+    """Bus K154 packet 2 (coordinator ruling 2026-10-18): `ranker` and `evidence` are optional. A project's stub
+    config without them runs the kernel at exit 0 with both features off (nothing defaulted in); a section that is
+    present is validated strictly and a malformed one is refused, naming the key."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+        self.stub = json.loads((SEED / "factory-config.json").read_text(encoding="utf-8"))
+        for section in ("ranker", "evidence"):
+            self.stub.pop(section, None)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def write(self, data: dict, name: str = "stub.json") -> Path:
+        path = self.tmp / name
+        path.write_text(json.dumps(data), encoding="utf-8")
+        return path
+
+    def test_a_stub_without_ranker_or_evidence_reaches_exit_0_with_both_features_off(self):
+        stub = self.write(self.stub)
+        p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(stub)], capture_output=True,
+                           text=True, env=env_without())
+        self.assertEqual((0, True), (p.returncode, p.stdout.startswith("CONFIG OK ")), p.stderr)
+        ks = load_subjects(str(stub))
+        self.assertEqual(set(), {"ranker", "evidence"} & set(ks.CONFIG))      # off: nothing defaulted in
+        p = subprocess.run([sys.executable, str(HERE / "kernel-subjects.py"), "block", "--row", "S2", "--filter",
+                            "tests/x.py", "--bus-sha", "abcdef0"], capture_output=True, text=True,
+                           env=env_without(FACTORY_KERNEL_CONFIG=str(stub)))
+        self.assertEqual((0, True), (p.returncode, "- subject: seed/S2\n" in p.stdout), p.stderr)
+        for word in ("evidence-store", "evidence.", "ranker", "starvation"):
+            self.assertNotIn(word, p.stdout)
+
+    def test_a_malformed_present_section_is_refused_naming_the_key(self):
+        cases = (
+            ("ranker", {"starvation_window": 0}, "ranker.starvation_window"),
+            ("ranker", {"starvation_window": True}, "ranker.starvation_window"),
+            ("ranker", {}, "has no ranker.starvation_window"),
+            ("ranker", [4], "has ranker that is not an object"),
+            ("evidence", {"branch": "master", "worktree": "w"}, "evidence.branch"),
+            ("evidence", {"branch": "evidence-store"}, "has no evidence.worktree"),
+            ("evidence", {"branch": "evidence-store", "worktree": "w", "limit": 1}, "unknown key evidence.limit"),
+            ("evidence", {"branch": "evidence-store", "worktree": "../w"}, "evidence.worktree"),
+        )
+        for section, value, says in cases:
+            with self.subTest(section=section, value=value):
+                bad = self.write({**self.stub, section: value}, "bad.json")
+                p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(bad)],
+                                   capture_output=True, text=True, env=env_without())
+                self.assertEqual(2, p.returncode, p.stdout)
+                self.assertIn(says, p.stderr)
+
+    def test_both_sections_present_and_well_formed_load(self):
+        good = self.write({**self.stub, "ranker": {"starvation_window": 4},
+                           "evidence": {"branch": "evidence-store", "worktree": "seed-evidence-store"}})
+        ks = load_subjects(str(good))
+        self.assertEqual((4, "evidence-store"), (ks.CONFIG["ranker"]["starvation_window"],
+                                                 ks.CONFIG["evidence"]["branch"]))
+
+    def test_the_evidence_branch_is_compared_with_the_delivery_branch_not_the_delivery_text(self):
+        """Bus key round 2, finding 3: subject.delivery is prose whose FIRST word is the delivery branch ("master via
+        --no-ff landing"). An evidence branch named like a later word (`landing`, `via`) is not the delivery branch and
+        loads; the delivery branch itself, master and main are refused."""
+        delivery = self.stub["subject"]["delivery"]
+        self.assertEqual("master via --no-ff landing", delivery)
+        # bus key round 3 (e): the schema describes this exact check, the delivery branch being the FIRST word
+        described = json.loads(SCHEMA.read_text(encoding="utf-8"))["properties"]["evidence"]["description"]
+        self.assertIn("the delivery branch, which is the FIRST word of subject.delivery", described)
+        self.assertNotIn("a subject.delivery word", described)
+        for branch in ("landing", "via", "no-ff"):
+            with self.subTest(accepted=branch):
+                good = self.write({**self.stub, "evidence": {"branch": branch, "worktree": "w"}}, "good.json")
+                p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(good)],
+                                   capture_output=True, text=True, env=env_without())
+                self.assertEqual(0, p.returncode, p.stderr)
+        trunk = {**self.stub, "subject": {**self.stub["subject"], "delivery": "trunk via squash"}}
+        for data, branch in ((trunk, "trunk"), (self.stub, "master"), (self.stub, "main")):
+            with self.subTest(refused=branch):
+                bad = self.write({**data, "evidence": {"branch": branch, "worktree": "w"}}, "bad.json")
+                p = subprocess.run([sys.executable, str(HERE / "kernel-config.py"), "check", str(bad)],
+                                   capture_output=True, text=True, env=env_without())
+                self.assertEqual(2, p.returncode, p.stdout)
+                self.assertIn("which is the delivery branch", p.stderr)
+
+
+STUB_GOLDEN = HERE / "fixtures" / "kernel" / "stub-golden"
+# What bus origin/master 69d7d63e's kernel-subjects.py printed for the stub project (the seed config, which carries
+# neither optional section), written once by running that file through stub_outputs(); the reference never moves.
+STUB_RUNS = {
+    "check-json": ["check", "HEAD", "--json"],
+    "check": ["check", "HEAD"],
+    "advisory-json": ["advisory", "--json"],
+    "block": ["block", "--row", "S2", "--filter", "tests/x.py", "--bus-sha", "abcdef0"],
+}
+
+
+def stub_outputs(tool: Path, tmp: Path) -> dict[str, bytes]:
+    """`tool` (a kernel-subjects.py) run over a deterministic stub project: the seed config and queue, a brief-first
+    packet on work/S1, fixed identities and dates (so every SHA is the same on every machine). Each run's exit code
+    and stdout, as bytes with LF line ends."""
+    repo = tmp / "stub-repo"
+    repo.mkdir()
+    genv = env_without(GIT_AUTHOR_DATE="2026-10-18T00:00:00+00:00", GIT_COMMITTER_DATE="2026-10-18T00:00:00+00:00",
+                       GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.invalid", GIT_COMMITTER_NAME="t",
+                       GIT_COMMITTER_EMAIL="t@example.invalid")
+
+    def g(*a: str) -> None:
+        subprocess.run(["git", "-C", str(repo), "-c", "core.autocrlf=false", *a], check=True, capture_output=True,
+                       env=genv)
+    g("init", "-q", "-b", "master")
+    for rel, msg in ((None, "seed project"), ("review/briefs/s1.md", "S1 brief"), ("src/hello.py", "S1 product")):
+        if rel is None:
+            for name in ("factory-config.json", "QUEUE.md"):
+                (repo / name).write_bytes((SEED / name).read_bytes().replace(b"\r\n", b"\n"))
+            g("add", "factory-config.json", "QUEUE.md")
+        else:
+            (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+            (repo / rel).write_bytes((SEED / rel).read_bytes().replace(b"\r\n", b"\n"))
+            g("add", rel)
+        g("commit", "-qm", msg)
+        if rel is None:
+            g("update-ref", "refs/remotes/origin/master", "HEAD")
+            g("checkout", "-qb", "work/S1")
+    out = {}
+    for name, args in STUB_RUNS.items():
+        p = subprocess.run([sys.executable, str(tool), *args], capture_output=True, cwd=str(repo),
+                           env=env_without(FACTORY_KERNEL_CONFIG="factory-config.json"))
+        out[name] = f"exit={p.returncode}\n".encode() + p.stdout.replace(b"\r\n", b"\n")
+    return out
+
+
+class OptionalSectionsOutput(unittest.TestCase):
+    """Bus key on K154 packet 2, finding 5: the bus has no consumer of `ranker` or `evidence` (Cloudvore's next.py and
+    evidence-store.py check for them themselves), so what is pinned is what the bus tool emits: with both sections
+    absent, kernel-subjects' output is byte-identical to bus master's on the same stub and names neither."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmp = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_the_stub_carries_neither_section(self):
+        data = json.loads((SEED / "factory-config.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(), {"ranker", "evidence"} & set(data))
+
+    def test_kernel_subjects_output_on_the_stub_is_byte_identical_to_bus_masters(self):
+        got = stub_outputs(HERE / "kernel-subjects.py", self.tmp)
+        self.assertEqual(set(STUB_RUNS), {p.stem for p in STUB_GOLDEN.glob("*.txt")})
+        for name, data in got.items():
+            with self.subTest(run=name):
+                self.assertEqual(STUB_GOLDEN.joinpath(f"{name}.txt").read_bytes().replace(b"\r\n", b"\n"), data)
+                for word in (b"ranker", b"starvation", b"evidence-store", b"evidence."):
+                    self.assertNotIn(word, data)
+        self.assertTrue(got["check-json"].startswith(b"exit=0\n"), got["check-json"])
+        self.assertIn(b'"status": "OK"', got["check-json"])
 
 
 class KernelConfigTool(unittest.TestCase):
@@ -191,6 +362,8 @@ class SeedProjectThroughThePinRunner(unittest.TestCase):
             p = self.pr("run", "kernel-subjects", "--", "check", "HEAD", "--json", isolated=iso)
             got = json.loads(p.stdout)
             self.assertEqual(("seed/S1", "OK", [], False), (got["subject"], got["status"], got["flags"], got["landing"]))
+            # the seed config carries neither optional section: both features off, no field for either
+            self.assertEqual(set(), {"evidence", "ranker", "starvation_window"} & set(got))
             p = self.pr("run", "kernel-subjects", "--", "check", "HEAD", isolated=iso)
             self.assertTrue(p.stdout.startswith("seed/S1 OK branch="), p.stdout)
 

@@ -60,6 +60,25 @@
         "planted-edits": {"$ref": "#/$defs/text"},
         "charter": {"$ref": "#/$defs/text"}
       }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "worktree"],
+      "description": "OPTIONAL (absent: no evidence store, nothing defaulted). The evidence store's names (an orphan branch for machine logs and the one-segment name of its worktree inside the git common directory); names only, never credit. The loader also refuses a branch equal to master, main or the delivery branch, which is the FIRST word of subject.delivery (master in 'master via --no-ff landing'); a later word of the delivery prose is allowed.",
+      "properties": {
+        "branch": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "worktree": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"}
+      }
+    },
+    "ranker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["starvation_window"],
+      "description": "OPTIONAL (absent: no starvation guard, nothing defaulted). how many recent landings a queue ranker's two-way starvation guard reads; a count that names how far back to look, never a value that decides credit.",
+      "properties": {
+        "starvation_window": {"type": "integer", "minimum": 1}
+      }
     }
   },
   "$defs": {

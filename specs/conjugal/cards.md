@@ -319,3 +319,37 @@ mechanism: "Was this tree ever the tip" cannot see a tree that was the tip only 
 check: python tools/factory/delivery-at-identity.tests.py
 supersedes: none
 evidence: measured
+
+## conjugal/heavy-slot-admission-is-one-unit
+rule: A machine-wide heavy-slot admission covers one bounded unit of work (a test file, a mutant set, a benchmark leg, or a bar measured to finish in minutes), never a multi-hour batch or a whole tier; a batch runner takes one admission per unit so an exclusive waiter can start between units, and refuses to run whole inside an outer admission (a nested admission passes straight through).
+mechanism: Measured 2026-10-18 on the shared laptop: one admission wrapped around a ~60-file tools bar (1200 s per-file timeout) held a slot 2 h+ while an exclusive CUDA benchmark waited ~3.0 h, over 2 h of it at the queue head, and three shared runs queued behind it. The free slot stayed idle because the joiner heat gate was correctly closed (0 of 90 minutes passable), so backfill or a drain change would not have helped, and a kill ceiling would have killed a legitimate 136-min bar. heavy-slot 2.2.0 prints each holder's age inside the slot line's parentheses ("since S, held M min)") and warns the holder on stderr once it has held 60 min while others wait; neither changes admission.
+check: run the machine ops self-test heavy-slot.overrun.test.py against heavy-slot.py (26 sandboxed checks: held field inside the parentheses, both production parsers still match, notice only past the threshold with a waiter, rc passed through); on the 2.1.0 copy it fails 7 and then aborts
+supersedes: none
+evidence: measured
+
+## conjugal/shared-host-protects-short-exclusive-work
+rule: On a shared host, the admission wrapper itself serves a short, predictable exclusive job ahead of shared work that has not yet waited long, and never lets a shared run take an empty machine from it; per-caller unit rules are necessary but are not relied on, because sessions type admissions ad hoc from briefs and no project contract treats that operational choice as a decision needing adversarial review.
+mechanism: Measured 2026-10-18: a builder subagent following a brief that allowed a whole suite per admission saw a starved exclusive job of the same benchmark agent at the head of the queue status 9 min before it wrapped a ~64-suite tier in one admission (the benchmark it then starved queued 10 min later); no swarm ran and no rule required one. When the machine emptied, oldest-first gave the tier 141 min; the benchmark then ran in 3 min. That agent's holds measured p90 2.7, max 7.7 min over 857 holds (689 benchmark legs: p90 2.8, max 7.7). heavy-slot 2.3.0 orders them ahead of shared tickets waiting under 60 min, reserves the empty machine for them, and turns the promotion off for good if one runs past 15 min.
+check: run the machine ops self-test heavy-slot.shortexcl.test.py against heavy-slot.py and its 2.2.0 copy (24 sandboxed checks incl. an end-to-end replay where the 2.2.0 copy gives the freed machine to the older shared run and 2.3.0 to the benchmark; 5 planted mutants killed by the author, 3 more by the reviewer; harness not shipped)
+supersedes: none
+evidence: measured
+
+## conjugal/windows-append-is-not-atomic-across-processes
+rule: On Windows, a file that more than one process appends to (a JSONL ledger, a shadow log, a test fake's record) is written through a handle opened for FILE_APPEND_DATA only, one WriteFile per record, or else one file per writer; Python's open(path, "a") is never relied on for concurrent appends.
+mechanism: The MS C runtime emulates O_APPEND as seek-to-end then write, so two processes can write at one offset and overwrite or tear each other's lines. Measured 2026-10-18 on the shared laptop: 8 writers x 1500 JSON lines through "a" kept 10,566 and 10,948 of 12,000 lines intact; the same load through a FILE_APPEND_DATA handle kept 12,000 of 12,000 twice. A live machine-wide admission log already held two torn tails written within one second of a second appender, and a sibling project's test flaked from the same race.
+check: run the machine ops self-test heavy-slot.append.test.py against heavy-slot.py (8 processes x 1500 lines through the atomic append: all intact and unique; a planted mutant that falls back to plain append loses lines and is caught)
+supersedes: none
+evidence: measured
+
+## conjugal/reservation-parks-never-halts
+rule: a reserved class parks the subject that needs it, and the next subject proceeds. No list, report or
+  interpretation may turn reservations into a queue-wide stop, and a limit that rests only on a recorder's
+  interpretation, not on the owner's words, is never grounds for one.
+mechanism: a drafter read one line of a directive's "recorder's interpretation (not the owner's words)"
+  section as reserving every item outside an audit. It reserved every remaining product, control and
+  doctrine-adopt candidate for an owner register row and wrote that the loop waits. The owner's own words
+  were "I dont want to be in the loop", so the loop stopped against the owner's grant.
+check: a file that lists owner decisions must say it does not block the loop, and must contain no statement
+  that nothing is declarable until the owner answers; such a statement is a halt.
+supersedes: none
+evidence: measured

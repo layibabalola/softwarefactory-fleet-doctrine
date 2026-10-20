@@ -1455,3 +1455,61 @@ Still OWED from earlier addenda, re-checked on 2026-10-17: R16.5 (the literal id
 `effort`, Sol); `43e29cc` and `83dd546` (`tools/session-checkpoint.py` is still tracked with auto-resume on and
 registered in `.claude/settings.json`, Sol); the auditor's falsifier pin (`.claude-state/tools/codex-auditor.ps1:8`
 is still `0.160.1`, auditor). None counts as done until its owner records it.
+
+## Fold addendum, 2026-10-18 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `8d59b6e..69d7d63` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `8d59b6e`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` outside Adobe's own). Sibling: 21 commits touching `TRAPS.md`, `RECEIPTS.md`
+or another board's `specs/`; heartbeats, CoS feedback and Adobe's own commits are excluded. Each evidence claim was
+checked read-only on VIRTUAL-TEN on 2026-10-18 against Adobe HEAD `7f31c0d`. Every `git grep` named below ran over
+tracked files only, outside `.factory/evidence`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| airmypc trap: marking a hash-pinned file `-text` does not rewrite existing checkouts | `5b8156b` | DISTINGUISH: all 20 `-text` lines in `.gitattributes` name `.factory/evidence/` capture files (0 outside it); no gate script is `-text`. `.gitattributes` last changed at `d0e9c89` (2026-10-01). Whether any Sol pin hashes one of those 20 files was not traced. |
+| airmypc trap: load flakes came from tests acting on a "started" signal or fixed deadline | `d276c81` | NOT-APPLICABLE: an AirMyPC session-handshake test subject. Adobe's only C# projects are `spikes/adobe-session/` (2 `.csproj`), which no gate runs. |
+| airmypc trap: ssh from a hidden scheduled task hangs on inherited stdin | `7cbf5d1` | NOT-APPLICABLE: `git grep -E "\bssh(\.exe)? "` over tracked `*.ps1`, `*.psm1`, `*.mjs`, `*.py` finds 0 hits. |
+| airmypc receipt: R16 adopted, the Codex lane resolves the newest model per tier at high effort | `63a64b1` | DISTINGUISH: an AirMyPC adoption receipt. Adobe's own R16 items stay OWED: `.factory/tools/Invoke-FactoryClaudeLane.ps1` has 0 `effort` hits (R16.3), and `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry literal model ids (R16.5). Both Sol's. |
+| airmypc trap: `<name>\|<unix-ms>` ids repeat within one millisecond | `883f1f1` | DISTINGUISH: `git grep -E "ToUnixTimeMilliseconds\|Date\.now\(\)"` over tracked `*.ps1`, `*.psm1`, `*.mjs`, `*.cs` finds one hit, `.factory/tests/Test-FactoryReviewerCapacityRecovery.Tests.ps1:832`, which converts a fixture timestamp and builds no id. |
+| airmypc trap: a commit gate never built the shipping app | `038c426` | DISTINGUISH: Adobe has no shipping app yet. `.githooks/` (pre-commit, post-commit, pre-push) and `.github/workflows/release-validation.yml` have no `dotnet build`, `dotnet test`, `msbuild`, `npm run` or `pytest` line. When product code lands, this trap applies: its gate must compile it. |
+| airmypc receipt: gated .NET builds leave no compiler or MSBuild server resident | `356d739` | NOT-APPLICABLE: Adobe has no gated build wrapper (same grep as `038c426`). |
+| airmypc trap: `git worktree remove` without `--force` still deletes ignored files | `3a0a9df` | DISTINGUISH: `git grep "worktree remove"` finds 0 hits in Adobe's tracked code outside `.factory/evidence`, `.factory/coordination` and `.factory/reviews`. Untracked scripts at the top level of `.claude-state/tools` and `.claude-state/coordination/doctrine-loop`: 0 hits. This fold removes its own bus worktree and listed its ignored files first (none). |
+| mlv-app card: git fsmonitor daemons outlive lane worktrees | `4ff3a35` | DISTINGUISH: `git config --get core.fsmonitor` read from the Adobe repo is unset at every scope (`extensions.worktreeConfig=true`), so Adobe worktrees inherit no fsmonitor. The host had 13 `git fsmonitor--daemon` processes at the time of this fold; they were not mapped to a repo. |
+| dng spec posture: a K-gate compute phase is dispatched last | `9245ac8` | NOT-APPLICABLE: dng-auto-processor's own spec. |
+| conjugal card: a K7 delivery-at-identity detector reads acceptance time | `09d15a6` | DISTINGUISH: Adobe runs no K7 detector (`git ls-files` matches no `delivery-at-identity` or `rule-map` path). |
+| dng receipt: a population manifest replaced a launch-recognising lint | `76394aa` | DISTINGUISH: Adobe has no rule map and no launch-effort check. The relevant local item is D2 in the 2026-10-16 status addendum (baseline 1 enforced FACTORY.md rule). |
+| conjugal card: a standing-context probe verifies nothing | `409c9ca` | DISTINGUISH, self-checked: each row in this addendum cites a command or path specific to its item. No probe text closes more than two rows except the build-line grep, which closes `038c426` and `356d739`, both about build gates. |
+| mlv-app CoS concerns cc-20261016-1 to -4 | `967e1dd`, `29d29b9`, `3e96d38`, `4bd8514` | NOT-APPLICABLE: MLV-App's concerns addressed to the CoS. |
+| factory-kernel harvest: AdversarialLLM's third filing | `baed3ea` | NOT-APPLICABLE: another board's filing. Adobe's K12 filing is not part of this harvest. |
+| mlv-app card: one config-driven `doctrine_outbox.py` for the fleet (and its PR 470 revision) | `bee3571`, `9b26e44` | NOT-APPLICABLE: `applies:` names mlv-app, airmypc, agent-bridge and conjugal. Adobe tracks no `doctrine_outbox.py`, `pin-runner` or `factory-pins/` (`git ls-files`, 0). |
+| mlv-app card: a CoS concern channel (R1 PR comment, R2 `specs/<project>/cos-concerns.md`) | `c547000` | DISTINGUISH until the owner rules on it, as the card itself asks. Adobe has no `specs/adobe-ingester/cos-concerns.md`. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-18: R16.5 and R16.3 (above, Sol); `43e29cc` and `83dd546`
+(`tools/session-checkpoint.py` is still tracked with `AUTO_RESUME_ENABLED = True` at `:15` and registered in
+`.claude/settings.json:6,13`, Sol); the auditor's falsifier pin (`.claude-state/tools/codex-auditor.ps1:8` is still
+`0.160.1`, auditor). None counts as done until its owner records it.
+
+## Fold addendum, 2026-10-19 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `4ff3a35..d9492a1` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `4ff3a35`; the 2026-10-18
+addendum already disposed everything up to `69d7d63`, so the new rows start after it). Binding: none (no commit to
+`RULINGS.md` or `specs/fleet-*`). Sibling: 7 commits touching `TRAPS.md` or another board's `specs/`; heartbeats, CoS
+feedback and Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-10-19 against
+Adobe HEAD `30d2905`. Every `git grep` ran over tracked files only, outside `.factory/evidence`, so a 0 is bounded to
+that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| airmypc trap: the shared check-doc-size drops a file it cannot read | `66e722e` | DISTINGUISH: Adobe tracks no `check-doc-size` (`git ls-files`, 0). Adobe's size cap is the 200-line RESUME contract (`~/.claude/hooks/Test-ResumeContract.ps1:34`). Measured: report mode on a 400-line file under a `FileShare.None` lock exits 1 with a sharing-violation error and prints no PASS, so it fails closed. The PreToolUse path (`check-continuity-boundaries.py:442-468`) checks the tool's own content and reads no file. |
+| conjugal card: a Windows append is not atomic across processes | `d92d661` | DISTINGUISH: Adobe's tracked Python has 0 `open(..., "a")` calls. Its shared JSONL writers open `[IO.FileMode]::Append` with `[IO.FileShare]::Read` (for example `.factory/tools/FactoryValueLedger.Common.psm1:53`, `FactoryRoleRegistry.Common.psm1:195`, `FactoryClaudeAccountPool.Common.psm1:354`). Measured: a second opener of that kind gets an IOException sharing violation, so a concurrent writer fails loudly and never tears a line. The `Add-Content` log hits are test fixtures and one single-process phase log (`Test-FactoryClaudeControlPlane.ps1:25,135`). Not traced: whether every caller retries that IOException. |
+| conjugal card: a shared host protects short exclusive work | `6e8ad80` | NOT-APPLICABLE: a `heavy-slot.py` admission-wrapper rule. Adobe tracks no `heavy-slot` (0), and a bounded search of `~\bin`, `~\.claude` and `C:\ProgramData` (depth 3) found no `heavy-slot*.py` on VIRTUAL-TEN. |
+| conjugal card: a heavy-slot admission is one unit | `fb20f01` | NOT-APPLICABLE: same wrapper, same evidence as `6e8ad80`. |
+| mlv-app card: an SMB listing that opens files feeds the AV scanner | `6a14ebf` | DISTINGUISH: `git grep` finds 0 `ls -t`, `ls -l` or `find -newer` in tracked `*.ps1`, `*.psm1`, `*.sh`, `*.mjs`, `*.py`, and 0 UNC paths in tracked `*.ps1`/`*.psm1`. Adobe lists no SMB mailbox. |
+| mlv-app card: the pin-runner cache never repairs same-size corruption | `441151e` | NOT-APPLICABLE: Adobe tracks no `pin-runner` or `factory-pins/` (`git ls-files`, 0). The repair belongs to the bus owner. |
+| dng spec posture: P-COP Step 3 decides a "dispatched last" phase | `41f07b7` | NOT-APPLICABLE: dng-auto-processor's own spec. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-19: R16.3 (`.factory/tools/Invoke-FactoryClaudeLane.ps1` has
+0 `effort` hits, Sol), R16.5 (`.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and
+`gpt-5.6-luna`, Sol), `43e29cc` and `83dd546` (`tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`
+and `.claude/settings.json:6,13` still registers it, Sol), and the auditor's falsifier pin
+(`.claude-state/tools/codex-auditor.ps1` still pins `0.160.1`, auditor). None counts as done until its owner records it.
