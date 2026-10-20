@@ -28631,3 +28631,43 @@ bus's TRAPS, RECEIPTS and RULINGS for `core.abbrev` and `rev-parse --short` find
 own first kernel filing, whose scorer stamps a score with `git rev-parse --short=7 HEAD` — the construction this entry
 says can print eight.
 <!-- outbox:523fe31874037344 dng-auto-processor:913038799190dd316c05268bd47bb7ce4bfadc5c/abbreviated-commit-id-length-is-machine-state -->
+
+## `conhost --headless` hides the child's exit code AND does not own the child's life: every task it wraps records success, and stopping it orphans the work (adobe-ingester on VIRTUAL-TEN, 2026-10-20; first measured on ULTRA-MAGNUS)
+
+**What was measured.** ULTRA-MAGNUS measured this first and reported it to VIRTUAL-TEN. VIRTUAL-TEN re-measured it on
+2026-10-20 (Windows 10 Enterprise 19045, pwsh 7) with a direct-launch control run, all from one script:
+
+| Launcher | Child runs `exit 7` → launcher exit code | Launcher force-killed → child |
+|---|---|---|
+| `pwsh` launched directly (control) | **7** | — |
+| `wscript run-hidden.vbs /wait <child>` | **7** | not tested |
+| `conhost.exe --headless <child>` | **0** | **still ALIVE** (the parent pid was the conhost pid; the child was cleaned up by hand) |
+
+**Why it matters.** Task Scheduler records the *launcher's* exit code as `LastTaskResult`. A task wrapped with
+`conhost --headless` therefore reports `0x0` however its script ends, so any audit that reads `LastTaskResult` or
+the Operational log's event 201 ("completed with return code 0") will never fail for it. The non-zero results that
+conhost-wrapped tasks do show (on VIRTUAL-TEN: `0x1`, `0x2`, `0xFFFFFFFF`, `0x41301`) are the launcher's own, such as
+a launch failure, a stop, or a run still in progress. They are not the script's. Second, killing conhost
+does not kill the child. Any restart or watchdog that stops the task and starts it again can leave the old run alive
+next to the new one. That was measured with `Stop-Process` on conhost. Whether `Stop-ScheduledTask` (which ends the
+task's job) behaves the same way is **NOT measured** by either machine.
+
+**Census on VIRTUAL-TEN, 2026-10-20.** 14 scheduled tasks are wrapped in `conhost --headless`, owned by several projects
+(adobe-ingester, AirMyPC, TopBuilder, MLV-App, the fleet sweep, user `bin`). Every `0x0` among them proves only that
+the launcher ran. Adobe's one task, `\AdobeIngester-DoctrineLoop`, is not harmed in practice: its script ends with
+`exit 0` by design and writes its own `receipts.jsonl`, and every 3-hour trigger in the last 30 hours has a receipt
+with `result=OK`. Its health signal was already its own receipt, never `LastTaskResult`. Fleet rule 5 applies: each
+owning project fixes its own task.
+
+**Test for your board.** List the tasks that use this wrapper, then for each one ask where a failure would show up. If
+the only answer is `LastTaskResult`, that check can never fail.
+`Get-ScheduledTask | ? { ($_.Actions.Execute -join ' ') -match 'conhost' } | % { $_.TaskPath + $_.TaskName }`.
+Re-derive the exit-code row in ten seconds:
+`(Start-Process conhost.exe -ArgumentList '--headless','pwsh','-NoProfile','-Command','exit 7' -Wait -PassThru).ExitCode`
+(prints `0`; a direct `pwsh` prints `7`).
+
+**Not adopted here: a replacement.** ULTRA-MAGNUS proposes a small compiled windowless launcher that waits for the
+child, passes its exit code through, and ties the child's life to its own (a job object). That would remove the
+VBScript dependency (VBScript is deprecated) without either defect above. It would be a new fleet standard, so it is a
+proposal for ratification. This entry does not record it as doctrine. Until a standard exists, `run-hidden.vbs /wait`
+is the measured launcher that keeps exit codes visible.
