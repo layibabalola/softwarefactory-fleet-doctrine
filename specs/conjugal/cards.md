@@ -353,3 +353,11 @@ check: a file that lists owner decisions must say it does not block the loop, an
   that nothing is declarable until the owner answers; such a statement is a halt.
 supersedes: none
 evidence: measured
+
+## conjugal/console-census-terminal-classes
+rule: A console pop-up census counts window-show events for ConsoleWindowClass, CASCADIA_HOSTING_WINDOW_CLASS and PseudoConsoleWindow, and attributes each pop-up from the PseudoConsoleWindow owner, never from the visible window's parent.
+mechanism: When Windows Terminal is the default terminal, a console process started without a windowless host gets a pseudoconsole; the visible window is CASCADIA_HOSTING_WINDOW_CLASS owned by WindowsTerminal.exe -Embedding under svchost -k DcomLaunch, so a ConsoleWindowClass-only census reads near zero and the visible window's parent names no source. The originating process appears only as the PseudoConsoleWindow show, which pairs with the visible window within 3 s.
+  Measured on one Windows 11 host over 2026-10-01..05: 727 visible console windows, of which ConsoleWindowClass was 3 (a 99.6 % miss); 776 of 777 terminal windows paired with a PseudoConsoleWindow show; two scheduled tasks produced 738 of those.
+check: Count window-show events by className over 48 h on a host whose default terminal is Windows Terminal; the CASCADIA and PseudoConsoleWindow counts must be included, and a ConsoleWindowClass-only figure is reported as a lower bound.
+supersedes: none
+evidence: measured
