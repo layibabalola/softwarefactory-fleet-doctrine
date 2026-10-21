@@ -28800,3 +28800,43 @@ verdict line; a *receipt* says whether a landed packet is *credited*; a *bar* is
 - **Source:** K179, merge `1e985d9`, record `0e24852`; `review/ledger-k179-2026-10-16.md`, "Tools bar at landing
   merge af2dc04: bytecode in the checkout (run 39024199509)". `evidence: measured`: RED `f35e1b7` (`??
   tools/__pycache__/kernel-subjects.cpython-314.pyc`); fix `e714681`; M24 killed.
+
+## A WMI `Win32_Process.Create` with no `ProcessStartupInformation` opens a VISIBLE console for the job's whole life, and a prose rule plus a tools-folder lint did not stop agent lanes writing it (adobe-ingester auditor on VIRTUAL-TEN, about mlv-app, 2026-10-20/21)
+
+**What was measured.** The owner reported cmd.exe and pwsh.exe windows popping up on VIRTUAL-TEN. EnumWindows found visible `ConsoleWindowClass` windows whose process parent was `WmiPrvSE.exe`. They came in two batches:
+- 2026-10-20 16:19-16:21Z: 3 windows.
+- 2026-10-21 08:12Z: 4 windows; 9 MLV processes were WMI-launched, and 4 of them were visible.
+
+Each was an mlv-app lane script started by `Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = ...; CurrentDirectory = ... }`. None passed `ProcessStartupInformation`. Closing such a window kills the job, so the auditor hid them with `ShowWindow(hwnd, SW_HIDE)` and left the processes running.
+
+**Why the existing fix missed it.** mlv-app already had the right helper: `hub-tools\Start-HiddenDetached.ps1` makes one Create call with `Win32_ProcessStartup` `ShowWindow=0`. It also had a lint, `Test-WmiCreateHidden.ps1`, which reported `offenders: 0`.
+- The offending calls were hand-written by agent lanes: inline in tool-call commands, and in run-dir scripts. One was `lane-UM-FS-CUDA-QUIET-WINDOW-VERIFY-1-r1-20261021T0730Z\swap-driver.ps1:27`.
+- The lanes' prompts said "ShowWindow 0", and the lanes did not follow it.
+- The lint scanned only the tools folder, so it could not see run-dir scripts or inline commands. That made it a check that could not fail.
+
+**Status (mlv-app, by its own hub):**
+- The hub prompt step D6a now routes every detached launch through `Start-HiddenDetached.ps1`.
+- A PreToolUse guard that blocks the unhidden shape at the tool boundary is mlv-app PR #547, **OPEN, not merged**, as of 2026-10-21T21:30Z.
+- Re-measured at 2026-10-21T21:30Z: 5 WMI-launched MLV processes running, 0 visible. The quiet so far rests on the prompt rule, not on an enforcement point.
+
+**Test for your board.** Look for visible consoles parented by WmiPrvSE:
+```
+EnumWindows -> IsWindowVisible -> class ConsoleWindowClass -> owning pid -> parent name == WmiPrvSE.exe
+```
+Then grep **everything an agent can write**, including run dirs, scratch and scheduled launchers, not only your tools folder, for `Win32_Process` + `Create` without `ShowWindow`. The fix that holds is one launcher helper plus a PreToolUse hook. A prose rule alone was measured failing.
+
+## A per-turn hook that `rglob`s a run-archive tree saturates the machine, and a scan-guard on agent tool calls cannot see it (adobe-ingester auditor on VIRTUAL-TEN, about mlv-app, 2026-10-20)
+
+**What was measured.** The owner reported CPU saturation on VIRTUAL-TEN.
+- Machine-wide at about 17:00Z: `\Process(Idle)` was 5%, privileged time 47%, `\System\File Control Operations/sec` 92-118k, `\PhysicalDisk(_Total)\% Disk Time` about 196%.
+- Averaged over four 3-second samples of per-process `IO Other Operations/sec`, one process stood out: `python.exe C:/mlvtmp/lane-*/tools/session-checkpoint.py`, at 35,278 ops/s and 81% CPU.
+- It was mlv-app's 09-08 project copy of the checkpoint hook, wired twice into `.claude/settings.json`. It ran at the start and end of every lane turn, and every lane has its own copy.
+- Line 56 was `fleet_runs.rglob("*-*.receipt.json")`. It walked 6,820 run dirs plus 95 full repository copies under `hub-tools\legspec-precheck`, even though every receipt sits two levels down or less.
+
+**Why the earlier mitigation missed it.** The fleet's scan-guard, a PreToolUse hook, blocks unbounded walks typed by agents. It even blocked the auditor's own sizing scan during this diagnosis. Hook scripts run outside the tool boundary, so the guard never sees them.
+
+**Fixed (mlv-app PR #539, merged 2026-10-20T21:45:23Z).** The glob is bounded to `*-*.receipt.json` and `*/*-*.receipt.json`, and both project wirings are removed (0 on `fork/master`). Lanes that were already running keep the old copy until they are recreated.
+
+**Smaller contributor, same diagnosis.** 71 orphaned `tail`/`grep` watcher pipelines, dating back to 10-17, had dead parents. Stopping them took total CPU only from 93.5% to 87.8%. Most of the load was the hook.
+
+**Test for your board.** Sample `\Process(*)\IO Other Operations/sec` several times. Anything sustained above about 10k/s is your suspect. Then grep every hook script for `rglob`, `os.walk`, `-Recurse` and `grep -r` over trees that grow. Your scan-guard does not cover them.
