@@ -1537,3 +1537,28 @@ Still OWED from earlier addenda, re-checked on 2026-10-20: R16.3 (`.factory/tool
 `gpt-5.6-luna`, Sol), `43e29cc` and `83dd546` (`tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`
 and `.claude/settings.json:6,13` still registers it, Sol), and the auditor's falsifier pin
 (`.claude-state/tools/codex-auditor.ps1` still pins `0.160.1`, auditor). None counts as done until its owner records it.
+
+## Fold addendum, 2026-10-21 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `0f06578..24f56bd` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `0f06578`). Binding: one
+commit to `RULINGS.md` (`c558110`, R18). Sibling: 5 commits touching `RECEIPTS.md` or another board's `specs/`;
+heartbeats, CoS feedback, metrics and Adobe's own commit (`aa6c2dd`) are excluded. Each claim was checked read-only on
+VIRTUAL-TEN on 2026-10-21 UTC against Adobe HEAD `6c4fbbc`, Adobe `origin/main` `9cb4d95` and GitHub
+`layibabalola/adobe-document-cloud-ingester` (`gh pr list`, `gh pr view 3`). Every `git grep` ran over tracked files
+only, outside `.factory/evidence`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| R18 (owner ruling): the CoS is advisory and never blocks a merge; the factory is the merge gate (two exact-head cross-family keys, green CI, CLEAN, merged-tree CI) and must raise its own quality (third key on HIGH-RISK, findings become work, escape metric, attack catalogue) | `c558110` | **R18: DISTINGUISHED (no Adobe tool merges or enqueues a PR; every merge here is an owner act).** R18.1 is held: `git grep -i -E "cos-feedback\|REFUSED_COS\|chief.of.staff\|merge.gate"` finds 0 files, and no tracked `*.ps1`, `*.psm1`, `*.mjs`, `*.py` or `*.sh` runs `gh pr merge` or `gh pr create`, so no code waits on a CoS record. The repository has three PRs: #1 (draft), #2 (merged 2026-09-10 by the owner) and #3 (open; its PR body reserves the merge for the owner's review). `origin/main` `9cb4d95` tracks no `.github/`, so R18.3(b) hosted CI does not exist there (`.github/workflows/release-validation.yml` exists only on the unmerged factory branch). Factory acceptance is a HUB `ACCEPTED` by Sol (Codex family) after Opus and Sonnet (Claude family) reviews (`FACTORY.md:45-48,68,82`). That is a work-order transition, not a merge, so R18.3 and R18.4 (HIGH-RISK class, third key, escape metric, attack catalogue) have no Adobe gate to attach to until a factory lane merges. **R18.2 is OWED:** on PR #3, `CoS-ASK: adobe-ingester-fixture-gate` (comment 6229169974, 2026-10-17T03:41Z) asks for an ACK within 24 h. It is the last of the thread's 6 comments, so no ACK or DISTINGUISH has been posted. |
+| dng receipt: a test arm set a field on an object the test then saved, the save stripped it, and the stated cause for the surviving mutants was refuted by a control | `fcac63e` | DISTINGUISH: C# serializer and mutation-witness mechanics. `git grep -i -E "mutant\|mutation.witness"` hits only `.factory/coordination/HUB.md`, so Adobe runs no mutation witnesses. Not traced: whether any of the 32 tracked `*.Tests.ps1` sends an arm's input through a save and reload before the code under test reads it. If one does, the receipt's check applies: assert the arm's value on the reloaded object. |
+| mlv-app card: Dot is advisory, factory quality compensates | `aa0d323` | NOT-APPLICABLE: MLV-App's own R18 adoption. Adobe's is the R18 row above. |
+| mlv-app card: one config-driven `doctrine_outbox.py` in the bus, pinned per project (markup-forms candidate) | `5b3ed14` | NOT-APPLICABLE: `applies:` names mlv-app, airmypc, agent-bridge and conjugal. Adobe tracks no `doctrine_outbox`, `pin-runner`, `factory-pins` or `doctrine-outbox` (`git ls-files`, 0). |
+| mlv-app card: a new heavy-write root needs a Defender exclusion alert | `9967fa5` | DISTINGUISH until bus PR #89 merges: `tools/machine/fleet-defender/` is absent on bus `origin/master` `24f56bd`, so no `Register-DefenderRoot.ps1` exists to call. The mechanism does apply to Adobe, which creates heavy-write roots: `%LOCALAPPDATA%\AdobeIngesterFactory` holds 291 directories (worktrees, fixtures, acceptance trees). Defender exclusion state was not read (it needs elevation, and agents never add exclusions). |
+| mlv-app card: a cited verdict is not a review leg; a merge needs one Claude-family and one Codex-family leg on the exact head | `370ab1b` | DISTINGUISH, as for `5273bf9` (2026-10-17 addendum): Adobe's review legs are reports under `.factory/reviews/` named by the HUB review order, not GitHub statuses, and no Adobe tool merges or enqueues. The CoS record on PR #3 says "Legs 0/2 on this head", with the owner's review as the gate. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-21 UTC: R16.3 (`.factory/tools/Invoke-FactoryClaudeLane.ps1`
+has 0 `effort` hits, Sol), R16.5 (`.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and
+`gpt-5.6-luna`, Sol), `43e29cc` and `83dd546` (`tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`
+and `.claude/settings.json:6,13` still registers it, Sol), and the auditor's falsifier pin
+(`.claude-state/tools/codex-auditor.ps1` still pins `0.160.1`, auditor). New: the R18.2 reply on PR #3 (above). None
+counts as done until its owner records it.
