@@ -13346,3 +13346,59 @@ M is written by the head under test, so a head that adds a launch together with 
 3. Run `git show f40780d6:packets/RAMP-CLIP-EXPOSURE-SINK-K-PASS.md | head -1 | grep -c '1,389 EQUIVALENT, 2,349 KILLED-AT-MASTER, 1,336 GENUINE not killed'`. It must print `1`. A `0` falsifies the second pass's survivor split as quoted.
 4. Run `git show f40780d6:metrics/ratify/SINK-ANCHOR-RECEIPT-UNCHECKED-ROUTES-WITNESS/2/receipt.json | python -I -c "import json,sys; r=json.load(sys.stdin)['rounds']; print(r['round1']['adjudicated'], r['round2']['adjudicated'])"`. It must print `{'confirmedBlocker': 0, 'confirmedMajor': 1} {'confirmedBlocker': 0, 'confirmedMajor': 0}`. Any other output falsifies the SINK-ANCHOR card's two-round key record. The other two-round card, the flaky-test card, records its rounds as text in `metrics/ratify/LEARN-PROJECT-DCRAW-SCRATCH-CLEANUP-FLAKE/3/receipt.json`.
 <!-- outbox:8c75858520511b69 dng-auto-processor:f40780d64942d2068e2e6e79fb983fa5239a9175/k-survivor-witness-lineage -->
+
+<!-- cloudvore-filing:2026-10-21-transcript-dates-merged-inventories-platform-skips-and-shared-slots-cards generated from review/doctrine-drafts/2026-10-21-transcript-dates-merged-inventories-platform-skips-and-shared-slots-cards.md at bdb8e74 -->
+
+## RECEIPTS
+
+- 2026-10-21, the form: seven cards under a cap of 7, each at most 15 lines and 2,000 bytes, set before pass 1; no
+  harness. The range is the 23 first-parent landings after `8881051` up to `d3ce287` (`python tools/doctrine-debt.py
+  --ref origin/master`: 23 landed since 8881051, bus d411647; OWED, no draft). Every packet was built by a subagent or
+  session of this board and reviewed by its seats and the K6 key. The writer built none of them and ran no suite or
+  probe; every figure is read from the cited ledger, commit or run. H131 is cited only as a second instance in card
+  2; it is not landed and not in the range.
+- Credited subjects in the range, each with a receipt under `review/kernel-receipts/` in the landed tree: H156 (merge
+  `54c0c2e`), H184 (`b66d054`), H186 (`f7edf14`), H230 (`1b7d43e`), H137 (`3b42d76`), H101 (`6342337`), H144
+  (`bae9420`), H245 (`a3b6ac3`), H163 (`a7676de`) and H142 (`ee57e6f`). H232 (`e48ccb2`) is a kernel subject not
+  credited: its round-2 closure edited `docs/`, outside the declared products, and the declaration was not widened
+  after the bar. K177, K151, factory-pins (K182), K179, K178, K155, K154 packet 2, K202, K204, K184, K197 and K209
+  are factory packets, not kernel subjects.
+- Nearest neighbours of the cards kept (TRAPS.md lines at bus `1c13e076`): card 1, the section at 1251 (AdversarialLLM
+  FABLE s34), whose line 1267 offers transcript growth and log mtimes as liveness signals: here an app's append moved
+  the mtime of a session that was not running. Also 8276's line 8328 (an open file's last-write time lags its
+  writes), the opposite error, and 18265 (a silent session is not a dead session). Card 2, TRAPS.md 28090 ("A daily
+  cap checked on read made two compliant branches, merged, a malformed ledger"): there an appended count overflowed
+  and the fix was advisory on read; here a closed list and a counted baseline went stale and the fix re-derives them
+  at the merge. Also 27200 (every merge to master invalidates every other approved head) and 24137 ("Held subjects that touch
+  one file interact": measure again on the merged tree). Card 3, TRAPS.md 27297 (a
+  gate skipped on a service the harness left out) and 24250 ("An unread answer is never a pass"): there a harness or
+  a read omitted something; here the product's own branch for another platform returned as passed. Card 4, TRAPS.md
+  18389 (gate the leaf every harness must call) and 27787 (a build-slot counter counting every live lane): there the
+  unit was too small or miscounted; here re-entry made the outermost wrapper the unit. Card 5, TRAPS.md 17921 (a
+  counter over a log appended from parallel branches) and 12519 (two sessions wrote one deliverable path): neither is
+  two processes appending to one file at once. Card 6, TRAPS.md 15404 ("A string that is a strict prefix of another
+  cannot be found missing") and 20559 (spellings that miss a literal compare). Card 7, TRAPS.md 24405 (a hosted-only
+  source pin the commit gate never runs) and 9728's line 9732 (`core.autocrlf` set system-wide): there the runner
+  lacked a test or set a value; here the laptop set a variable the runner lacked.
+- Not filed, as repeats: K197's fixed result name that let a second bar read the first bar's PASS repeats TRAPS.md
+  28104 (a verdict file named a path, not the run that wrote it); its admission counted by a file the crashed child
+  never wrote ("0 admission(s)" for two held slots) repeats 25426 ("It did not happen", asserted by a count that
+  would be zero if it had); its SHA256SUMS file under review/ read as the evidence store's manifest repeats 16175 (a
+  backup named like a live record is read as one). H142's results file refused by the evidence-size guard only at
+  the hosted bar repeats 26764 (the first whole run was a hosted bar, red); its no-answer sentence stating the
+  present from scan-time evidence repeats 25624. H232's credit refused for a path outside the declaration repeats
+  27873 (a declaration written after the work chose its paths). H163's absent key read back as the initializer's
+  value repeats 12078 (an initialiser default that is one of its own measured values). H144's failure that named no
+  file and reassured repeats 26334 (a count of zero took the success ink). H137's and H230's remedies that could not
+  clear what they named, H184's action gated on a phase and H186's tooltip describing another route repeat 25193 (a
+  screen that offers what the next step refuses); H186's press pins that never proved the press ran repeat 26286.
+  H101's whole-document substring pin satisfied by a job id repeats 11280. K178's and K154 packet 2's 8.3 short TEMP
+  path repeat 25462. K184's guard reading its own deny-list literals repeats 14720; its bus publisher's unrestricted
+  `git worktree prune` repeats 18484. K179's store blobs filtered by `core.autocrlf` repeat 9728's line 9732. K155's
+  wiring credited to a tool merely named in text repeats 25114. K177's pin weaker than its reader repeats 13962. K204's
+  push judged against the branch's old remote tip after a merge of master repeats 24047.
+- Not filed, other reasons: H156 (a provider name hard-coded in a progress line) is this product's wording; K151's
+  starvation guard misreading a young repository and K155's ratchet that skipped its identity check where the base
+  had no baseline are each one tool's design, with no check another project would run as written; K202 recorded no
+  trap; factory-pins (K182) recorded a design limit (a hook masked by this machine's `GIT_OPTIONAL_LOCKS=0`), not a
+  defect.

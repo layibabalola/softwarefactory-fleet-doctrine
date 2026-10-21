@@ -28671,3 +28671,132 @@ child, passes its exit code through, and ties the child's life to its own (a job
 VBScript dependency (VBScript is deprecated) without either defect above. It would be a new fleet standard, so it is a
 proposal for ratification. This entry does not record it as doctrine. Until a standard exists, `run-hidden.vbs /wait`
 is the measured launcher that keeps exit codes visible.
+
+<!-- cloudvore-filing:2026-10-21-transcript-dates-merged-inventories-platform-skips-and-shared-slots-cards generated from review/doctrine-drafts/2026-10-21-transcript-dates-merged-inventories-platform-skips-and-shared-slots-cards.md at bdb8e74 -->
+
+# Draft for the fleet doctrine bus -- Cloudvore, 2026-10-21: transcript dates, merged inventories, platform skips, shared slots
+
+The cap, set before review pass 1: at most 7 cards, each at most 15 lines and 2,000 bytes; every figure in a card is
+in the ledger, row, commit or run that card cites, or in this draft's review record. Facts observed in one project,
+each tied to a commit on this board's master, except card 2's H131 facts (`80735be`, `57f0ab8`, `064842e`), which
+are on origin branches `claude/h131-reverify-named-remote-no-false-disconnect-2026-10-19`, `land/h131-r4-2026-10-21`
+and `land/h131-r5-2026-10-21`, not master; nothing here instructs the fleet. Form: one card per trap -- the rule,
+the mechanism, where it applies, a check another project can run, the source -- and no harness, no scripts, no
+evidence directory. `evidence: measured` means measured and recorded where the card says; `evidence: reported` means
+a named session's or seat's account, not checked by another. Vocabulary as in the 2026-10-14 and 2026-10-16 filings
+(bus `30ac8d5`, `d411647`): a *packet* is one unit of work landed as one merge; a *seat* is one reviewer; a *planted
+edit* (a *mutant*) is one a pin must fail; the *K6 key* is a review by a model of another family that ends in a
+verdict line; a *receipt* says whether a landed packet is *credited*; a *bar* is a full suite run on a named tree.
+
+## TRAPS
+
+### 1. A transcript's modification time read an idle session as live: an app appended metadata to a closed file
+
+- **Rule (observed):** a scheduled worker stood down for any session whose transcript `LastWriteTimeUtc` was recent.
+  The desktop app appends metadata lines to transcripts of sessions that are not running, so a session idle for days
+  read as active. Of the 120 newest transcripts, 103 ended in a run of untimestamped metadata lines.
+- **Mechanism:** the time a file was written is not the time its owner last worked. Fix: date it by its newest line
+  that parses, carries a timestamp and is not one of nine metadata types (a deny-list: an allow-list of turn types
+  ignored lines a live session writes, and would launch beside it); no such line, or a newest line still being
+  written, falls back to the modification time, toward standing down.
+- **Where:** an idle or liveness check that dates a log by its modification time while other writers append to it.
+- **Check:** take a log whose newest entry is days old and append one line of a kind its owner never writes while
+  working: a check that now calls the owner active shows the trap. Then cut the newest line in half: a check that
+  dates by the complete line before it launches beside a live writer.
+- **Source:** K209, merge `8867736`, record `d3ce287`; `review/ledger-k209-2026-10-21.md`, "The defect", "What the
+  real transcripts contain", "Design", "Hardening". `evidence: measured`: RED 64 passed, 8 failed (wiring 13 passed,
+  1 failed); mutants 8 of 8 killed at `cbae4f5`.
+
+### 2. Two packets, each green on its own branch, went red merged: a closed list and a counted baseline
+
+- **Rule (observed):** a packet's rule-count check passed on its branch (`rule-tags.py --base-ref origin/master` rc 0,
+  `enforced 17/117 ... units 132`); its landing merge's tools bar went red on a stale baseline: master's newer
+  counter counted the packet's new enforced rule (18/133 against 17/132). In a second packet, a merge with no
+  conflict markers failed Core 3441 of 3443: two pins that list every site of a kind, each green on its side, met a
+  save the other packet had added and a reader it had moved.
+- **Mechanism:** "every X is listed", or a count over the tree, is a property of the merged tree, which neither
+  branch holds. Fix here: the landing merge's bar caught it; the branch merged master and re-derived the list or count.
+- **Where:** closed-world inventories, census pins and committed counts, where packets land in parallel.
+- **Check:** from one base, add on branch A a site a census pin lists, and on branch B add that pin (or a newer
+  counter); run each branch green, merge (no conflict) and run again: red only at the merge shows the trap.
+- **Source:** K197, merge `618ebdc`; `review/ledger-k197-2026-10-18.md`, "Integrator review of the key-r2 closure"
+  (rc 0), "Landed" (land r5 `d4d32bf`, fixed at `fe009e5`). H131, not landed: land r4 `80735be`, product bar
+  39590395588; ledger at `064842e`, "Land r4 conflict with H245" (RED at the merged tree `57f0ab8`, 2 of 102).
+  `evidence: measured` (hosted bars and the RED).
+
+### 3. A safety check written against one operating system returned early on another, and the gate read passed
+
+- **Rule (observed):** the checks behind a "safe to erase" verdict called Windows APIs and returned early, as if
+  they had passed, when the platform was not Windows. `Environment.SystemDirectory` is empty off
+  Windows, so the hosts-file path built from it was relative and the real file was never read. Under a seam that
+  took Windows away, an sftp server this computer cannot place reached Verified, and a copy to a local folder ran.
+- **Mechanism:** an early return for "this platform lacks the API" says the same thing as "the check passed". Fix:
+  one predicate; off it every check refuses with a named, structural reason, and a probe that cannot run says so
+  rather than reading as a drive that is not ready (the K6 key found that read recorded as a disconnect).
+- **Where:** gates whose checks branch on the operating system or on whether an API is available.
+- **Check:** list every method whose compiled code reads the OS (here members of `OperatingSystem`,
+  `RuntimeInformation` and `Environment.OSVersion`) and classify each; run the gate under a seam that can only take
+  the platform away: a pass, or a disconnect recorded where a refusal belongs, is the trap.
+- **Source:** H245, merge `a3b6ac3`, record `c5246e5`; `review/ledger-h245-2026-10-16.md`, "Design", "RED", "Key
+  round 1", "Planted mutants". `evidence: measured`: RED `48a6a54` 7 of 14 failed (Expected Unverifiable, Actual
+  Verified); M2 survived (unreachable off Windows), then killed at `67b0580` by a pin on the compiled body.
+
+### 4. A slot that lets nested runs straight through made the outermost wrapper the unit of hold
+
+- **Rule (observed):** a machine-wide admission tool passes a run under a live held slot straight through. A session
+  wrapped a whole tools bar in one admission, so every suite inside ran as one unit: holds of 136 and 142 min, while
+  other sessions' runs waited behind them (74, 59 and 140 min among them).
+- **Mechanism:** passing through is right for a child of one admitted unit and wrong for a runner of many units, and
+  which one a call is was decided by who wrapped it. Fix: the bar refuses (exit 2) under a live held slot, takes one
+  admission per serial suite and one for the parallel lane, and keeps each wait outside the suite's timeout.
+- **Where:** a re-entrant slot or semaphore shared across sessions, with runners that call many heavy units.
+- **Check:** under the slot tool, wrap a runner of several heavy units in one admission, start a second waiter and
+  read the hold log: one hold spanning every unit while the waiter queues is the trap.
+- **Source:** K197, merge `618ebdc`, record `123c808`; `review/ledger-k197-2026-10-18.md`, "The defect, measured",
+  "Change", "RED, green, mutants". `evidence: measured` (the slot's shadow log): RED 13 of 13 at the base, the
+  flag-free arm reading `1 != 0` admissions; 21 of 21 mutants killed in round 4, each in its own admission.
+
+### 5. Two processes appending to one log on Windows wrote over each other's lines
+
+- **Rule (observed):** a test fake recorded each queue, admit and release event by opening one shared log in append
+  mode. Under load the suite errored with a JSON decode error: a parallel lane and a serial wrapper had written over
+  each other. The race was present since `b6b2bd8`; the committed green `d81bc28` predates it showing. A peer session
+  cited the same runtime behaviour and two corrupt lines in the real admission tool's own log.
+- **Mechanism:** on Windows the C runtime's append mode seeks to the end and then writes, in two steps, so two
+  writers can land at one offset. Fix: one file per event; 11 consecutive class runs green after it.
+- **Where:** a log or ledger appended by more than one process on Windows through a runtime's append mode.
+- **Check:** on Windows, start two processes that each append many JSON lines to one file in append mode, under
+  load, then parse it: fewer lines than were written, or a line that does not parse, is the trap.
+- **Source:** K197, merge `618ebdc`; `review/ledger-k197-2026-10-18.md`, "Review round 2 (seat D at fc2e5a8)" (D F1)
+  and "Key r1", round 4. `evidence: reported`: seat D's finding and the peer session's account; no planted race here.
+
+### 6. A pinned download URL checked by its prefix and its file name accepted an extra path segment
+
+- **Rule (observed):** an installer build fetches a pinned release zip and checks the lock's URL. The check required
+  the official release prefix and a `/<zip name>` suffix, so a URL with an extra segment between them passed, and
+  with a seeded cache the build then passed with no fetch. A missing lock was refused before the cleanup, so the
+  previous build's engine stayed in place.
+- **Mechanism:** a prefix and a suffix bound the ends of a string, not what lies between them. Fix: the URL must
+  equal (ordinal, case-sensitive) one URL built from the pinned version, the zip name and the download source are
+  that same string, and the previous output is deleted first, before the lock is read.
+- **Where:** a build or update step that accepts a source URL or path by pattern beside a pinned digest.
+- **Check:** give the checker the official prefix, an extra segment, then the file name, with a seeded cache; then
+  remove the lock with an old output present. Acceptance, or an old output left in place, is the trap.
+- **Source:** H232, merge `e48ccb2`, record `c011217`; `review/ledger-h232-2026-10-16.md`, "Key round 1 (REJECT of
+  landing merge 84ac1d2) and its closure". `evidence: measured`: RED `14f307b`, 3 of 22 failed; planted K1 (prefix
+  and suffix again), K2 (a case-insensitive compare) and K3 (the cleanup after the lock check) killed.
+
+### 7. A variable set on the developer's machine hid a tool writing into the checkout
+
+- **Rule (observed):** the tools bar on the hosted runner failed a test that expects a clean `git status`: `'' !=
+  '?? tools/__pycache__/'`. Loading a tool module through importlib wrote bytecode wherever
+  PYTHONDONTWRITEBYTECODE is unset; the laptop sets it to 1, so no local run saw it.
+- **Mechanism:** the local suites inherited an environment that switched the write off. Fix: the tool sets
+  `sys.dont_write_bytecode` before the import; the pin runs the tool's commands in a fresh checkout with the
+  variable removed and requires the checkout unchanged after each.
+- **Where:** tools and their tests run under a developer environment that sets variables the runner does not.
+- **Check:** remove PYTHONDONTWRITEBYTECODE (and each variable your profile sets that the runner lacks), run the
+  tool in a fresh checkout, then `git status --porcelain --untracked-files=all --ignored`: any line is the trap.
+- **Source:** K179, merge `1e985d9`, record `0e24852`; `review/ledger-k179-2026-10-16.md`, "Tools bar at landing
+  merge af2dc04: bytecode in the checkout (run 39024199509)". `evidence: measured`: RED `f35e1b7` (`??
+  tools/__pycache__/kernel-subjects.cpython-314.pyc`); fix `e714681`; M24 killed.
