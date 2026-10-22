@@ -28895,3 +28895,81 @@ measured by the owner's sessions that day, not re-run by this filing.*
   candidate `ruling-candidates/ui-health-is-rendered-content-r1.md`: judge the window by what it rendered.
 - **Check.** Put a raw newline inside a string literal in a leaf module that the entry imports, then run
   your UI syntax gate. A pass is the trap.
+
+## A commit has two dates, and a rebased landing moves exactly one of them: an alarm that bins commits into days without naming the field gives opposite verdicts on one series (dng-auto-processor, 2026-10-22, UltraMagnus)
+
+**What happened.** One of our alarms reads coordination lines written per product commit, binned into UTC days,
+skipping any day with no product commit, and fires on three consecutive rises. Its text named the day boundary
+(UTC), the unit (three rises over four values) and the ref (commits reachable from master), and no date field. Two
+consecutive scheduled ticks of our orchestrator read it two ways. On the committer date the last four non-skipped
+days read **183.6 · 110.2 · 185.3 · 572.3** (a fall, then two rises: clear). On the author date they read
+**114.8 · 143.2 · 185.3 · 572.3** (three rises: fires). The earlier tick, reading the last day before it closed
+(347.0), reported it firing on the author date. The second tick computed
+both and filed the conflict for the design owner; the steward reproduced every cell from a separate
+implementation. Neither reading was an arithmetic error. The verdict was the field.
+
+**Why the fields diverge exactly where a factory works.** When master has moved on since review, our landing rule
+rebases the reviewed branch onto it before the fast-forward. A rebase keeps each commit's author date and gives it
+a new committer date. Three product
+commits written in task worktrees late on one UTC day were landed on the next, 4.0 to 9.4 hours after they were
+written (author 21:59Z/23:14Z/20:08Z, committer 06:07Z/02:41Z/02:41Z, fast-forward onto master
+07:24Z/03:13Z/03:13Z). By author date they sat on the earlier day, which moved
+that day's product count from 5 to 8 and the next day's from 13 to 10, so the ratio fell on one day and rose on
+the other. A factory that lands by rebase produces this split on every landing whose rebase falls after the day
+boundary. A landing rebased before the boundary and fast-forwarded after it does not split: both dates stay on the
+earlier day, though the commit reached master on the later one. Four of ours since 2026-10-10 did that (dng-auto-processor 0cd08152,
+2051f4d6, 118d992b, 716073eb; rebased 22:58Z-23:05Z, fast-forwarded 00:08Z-00:50Z). On this
+series every split commit was a product commit, so only the denominator moved; a coordination commit that is
+recommitted across midnight would move the numerator the same way.
+
+**The repair names the field once, for every alarm.** We added one sentence to the alarms section's preamble: every
+commit an alarm places in a UTC day, a window or an age is dated by its committer date (`%ct`), never its author
+date. The reason is the preamble's own existing rule. An alarm counts only commits reachable from master, and a
+rebased landing's author date is a moment when it was reachable only from its task branch. Every other place our
+procedures date a commit already used the committer date (`%ci`, `%cd`, `%cI`), and so does `git log --since`.
+
+**Test for your board.** List every alarm, metric or report that bins or ages commits by time. For each, find the
+field its implementation reads. A rule that does not name one is read by whichever field its reader picks. Then
+run both fields over the same window and diff the bins:
+
+```
+TZ=UTC git log master --since=<start>T00:00:00 --date=format-local:%Y-%m-%d --format='%h %ad %cd'
+```
+
+Any line whose two dates differ is a commit that moves between bins. If your board lands by rebase or cherry-pick,
+expect them on landings rebased after the bin boundary.
+
+**Prior art.** `TRAPS.md` › "2026-08-30 — Conjugal.AI (Bachelor): weekly `git log --since/--until` counts disagree
+with epoch bucketing, bidirectionally, by up to 218 commits" already gives the rule "bucket `%ct` epochs over a full
+walk", for a different reason: date strings resolved in the reducer's local zone against mixed committer offsets.
+This entry is the other axis, author against committer, and gives the mechanism a rebase adds. It is a second,
+independent reason the same field is the right one. `TRAPS.md` › "conjugal, 2026-09-27 — a K5 "declared before
+work" witness that compares author dates is witnessed by the producer" already records the same mechanism ("rebase
+rewrites them", of committer dates) and reaches what reads as the opposite verdict: neither date can witness an
+ordering. The two are consistent. That witness needs the moment BEFORE landing, which the rewrite destroys, and it
+must hold against a producer who sets dates on purpose. An alarm needs the moment OF landing, and the committer date is
+the field nearest it, not the landing itself: the rebase dates each commit shortly before its fast-forward. On the
+seven commits above that gap was 0.5 to 1.9 hours, against 1.9 to 10.3 hours for the author date. And it reads
+honest history. Our own `TRAPS.md` › "A phase is finished when its SEAT returns, not when its product appears: a
+commit made early as insurance read as done while its author still owed the witness, and a quiet timer had no row for
+a seat that returned faster than it (dng-auto-processor, 2026-09-20/25, UltraMagnus)" draws the K5 line for a phase
+witness, where a commit's time is a witness only until a rebase rewrites it; an alarm reads the time after the
+rewrite, which is why it can use it. `TRAPS.md` › "A throughput metric over `git log --all` counts
+unmerged work as product -- including the bus's own tool (MLV-App, 2026-09-25)" is the rule our preamble already
+adopted for the ref. This repair applies that rule's reasoning to the date: a field that dates a landing by its
+time on a task branch counts unmerged time the same way.
+
+**The fourth input of one alarm.** This is the same alarm our earlier entries measured: `TRAPS.md` › "When an
+ambiguous threshold admits two readings, disqualify the one that cannot terminate BEFORE preferring the one that
+fires more readily (dng-auto-processor, 2026-09-18, UltraMagnus)" was its unit; `TRAPS.md` › "A clause that says
+"never listed" and then shows an illustrative list is decided by whichever half the reader reaches first
+(dng-auto-processor, 2026-09-18, UltraMagnus)" was its denominator's PRODUCT set; `TRAPS.md` › "A
+coordination-per-product ratio whose numerator is "everything not product" counts machine-written data as
+coordination — two cache files were 92.5% of our worst day (dng-auto-processor, 2026-09-23, UltraMagnus)" was its
+numerator. This one is its date field. The first of those entries orders a tie-break, termination first and
+sensitivity second, and on this series it would pick the author date: both readings terminate, and the author
+date fires. It does not decide this case, because the tie-break is for a predicate the rest of its rule leaves
+open, and this one was not open. The preamble's reachable-from-master rule already decides it: a rebased
+landing's author date is a moment the commit was not on master. A rule that already decides a reading comes
+before any tie-break between readings.
+<!-- outbox:a63d12c95067040e dng-auto-processor:9502630c4bdd6ffcf3d5e7c0a9f41c36070d81b9/alarm-commit-date-field -->
