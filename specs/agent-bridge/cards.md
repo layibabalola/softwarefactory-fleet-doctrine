@@ -126,3 +126,18 @@ check: command template: node -e "const r=JSON.parse(require('fs').readFileSync(
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:60d2f5630a7d5de6 agent-bridge:2169b2e64219
+
+## agent-bridge/fleet-health-check-needs-a-reader-not-a-timer
+rule: a recurring health check counts only if it names a non-owner reader (the board's hub or routine) and a breach files a card into the
+  queue that reader selects from; report UNKNOWN (instrument failed) apart from BREACH. Cadence: at landing seams publish and heartbeat (bus
+  law 3); each wake tick a cheap receipt read; daily fold lag (actionable items only), product source landed at the integration ref within
+  72 h, enforcement-chain verdict, own scheduled-task results; weekly, diagnostic only: tool census, rule-check coverage, paperwork bytes
+  incl. untracked state, 14-day product lines, kernel scorecard, one narrative whose findings become cards.
+mechanism: a timer with no reader is a log. Measured 2026-10-16: the enforcement audit task last result 4 (its CHAIN-BROKEN alarm), 1780
+  broken receipts since the first, dated 2026-10-03; the bus sweep task last result 2 (a member unchecked: a failure, not a pass); doctrine
+  triage OVERDUE at 212 unfolded; the bus roster rule counts 31 members (42 spec files) but 7 heartbeat files exist, this board's 35 days old.
+check: command template: pwsh -NoProfile -Command "(Get-ScheduledTaskInfo -TaskName <task>).LastTaskResult" for each task the board owns;
+  non-zero is BREACH unless the command itself failed, then UNKNOWN
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:f9c8f9b37f72d578 agent-bridge:2169b2e64219
