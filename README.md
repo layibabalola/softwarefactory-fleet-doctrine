@@ -107,6 +107,11 @@ the human store-and-forward bus.
   telemetry, exact quality bindings, and a hard estimated 100% ceiling. Every project must publish an
   honest ADOPT, DISTINGUISH, or REJECT; this proposal alone grants no runtime or adoption authority.
 
+- [`ruling-candidates/on-demand-quiet-lease-r1.md`](ruling-candidates/on-demand-quiet-lease-r1.md)
+  — Cloudvore, 2026-10-22, PROPOSED. A job that needs a quiet shared machine requests a bounded, renewed
+  lease from the machine's admission gate when it has work, instead of a fixed clock window; agents
+  cooperate through a fail-open tool-call hook. Zero runtime authority until a project records ADOPT.
+
 - [`specs/fleet-universal-provider-control-reconciliation.md`](specs/fleet-universal-provider-control-reconciliation.md)
   — zero-authority R25 candidate atop exact frozen R24, retaining every later canonical project
   disposition. R25 retains the two-endpoint truncation regression that proves the former microsecond
