@@ -141,3 +141,17 @@ check: command template: pwsh -NoProfile -Command "(Get-ScheduledTaskInfo -TaskN
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:f9c8f9b37f72d578 agent-bridge:2169b2e64219
+
+## agent-bridge/git-meter-misses-gitignored-paperwork
+rule: a paperwork meter that reads only git history under-reports a board whose coordination state is gitignored; it
+  also reports the bytes and files written in the window under each board's declared untracked coordination roots.
+mechanism: agent-bridge keeps its WAL, briefs, lane reports and audit snapshots in gitignored .claude-state/. In 14
+  days 13,483 files and 742,532,530 bytes were written there (coordination: 12,958 files, 291,390,152 bytes;
+  audit-snapshots: 520 files, 446,614,010 bytes), among them 2,110 markdown files of 193,317 lines (whole-file
+  count); HUB_RUN_WAL.md alone is 4,493,409 bytes. Line mode saw 840 paperwork lines on github/master in the same
+  window, against 8,861 product lines: the meter's paperwork number omits nearly all of the paperwork.
+check: command template, per declared untracked root: find <root> -type f -newermt "-14 days" -printf '%s\n' |
+  awk '{n++; s+=$1} END {print n, s}' prints files and bytes, reported beside the git line buckets
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:060c29ef727d01f0 agent-bridge:e72ed7f5ae75
