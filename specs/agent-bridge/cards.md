@@ -198,3 +198,18 @@ check: command template: git -C <repo> remote -v; git -C <repo> log -1 --format=
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:8b1e5c9fe9958635 agent-bridge:2169b2e64219
+
+## agent-bridge/throughput-classifier-counts-factory-tests-as-tests
+rule: a line classifier buckets a test by what it tests, not by its file name: a test of factory tooling is
+  factory-tooling. Classify by the code a test imports or runs, and keep a board's outbox dir out of unclassified.
+mechanism: the agent-bridge class sends ./test_*.py to tests. On github/master 13 of 92 root test files import or run
+  only tools/ code (test_doctrine_outbox, test_hook_guarded_merge, test_doctrine_triage, test_doctrine_guards,
+  test_check_k5_declaration, test_check_decision_record and 7 more). In 14 days 5 of them changed 4,153 lines,
+  14.5% of the 28,571-line tests bucket, so factory tooling read 2,475 lines (5.9%) instead of 6,628 (15.8%) and
+  product plus tests read 89.3% instead of 79.4%. product_share (product/total, 21.1%) does not move: the inflation
+  sits in the tests bucket a reader takes as product work. doctrine-outbox/ (930 lines) was reported unclassified.
+check: command template: for each root test_*.py at <ref>, git show <ref>:<f> | grep -cE '^\s*(from|import)
+  (<product packages>)\b' is 0 while grep -cE '\btools\b|hooks' is not => a factory test the tests bucket counts
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:043a82231526ef6f agent-bridge:e72ed7f5ae75
