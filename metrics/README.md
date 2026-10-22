@@ -70,3 +70,10 @@ The fleet provider-capacity candidate proposes append-only
 schema v1 and grants no live admission authority. Projects must not publish raw account identifiers,
 credentials, prompts, transcripts, or command lines. Until a fleet ruling ratifies the extension,
 the schema and examples are conformance candidates only.
+
+## Candidate extension: model posture (NOT YET RATIFIED)
+
+`metrics/<project>/posture-*.jsonl` holds weekly, then monthly, then yearly AGGREGATES of which model and effort each
+role actually ran (`schemas/model-posture-rollup-v1.schema.json`, writer `tools/factory/model-posture.py`). Raw
+per-call rows never travel. Entry: [`model-posture/README.md`](model-posture/README.md). Candidate:
+`ruling-candidates/fleet-model-posture-telemetry-r1.md`.

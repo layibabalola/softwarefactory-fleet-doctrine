@@ -2,6 +2,11 @@
   "schema": "factory-registry.v1",
   "_comment": "Tools a project may install with `pin-runner.py install <tool>`, and PROFILES (named bundles) it may install with `pin-runner.py init --profile <name>`. DATA read from the reviewed bus commit, never executed. Add a tool here in the same commit that adds it; a profile names registered tools only (its keys: validate_profile in pin-runner.py).",
   "tools": {
+    "model-posture": {
+      "path": "tools/factory/model-posture.py",
+      "interpreter": "python",
+      "purpose": "CANDIDATE fleet model-posture telemetry: reduce local provider-usage-event-v1 rows to screened weekly aggregates, view posture advisories (never stored), publish and prune metrics/<project>/posture-*.jsonl"
+    },
     "check-doc-size": {
       "path": "tools/factory/check-doc-size.py",
       "interpreter": "python",
