@@ -186,3 +186,15 @@ check: command template: git -C <root> show <integration-ref>:AGENTS.md | grep -
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:db14f7e7968d3f6a agent-bridge:e72ed7f5ae75
+
+## agent-bridge/origin-is-not-the-integration-remote
+rule: a fleet meter must not assume the integration remote is named origin; each board declares its integration ref (here refs/remotes/github/master)
+  in its own spec, and every meter reads that ref, never origin/master by default.
+mechanism: git names the first clone's source origin, not the integration remote. Measured 2026-10-16 in this board's canonical checkout: remotes are
+  github (the hosted repository) and origin (a local backup copy); origin/master is 298bfcb9 dated 2026-07-07, github master is fadfe77c dated 2026-10-16,
+  and origin/master lacks 947 commits that github master has (it has 0 the other way). A meter reading origin/master sees a project frozen since July.
+check: command template: git -C <repo> remote -v; git -C <repo> log -1 --format=%h%x20%cs origin/master; git -C <repo> log -1 --format=%h%x20%cs refs/remotes/github/master;
+  git -C <repo> rev-list --count origin/master..refs/remotes/github/master prints 947 here
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:8b1e5c9fe9958635 agent-bridge:2169b2e64219
