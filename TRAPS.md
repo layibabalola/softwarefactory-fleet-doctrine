@@ -28840,3 +28840,58 @@ Then grep **everything an agent can write**, including run dirs, scratch and sch
 **Smaller contributor, same diagnosis.** 71 orphaned `tail`/`grep` watcher pipelines, dating back to 10-17, had dead parents. Stopping them took total CPU only from 93.5% to 87.8%. Most of the load was the hook.
 
 **Test for your board.** Sample `\Process(*)\IO Other Operations/sec` several times. Anything sustained above about 10k/s is your suspect. Then grep every hook script for `rglob`, `os.walk`, `-Recurse` and `grep -r` over trees that grow. Your scan-guard does not cover them.
+
+## Appended by slopbar (Claude Code desktop session on BACHELOR, on Layi's instruction to publish), 2026-10-22 — three traps from one day on a shared box
+
+*Filed as an uncarded `TRAPS.md` append, not an R14.1 card: slopbar is not a fleet member (no
+`specs/slopbar.md`), and a new member spec needs a census row and an R26 epoch amendment
+(`hooks/pre-push-bus-tests.py`, R26_CLASSIFY). Card it under the right board if the owner enrols
+slopbar or another board adopts these. Machine-level facts were measured on BACHELOR (Dell XPS 17);
+slopbar facts are in the slopbar repository (`C:\code\slopbar`). `evidence: reported` for all three:
+measured by the owner's sessions that day, not re-run by this filing.*
+
+### 1. Orphaned Git-for-Windows coreutils reading an infinite input pinned the machine for hours
+
+- **Measured (BACHELOR, 2026-10-22).** 318 processes `"C:\Program Files\Git\usr\bin\cat.exe" /dev/zero`,
+  every parent dead, created 08:29-08:39 local, held the CPU at 100% for hours. WSL hung, and tests and
+  git timed out in every session on the machine, which read as many unrelated failures. The spawner was
+  not identified. Extends the adobe-ingester entry above about mlv-app (2026-10-20: 71 orphaned `tail`/`grep` pipelines with
+  dead parents on VIRTUAL-TEN): same class, and here it was the whole load, not a minor contributor.
+- **Mechanism.** A pipeline from `/dev/zero`, `/dev/urandom` or `yes` never ends on its own. When the
+  consumer or the shell that started it dies, the MSYS producer is not in a job that dies with it, so it
+  is re-parented to nothing and spins forever. Killing the agent's shell does not kill it.
+- **Rule.** Never pipe from `/dev/zero`, `/dev/urandom` or `yes` without a bounded consumer
+  (`head -c N`, `dd count=`) and a `timeout`. Run such pipelines inside a process group or Windows job
+  object that dies with the shell. A machine guard reaps orphaned `Git\usr\bin` utilities whose parent
+  is gone (being deployed on BACHELOR in its Runaway Shell Guard).
+- **Check.** `Get-CimInstance Win32_Process | ? { $_.ExecutablePath -like '*\Git\usr\bin\*' -and -not
+  (Get-Process -Id $_.ParentProcessId -EA 0) } | group Name | select Count,Name` — any row is the trap.
+
+### 2. Parallel sessions installing the same desktop app left two instances that fought over OAuth refresh
+
+- **Measured (slopbar, BACHELOR, 2026-10-22).** Five parallel agent sessions installed a local build
+  of the same desktop app within moments of each other. Two instances were left running. Both refreshed
+  the same account's OAuth token; the provider rotates refresh tokens on use, so one instance's refresh
+  invalidated the other's, and one monitoring session was rejected by the provider.
+- **Mechanism.** An installer that stops the running app and starts the new one is not atomic. Two
+  installers interleave: each stops what it sees, each starts its own copy, and the app's single-instance
+  guard is bypassed or not yet up. Rotating refresh tokens turn a duplicate process into an auth failure.
+- **Rule.** One installer at a time, under a machine-wide install lock. Only the dispatcher (the owner's
+  main session) installs and restarts the app; side sessions build and test, and never install.
+- **Check.** After any install, count the app's top-level processes (`Get-Process <app>` grouped by
+  parent): more than one is the trap. Start two installs together on a test box: if both run to the
+  end without one waiting on a lock, the lock is missing.
+
+### 3. One unparseable ES module silently killed a WebView window; partial syntax checks missed it
+
+- **Measured (slopbar, 2026-10-22).** A raw newline inside a JavaScript string literal, in an ES module
+  imported by a window's main script, made that module fail to load. The import failed, the main script
+  never ran, and the window showed its fallback markup with no visible error. The syntax checks in use
+  covered only the entry files, so they passed.
+- **Mechanism.** A static `import` is resolved before any code runs: one module that does not parse
+  aborts the whole graph, and in a WebView the error goes only to the devtools console.
+- **Rule.** CI parses every UI module as a module, not just the entry files: copy each `.js` to `.mjs`
+  and run `node --check` on it (or parse with the bundler in module mode). Pair with the zero-authority
+  candidate `ruling-candidates/ui-health-is-rendered-content-r1.md`: judge the window by what it rendered.
+- **Check.** Put a raw newline inside a string literal in a leaf module that the entry imports, then run
+  your UI syntax gate. A pass is the trap.
