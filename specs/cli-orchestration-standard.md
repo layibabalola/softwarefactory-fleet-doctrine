@@ -154,15 +154,27 @@ Every row below was dispatched live and returned the token it was asked for. An 
 sourced from a document but never run does not belong in this table — see §4 for why a
 document is not evidence here.
 
-| Lane | Family | Identifier | Verified |
-|---|---|---|---|
-| Opus | Claude | `claude-opus-5` | live run |
-| Sonnet | Claude | `claude-sonnet-5` | live run |
-| Fable | Claude | `claude-fable-5` and `claude-fable-5-1` both resolve | live run, both |
-| Haiku | Claude | `claude-haiku-4-5-20251001` | live run |
-| Sol | Codex | `gpt-5.6-sol` | live run |
-| Luna | Codex | `gpt-5.6-luna` | live run |
-| Astra | Codex | `gpt-6-astra` | live run |
+Refreshed 2026-10-22 (XPS 17, Claude Code 2.1.308, codex-cli 0.163.0). Claude rows were run by
+alias (`claude -p --model <alias> --effort high --output-format json`) and the identifier is the
+`modelUsage` key the run reported. Codex rows were run as `codex exec -m <id> -c
+model_reasoning_effort=high --sandbox read-only`, and the session header reported the same model at
+effort high. These record what resolved on that date; they are not pins (fleet R13.3, R16.2:
+dispatch Claude by alias and resolve Codex by tier at launch). Which Codex tier a seat uses:
+`ruling-candidates/codex-sol-default-and-capacity-routing-r1.md` (proposed).
+
+| Lane | Family | Selector run | Identifier it resolved to | Verified |
+|---|---|---|---|---|
+| Opus | Claude | `opus` | `claude-opus-5-5` | live run, 2026-10-22 |
+| Sonnet | Claude | `sonnet` | `claude-sonnet-5-5` | live run, 2026-10-22 |
+| Fable | Claude | `fable` | `claude-fable-5-1` | live run, 2026-10-22 |
+| Haiku | Claude | `haiku` | `claude-haiku-5-5` | live run, 2026-10-22 |
+| Sol | Codex | `gpt-6.1-sol` | `gpt-6.1-sol` | live run, 2026-10-22 |
+| Luna | Codex | `gpt-6-luna` | `gpt-6-luna` | live run, 2026-10-22 |
+| Astra | Codex | `gpt-6-astra` | `gpt-6-astra` | live run, 2026-10-22 |
+
+The 2026-09-13 rows (`claude-opus-5`, `claude-sonnet-5`, `claude-fable-5`/`claude-fable-5-1`,
+`claude-haiku-4-5-20251001`, `gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-6-astra`) were live then and are
+history now; this refresh did not re-run the old ids.
 
 **Proposed amendment to `machine-inventory-schema.md`** (not applied here; that spec is
 ratified): carry the identifier beside the nickname, so a dispatcher can derive `-m` from the
@@ -173,8 +185,8 @@ providers:
   codex:
     available: true
     models:
-      sol:   gpt-5.6-sol
-      luna:  gpt-5.6-luna
+      sol:   gpt-6.1-sol    # resolved 2026-10-22; resolve at launch (R16.2)
+      luna:  gpt-6-luna     # resolved 2026-10-22
       astra: gpt-6-astra
 ```
 
