@@ -1400,9 +1400,10 @@ class KeyResultTests(unittest.TestCase):
                 self.assertEqual(0, code, (why, err))
                 self.assertIn("- creditable: yes -- default identity", out, why)
                 self.assertIn("- key run: tier ok, exit 0, last_message_ok true, sandbox_failure null; role "
-                              "counterpart, model gpt-6-sol, effort high, sandbox read-only (the key class); its last "
-                              "message is the key verdict file and last_message_sha256 is that file's; reviewed_head "
-                              "is the landed merge (tools/codex-review.py's result line)\n", out, why)
+                              "counterpart, model family gpt-<version>-sol (resolved gpt-6-sol), effort high, sandbox "
+                              "read-only (the key class); its last message is the key verdict file and "
+                              "last_message_sha256 is that file's; reviewed_head is the landed merge "
+                              "(tools/codex-review.py's result line)\n", out, why)
                 digest = hashlib.sha256((r.root / "key-run.log").read_bytes()).hexdigest()
                 self.assertIn(f"- key result sha256: sha256:{digest}\n", out, why)
                 self.assertIn(f"- key verdict: VERDICT: ACCEPT {merge}\n", out, why)
@@ -1502,11 +1503,11 @@ class KeyResultTests(unittest.TestCase):
 
     def test_a_result_from_another_role_or_tier_is_refused(self):
         """K6 key round 1, finding 2: `tier: ok` is relative to the role the run requested. An authentic swarm
-        result (gpt-6-luna, low) with an ACCEPT credited a contract that declares cross-family:codex-gpt-6-sol-high."""
+        result (gpt-6-luna) with an ACCEPT credited a contract that declares a sol class (K180: the family decides)."""
         r, merge, barred, verdict = self.keyed()
-        swarm = dict(role="swarm", requested_model="gpt-6-luna", requested_effort="low", actual_model="gpt-6-luna",
-                     actual_effort="low")
-        for over, says, why in ((swarm, "role 'swarm'", "an authentic swarm run"),
+        swarm = dict(role="swarm", requested_model="gpt-6-luna", requested_effort="high", actual_model="gpt-6-luna",
+                     actual_effort="high")
+        for over, says, why in ((swarm, "model 'gpt-6-luna'", "an authentic luna run"),
                                 ({"role": "sweep"}, "role 'sweep'", "another role"),
                                 ({"actual_model": "gpt-6-astra"}, "model 'gpt-6-astra'", "another model"),
                                 ({"actual_effort": "low"}, "effort 'low'", "another effort"),
@@ -1542,7 +1543,9 @@ class KeyResultTests(unittest.TestCase):
     def test_a_codex_key_class_that_names_no_codex_review_role_is_refused(self):
         """The Codex class decides the role mechanically: cross-family:codex-<model>-<effort>, matched against
         tools/codex-review.py's ROLES. A Codex class naming no role is refused."""
-        for key in ("cross-family:codex", "cross-family:codex-gpt-6-sol-xhigh", "cross-family:codex-gpt-6-luna-high"):
+        for key in ("cross-family:codex", "cross-family:codex-gpt-6-sol-xhigh", "cross-family:codex-luna-low",
+                    "cross-family:codex-gpt-6-luna-low", "cross-family:codex-terra-high",
+                    "cross-family:codex-gpt-6-high", "cross-family:codex-gpt-sol-high"):
             with self.subTest(key=key):
                 r, merge, barred = landed(self, key=key, manifest=None)
                 verdict = (r.root / "verdict.txt").resolve()
@@ -2035,6 +2038,104 @@ class ExcludedCountTests(unittest.TestCase):
                 code, out, err = run(r, merge, barred, "--bar-log", f"{name}={path}", "--dry-run")
                 self.assertEqual((2, ""), (code, out))
                 self.assertIn(name, err)
+
+
+class TierKeyClassTests(unittest.TestCase):
+    """K180 (R16.5): a Codex key class names a tier and an effort, `cross-family:codex-<tier>-<effort>`, checked against
+    the run's resolved model FAMILY (gpt-<version>-<tier>) and actual effort, never a literal id. The legacy literal class
+    `cross-family:codex-gpt-<version>-<tier>-<effort>` is read as its tier and effort, so an in-flight subject keeps its
+    credit whichever sol version the run resolved to. One landing per key class serves every case of a test (a refused
+    receipt and a dry run write nothing)."""
+
+    TIER = "cross-family:codex-sol-high"
+    LEGACY = "cross-family:codex-gpt-6-sol-high"
+
+    def landing(self, key):
+        r, merge, barred = landed(self, key=key, manifest=None)
+        verdict = (r.root / "verdict.txt").resolve()
+        verdict.write_bytes(f"review\nVERDICT: ACCEPT {merge}\n".encode())
+        return r, merge, barred, verdict, key
+
+    def receipt(self, land, result_text, *extra):
+        r, merge, barred, verdict, _key = land
+        result = r.root / "key-run.log"
+        result.write_bytes(result_text.encode("utf-8"))
+        return run(r, merge, barred, "--key-verdict", str(verdict), "--key-result", str(result), *extra,
+                   runs=AT_MERGE_ALL)
+
+    @staticmethod
+    def sol(verdict, model="gpt-6.1-sol", **over):
+        """The result line of a run that resolved `sol` to `model`, in the shape tools/codex-review.py prints now."""
+        rec = dict(role="counterpart", requested_model=model, actual_model=model, model_requested="sol",
+                   model_effective=model, resolution="cache")
+        rec.update(over)
+        return key_result(verdict, **rec)
+
+    def credited(self, land, text, why, reading=None):
+        code, out, err = self.receipt(land, text, "--dry-run")
+        self.assertEqual(0, code, (why, err))
+        self.assertIn("- creditable: yes -- default identity", out, why)
+        self.assertIn(f"- key class: {land[4]}\n", out, why)
+        if reading:
+            self.assertIn(reading, out, why)
+
+    def refused(self, land, text, says, why):
+        code, out, err = self.receipt(land, text)
+        self.assertEqual((2, ""), (code, out), (why, err))
+        self.assertIn(says, err, why)
+        self.assertFalse((land[0].root / RECEIPT).exists(), why)
+
+    def test_the_tier_class_credits_any_sol_version_and_either_sol_role(self):
+        land = self.landing(self.TIER)
+        v = land[3]
+        self.credited(land, self.sol(v), "the newest sol", "model family gpt-<version>-sol (resolved gpt-6.1-sol; "
+                                                         "selector sol)")
+        for model in ("gpt-6-sol", "gpt-6.10-sol", "gpt-7-sol"):
+            for role in ("counterpart", "swarm"):
+                self.credited(land, self.sol(v, model, role=role), f"{model} {role}")
+
+    def test_the_legacy_class_credits_the_same_tier_whichever_version_the_run_resolved_to(self):
+        land = self.landing(self.LEGACY)
+        v = land[3]
+        for model in ("gpt-6-sol", "gpt-6.1-sol"):
+            self.credited(land, self.sol(v, model), model)
+        self.credited(land, key_result(v), "a result from before K180 (no new fields)")
+        other = self.landing("cross-family:codex-gpt-5.6-sol-high")
+        self.credited(other, self.sol(other[3]), "legacy, another version")
+
+    def test_a_census_class_credits_a_luna_census_run_and_only_that_tier(self):
+        land = self.landing("cross-family:codex-luna-high")
+        v = land[3]
+        luna = dict(role="census", requested_model="gpt-6-luna", actual_model="gpt-6-luna")
+        self.credited(land, key_result(v, **luna), "luna census")
+        self.refused(land, self.sol(v, role="census"), "model 'gpt-6.1-sol'", "sol under a luna class")
+        self.refused(land, self.sol(v), "role 'counterpart'", "a sol role under a luna class")
+
+    def test_a_wrong_tier_or_effort_or_family_is_refused_under_the_tier_and_the_legacy_class(self):
+        for key in (self.TIER, self.LEGACY):
+            land = self.landing(key)
+            v = land[3]
+            for over, says, why in (
+                    ({"actual_model": "gpt-6-astra", "role": "sweep"}, "role 'sweep'", "the sweep role"),
+                    ({"actual_model": "gpt-6-astra"}, "model 'gpt-6-astra'", "another tier"),
+                    ({"actual_model": "gpt-6-luna"}, "model 'gpt-6-luna'", "luna"),
+                    ({"actual_effort": "xhigh"}, "effort 'xhigh'", "a higher effort"),
+                    ({"actual_effort": "medium"}, "effort 'medium'", "a lower effort"),
+                    ({"actual_effort": None}, "effort None", "no effort observed"),
+                    ({"actual_model": "gpt-6.1-solar"}, "model 'gpt-6.1-solar'", "a longer tier name"),
+                    ({"actual_model": "gpt-6.1-sol-x"}, "model 'gpt-6.1-sol-x'", "a suffix"),
+                    ({"actual_model": "xgpt-6.1-sol"}, "model 'xgpt-6.1-sol'", "a prefix"),
+                    ({"actual_model": "gpt-sol"}, "model 'gpt-sol'", "no version"),
+                    ({"actual_model": "sol"}, "model 'sol'", "the bare selector"),
+                    ({"actual_sandbox": "workspace-write"}, "sandbox 'workspace-write'", "writable")):
+                self.refused(land, self.sol(v, **over), says, f"{key} {why}")
+
+    def test_the_refusal_for_an_unknown_class_lists_the_tier_classes(self):
+        land = self.landing("cross-family:codex-terra-high")
+        code, out, err = self.receipt(land, self.sol(land[3]))
+        self.assertEqual(2, code)
+        self.assertIn("cross-family:codex-sol-high", err)
+        self.assertIn("names no tools/codex-review.py role", err)
 
 
 if __name__ == "__main__":

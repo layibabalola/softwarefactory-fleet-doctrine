@@ -62,6 +62,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -194,6 +195,28 @@ def _write_fake_codex(bin_dir: Path) -> None:
     )
 
 
+def _models(*specs):
+    """Entries shaped like ~/.codex/models_cache.json's `models`: (slug, visibility, efforts)."""
+    return [{"slug": slug, "visibility": vis,
+             "supported_reasoning_levels": [{"effort": e, "description": "d"} for e in efforts]}
+            for slug, vis, efforts in specs]
+
+
+ALL = ("low", "medium", "high")
+DEFAULT_MODELS = _models(("gpt-6.1-sol", "list", ALL), ("gpt-6-astra", "list", ALL), ("gpt-6-sol", "list", ALL),
+                         ("gpt-reserve", "hide", ALL), ("gpt-6-luna", "list", ALL), ("gpt-5.6-sol", "list", ALL),
+                         ("gpt-5.6-terra", "list", ALL), ("gpt-5.6-luna", "list", ALL),
+                         ("codex-auto-review", "hide", ALL))
+
+
+def write_cache(home: Path, models=None, age: timedelta = timedelta(0)) -> None:
+    """A models cache fetched `age` ago, with the real file's nanosecond fetched_at."""
+    home.mkdir(parents=True, exist_ok=True)
+    fetched = (datetime.now(timezone.utc) - age).strftime("%Y-%m-%dT%H:%M:%S.%f") + "000Z"
+    (home / "models_cache.json").write_text(
+        json.dumps({"fetched_at": fetched, "models": DEFAULT_MODELS if models is None else models}), encoding="utf-8")
+
+
 class CodexReviewCliTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -218,6 +241,10 @@ class CodexReviewCliTests(unittest.TestCase):
         self.env["ARGV_LOG"] = str(self.argv_log)
         self.stdin_log = self.root / "stdin.txt"
         self.env["STDIN_LOG"] = str(self.stdin_log)
+        # K180: the tier is resolved at launch from $CODEX_HOME's models cache; never the machine's real one.
+        self.codex_home = self.root / "codex-home"
+        write_cache(self.codex_home)
+        self.env["CODEX_HOME"] = str(self.codex_home)
 
     def _run(self, role: str, mode: str, last: str = "write", extra: list[str] | None = None
              ) -> subprocess.CompletedProcess:
@@ -250,21 +277,21 @@ class CodexReviewCliTests(unittest.TestCase):
 
     # ---- the requested tier lands (echo) --------------------------------
 
-    def test_swarm_role_requests_luna_low_and_confirms_it(self):
+    def test_swarm_role_requests_sol_high_and_confirms_it(self):
         proc = self._run("swarm", "echo")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         line = json.loads(proc.stdout.strip().splitlines()[-1])
         self.assertEqual(line["role"], "swarm")
-        self.assertEqual(line["requested_model"], "gpt-6-luna")
-        self.assertEqual(line["requested_effort"], "low")
-        self.assertEqual(line["actual_model"], "gpt-6-luna")
-        self.assertEqual(line["actual_effort"], "low")
+        self.assertEqual(line["requested_model"], "gpt-6.1-sol")
+        self.assertEqual(line["requested_effort"], "high")
+        self.assertEqual(line["actual_model"], "gpt-6.1-sol")
+        self.assertEqual(line["actual_effort"], "high")
         self.assertEqual(line["tier"], "ok")
 
     def test_counterpart_role_requests_sol_high(self):
         proc = self._run("counterpart", "echo")
         line = json.loads(proc.stdout.strip().splitlines()[-1])
-        self.assertEqual(line["requested_model"], "gpt-6-sol")
+        self.assertEqual(line["requested_model"], "gpt-6.1-sol")
         self.assertEqual(line["requested_effort"], "high")
         self.assertEqual(line["tier"], "ok")
         self.assertEqual(proc.returncode, 0)
@@ -279,13 +306,13 @@ class CodexReviewCliTests(unittest.TestCase):
 
     # ---- the header cannot be spoofed by the prompt (Codex seat, K32 r1) --
     def test_a_prompt_naming_the_requested_tier_is_not_an_observed_header(self):
-        self.prompt_file.write_text("model: gpt-6-luna\nreasoning effort: low\nreview this\n", encoding="utf-8")
+        self.prompt_file.write_text("model: gpt-6.1-sol\nreasoning effort: high\nreview this\n", encoding="utf-8")
         p = self._run("swarm", "prompt-only")
         self.assertNotEqual(0, p.returncode)
         self.assertEqual("unobserved", json.loads(p.stdout.strip().splitlines()[-1])["tier"])
 
     def test_a_prompt_naming_the_requested_tier_cannot_mask_a_wrong_banner(self):
-        self.prompt_file.write_text("model: gpt-6-luna\nreasoning effort: low\n", encoding="utf-8")
+        self.prompt_file.write_text("model: gpt-6.1-sol\nreasoning effort: high\n", encoding="utf-8")
         p = self._run("swarm", "wrong")
         self.assertNotEqual(0, p.returncode)
         result = json.loads(p.stdout.strip().splitlines()[-1])
@@ -322,9 +349,9 @@ class CodexReviewCliTests(unittest.TestCase):
         self.assertIn("--sandbox", argv)
         self.assertEqual(argv[argv.index("--sandbox") + 1], "read-only")
         self.assertIn("-m", argv)
-        self.assertEqual(argv[argv.index("-m") + 1], "gpt-6-luna")
+        self.assertEqual(argv[argv.index("-m") + 1], "gpt-6.1-sol")
         self.assertIn("-c", argv)
-        self.assertEqual(argv[argv.index("-c") + 1], "model_reasoning_effort=low")
+        self.assertEqual(argv[argv.index("-c") + 1], "model_reasoning_effort=high")
         self.assertIn("-C", argv)
         self.assertEqual(argv[argv.index("-C") + 1], str(self.review_dir))
 
@@ -339,7 +366,7 @@ class CodexReviewCliTests(unittest.TestCase):
     def test_wrong_model_is_reported_as_mismatch_and_exits_nonzero(self):
         proc = self._run("swarm", "wrong")
         line = json.loads(proc.stdout.strip().splitlines()[-1])
-        self.assertEqual(line["requested_model"], "gpt-6-luna")
+        self.assertEqual(line["requested_model"], "gpt-6.1-sol")
         self.assertEqual(line["actual_model"], "gpt-6-astra")
         self.assertEqual(line["tier"], "mismatch")
         self.assertNotEqual(proc.returncode, 0)
@@ -360,7 +387,7 @@ class CodexReviewCliTests(unittest.TestCase):
         proc = self._run("swarm", "echo")
         self.assertTrue(self.out_file.is_file())
         text = self.out_file.read_text(encoding="utf-8")
-        self.assertIn("model: gpt-6-luna", text)
+        self.assertIn("model: gpt-6.1-sol", text)
         line = json.loads(proc.stdout.strip().splitlines()[-1])
         self.assertEqual(line["out"], str(self.out_file))
 
@@ -870,13 +897,24 @@ class CodexReviewCliTests(unittest.TestCase):
         ),
     }
 
+    # K180: appended after bus master's keys, before the two K178 credential keys (which exist only on a stop)
+    K180_KEYS = ["model_requested", "model_effective", "effort_requested", "effort_effective", "resolution",
+                 "resolution_reason", "stale", "tokens_used", "measurement", "outcome", "verdict"]
+
     def master_lines(self) -> dict:
         """Each GOLDEN_SCENARIOS input run through the module-level TOOL; the JSON line through normalise_root()."""
         spellings = root_spellings(self.root)
+        # the golden counterpart ran gpt-6-sol: a cache whose only sol model is that one resolves to it (K180)
+        write_cache(self.codex_home, _models(("gpt-6-sol", "list", ALL)))
         out = {}
+        self.full_keys = {}
         for name, emit, code in self.GOLDEN_SCENARIOS:
             proc = self._run_transcript(emit, exit_code=code)
-            out[name] = normalise_root(proc.stdout.strip().splitlines()[-1], spellings)
+            line = json.loads(normalise_root(proc.stdout.strip().splitlines()[-1], spellings))
+            self.full_keys[name] = list(line)
+            for key in self.K180_KEYS:                  # the keys K180 appends are checked by their own tests
+                line.pop(key)
+            out[name] = json.dumps(line)
         return out
 
     def test_a_healthy_or_ordinary_failed_runs_json_line_equals_bus_masters_golden_line(self):
@@ -888,10 +926,11 @@ class CodexReviewCliTests(unittest.TestCase):
             with self.subTest(run=name):
                 self.assertEqual(self.GOLDEN_LINES[name], got[name])
                 self.assertEqual(self.MASTER_RESULT_KEYS, list(json.loads(got[name])))
+                self.assertEqual(self.MASTER_RESULT_KEYS + self.K180_KEYS, self.full_keys[name])
 
     def test_a_credential_stop_appends_its_two_keys_after_bus_masters(self):
         proc = self._run_transcript(["ERROR: HTTP 401: token expired"], exit_code=1, no_tail=True)
-        self.assertEqual(self.MASTER_RESULT_KEYS + ["credential_refusal", "credential_kind"],
+        self.assertEqual(self.MASTER_RESULT_KEYS + self.K180_KEYS + ["credential_refusal", "credential_kind"],
                          list(self._result(proc)))
 
 
@@ -1036,6 +1075,214 @@ class RoleTableMatchesTheDocTests(unittest.TestCase):
 
 
 
+class TierResolutionTests(unittest.TestCase):
+    """K180 (owner ruling 2026-10-22, bus R16.2): a role names a tier; the model id is resolved at launch from the local
+    models cache, with the last-good id as the recorded fallback. Unit tests drive resolve_tier() and the result-line
+    helpers directly; the CLI tests drive the real tool against the fake codex, to pin the production wiring."""
+
+    def setUp(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("codex_review_tier", TOOL)
+        self.mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.mod)
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.home = self.root / "codex-home"
+        self.state = self.home / "codex-review-last-good.json"
+
+    def resolve(self, tier="sol", effort="high", **kw):
+        return self.mod.resolve_tier(tier, effort, home=self.home, **kw)
+
+    # ---- the table -----------------------------------------------------------------------------------------------
+
+    def test_roles_name_a_tier_and_high_effort_never_an_id(self):
+        self.assertEqual({"swarm": ("sol", "high"), "counterpart": ("sol", "high"), "sweep": ("astra", "high"),
+                          "census": ("luna", "high")}, self.mod.ROLES)
+        for role, (tier, effort) in self.mod.ROLES.items():
+            self.assertRegex(tier, r"^[a-z]+$", role)            # a bare tier: no gpt- id in the table
+            self.assertEqual("high", effort, role)
+
+    # ---- resolution from the cache -------------------------------------------------------------------------------
+
+    def test_sol_resolves_to_the_newest_visible_id_that_supports_high(self):
+        write_cache(self.home, DEFAULT_MODELS)
+        got = self.resolve()
+        self.assertEqual(("gpt-6.1-sol", "cache", None, None),
+                         (got["model"], got["resolution"], got["reason"], got["stale"]))
+
+    def test_a_hidden_or_effort_lacking_newer_id_is_skipped_and_flagged_stale(self):
+        write_cache(self.home, _models(("gpt-6-sol", "list", ALL), ("gpt-6.1-sol", "list", ALL),
+                                       ("gpt-6.2-sol", "hide", ALL), ("gpt-6.3-sol", "list", ("low", "medium"))))
+        got = self.resolve()
+        self.assertEqual(("gpt-6.1-sol", "cache"), (got["model"], got["resolution"]))
+        self.assertIn("gpt-6.3-sol", got["stale"])             # Conjugal: never silently keep an older id
+
+    def test_versions_compare_as_numbers_not_text(self):
+        write_cache(self.home, _models(("gpt-6.9-sol", "list", ALL), ("gpt-6.10-sol", "list", ALL),
+                                       ("gpt-6-sol", "list", ALL)))
+        self.assertEqual("gpt-6.10-sol", self.resolve()["model"])
+
+    def test_a_tier_never_borrows_another_tiers_id(self):
+        write_cache(self.home, DEFAULT_MODELS)
+        self.assertEqual("gpt-6-luna", self.resolve("luna")["model"])
+        self.assertEqual("gpt-6-astra", self.resolve("astra")["model"])
+
+    def test_the_requested_effort_must_be_supported(self):
+        write_cache(self.home, _models(("gpt-6-luna", "list", ("low", "medium")), ("gpt-5.6-luna", "list", ALL)))
+        self.assertEqual("gpt-5.6-luna", self.resolve("luna")["model"])
+
+    def test_a_cache_resolution_records_the_last_good_id(self):
+        write_cache(self.home, DEFAULT_MODELS)
+        self.resolve()
+        self.assertEqual("gpt-6.1-sol", json.loads(self.state.read_text(encoding="utf-8"))["sol"]["model"])
+
+    # ---- the cache's age ------------------------------------------------------------------------------------------
+
+    def test_a_cache_inside_seven_days_is_read(self):
+        write_cache(self.home, DEFAULT_MODELS, age=timedelta(days=6, hours=23))
+        self.assertEqual("cache", self.resolve()["resolution"])
+
+    def test_a_cache_older_than_seven_days_falls_back_and_says_why(self):
+        write_cache(self.home, DEFAULT_MODELS)
+        self.resolve()                                          # records gpt-6.1-sol as last good
+        write_cache(self.home, _models(("gpt-6-sol", "list", ALL)), age=timedelta(days=7, hours=1))
+        got = self.resolve()
+        self.assertEqual(("gpt-6.1-sol", "fallback"), (got["model"], got["resolution"]))   # not the stale cache's id
+        self.assertIn("7 days", got["reason"])
+        self.assertIsNotNone(got["stale"])
+
+    # ---- no match / no cache --------------------------------------------------------------------------------------
+
+    def test_no_visible_match_falls_back_to_the_last_good_id_and_records_it(self):
+        write_cache(self.home, DEFAULT_MODELS)
+        self.resolve()
+        write_cache(self.home, _models(("gpt-6.1-sol", "hide", ALL), ("gpt-6-luna", "list", ALL)))
+        got = self.resolve()
+        self.assertEqual(("gpt-6.1-sol", "fallback"), (got["model"], got["resolution"]))
+        self.assertIn("no visible", got["reason"])
+        self.assertIsNotNone(got["stale"])
+
+    def test_a_fallback_does_not_rewrite_the_last_good_record(self):
+        write_cache(self.home, DEFAULT_MODELS)
+        self.resolve()
+        before = self.state.read_text(encoding="utf-8")
+        write_cache(self.home, _models(("gpt-6-sol", "list", ALL)), age=timedelta(days=30))
+        self.resolve()
+        self.assertEqual(before, self.state.read_text(encoding="utf-8"))
+
+    def test_a_missing_or_garbled_cache_falls_back(self):
+        write_cache(self.home, DEFAULT_MODELS)
+        self.resolve()
+        (self.home / "models_cache.json").write_text("{not json", encoding="utf-8")
+        self.assertEqual("fallback", self.resolve()["resolution"])
+        (self.home / "models_cache.json").unlink()
+        self.assertEqual("fallback", self.resolve()["resolution"])
+
+    def test_no_match_and_no_last_good_is_refused_not_invented(self):
+        write_cache(self.home, _models(("gpt-6-luna", "list", ALL)))
+        with self.assertRaises(ValueError) as cm:
+            self.resolve()
+        self.assertIn("last-good", str(cm.exception))
+
+    def test_another_tiers_last_good_id_is_not_used(self):
+        self.home.mkdir(parents=True)
+        self.state.write_text(json.dumps({"sol": {"model": "gpt-6-luna", "effort": "high"}}), encoding="utf-8")
+        with self.assertRaises(ValueError):
+            self.resolve()
+
+    # ---- the result line's new fields -----------------------------------------------------------------------------
+
+    def test_a_verdict_line_reads_as_the_schemas_outcome(self):
+        sha = "a" * 40
+        for text, outcome, verdict in (
+                (f"notes\nVERDICT: ACCEPT {sha}\n", "APPROVED", f"VERDICT: ACCEPT {sha}"),
+                (f"VERDICT: REJECT {sha}\n\n", "CHANGES_REQUESTED", f"VERDICT: REJECT {sha}"),
+                (f"VERDICT: REFUSE {sha}", "REFUSED", f"VERDICT: REFUSE {sha}"),
+                (f"VERDICT: ACCEPT {sha}\nand one more line", "UNKNOWN", None),      # only the LAST line counts
+                ("VERDICT: MAYBE", "UNKNOWN", None), ("", "UNKNOWN", None)):
+            with self.subTest(text=text):
+                self.assertEqual((outcome, verdict), self.mod.read_verdict(text))
+
+    def test_tokens_are_read_only_from_a_reported_total_never_guessed(self):
+        final = "VERDICT: ACCEPT " + "a" * 40 + "\n"
+        shape = f"codex\n{final}tokens used\n12,345\n{final}"
+        self.assertEqual(12345, self.mod.tokens_used("exec\nls\n" + shape, final))
+        self.assertIsNone(self.mod.tokens_used("exec\nls\ncodex\n" + final, final))
+        self.assertIsNone(self.mod.tokens_used("tokens used\nmany\n", ""))
+
+    # ---- the CLI (production wiring, against the fake codex) ------------------------------------------------------
+
+    def cli(self, role: str, mode: str = "echo", final: str | None = None, models=None, age=timedelta(0),
+            write: bool = True) -> subprocess.CompletedProcess:
+        bin_dir = self.root / "bin"
+        if not bin_dir.exists():
+            bin_dir.mkdir()
+            _write_fake_codex(bin_dir)
+        (self.root / "worktree").mkdir(exist_ok=True)
+        (self.root / "prompt.md").write_text("Review this.\n", encoding="utf-8")
+        if write:
+            write_cache(self.home, models, age)
+        env = dict(os.environ)
+        env.update({"PATH": str(bin_dir) + os.pathsep + env.get("PATH", ""), "ARGV_LOG": str(self.root / "argv.json"),
+                    "FAKE_CODEX_MODE": mode, "FAKE_CODEX_LAST": "write", "CODEX_HOME": str(self.home)})
+        env.pop("FAKE_CODEX_FINAL", None)
+        if final is not None:
+            env["FAKE_CODEX_FINAL"] = final
+        return subprocess.run([sys.executable, str(TOOL), "--role", role, "--cd", str(self.root / "worktree"),
+                               "--prompt-file", str(self.root / "prompt.md"), "--out", str(self.root / "out.txt")],
+                              env=env, capture_output=True, text=True, timeout=60, cwd=str(self.root))
+
+    def line(self, proc) -> dict:
+        return json.loads(proc.stdout.strip().splitlines()[-1])
+
+    def test_cli_launches_the_resolved_id_and_records_the_selector_and_the_resolution(self):
+        proc = self.cli("counterpart")
+        self.assertEqual(0, proc.returncode, proc.stdout + proc.stderr)
+        argv = json.loads((self.root / "argv.json").read_text(encoding="utf-8"))
+        self.assertEqual("gpt-6.1-sol", argv[argv.index("-m") + 1])
+        self.assertEqual("model_reasoning_effort=high", argv[argv.index("-c") + 1])
+        got = self.line(proc)
+        self.assertEqual(("sol", "gpt-6.1-sol", "high", "high", "cache", None, None),
+                         tuple(got[k] for k in ("model_requested", "model_effective", "effort_requested",
+                                                "effort_effective", "resolution", "resolution_reason", "stale")))
+        self.assertEqual(("gpt-6.1-sol", "ok"), (got["requested_model"], got["tier"]))
+
+    def test_cli_census_role_launches_luna_at_high(self):
+        proc = self.cli("census")
+        got = self.line(proc)
+        self.assertEqual(("gpt-6-luna", "high", "luna", "ok"),
+                         (got["requested_model"], got["requested_effort"], got["model_requested"], got["tier"]))
+
+    def test_cli_fallback_launches_the_last_good_id_and_records_the_fallback(self):
+        self.assertEqual(0, self.cli("counterpart").returncode)               # records gpt-6.1-sol
+        proc = self.cli("counterpart", models=_models(("gpt-6-sol", "list", ALL)), age=timedelta(days=9))
+        got = self.line(proc)
+        self.assertEqual(0, proc.returncode, proc.stdout + proc.stderr)
+        self.assertEqual(("gpt-6.1-sol", "gpt-6.1-sol", "fallback", "ok"),
+                         (got["requested_model"], got["model_effective"], got["resolution"], got["tier"]))
+        self.assertIn("7 days", got["resolution_reason"])
+        self.assertIsNotNone(got["stale"])
+
+    def test_cli_refuses_an_unresolvable_tier_without_calling_codex(self):
+        proc = self.cli("counterpart", write=False)
+        self.assertEqual(2, proc.returncode)
+        self.assertIn("refused", proc.stderr)
+        self.assertFalse((self.root / "argv.json").exists())
+
+    def test_cli_result_carries_the_outcome_the_tokens_and_the_measurement(self):
+        final = "Findings.\nVERDICT: REJECT " + "b" * 40 + "\n"
+        proc = self.cli("counterpart", mode="transcript", final=final)
+        got = self.line(proc)
+        self.assertEqual(("CHANGES_REQUESTED", "VERDICT: REJECT " + "b" * 40, 1234),
+                         (got["outcome"], got["verdict"], got["tokens_used"]))
+        m = got["measurement"]
+        self.assertEqual(("codex-review", None, None, None, None), (m["source"], m["input_tokens"],
+                         m["cached_input_tokens"], m["reasoning_tokens"], m["output_tokens"]))
+        self.assertIsInstance(m["active_seconds"], float)
+        self.assertGreaterEqual(m["active_seconds"], 0)
+
+
 class SameFileTests(unittest.TestCase):
     """K6 key on 098e118: in a Windows case-sensitive directory `prompt.md` and `PROMPT.MD` are two files, but WindowsPath
     equality folds case. When both names exist the file system decides; path equality only answers for a missing one."""
@@ -1099,5 +1346,5 @@ if __name__ == "__main__":
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()
     suite.addTests([loader.loadTestsFromTestCase(tc) for tc in
-                     (CodexReviewCliTests, RoleTableMatchesTheDocTests, SameFileTests)])
+                     (CodexReviewCliTests, RoleTableMatchesTheDocTests, SameFileTests, TierResolutionTests)])
     raise SystemExit(not unittest.TextTestRunner(verbosity=2).run(suite).wasSuccessful())

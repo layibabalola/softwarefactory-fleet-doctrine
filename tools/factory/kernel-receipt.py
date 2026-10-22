@@ -72,7 +72,9 @@ DONE-row commit after the merge: a receipt inside the merge could not name the m
     result's reviewed_head (HEAD of the reviewed worktree, read by codex-review at the run's start) must be the landed
     merge's full sha. The result's role,
     actual_model, actual_effort and actual_sandbox must be the run the declared key class names, decided
-    mechanically (`cross-family:codex-<model>-<effort>` against tools/codex-review.py's ROLES, read-only): `tier: ok`
+    mechanically (`cross-family:codex-<tier>-<effort>` against tools/codex-review.py's ROLES, read-only; K180: the run's
+    model FAMILY gpt-<version>-<tier> is compared, never a literal id, and the legacy `codex-gpt-<version>-<tier>-<effort>`
+    is read as its tier and effort): `tier: ok`
     is relative to the role the run requested, so a swarm run's ok could key a sol-high subject. An unknown class is
     refused. The receipt records the reading and the file's sha256 (`- key run:`, `- key result sha256:`). Every
     refusal names the fix: pass codex-review's stdout for the one key run, or re-run the key until it reads ok.
@@ -153,7 +155,11 @@ _CR_SPEC.loader.exec_module(CR)
 # K137 key round 1 (finding 3): fleet kernel vocabulary, not project configuration. A configured prefix let a config
 # reclassify cross-family:codex-gpt-6-sol-high as non-Codex and skip the K140 --key-result checks.
 CODEX_CLASS = "cross-family:codex"
-CODEX_KEY = re.compile(re.escape(CODEX_CLASS) + r"-(.+)-([a-z]+)", re.A)
+# K180 (R16.5): a Codex key class names a TIER and an effort, `cross-family:codex-<tier>-<effort>`; checks compare the run's
+# model FAMILY (gpt-<version>-<tier>), never a literal id. The legacy literal class `codex-gpt-<version>-<tier>-<effort>`
+# is read as its tier and effort, so every subject declared before K180 keeps its credit.
+CODEX_KEY = re.compile(re.escape(CODEX_CLASS) + r"-(?:gpt-(\d+(?:\.\d+)*)-)?([a-z]+)-([a-z]+)", re.A)
+MODEL_FAMILY = re.compile(r"gpt-(\d+(?:\.\d+)*)-([a-z]+)", re.A)
 
 KEY_VERDICT = re.compile(r"VERDICT: (ACCEPT|REJECT|REFUSE) ([0-9a-f]{40})(?: (\S.*))?", re.A)
 CODEX_BANNER = re.compile(r"OpenAI Codex v\S+")          # tools/codex-review.py `_BANNER_RE`
@@ -255,33 +261,41 @@ def is_codex_key(key: str) -> bool:
     return key == CODEX_CLASS or key.startswith(CODEX_CLASS + "-")
 
 
-def key_role(key: str) -> tuple[str, str, str, str]:
+def key_role(key: str) -> tuple[tuple[str, ...], str, str, str]:
     """K140 round 1 (the K6 key's finding 2): `tier: ok` is relative to the role the run requested, so the declared key
-    class names the run it needs: `cross-family:codex-<model>-<effort>`, matched against tools/codex-review.py's ROLES,
-    in its read-only SANDBOX. (role, model, effort, sandbox); any other class is unknown and refused."""
+    class names the run it needs: `cross-family:codex-<tier>-<effort>` (or the legacy literal
+    `cross-family:codex-gpt-<version>-<tier>-<effort>`, read as its tier and effort), matched against
+    tools/codex-review.py's ROLES, in its read-only SANDBOX. (roles, tier, effort, sandbox): `roles` are the ROLES that
+    name that tier and effort (several roles may share one); any other class is unknown and refused."""
     m = CODEX_KEY.fullmatch(key)
-    roles = [r for r, pair in sorted(CR.ROLES.items()) if m and pair == (m.group(1), m.group(2))]
-    if len(roles) != 1:
-        known = ", ".join(f"{CODEX_CLASS}-{mo}-{ef}" for _r, (mo, ef) in sorted(CR.ROLES.items()))
-        raise Refused(f"the key class {key} names no tools/codex-review.py role (one of: {known}): declare the class "
-                      "of the codex-review run that keys this subject")
-    model, effort = CR.ROLES[roles[0]]
-    return roles[0], model, effort, CR.SANDBOX
+    roles = tuple(r for r, pair in sorted(CR.ROLES.items()) if m and pair == (m.group(2), m.group(3)))
+    if not roles:
+        known = ", ".join(sorted({f"{CODEX_CLASS}-{t}-{ef}" for t, ef in CR.ROLES.values()}))
+        raise Refused(f"the key class {key} names no tools/codex-review.py role (one of: {known}, or the legacy "
+                      f"{CODEX_CLASS}-gpt-<version>-<tier>-<effort> of the same tiers): declare the class of the "
+                      "codex-review run that keys this subject")
+    tier, effort = CR.ROLES[roles[0]]
+    return roles, tier, effort, CR.SANDBOX
 
 
-def key_run_reading(want: tuple[str, str, str, str]) -> str:
-    return (f"tier ok, exit 0, last_message_ok true, sandbox_failure null; role {want[0]}, model {want[1]}, effort "
-            f"{want[2]}, sandbox {want[3]} (the key class); its last message is the key verdict file and "
-            "last_message_sha256 is that file's; reviewed_head is the landed merge (tools/codex-review.py's result "
-            "line)")
+def key_run_reading(want: tuple[tuple[str, ...], str, str, str], res: dict) -> str:
+    resolved = f"resolved {res['actual_model']}"
+    selector = res.get("model_requested")
+    if isinstance(selector, str):                       # R16.2: the receipt records the selector AND the resolved model
+        resolved += f"; selector {selector}"
+    return (f"tier ok, exit 0, last_message_ok true, sandbox_failure null; role {res['role']}, model family "
+            f"gpt-<version>-{want[1]} ({resolved}), effort {want[2]}, sandbox {want[3]} (the key class); its last "
+            "message is the key verdict file and last_message_sha256 is that file's; reviewed_head is the landed merge "
+            "(tools/codex-review.py's result line)")
 
 
 def key_result_reading(raw: bytes, result: Path, verdict: Path, verdict_sha: str,
-                       want: tuple[str, str, str, str], merge: str) -> None:
+                       want: tuple[tuple[str, ...], str, str, str], merge: str) -> dict:
     """K140: refuse unless `raw` (tools/codex-review.py's stdout for the key run) holds exactly one JSON result line
     reading ok -- the conditions under which codex-review exits 0 -- whose last_message is the `verdict` file, whose
-    last_message_sha256 is `verdict_sha` (the verdict file's bytes), and whose role, model, effort and sandbox are
-    `want`, the run the declared key class names (round 1)."""
+    last_message_sha256 is `verdict_sha` (the verdict file's bytes), and whose role, model family, effort and sandbox are
+    `want`, the run the declared key class names (round 1; K180: the model's FAMILY gpt-<version>-<tier>, never a
+    literal id). Returns the result line."""
     try:
         if os.path.samefile(result, verdict):
             raise Refused(f"--key-result is the --key-verdict file ({verdict}); pass the file holding tools/codex-review.py's "
@@ -330,12 +344,21 @@ def key_result_reading(raw: bytes, result: Path, verdict: Path, verdict_sha: str
     if res["sandbox_failure"] is not None:
         raise Refused(f"the key run's sandbox_failure is {res['sandbox_failure']!r}, not null: the sandbox failed "
                       f"and the key read nothing ({result}); re-run the key until it reads ok")
-    for field, value in zip(("role", "model", "effort", "sandbox"), want):
-        seen = res["role" if field == "role" else "actual_" + field]
+    roles, tier, effort, sandbox = want
+    rerun = f"re-run the key as tools/codex-review.py --role {roles[0]}"
+    if res["role"] not in roles:
+        raise Refused(f"the key run's role {res['role']!r} is not one of {', '.join(roles)}, which the declared key "
+                      f"class names ({result}): `tier: ok` is relative to the role the run requested; {rerun}")
+    seen = res["actual_model"]
+    family = MODEL_FAMILY.fullmatch(seen) if isinstance(seen, str) else None
+    if family is None or family.group(2) != tier:
+        raise Refused(f"the key run's model {seen!r} is not in the family gpt-<version>-{tier}, which the declared key "
+                      f"class names ({result}): `tier: ok` is relative to the role the run requested; {rerun}")
+    for field, value in (("effort", effort), ("sandbox", sandbox)):
+        seen = res["actual_" + field]
         if seen != value:
             raise Refused(f"the key run's {field} {seen!r} is not {value!r}, which the declared key class names "
-                          f"({result}): `tier: ok` is relative to the role the run requested; re-run the key as "
-                          f"tools/codex-review.py --role {want[0]}")
+                          f"({result}): `tier: ok` is relative to the role the run requested; {rerun}")
     named = res["last_message"]
     if not isinstance(named, str) or not os.path.isabs(named):
         raise Refused(f"the key run's last_message {named!r} is not an absolute path ({result}); pass the result of the "
@@ -355,6 +378,7 @@ def key_result_reading(raw: bytes, result: Path, verdict: Path, verdict_sha: str
     if res["reviewed_head"] != merge:            # K140 round 2: equal bytes are not the same run
         raise Refused(f"the key run's reviewed_head {res['reviewed_head']!r} is not the landed merge {merge} ({result}): "
                       "equal final-message bytes are not the same run; re-run the key with --cd at the landing merge")
+    return res
 
 
 def derived_manifest(repo: Path, merge: str, barred: str) -> list[str]:
@@ -977,8 +1001,8 @@ def build(repo: Path, merge: str, barred: str, runs: list[str], ledger: str,
         if codex:
             want = key_role(key)                                                # K140 round 1
             result_raw = key_result.read_bytes()
-            key_result_reading(result_raw, key_result, key_verdict, verdict_sha, want, merge)  # K140
-            key_run, result_sha = key_run_reading(want), "sha256:" + hashlib.sha256(result_raw).hexdigest()
+            res = key_result_reading(result_raw, key_result, key_verdict, verdict_sha, want, merge)  # K140
+            key_run, result_sha = key_run_reading(want, res), "sha256:" + hashlib.sha256(result_raw).hexdigest()
         else:
             key_run, result_sha = "none (not a Codex key class: the verdict file only)", "none"
     else:

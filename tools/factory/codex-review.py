@@ -4,6 +4,7 @@
     python tools/codex-review.py --role swarm       --cd <worktree> --prompt-file p.md --out o.txt
     python tools/codex-review.py --role counterpart --cd <worktree> --prompt-file p.md --out o.txt
     python tools/codex-review.py --role sweep       --cd <worktree> --prompt-file p.md --out o.txt
+    python tools/codex-review.py --role census      --cd <worktree> --prompt-file p.md --out o.txt
 
 THE DEFECT THIS CLOSES
 -----------------------
@@ -117,6 +118,19 @@ rest), and anything else stays `unknown`.
 The two keys are in the JSON ONLY on such a stop (every other run's line is byte-identical to the line before K178).
 A stop never makes a run pass.
 
+THE TIER IS RESOLVED AT LAUNCH, NEVER PINNED AS AN ID (K180; owner ruling 2026-10-22; bus R16.2)
+------------------------------------------------------------------------------------------------
+A role names a tier (`sol`, `astra`, `luna`) and an effort (always `high`); resolve_tier() turns the tier into the
+newest numeric `gpt-<version>-<tier>` id that $CODEX_HOME/models_cache.json (default ~/.codex) lists as visible and
+supporting that effort, when the cache is at most 7 days old, and stores it as the tier's last-good id beside the cache
+($CODEX_HOME/codex-review-last-good.json). With no usable cache the last-good id is used and the result says so
+(`resolution: fallback`, `resolution_reason`, `stale`); with neither, the run is refused (exit 2). The banner read-back
+below stays the authority on what actually ran. The result line also carries model_requested (the selector),
+model_effective (the banner's id), effort_requested, effort_effective, tokens_used (the transcript's `tokens used`
+total, null when absent), `measurement` (the schemas/provider-usage-event-v1.schema.json names; token splits null,
+never estimated; active_seconds), `outcome` (APPROVED, CHANGES_REQUESTED, REFUSED, UNKNOWN from the final message's last
+line) and `verdict` (that raw line). They follow every key bus master printed, ahead of the two K178 credential keys.
+
 NEVER `-p`/`--profile`. A profile is a name that resolves against the config
 file this tool exists to route AROUND; passing one would silently reintroduce
 the exact ambient dependency being removed here.
@@ -131,17 +145,30 @@ import re
 import shutil
 import subprocess
 import sys
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-# ROLES is the single source of truth for the tier table. The doc sentence in
-# docs/operating-contract-model-routing.md is pinned against this dict, in
-# both directions, by tools/codex-review.tests.py -- change one without the
-# other and that test goes red.
+# ROLES is the single source of truth for the tier table. A role names a TIER and an effort, never a model id (K180,
+# owner ruling 2026-10-22; bus R16.2): the id is resolved at launch by resolve_tier() below. The doc sentence in
+# docs/operating-contract-model-routing.md is pinned against this dict, in both directions, by
+# tools/codex-review.tests.py -- change one without the other and that test goes red.
+#   swarm       read-only pre-key and authority seats      sol / high
+#   counterpart the key                                    sol / high
+#   sweep       occasional diversity of thought, no gate   astra / high
+#   census      mechanical census only                     luna / high
 ROLES: dict[str, tuple[str, str]] = {
-    "swarm": ("gpt-6-luna", "low"),
-    "counterpart": ("gpt-6-sol", "high"),
-    "sweep": ("gpt-6-astra", "high"),
+    "swarm": ("sol", "high"),
+    "counterpart": ("sol", "high"),
+    "sweep": ("astra", "high"),
+    "census": ("luna", "high"),
 }
+
+# R16.2: the models cache may be at most this old for a resolution to count as read from the cache.
+CACHE_MAX_AGE = timedelta(days=7)
+CACHE_NAME = "models_cache.json"
+LAST_GOOD_NAME = "codex-review-last-good.json"
+_SLUG_RE = re.compile(r"gpt-(\d+(?:\.\d+)*)-([a-z]+)")
 
 _BANNER_RE = re.compile(r"OpenAI Codex v\S+")
 _SEPARATOR = "--------"
@@ -183,11 +210,181 @@ def read_header(text: str) -> tuple[str | None, str | None]:
     return banner.get("model"), banner.get("reasoning effort")
 
 
-def requested(role: str) -> dict[str, str]:
+def requested(role: str, model: str) -> dict[str, str]:
     """EVERY property the dispatch asks for, keyed as the banner prints it. Verification compares all of them, so a
-    property added to the request cannot go unverified -- the r2 hole was the one field (sandbox) no one compared."""
-    model, effort = ROLES[role]
+    property added to the request cannot go unverified -- the r2 hole was the one field (sandbox) no one compared.
+    `model` is the id resolved at launch for the role's tier (K180)."""
+    _tier, effort = ROLES[role]
     return {"model": model, "reasoning effort": effort, "sandbox": SANDBOX}
+
+
+def codex_home() -> Path:
+    """Codex's own state directory: $CODEX_HOME (the variable codex itself reads), else ~/.codex."""
+    env = os.environ.get("CODEX_HOME")
+    return Path(env) if env else Path.home() / ".codex"
+
+
+def _version(slug: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in _SLUG_RE.fullmatch(slug).group(1).split("."))
+
+
+def _supports(model: dict, effort: str) -> bool:
+    levels = model.get("supported_reasoning_levels")
+    if not isinstance(levels, list):
+        return False
+    return any((item.get("effort") if isinstance(item, dict) else item) == effort for item in levels)
+
+
+def _parse_time(text: object) -> datetime | None:
+    """An RFC 3339 instant; the models cache writes nanoseconds, which datetime cannot hold, so the fraction is cut to 6."""
+    if not isinstance(text, str):
+        return None
+    m = re.fullmatch(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d+))?(Z|[+-]\d\d:\d\d)", text.strip())
+    if not m:
+        return None
+    frac = (m.group(2) or "0")[:6].ljust(6, "0")
+    zone = "+00:00" if m.group(3) == "Z" else m.group(3)
+    try:
+        return datetime.fromisoformat(f"{m.group(1)}.{frac}{zone}")
+    except ValueError:
+        return None
+
+
+def _read_json(path: Path) -> object:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def resolve_tier(tier: str, effort: str, home: Path | None = None, now: datetime | None = None) -> dict:
+    """Resolve a tier selector (`sol`) to a concrete model id at launch (bus R16.2, K180).
+
+    From the local models cache ($CODEX_HOME/models_cache.json): the NEWEST numeric `gpt-<version>-<tier>` slug (versions
+    compared as number tuples, so 6.10 beats 6.9) that the cache lists as visible (`visibility: list`) and that supports
+    `effort`, when the cache's `fetched_at` is at most 7 days old. A success is stored as the tier's last-good id
+    ($CODEX_HOME/codex-review-last-good.json). When the cache is missing, unreadable, older than 7 days, or lists no
+    such slug, the last-good id for the tier is used and the result says so (`resolution: fallback`, with the reason);
+    with no last-good id either, ValueError: the tool never invents an id, and holds no literal id in code that could
+    silently age.
+
+    `stale` is None, or the finding: a fallback was used, or the id is older than a newer `gpt-<version>-<tier>` the
+    cache lists (listed but hidden or without the effort). Never silently keep the older id (Conjugal request, K180).
+    Returns {model, resolution, reason, stale}."""
+    home = home if home is not None else codex_home()
+    now = now or datetime.now(timezone.utc)
+    cache = _read_json(home / CACHE_NAME)
+    models = cache.get("models") if isinstance(cache, dict) else None
+    slugs = [m for m in models if isinstance(m, dict) and isinstance(m.get("slug"), str)
+             and _SLUG_RE.fullmatch(m["slug"]) and _SLUG_RE.fullmatch(m["slug"]).group(2) == tier] \
+        if isinstance(models, list) else []
+    newest_listed = max(slugs, key=lambda m: _version(m["slug"]))["slug"] if slugs else None
+    fetched = _parse_time(cache.get("fetched_at")) if isinstance(cache, dict) else None
+
+    reason: str | None = None
+    if not isinstance(models, list):
+        reason = f"{CACHE_NAME} is missing or unreadable"
+    elif fetched is None:
+        reason = f"{CACHE_NAME} has no readable fetched_at"
+    elif now - fetched > CACHE_MAX_AGE:
+        reason = f"{CACHE_NAME} fetched_at {cache['fetched_at']} is more than {CACHE_MAX_AGE.days} days old"
+    else:
+        usable = [m for m in slugs if m.get("visibility") == "list" and _supports(m, effort)]
+        if usable:
+            best = max(usable, key=lambda m: _version(m["slug"]))["slug"]
+            _store_last_good(home, tier, best, effort)
+            stale = None
+            if newest_listed is not None and _version(newest_listed) > _version(best):
+                stale = (f"resolved {best} is older than {newest_listed}, which the cache lists but not as visible "
+                         f"with {effort} effort")
+            return {"model": best, "resolution": "cache", "reason": None, "stale": stale}
+        reason = f"{CACHE_NAME} lists no visible gpt-<version>-{tier} model supporting {effort}"
+
+    last = _read_json(home / LAST_GOOD_NAME)
+    entry = last.get(tier) if isinstance(last, dict) else None
+    model = entry.get("model") if isinstance(entry, dict) else None
+    if not isinstance(model, str) or not _SLUG_RE.fullmatch(model) or _SLUG_RE.fullmatch(model).group(2) != tier:
+        raise ValueError(f"cannot resolve tier {tier!r} at {effort}: {reason}, and {home / LAST_GOOD_NAME} records no "
+                         f"last-good id for it (run any codex command once to refresh the cache, or restore the file)")
+    return {"model": model, "resolution": "fallback", "reason": reason,
+            "stale": f"fallback to the last-good {model}: {reason}; a newer {tier} model may exist"}
+
+
+def _store_last_good(home: Path, tier: str, model: str, effort: str) -> None:
+    """Record the id a cache resolution picked, atomically; best effort (an unwritable state directory costs only the
+    fallback for a later launch, never this one)."""
+    path = home / LAST_GOOD_NAME
+    state = _read_json(path)
+    state = state if isinstance(state, dict) else {}
+    if isinstance(state.get(tier), dict) and state[tier].get("model") == model and state[tier].get("effort") == effort:
+        return
+    state[tier] = {"model": model, "effort": effort,
+                   "recorded_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+    tmp = path.with_name(path.name + f".{os.getpid()}.tmp")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp.write_text(json.dumps(state, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        tmp.unlink(missing_ok=True)
+
+
+_VERDICT_RE = re.compile(r"VERDICT: (ACCEPT|REJECT|REFUSE)\b")
+_OUTCOMES = {"ACCEPT": "APPROVED", "REJECT": "CHANGES_REQUESTED", "REFUSE": "REFUSED"}
+
+
+def read_verdict(final_message: str) -> tuple[str, str | None]:
+    """(outcome, raw verdict line) from the final message's LAST non-blank line: `VERDICT: ACCEPT|REJECT|REFUSE ...`
+    reads APPROVED, CHANGES_REQUESTED, REFUSED; anything else is UNKNOWN with no line. Names follow
+    schemas/provider-usage-event-v1.schema.json `outcome`."""
+    lines = [line.strip() for line in final_message.splitlines() if line.strip()]
+    if lines:
+        m = _VERDICT_RE.match(lines[-1])
+        if m:
+            return _OUTCOMES[m.group(1)], lines[-1]
+    return "UNKNOWN", None
+
+
+def tokens_used(transcript: str, final_message: str) -> int | None:
+    """The run's reported total, from codex's `tokens used` line followed by a count -- the last such pair outside the
+    final message's echoes; None when the transcript has none (never estimated). A total is not an input/output split,
+    so the split fields of `measurement` stay None."""
+    lines = _remove_blocks(transcript.splitlines(), _block(final_message), 2, from_end=True)
+    found: int | None = None
+    for i, line in enumerate(lines[:-1]):
+        if line.strip() == "tokens used":
+            m = re.fullmatch(r"\d{1,3}(?:,\d{3})+|\d+", lines[i + 1].strip())
+            if m:
+                found = int(m.group(0).replace(",", ""))
+    return found
+
+
+def usage_fields(role: str, actual_model: str | None, actual_effort: str | None, resolution: dict,
+                 active_seconds: float | None, total_tokens: int | None, final_message: str) -> dict:
+    """The K180 result-line fields, named after schemas/provider-usage-event-v1.schema.json wherever it has one:
+    model_requested (the selector), model_effective (the id the run's own banner reports), effort_requested,
+    effort_effective, outcome, and a `measurement` object. Token fields not reported are None, never guessed."""
+    tier, effort = ROLES[role]
+    outcome, verdict = read_verdict(final_message)
+    measurement = {
+        "quality": "unknown" if active_seconds is None and total_tokens is None else "mixed",
+        "source": "codex-review",
+        "input_tokens": None, "cached_input_tokens": None, "reasoning_tokens": None, "output_tokens": None,
+        "active_seconds": active_seconds,
+    }
+    return {
+        "model_requested": tier,
+        "model_effective": actual_model,
+        "effort_requested": effort,
+        "effort_effective": actual_effort,
+        "resolution": resolution["resolution"],
+        "resolution_reason": resolution["reason"],
+        "stale": resolution["stale"],
+        "tokens_used": total_tokens,
+        "measurement": measurement,
+        "outcome": outcome,
+        "verdict": verdict,
+    }
 
 
 def default_last_message(out_path: str) -> str:
@@ -348,7 +545,7 @@ def build_argv(codex_path: str, model: str, effort: str, cd: str, last_message: 
 def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message: str | None = None) -> dict:
     if role not in ROLES:
         raise ValueError(f"unknown --role {role!r}; must be one of {sorted(ROLES)}")
-    model, effort = ROLES[role]
+    tier, effort = ROLES[role]
     # A review without its prompt is no review, and every guard below relies on the prompt existing (K6 key on
     # 3b28903): refused first, before anything is deleted or written.
     if not Path(prompt_file).is_file():
@@ -368,6 +565,8 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
     # A previous run's answer must never stand in for this one's.
     last_path.unlink(missing_ok=True)
     head = reviewed_head(cd)                   # K140 round 2: the commit this run reviews, read at its start
+    resolution = resolve_tier(tier, effort)    # K180, R16.2: the tier's id, resolved now (ValueError: refused, exit 2)
+    model = resolution["model"]
 
     codex_path = shutil.which("codex")
     if codex_path is None:
@@ -388,12 +587,14 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
             "shell_calls": 0,
             "shell_succeeded": 0,
             "shell_failed": 0,
+            **usage_fields(role, None, None, resolution, None, None, ""),
         }
         Path(out_path).write_text("", encoding="utf-8")
         return result
 
     argv = build_argv(codex_path, model, effort, cd, str(last_path))
 
+    started = time.monotonic()
     with open(prompt_file, "rb") as prompt_stream, open(out_path, "wb") as out_stream:
         proc = subprocess.run(
             argv,
@@ -402,9 +603,10 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
             stderr=subprocess.STDOUT,
         )
 
+    active_seconds = round(time.monotonic() - started, 3)
     out_text = Path(out_path).read_text(encoding="utf-8", errors="replace")
     banner = read_banner(out_text)
-    want = requested(role)
+    want = requested(role, model)
 
     if banner is None or any(key not in banner for key in want):
         tier = "unobserved"
@@ -441,6 +643,8 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         "shell_calls": shell["calls"],
         "shell_succeeded": shell["succeeded"],
         "shell_failed": shell["failed"],
+        **usage_fields(role, seen.get("model"), seen.get("reasoning effort"), resolution, active_seconds,
+                       tokens_used(out_text, _read(last_path)), _read(last_path)),
     }
     # Bus key on K154 packet 2, finding 2: the two K178 keys exist ONLY on a credential stop, appended after the
     # others, so every other run's JSON line is byte-compatible with the result before K178.
