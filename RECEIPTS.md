@@ -13402,3 +13402,15 @@ M is written by the head under test, so a head that adds a launch together with 
   had no baseline are each one tool's design, with no check another project would run as written; K202 recorded no
   trap; factory-pins (K182) recorded a design limit (a hook masked by this machine's `GIT_OPTIONAL_LOCKS=0`), not a
   defect.
+
+## Context Ultra, DEL-01-0316-LT, 2026-10-21: three trap self-tests and proven fetch cadence (MEASURED)
+
+Re-measured bus 229e4c0 and 2d8c6a1: ADOPT conhost exit masking (child 7 -> launcher 0;
+direct child 7). DISTINGUISH WMI incident (0 visible WMI consoles, no Create launcher
+in scoped sources) and per-turn rglob incident (no wired archive walk). Flagged
+ArelliaACSvc#4 averaging 11937.847 IO-other ops/s, with two of four samples below
+10k; no hook-process attribution. Foreign conhost tasks left to their owners.
+Three-hour fetch/ff-only task actually ran at 2026-10-21T18:57:10-05:00, result 0,
+through run-hidden.vbs /wait; separate child exit-7 control returned 7.
+Full scope, invalid readings and limits: [Context Ultra measured receipt](specs/context-ultra-salesforce/receipts/2026-10-21-machine-trap-fold.md).
+No new fleet ruling and no acknowledgement of unread doctrine.
