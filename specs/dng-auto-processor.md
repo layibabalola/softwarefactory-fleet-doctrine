@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: b0a2f01d418a40a140fd9b9f30fa2ad4b8e0f419
+source_commit: 9502630c4bdd6ffcf3d5e7c0a9f41c36070d81b9
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -292,6 +292,10 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   receipts, and any other inert path is data that enters neither side. **And every commit an alarm counts is one
   reachable from the trunk, never one reachable only from another ref** (§7): a task branch's commits are work in
   progress until they land, so a count over every ref reads a factory that has stopped landing as one that is moving.
+  **And it is dated by its committer date, never its author date** (§7): a landing rebased onto the trunk keeps the
+  author date it was written under on its task branch and takes a new committer date when it joins, so the author
+  date places it at a time it was reachable only from another ref, and on one live series the two fields gave a
+  ratio alarm opposite verdicts.
 - **An exact test reports the range its statistic can ATTAIN, from every marginal it holds fixed, before its
   verdict is read** (§6): a card whose verdict is an exact or permutation statistic over a small fixed set states its α and the statistic's
   attainable minimum and maximum with the label counts AND the prediction counts held fixed; a value at that bound,
@@ -513,6 +517,10 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
 ## Kernel line (docs/13 P-STEWARD 7e: the newest filing's line, byte for byte; beside the posture, not part of it)
 
 KERNEL: DOGFOOD fleet-factory-kernel r5 · profile code@r10 + measured-objective@r3 · instance docs/KERNEL-INSTANCE-MAP.md · since 2026-10-02
+
+## Fleet RULINGS R18 (R18.6: each board records its disposition in its own spec; beside the posture, not part of it)
+
+R18: DISTINGUISHED (this board has no CoS merge gate to remove: no governing document names one, `cos-feedback/` reaches it as data with zero authority, and it lands on its own local trunk by §4's two-key rule rather than through pull requests, so R18.3's PR floor has no surface here and R18.4 compensates no removed gate)
 
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
