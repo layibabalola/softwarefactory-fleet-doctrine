@@ -155,3 +155,18 @@ check: command template, per declared untracked root: find <root> -type f -newer
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:060c29ef727d01f0 agent-bridge:e72ed7f5ae75
+
+## agent-bridge/measure-at-the-integration-ref
+rule: a fleet meter reads each board at its declared integration ref, where product lands, never at the canonical
+  checkout's current branch: declare the ref per board in the class config, and a file census reads git show <ref>:<path>.
+mechanism: throughput line mode uses ref HEAD for every board and tool-census reads working trees. agent-bridge's checkout
+  sits on a handoff branch 851 commits ahead of and 547 behind github/master. Over 14 days line mode read 151 commits,
+  0 product and 3,976 paperwork lines at HEAD, but 112 commits and 8,861 product lines of 41,912 at master. The census
+  read check_doc_size.py as 631 lines (509 on master) and doctrine-triage.mjs as 291 (553), missed doctrine_outbox.py
+  (1,413 on master), and charged a session-checkpoint double registration that master's settings.json does not carry.
+check: command template: git -C <root> rev-parse --abbrev-ref HEAD names a branch other than the board's integration
+  branch => the reading is of the wrong ref; then compare git log <ref> --since="14 days ago" --no-merges --numstat
+  over the product dirs for HEAD and the integration ref, and git show <ref>:<path> | wc -l against wc -l < <path>
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:58bbed063b6dd644 agent-bridge:e72ed7f5ae75
