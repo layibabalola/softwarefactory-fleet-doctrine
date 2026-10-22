@@ -114,3 +114,15 @@ check: command template: cmd /c "exit 7"; $o = cmd /c "echo a& echo b& exit 3" |
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:4955105402f4c5c7 agent-bridge:f65e579696e3
+
+## agent-bridge/doctrine-triage-overdue-fires-on-ignorable-data
+rule: a fold-lag trigger must count only actionable classes (RELEVANT, and ADDRESSED ranked 0-2); the receipt keeps every class for audit, but
+  IGNORABLE items and rank-3 echoes of this board's own PR feedback never count toward OVERDUE, or the alarm fires daily and stops being a signal.
+mechanism: tools/doctrine-triage.mjs sets OVERDUE when ADDRESSED >= 1, or total > 25, or the oldest item is over 3 days. Measured on the receipt
+  of 2026-10-16 (212 unfolded): IGNORABLE 156 (6.2 times the 25 limit alone, 143 of them other projects' cos-feedback), ADDRESSED 26 of which 24 are
+  rank 3, each touching cos-feedback/agent-bridge/pr-* (review feedback on this board's own PRs; every new review round adds one, so ADDRESSED >= 1
+  holds whenever a PR is open); RELEVANT 30. Only 32 are actionable (2 ADDRESSED, 30 RELEVANT), still over 25, so a real lag still alarms. The age trigger is honest: 7 actionable commits date from the oldest day.
+check: command template: node -e "const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));console.log(JSON.stringify(r.counts),r.addressed.filter(a=>a.rank===3).length)" <newest TRIAGE-*.json receipt> prints {"ADDRESSED":26,"RELEVANT":30,"IGNORABLE":156} 24 for the 2026-10-16 receipt
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:60d2f5630a7d5de6 agent-bridge:2169b2e64219
