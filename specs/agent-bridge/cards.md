@@ -213,3 +213,16 @@ check: command template: for each root test_*.py at <ref>, git show <ref>:<f> | 
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:043a82231526ef6f agent-bridge:e72ed7f5ae75
+
+## agent-bridge/unchanged-condition-polls-are-paperwork
+rule: a poll that finds its condition unchanged appends nothing to the ledger; it overwrites one status line or
+  touches a cursor, and a ledger entry is written only when the condition changes or a deadline passes.
+mechanism: each scheduled hub fire takes the lease, re-reads a still-running lane and logs that it is still running.
+  In agent-bridge's WAL, 38 of the 208 entries dated 2026-10-13 or later (18.3%; 44,551 of 269,035 bytes, 16.6%)
+  have an event containing STILL-RUNNING. 36 of them are one event, IMPLEMENTER-R12B-STILL-RUNNING, on one subject
+  sha, from 36 sessions between 2026-10-15 22:05 and 2026-10-16 03:14 CDT: one unchanged fact written 36 times.
+check: command template: grep -a -E '^- <date-regex> ' <wal> | grep -a -cE 'event=[^ ]*STILL-RUNNING' against the
+  same count without the second grep; group those lines by event and subject to find one condition logged many times
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:566b87f32ae23c7a agent-bridge:e72ed7f5ae75
