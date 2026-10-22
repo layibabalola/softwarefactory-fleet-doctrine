@@ -170,3 +170,19 @@ check: command template: git -C <root> rev-parse --abbrev-ref HEAD names a branc
 supersedes: none
 evidence: measured
 - **Outbox:** outbox:58bbed063b6dd644 agent-bridge:e72ed7f5ae75
+
+## agent-bridge/one-installable-rule-coverage-census
+rule: rule coverage (how many contract bullets have a check behind them) is one config-driven census the bus hosts as
+  a vendored package, installed per board by pinned blob id, with the board's config above an END CONFIG marker so
+  tool-census hashes only the shared body; never one hand-built coverage script per board.
+mechanism: owner defect D2 is being solved per project. airmypc tracks its own Get-AudioMileRuleCoverage.ps1 (bus
+  TRAPS 2026-10-11, 3 of 42 bullets checked), the bus tracks no coverage tool, and agent-bridge has none, so each
+  board that adopts one adds a family tool-census must later count as drift. agent-bridge already installs the bus
+  card validator this way: tools/vendor/bus-validate-cards/ holds byte copies pinned by blob id, and a test ties
+  them to the runtime pins. Census-only baseline: agent-bridge AGENTS.md on github/master has 13 lines starting
+  "- " or "* ", a raw count, not yet mapped or deduplicated into rules.
+check: command template: git -C <root> show <integration-ref>:AGENTS.md | grep -cE '^(- |\* )' is the raw baseline;
+  git -C <bus> ls-files | grep -ci coverage prints 0 until the shared package lands
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:db14f7e7968d3f6a agent-bridge:e72ed7f5ae75
