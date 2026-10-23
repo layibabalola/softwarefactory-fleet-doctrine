@@ -252,9 +252,9 @@
   "subjectFiles": [
     {
       "path": "README.md",
-      "gitBlobOid": "e65b74cfe2bf37215140187372f1c52d84539d9b",
-      "sha256": "sha256:ba942ee98155eb3420c90d776fbdad6b10da2cafbc3c09278f483c4addb4e9d5",
-      "bytes": 41910
+      "gitBlobOid": "828cd0f127cde2343ef74f443f6699e0fd767c96",
+      "sha256": "sha256:6cdb45cd4a6ba2ffd5aca923556b3bbb3e221e6e50fa0e859066b9d6e5ad0cca",
+      "bytes": 42319
     },
     {
       "path": "RECONCILIATION.md",
@@ -276,9 +276,9 @@
     },
     {
       "path": "tests/test_universal_provider_control.py",
-      "gitBlobOid": "20227acdff6a25158f4f7d0b1821cc181d034d6e",
-      "sha256": "sha256:52b5d7bf602b50e8efcf0c95abd1223b0a58f5323de2ac64712f081a77040d52",
-      "bytes": 401821
+      "gitBlobOid": "893a422e989b02ced0770aaa454b899e61fa7e90",
+      "sha256": "sha256:b9fb176d7410254a62e67ae3b2899171064e55477a0419eb4edadd967214e084",
+      "bytes": 402053
     },
     {
       "path": "tools/check_universal_manifest.py",
@@ -296,6 +296,6 @@
   "manifestSelf": {
     "path": "manifests/universal-provider-control-reconciliation-r45.json",
     "bytes": 10974,
-    "canonicalGitBlobSha256": "sha256:1b7835c8ebcc3d45b8eb38505164a39f7fc5a859cb13bb98ac0697d89a595cb4"
+    "canonicalGitBlobSha256": "sha256:62d15839bb8e7fb519831493ee777cb56b0f3df003cbd06a18d30c9c229aa30e"
   }
 }
