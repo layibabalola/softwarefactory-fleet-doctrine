@@ -86,9 +86,19 @@ benchmark actually has work.
 - **Live check of 2.4.1 (22:22-22:52 UTC):** a 5-minute lease request with a 30-minute pending limit; the renewal
   loop slept 50 s between iterations (recorded renewals were 56-73 s apart). The only run admitted while it was pending was the one already queued ahead of it, so nothing passed
   the lease. The lease never went active: a shared run that had held the other slot since 21:31 UTC was still running
-  at the pending limit, and the request was refused cleanly with its flag removed. The active path is covered only by
-  the sandbox tests so far. **A lease cannot drain a holder that runs longer than its pending limit;** the remedy is
-  the gate's existing rule of one admission per unit of work, not a longer pending cap.
+  at the pending limit, and the request was refused cleanly with its flag removed. **A lease cannot drain a holder
+  that runs longer than its pending limit;** the remedy is the gate's existing rule of one admission per unit of work,
+  not a longer pending cap. A second attempt (2026-10-23 02:05-02:35 UTC) failed the same way: a run admitted one
+  minute before the request held its slot past 1800 s. Again nothing queued after the lease was admitted.
+- **The active path, observed live (2026-10-23 03:32-03:39 UTC):** requested when both slots were free and the queue
+  was empty. A shared run took a slot 1 s earlier and held it 5 min; the lease went active 5 s after that run
+  released. The one run that queued meanwhile waited and was admitted only after the release.
+  - While active: the dispatcher hook denied `dotnet test` with rc 2 and the quiet-lease reason.
+  - Release cleared the flag. Held 74 s.
+  - **CPU was not quiet:** 12 x 5 s samples averaged 76.1 % busy (min 44.7, max 100), with 30.8 % privileged time. The
+    baseline was 49.5 % busy and 33.1 % privileged with both slots free (2026-10-22 18:07 UTC). The gate excludes
+    only gated work. Ungated load (agent sessions, background services) still has to be quietened separately before
+    a benchmark. Evidence: `C:\t\ql\proof3-20261023T023639Z\` on Bachelor.
 
 Note: the gate's shadow log names a field `utc` that actually holds local time. The lease events carry epoch `ts`.
 
