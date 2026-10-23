@@ -2921,3 +2921,39 @@ on a thread that began (excerpt) *"I thought we had a strategy for doctrine to b
 - **R18.6 — Adoption.** Each board records `R18: ADOPTED (<where its merge gate implements R18.3/R18.4>)` or `R18: DISTINGUISHED (<reason>)` in its own spec at its next fold (single writer, R14). Until a board's gate code changes, its hub must not wait on the CoS by hand: a code-level CoS refusal is logged and worked around in the next tick, never waited out.
 - **Why (receipt, mlv-app, 2026-10-20).** Median open-to-merge on MLV-App rose from ~2.2 h to ~8.7 h after 2026-10-12 and landings fell from ~23/day (10-09..11) to ~11/day (10-13..19) (`gh pr list --state merged`, MLV project-memory `throughput-gate-proposal-20261018.md`, `bachelor-drought-20261020.md`). Post-CI waiting on the CoS was the largest share: on 2026-10-20 five two-key, green, CLEAN PRs (#483 #486 #489 #494 #499) were refused `REFUSED_COS_BLIND` only because no CoS record existed yet, and HIGH-RISK provisional records held #526, #529 and #533 for per-head owner clearance.
 - **Reference implementation (mlv-app).** `.claude-state/hub-autopilot/hub-tick-prompt.md` steps A00 (CoS advisory), A0 (reply duty), A2 (third key on the HIGH-RISK class), A3 (escape metric), live since 2026-10-20T16:40Z; the merge-gate code change is card `DOT-ADVISORY-MERGE-GATE-1` (`merge-gate-tip-legs.ps1`: CoS refusals become advisory lines; a `REFUSED_KEY3` rule is added). MLV ledger: OWNER RULING 2026-10-20T16:40:16Z.
+
+## OWNER RULING, appended by conjugal (Claude Code desktop side session on BACHELOR, on Layi's instruction), 2026-10-23 — R19: the Sol tier is the Codex default, Astra is an occasional diversity seat, and read-only seats route to Codex while Claude quota binds; the r1 model-posture telemetry is vetoed
+
+> *"Codex sol 6.1 is the most powerful model i believe and is actually more token efficient and cheaper than astra. it should probably be our go-to model for codex. we can reassess after we use it frequently and track its usage and quality lift. Astra can be used occasionally for diversity of thought but i think sol 6.1 is actually smarter..."* (Layi, 2026-10-22, Conjugal dispatcher session)
+>
+> *"Adversarially swarm, adjudicate, and Execute recommended: ... Ratify or veto the two ruling candidates on the bus: the Sol-default model posture, `codex-sol-default-and-capacity-routing-r1.md` (`b5a6418e`); the telemetry, `fleet-model-posture-telemetry-r1.md` (#91)"* (Layi, 2026-10-23, Conjugal dispatcher session; the ratification authority for this entry)
+
+Review: four adversarial read-only seats on bus `5dbb030e` and PR #91 head `6b6d79dd`, each with its own attack angle. Conflicts: Codex `gpt-6.1-sol` high. Privacy and pruning: Codex `gpt-6.1-sol` high, plus Claude `sonnet` (`claude-sonnet-5-5`) as the panel's Claude seat. Precision: Codex `gpt-6-astra` high (`astra: diversity`). Adjudicated by Claude `opus` (`claude-opus-5-5`). Each finding below was re-derived against the bytes before it was used.
+
+- **R19.1 — RATIFIED as written:** `ruling-candidates/codex-sol-default-and-capacity-routing-r1.md` (added at `b5a6418e`). Its sections 1 to 4 are fleet doctrine from this entry.
+  - Sol tier: the default Codex seat for every Codex act.
+  - Luna tier: mechanical work.
+  - Astra: an occasional diversity seat. It is never a default, never a gate, and never the only Codex seat a procedure waits for.
+  - Capacity routing while Claude quota binds, with a shell probe and the `cross_family: UNAVAILABLE` degrade path.
+  - A reassessment after 10 Sol-tier acceptance keys.
+  - The model ids and roles of the 2026-09-08 "model tiers by act" ruling are superseded. Its heartbeat and fall-through clauses stand.
+  - R16.2 to R16.5 are unchanged. Ids are what resolved on 2026-10-22, not pins.
+  - Seat votes: RATIFY (conflicts), RATIFY (privacy, Codex), RATIFY (privacy, Claude), VETO (precision).
+  - The VETO's blocking finding was refuted on the bytes. It read the candidate's carve-out "The degrade path in clause 2 never applies to it" as a new gate. That carve-out only preserves R18.3(a), a ratified merge requirement, and the governor's binding independent-provider seats, which an unratified candidate cannot demote.
+  - The same seat's other finding was confirmed and is applied in this commit. `specs/cli-orchestration-standard.md` §2 said roster nicknames work with neither `-m` nor `--model`, yet Claude's `--model` takes the family alias.
+- **R19.2 — Adoption.** Each board records `MODEL-POSTURE-2026-10-22: ADOPTED (<where>)` or `MODEL-POSTURE-2026-10-22: DISTINGUISHED (<reason>)` in its own spec at its next fold (single writer, R14). The candidate's section 5 cards are the per-board notes. The section 3 reassessment is filed as r2 of that candidate.
+- **R19.3 — VETOED, r1 only:** `ruling-candidates/fleet-model-posture-telemetry-r1.md` (PR #91, head `6b6d79dd`, not merged).
+  - Seat votes: RATIFY-WITH-AMENDMENT (conflicts), VETO (privacy, Codex), RATIFY-WITH-AMENDMENT (privacy, Claude), VETO (precision).
+  - The amendments the panel found are not small. Its clause 3 claims a screen "that refuses rather than warns". On a public repo, that screen was confirmed to let a prohibited value through.
+  - Confirmed defects at `6b6d79dd`, which r2 must fix with a behavioural test for each:
+    - (a) `screen()` regex-scans the serialised line, so a JSON `\u` escape of a prohibited identifier passes it. Screen the decoded values.
+    - (b) `generator.blob` and `sources[].blob` accept any 40-hex value. Authenticate them against bus objects; otherwise a private-repository SHA can travel.
+    - (c) The `role` and model patterns admit hostnames, path-like values and free text. Bound `role` to a policy enum and drop `/` from model names.
+    - (d) The `quota` screen pattern matches the schema's own `QUOTA_DORMANT` outcome key, so the tool refuses a legal record.
+    - (e) A Claude alias resolving to its dated id (`opus` to `claude-opus-5-5`) is counted as a fallback.
+    - (f) `_matches` accepts a row whose *requested* id matches when the *effective* id differs, which hides the R16 drift the plane exists to show.
+    - (g) `policy/model-posture.json` allowlists literal ids, so `gpt-6.2-sol` would read as off-posture (R16.2). Its Luna entry carries no effort (R16.1, R11).
+    - (h) The candidate lacks a `Relationship to existing doctrine:` line. Its roll-up deletion supersedes `metrics/README.md`'s append-only rule without naming it.
+  - The prune path itself passed: it writes only `git rm` plus a new commit, with no history rewrite and no force push. Refusals exit 2.
+  - The intent stands: telemetry that records which model and effort each seat ran, as R19.1 section 3 needs. An r2 on a new head is reviewed fresh.
+- **R19.4 — PR #91 is held, not merged.** R19.3 vetoes its candidate. Independently of that, its head fails R18.3(b) and (c): the `contracts` check is red (pre-existing on master) and the merge state is UNSTABLE. Until r2 lands, the R19.1 section 3 reassessment counts from each board's own key receipts, as that section already provides.

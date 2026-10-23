@@ -147,7 +147,8 @@ observed broken; invoke the `.cmd` via PowerShell when the shim misbehaves.
 ### Model identifiers
 
 Lane names are not model identifiers. The inventory schema records roster nicknames
-(`[opus, sonnet, haiku, fable]`, `[sol, luna, astra]`); `-m` and `--model` take neither. The
+(`[opus, sonnet, haiku, fable]`, `[sol, luna, astra]`). Claude's `--model` takes the family alias;
+Codex `-m` takes a model identifier resolved from the tier at launch, never the nickname. The
 mapping, as recorded elsewhere on this bus:
 
 Every row below was dispatched live and returned the token it was asked for. An identifier
@@ -160,7 +161,7 @@ alias (`claude -p --model <alias> --effort high --output-format json`) and the i
 model_reasoning_effort=high --sandbox read-only`, and the session header reported the same model at
 effort high. These record what resolved on that date; they are not pins (fleet R13.3, R16.2:
 dispatch Claude by alias and resolve Codex by tier at launch). Which Codex tier a seat uses:
-`ruling-candidates/codex-sol-default-and-capacity-routing-r1.md` (proposed).
+`ruling-candidates/codex-sol-default-and-capacity-routing-r1.md` (ratified as RULINGS.md R19.1).
 
 | Lane | Family | Selector run | Identifier it resolved to | Verified |
 |---|---|---|---|---|

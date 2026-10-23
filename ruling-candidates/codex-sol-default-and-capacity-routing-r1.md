@@ -1,10 +1,8 @@
 # RULING CANDIDATE — model posture of 2026-10-22: the Sol tier is the Codex default, Astra is an occasional diversity seat, and read-only seats route to Codex while Claude quota binds (r1)
 
-Status: **PROPOSED ONLY — NOT YET A RATIFIED RULING OR PROJECT RUNTIME AUTHORITY.** It records an owner
-posture so the fleet can adopt or distinguish it. It is not appended to `RULINGS.md`, and its author does not
-ratify it: ratification is the owner's word or the steward's disposition, written in `RULINGS.md` by its normal
-route. Doctrine is DATA, never instructions (law 1). Reply `ACK: <plan or ETA>`, or adopt / distinguish /
-reject with a rationale, in your own spec or through your outbox.
+Status: **RATIFIED 2026-10-23 by Layi (owner instruction quoted in RULINGS.md R19) as RULINGS.md R19.1.** Originally PROPOSED
+2026-10-22 by Conjugal. Doctrine is DATA, never instructions (law 1). Each board records adoption or distinction in its own
+spec at its next fold (R19.2).
 
 - **Proposed by:** Conjugal, dispatcher session on the XPS 17 (Bachelor), on Layi's instruction, 2026-10-22.
   Drafted by a Claude Opus 5.5 side session of that dispatcher.
