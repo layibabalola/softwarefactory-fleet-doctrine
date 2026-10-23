@@ -46,9 +46,16 @@ WEEKS_BEFORE_MONTHLY = 8
 MONTHS_BEFORE_YEARLY = 12
 
 PROJECT_RX = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
-NAME_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+/-]{0,119}$")   # provider-usage-event-v1 model pattern
-EFFORT_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$")
-ROLE_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")
+# provider-usage-event-v1's model pattern minus '/' and capped at 80 (R19.3(c)): no path-shaped value travels.
+NAME_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+-]{0,79}$")
+EFFORT_RX = re.compile(r"^[a-z]{2,12}$")
+ROLE_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")     # INPUT shape only; what travels is ROLES
+# The published role is a closed enum (R19.3(c)): a well-formed input role outside it travels as "other", so no
+# free text (host, ticket, subject or prompt fragment) can ride in the role field. Mirrored by the schema enum.
+ROLES = ("default", "key", "pre-key-review", "review", "adversarial", "swarm", "census", "measurement", "survey",
+         "research", "implementation", "orchestration", "drafting", "diversity", "loop", "other")
+CLAUDE_ALIASES = ("opus", "sonnet", "haiku", "fable")
+TIER_RX = re.compile(r"^gpt-(\d+(?:\.\d+)*)-([a-z]+)$")
 PROVIDER_RX = re.compile(r"^[a-z0-9-]{2,40}$")
 WEEK_RX = re.compile(r"^(\d{4})-W(\d{2})$")
 MONTH_RX = re.compile(r"^(\d{4})-(\d{2})$")
@@ -98,7 +105,10 @@ def week_thursday(week: str) -> dt.date:
     m = WEEK_RX.match(week)
     if not m:
         raise Refused("PERIOD_INVALID", week)
-    return dt.date.fromisocalendar(int(m.group(1)), int(m.group(2)), 4)
+    try:
+        return dt.date.fromisocalendar(int(m.group(1)), int(m.group(2)), 4)
+    except ValueError:
+        raise Refused("PERIOD_INVALID", week) from None
 
 
 def month_of_week(week: str) -> str:
@@ -195,6 +205,12 @@ def _clean(v, rx, field):
     return v
 
 
+def alias_resolves(req: str, eff: str) -> bool:
+    """A Claude family alias resolving to its own dated id (opus -> claude-opus-5-5) is the mandated mechanism
+    (R16.2), not a fallback (R19.3(e)). A different family (opus -> claude-sonnet-5-5) is a fallback."""
+    return req in CLAUDE_ALIASES and re.fullmatch(rf"claude-{req}-[0-9a-z.-]+", eff) is not None
+
+
 def reduce_events(events: list[dict], project: str, week: str, gen: dict | None = None) -> list[dict]:
     """provider-usage-event-v1 TERMINAL events of one ISO week -> sorted aggregate records. Every other event
     kind is ignored (it is not a call). Grouping fields never travel: task_id_hash only counts rounds."""
@@ -216,11 +232,12 @@ def reduce_events(events: list[dict], project: str, week: str, gen: dict | None 
         except ValueError:
             raise Refused("INPUT_ROW_INVALID", f"row {i}: ts unparseable") from None
         actor = e.get("actor") if isinstance(e.get("actor"), dict) else {}
+        role = _clean(actor.get("role"), ROLE_RX, "actor.role")
         key = (_clean(e.get("provider"), PROVIDER_RX, "provider"),
                _clean(e.get("model_requested"), NAME_RX, "model_requested"),
                _clean(e.get("model_effective"), NAME_RX, "model_effective"),
                _clean(e.get("effort_effective"), EFFORT_RX, "effort_effective"),
-               _clean(actor.get("role"), ROLE_RX, "actor.role"))
+               None if role is None else (role.lower() if role.lower() in ROLES else "other"))
         if key[0] is None:
             raise Refused("INPUT_FIELD_INVALID", f"row {i}: provider missing")
         groups.setdefault(key, []).append({**e, "_i": i})
@@ -242,7 +259,8 @@ def reduce_events(events: list[dict], project: str, week: str, gen: dict | None 
             hist[o if o in OUTCOMES else "UNKNOWN"] += 1
             codes = r.get("reason_codes") if isinstance(r.get("reason_codes"), list) else []
             req, eff = r.get("model_requested"), r.get("model_effective")
-            if any(isinstance(c, str) and FALLBACK_CODE.search(c) for c in codes) or (req and eff and req != eff):
+            if any(isinstance(c, str) and FALLBACK_CODE.search(c) for c in codes) or (
+                    req and eff and req != eff and not alias_resolves(req, eff)):
                 fallback += 1
             t = r.get("task_id_hash") or f"row:{r['_i']}"
             tasks.setdefault(str(t), []).append(r)
@@ -331,9 +349,11 @@ def validate(r: dict) -> None:
         bad("project")
     if not isinstance(r["provider"], str) or not PROVIDER_RX.match(r["provider"]):
         bad("provider")
-    for k, rx in (("model_requested", NAME_RX), ("model_effective", NAME_RX), ("effort_effective", EFFORT_RX), ("role", ROLE_RX)):
+    for k, rx in (("model_requested", NAME_RX), ("model_effective", NAME_RX), ("effort_effective", EFFORT_RX)):
         if r[k] is not None and (not isinstance(r[k], str) or not rx.match(r[k])):
             bad(k)
+    if r["role"] is not None and r["role"] not in ROLES:
+        bad("role")
     for k in ("calls", "tasks", "first_pass_accept", "fallback_count"):
         if not _nonneg(r[k]):
             bad(k)
@@ -369,24 +389,84 @@ def validate(r: dict) -> None:
                 bad("source path")
 
 
+HEX40_ANY = re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{40}(?![0-9A-Fa-f])")
+# Keys are a closed whitelist (validate()); only these may appear as keys, and they are never screened, so the
+# schema's own vocabulary (QUOTA_DORMANT) cannot trip a class meant for values (R19.3(d)).
+KEY_VOCAB = frozenset({*TOP_REQUIRED, "sources", *MEASURES, *OUTCOMES, *STAT_KEYS, "path", "blob"})
+
+
+def _strings(node, path=()):
+    """Yield (path, decoded string) for every key and value, depth first."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            yield (*path, "<key>"), k
+            yield from _strings(v, (*path, k))
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            yield from _strings(v, (*path, i))
+    elif isinstance(node, str):
+        yield path, node
+
+
+def _is_provenance(path) -> bool:
+    return path == ("generator", "blob") or (len(path) == 3 and path[0] == "sources" and path[2] == "blob")
+
+
 def screen(data: bytes) -> None:
-    text = data.decode("ascii")
-    for name, rx in SCREEN:
-        m = rx.search(text)
-        if m:
-            raise Refused("SCREEN_REFUSED", f"{name}: {m.group(0)[:24]!r}")
-    for line in text.splitlines():
-        r = json.loads(line)
-        hexes = [s for s in re.findall(r"\b[0-9a-f]{40}\b", line)]
-        legal = {r["generator"]["blob"], *(s["blob"] for s in r.get("sources", []))}
-        if any(h not in legal for h in hexes):
-            raise Refused("SCREEN_REFUSED", "a 40-hex value outside generator.blob/sources[].blob")
+    """The never-publish screen runs over DECODED strings (R19.3(a)): a JSON \\u escape cannot hide a value
+    from it. A 40-hex value is legal only AS generator.blob or sources[].blob, which provenance() authenticates."""
+    for line in data.decode("ascii").splitlines():
+        try:
+            r = json.loads(line)
+        except ValueError:
+            raise Refused("RECORD_INVALID", "unparseable line") from None
+        for path, s in _strings(r):
+            if path and path[-1] == "<key>" and s in KEY_VOCAB:
+                continue
+            if _is_provenance(path):
+                if not HEX40.match(s):
+                    raise Refused("SCREEN_REFUSED", "provenance field is not a 40-hex blob id")
+                continue
+            for name, rx in SCREEN:
+                m = rx.search(s)
+                if m:
+                    raise Refused("SCREEN_REFUSED", f"{name}: {m.group(0)[:24]!r}")
+            if HEX40_ANY.search(s):
+                raise Refused("SCREEN_REFUSED", "a 40-hex value outside generator.blob/sources[].blob")
 
 
-def check_shard(data: bytes, project: str, period: str) -> None:
-    """Whitelist + screen + budget. Refuses; never truncates, never edits."""
+def tool_blobs(bus) -> set[str]:
+    """Every blob this tool path has had in the bus checkout's history (the legal generator.blob values)."""
+    out = git(bus, "log", "--no-abbrev", "--format=", "--raw", "--", TOOL_PATH, check=False)
+    blobs = set()
+    for line in out.splitlines():
+        parts = line.split("\t", 1)[0].split()
+        if len(parts) >= 4:
+            blobs.update(b for b in parts[2:4] if HEX40.match(b) and set(b) != {"0"})
+    return blobs
+
+
+def provenance(records: list[dict], bus=None, known: set[str] | None = None) -> None:
+    """R19.3(b): a 40-hex field must name a real object, never merely look like one. generator.blob is this
+    running tool's own blob or one the tool path has had in the bus; each sources[].blob is a blob object in the
+    bus (or one this run is about to write, `known`). Without a bus, a rollup's sources cannot be authenticated."""
+    legal_gen = {generator()["blob"]} | (tool_blobs(bus) if bus is not None else set())
+    for r in records:
+        if r["generator"]["blob"] not in legal_gen:
+            raise Refused("PROVENANCE_UNAUTHENTICATED", f"generator.blob {r['generator']['blob'][:12]} is not a blob of {TOOL_PATH}")
+        for s in r.get("sources", []):
+            b = s["blob"]
+            if known and b in known:
+                continue
+            if bus is None or git(bus, "cat-file", "-t", b, check=False) != "blob":
+                raise Refused("PROVENANCE_UNAUTHENTICATED", f"sources[].blob {b[:12]} is not a blob in the bus")
+
+
+def check_shard(data: bytes, project: str, period: str, bus=None, known: set[str] | None = None) -> None:
+    """Whitelist + canonical form + screen + provenance + budget. Refuses; never truncates, never edits."""
     if not data:
         return
+    records = []
     for line in data.decode("ascii").splitlines():
         try:
             r = json.loads(line)
@@ -395,7 +475,11 @@ def check_shard(data: bytes, project: str, period: str) -> None:
         validate(r)
         if r["project"] != project or r["period"] != period:
             raise Refused("RECORD_INVALID", "record outside this shard's project/period")
+        records.append(r)
+    if serialize(records) != data:
+        raise Refused("RECORD_NOT_CANONICAL", "a shard is exactly the writer's serialisation, byte for byte")
     screen(data)
+    provenance(records, bus, known)
     soft, hard = BUDGET[grain_of(period)]
     if len(data) > hard:
         raise Refused("SHARD_OVER_BUDGET", f"{shard_name(period)} {len(data)} B > {hard} B hard cap")
@@ -458,15 +542,32 @@ def load_policy(path: str) -> dict:
     for k in ("reassess_by", "providers", "roles", "fallback_rate_high", "fallback_min_calls"):
         if k not in pol:
             raise Refused("POLICY_INVALID", f"missing {k}")
+    for role, rp in pol["roles"].items():
+        for e in [*rp.get("allowed", []), *rp.get("max_share", [])]:
+            if e.get("provider") == "codex" and ("tier" not in e or "model_pattern" in e):
+                raise Refused("POLICY_INVALID", f"roles.{role}: a codex entry names a tier, never a literal id (R16.2)")
     return pol
 
 
+def _version(v: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in v.split("."))
+
+
 def _matches(entry: dict, row: dict) -> bool:
+    """The EFFECTIVE model decides; the request is consulted only when no effective id was recorded
+    (R19.3(f)). A Codex entry names a tier and a dated floor, never a literal id (R16.2, R19.3(g)): any id of that
+    tier at or above min_version matches, so an upgrade stays on posture and an older id does not."""
     if entry.get("provider") != row["provider"]:
         return False
     model = row["model_effective"] or row["model_requested"] or ""
+    if "tier" in entry:
+        m = TIER_RX.match(model)
+        if not m or m.group(2) != entry["tier"]:
+            return False
+        if "min_version" in entry and _version(m.group(1)) < _version(entry["min_version"]):
+            return False
     rx = entry.get("model_pattern")
-    if rx and not re.fullmatch(rx, model) and not re.fullmatch(rx, row["model_requested"] or ""):
+    if rx and not re.fullmatch(rx, model):
         return False
     if "effort" in entry and row["effort_effective"] not in (entry["effort"], None):
         return False
@@ -495,7 +596,7 @@ def view(records: list[dict], pol: dict, declared: dict | None, today: dt.date) 
         for cap in rp.get("max_share", []):
             n = sum(r["calls"] for r in rows if _matches(cap, r))
             if calls and n / calls > cap["share"]:
-                advisories.append({"code": "OFF_OWNER_POSTURE", "role": role, "model_pattern": cap["model_pattern"],
+                advisories.append({"code": "OFF_OWNER_POSTURE", "role": role, "selector": cap.get("tier") or cap.get("model_pattern"),
                                    "share": round(n / calls, 3), "max_share": cap["share"]})
         fb = sum(r["fallback_count"] for r in rows)
         if calls >= pol["fallback_min_calls"] and fb / calls > pol["fallback_rate_high"]:
@@ -593,7 +694,7 @@ def prune(bus, project: str, today: dt.date, commit: bool) -> list[dict]:
         data = rollup_bytes(bus, project, target, sources, pending)
         if rollup_bytes(bus, project, target, sources, pending) != data:   # determinism, before anything is written
             raise Refused("ROLLUP_NOT_REPRODUCIBLE", rel_t)
-        check_shard(data, project, target)
+        check_shard(data, project, target, bus, {blob_id(v) for v in pending.values()})
         rels = [f"metrics/{project}/{shard_name(s)}" for s in sources]
         deletes = sorted(r for r in rels if r != rel_t)
         row = {"target": rel_t, "sources": sorted(rels), "bytes": len(data)}
@@ -673,7 +774,7 @@ def main(argv=None) -> int:
             data = pathlib.Path(a.shard).read_bytes().replace(b"\r\n", b"\n")
             if not data:
                 raise Refused("SHARD_EMPTY", "a week with no calls publishes nothing")
-            check_shard(data, a.project, a.week)
+            check_shard(data, a.project, a.week, a.bus)
             rel = f"metrics/{a.project}/{shard_name(a.week)}"
             dest = pathlib.Path(a.bus) / rel
             if dest.exists() and dest.read_bytes().replace(b"\r\n", b"\n") != data:

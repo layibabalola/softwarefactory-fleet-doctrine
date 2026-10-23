@@ -1,15 +1,15 @@
 {
   "schema": "fleet/model-posture-policy/v1",
   "status": "CANDIDATE",
-  "_comment": "Owner model posture, ruled 2026-10-22 in the Conjugal dispatcher session. Read by tools/factory/model-posture.py view; advisory only (metrics law 1). Roles are provider-usage-event-v1 actor.role values; a role not listed falls under 'default'. Allowed entries match on provider, model_effective (or model_requested) by full-match regex, and effort_effective.",
+  "_comment": "Owner model posture, ruled 2026-10-22 (RULINGS.md R19.1). Read by tools/factory/model-posture.py view; advisory only (metrics law 1). Roles are the rollup schema's role enum; a role not listed falls under 'default'. A codex entry names a TIER and a dated min_version floor, never a literal id (R16.2): a newer id of the tier stays on posture, an older one does not. Matching uses model_effective (model_requested only when no effective id was recorded) and effort_effective.",
   "owner_ruling": "2026-10-22",
   "reassess_by": "2026-11-22",
   "fallback_rate_high": 0.2,
   "fallback_min_calls": 10,
   "providers": {
-    "codex": { "default": { "model": "gpt-6.1-sol", "effort": "high" },
-               "diversity_seat": { "model": "gpt-6-astra", "gate": false },
-               "mechanical_census": { "model": "gpt-6-luna", "ruling": "R16.1" } },
+    "codex": { "default": { "tier": "sol", "effort": "high", "resolved_2026_10_22": "gpt-6.1-sol" },
+               "diversity_seat": { "tier": "astra", "gate": false, "resolved_2026_10_22": "gpt-6-astra" },
+               "mechanical": { "tier": "luna", "effort": "high", "resolved_2026_10_22": "gpt-6-luna", "ruling": "R16.1" } },
     "claude": { "aliases": ["opus", "fable", "sonnet", "haiku"], "effort": "high",
                 "note": "request the alias, never a dated id; log the resolved id as model_effective" }
   },
@@ -19,27 +19,35 @@
   "roles": {
     "default": {
       "allowed": [
-        { "provider": "codex", "model_pattern": "gpt-6\\.1-sol", "effort": "high" },
-        { "provider": "codex", "model_pattern": "gpt-6-astra", "effort": "high" },
+        { "provider": "codex", "tier": "sol", "min_version": "6.1", "effort": "high" },
+        { "provider": "codex", "tier": "astra", "min_version": "6", "effort": "high" },
         { "provider": "claude", "model_pattern": "(opus|fable|sonnet|haiku|claude-(opus|fable|sonnet|haiku)-[0-9a-z.-]+)", "effort": "high" }
       ],
-      "max_share": [ { "provider": "codex", "model_pattern": "gpt-6-astra", "share": 0.25 } ]
+      "max_share": [ { "provider": "codex", "tier": "astra", "share": 0.25 } ]
     },
     "key": {
       "_comment": "a gate: astra is never a gate seat",
       "allowed": [
-        { "provider": "codex", "model_pattern": "gpt-6\\.1-sol", "effort": "high" },
+        { "provider": "codex", "tier": "sol", "min_version": "6.1", "effort": "high" },
         { "provider": "claude", "model_pattern": "(opus|fable|sonnet|haiku|claude-(opus|fable|sonnet|haiku)-[0-9a-z.-]+)", "effort": "high" }
       ]
     },
     "census": {
       "allowed": [
-        { "provider": "codex", "model_pattern": "gpt-6-luna" },
-        { "provider": "codex", "model_pattern": "gpt-6\\.1-sol", "effort": "high" }
+        { "provider": "codex", "tier": "luna", "min_version": "6", "effort": "high" },
+        { "provider": "codex", "tier": "sol", "min_version": "6.1", "effort": "high" }
+      ]
+    },
+    "swarm": {
+      "_comment": "R11: adversarial swarm lanes run at medium",
+      "allowed": [
+        { "provider": "codex", "tier": "sol", "min_version": "6.1", "effort": "medium" },
+        { "provider": "codex", "tier": "astra", "min_version": "6", "effort": "medium" },
+        { "provider": "claude", "model_pattern": "(opus|fable|sonnet|haiku|claude-(opus|fable|sonnet|haiku)-[0-9a-z.-]+)", "effort": "medium" }
       ]
     },
     "diversity": {
-      "allowed": [ { "provider": "codex", "model_pattern": "gpt-6-astra", "effort": "high" } ]
+      "allowed": [ { "provider": "codex", "tier": "astra", "min_version": "6", "effort": "high" } ]
     }
   }
 }

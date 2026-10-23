@@ -1,7 +1,7 @@
 # Fleet model posture: telemetry on the metrics data plane
 
 Status: **CANDIDATE.** It has zero runtime authority until
-`ruling-candidates/fleet-model-posture-telemetry-r1.md` is ratified. Conjugal is the pilot publisher.
+`ruling-candidates/fleet-model-posture-telemetry-r2.md` is ratified (r1 was vetoed by RULINGS.md R19.3). Conjugal is the pilot publisher.
 
 ## Why
 
@@ -37,7 +37,8 @@ There is one aggregate per (period, project, provider, `model_requested`, `model
 `effort_effective`, role). Every field name comes from `schemas/provider-usage-event-v1.schema.json`:
 
 - the model and effort fields are named exactly as in that schema;
-- `role` is its `actor.role`;
+- `role` is its `actor.role`, folded to a closed enum (the schema's `role` enum); a well-formed role outside the
+  enum travels as `other`, so the field can never carry free text;
 - the measures are its `measurement.{input_tokens, cached_input_tokens, reasoning_tokens, output_tokens,
   active_seconds}`;
 - `outcome` is a histogram over its enum.
@@ -54,7 +55,8 @@ The fields are defined as follows:
 
 - **`first_pass_accept`** counts tasks whose first call ended APPROVED or COMPLETED.
 - **`fallback_count`** counts calls with a `*FALLBACK*` reason code, or with `model_effective` different
-  from `model_requested`.
+  from `model_requested`. A Claude family alias resolving to its own dated id (`opus` to `claude-opus-5-5`)
+  is the mandated mechanism (R16.2), not a fallback; a different family is.
 - **Weekly percentiles** are nearest-rank over the calls.
 - **Roll-up percentiles** are the known-weighted median of the source records' percentiles. The record says
   so in `percentile_basis`. Sums and counts are always exact.
@@ -74,11 +76,19 @@ The following never appear in a shard:
 
 These protections are enforced in layers, and any breach is **refused, never edited and never warned past**:
 
-1. A field whitelist, which is the schema mirrored in code.
-2. A screen. It is the union of the bus `fleet-scorecard.py` `SCREEN`, Conjugal's `doctrine_outbox.LAW4`
+1. A field whitelist, which is the schema mirrored in code. Model names carry no `/` and at most 80
+   characters; effort is lower-case letters; `role` is a closed enum.
+2. Canonical form: a shard must be exactly the writer's serialisation, byte for byte
+   (`RECORD_NOT_CANONICAL`), so no JSON escape or spacing variant reaches the screen.
+3. A screen. It is the union of the bus `fleet-scorecard.py` `SCREEN`, Conjugal's `doctrine_outbox.LAW4`
    (by class name), and this plane's own classes: timestamps, drive paths, quota words and session/account
-   words.
-3. A rule that a 40-hex value may appear only as `generator.blob` or `sources[].blob`.
+   words. It runs over every DECODED string value (and every key outside the schema's own vocabulary), never
+   over the raw text, so a `\u` escape cannot hide a value and the schema's own `QUOTA_DORMANT` key cannot
+   trip it.
+4. A rule that a 40-hex value may appear only as `generator.blob` or `sources[].blob`, and provenance
+   authentication (`PROVENANCE_UNAUTHENTICATED`): `generator.blob` must be the running tool's own blob or one
+   `tools/factory/model-posture.py` has had in the bus history, and each `sources[].blob` must be a blob object
+   in the bus. A value that merely looks like a SHA is never trusted for its shape.
 
 Raw per-call rows stay in the publishing project.
 
@@ -113,10 +123,15 @@ truncated.
 
 ## Owner posture (2026-10-22), as `policy/model-posture.json` records it
 
-- **Codex default:** `gpt-6.1-sol`, effort high.
-- **`gpt-6-astra`:** an occasional diversity seat only, never a gate. The policy caps its share at 25% of a
+The policy names Codex TIERS with a dated `min_version` floor, never a literal id (R16.2): a newer id of the
+tier stays on posture and an older one does not. Matching uses `model_effective`; `model_requested` is read
+only when no effective id was recorded.
+
+- **Codex default:** the Sol tier, at or above 6.1 (resolved 2026-10-22: `gpt-6.1-sol`), effort high.
+- **Astra tier:** an occasional diversity seat only, never a gate. The policy caps its share at 25% of a
   role's calls, and it is not allowed in `key`.
-- **`gpt-6-luna`:** mechanical census only (bus R16.1).
+- **Luna tier:** mechanical census only (bus R16.1), effort high.
+- **`swarm` role:** R11 adversarial swarm lanes run at effort medium.
 - **Claude:** requested by the `opus`/`fable`/`sonnet`/`haiku` aliases, at effort high. The resolved id is
   logged as `model_effective`.
 - **Read-only review and survey seats** prefer Codex while Claude quota binds. Quota is local knowledge, so

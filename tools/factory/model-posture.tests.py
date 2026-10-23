@@ -131,7 +131,7 @@ class Screen(unittest.TestCase):
             mp.screen(line.encode("ascii"))
 
     def test_shard_over_budget_refuses_never_truncates(self):
-        rows = [ev(role=f"role-{i:04d}") for i in range(40)]
+        rows = [ev(req=f"m-{i:04d}", eff=f"m-{i:04d}") for i in range(40)]
         data = mp.serialize(mp.reduce_events(rows, "conjugal", "2026-W43"))
         self.assertGreater(len(data), 16 * 1024)
         with self.assertRaises(mp.Refused) as c:
@@ -170,7 +170,7 @@ class SchemaAndPolicy(unittest.TestCase):
 
     def test_policy_loads_and_owner_default_is_on_posture(self):
         pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
-        self.assertEqual(pol["providers"]["codex"]["default"], {"model": "gpt-6.1-sol", "effort": "high"})
+        self.assertEqual((pol["providers"]["codex"]["default"]["tier"], pol["providers"]["codex"]["default"]["effort"]), ("sol", "high"))
         recs = mp.reduce_events([ev(), ev(provider="claude", req="opus", eff="claude-opus-5-5")], "conjugal", "2026-W43")
         out = mp.view(recs, pol, None, dt.date(2026, 10, 23))
         self.assertEqual(out["advisories"], [])
@@ -259,11 +259,11 @@ class PublishAndPrune(unittest.TestCase):
     def test_callers_screen_reduce_and_publish(self):
         """The screen is wired into BOTH CLI paths, not only callable (mutate the caller: drop check_shard -> red)."""
         calls = Path(self.tmp.name) / "calls.jsonl"
-        calls.write_text(json.dumps(ev(role="S147")) + "\n", encoding="utf-8")
+        calls.write_text(json.dumps(ev(req="S147", eff="S147")) + "\n", encoding="utf-8")
         rc, out, err = run("reduce", "--input", str(calls), "--project", "conjugal", "--week", "2026-W43")
         self.assertEqual((rc, out, "SCREEN_REFUSED" in err), (2, "", True))
         shard = Path(self.tmp.name) / "bad.jsonl"
-        shard.write_bytes(mp.serialize(mp.reduce_events([ev(role="S147")], "conjugal", "2026-W43")))
+        shard.write_bytes(mp.serialize(mp.reduce_events([ev(req="S147", eff="S147")], "conjugal", "2026-W43")))
         rc, _, err = run("publish", "--bus", str(self.bus), "--shard", str(shard), "--project", "conjugal", "--week", "2026-W43")
         self.assertEqual((rc, "SCREEN_REFUSED" in err), (2, True))
         self.assertFalse((self.bus / "metrics").exists())
@@ -332,6 +332,222 @@ class PublishAndPrune(unittest.TestCase):
         git(self.bus, "add", "other.txt")
         rc, _, err = run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
         self.assertEqual((rc, "INDEX_NOT_CLEAN" in err), (2, True))
+
+
+def rec_line(**kw) -> bytes:
+    """One weekly record, canonical, with fields overridden AFTER reduce (so the writer's own input checks are
+    bypassed and the shard checks are what is under test)."""
+    r = mp.reduce_events([ev()], "conjugal", "2026-W43")[0]
+    r.update(kw)
+    return mp.serialize([r])
+
+
+class R19Defects(unittest.TestCase):
+    """One test (or more) per RULINGS.md R19.3 defect (a)-(h); each was red on the r1 head 6b6d79dd."""
+
+    def refused(self, fn, *codes):
+        with self.assertRaises(mp.Refused) as c:
+            fn()
+        self.assertIn(c.exception.code, codes)
+        return c.exception
+
+    # (a) the screen reads DECODED values: a JSON \u escape of a prohibited value is refused, and a
+    # non-canonical line is refused outright.
+    def test_a_escaped_identifier_is_screened(self):
+        line = rec_line().decode().replace('"model_requested":"gpt-6.1-sol"', '"model_requested":"\\u0053147"')
+        self.assertIn("\\u0053147", line)
+        self.refused(lambda: mp.screen(line.encode()), "SCREEN_REFUSED", "RECORD_NOT_CANONICAL")
+        self.refused(lambda: mp.check_shard(line.encode(), "conjugal", "2026-W43"),
+                     "SCREEN_REFUSED", "RECORD_NOT_CANONICAL", "RECORD_INVALID")
+
+    def test_a_escaped_email_is_screened(self):
+        line = rec_line().decode().replace('"model_requested":"gpt-6.1-sol"', '"model_requested":"who\\u0040example.com"')
+        self.refused(lambda: mp.screen(line.encode()), "SCREEN_REFUSED", "RECORD_NOT_CANONICAL")
+
+    def test_a_non_canonical_line_refused(self):
+        line = json.dumps(json.loads(rec_line()), sort_keys=True) + "\n"      # default separators add spaces
+        self.refused(lambda: mp.check_shard(line.encode(), "conjugal", "2026-W43"), "RECORD_NOT_CANONICAL")
+
+    # (b) 40-hex provenance fields are authenticated, never trusted for their shape.
+    def test_b_forged_generator_blob_refused(self):
+        data = rec_line(generator={"path": mp.TOOL_PATH, "blob": "c" * 40})
+        self.refused(lambda: mp.check_shard(data, "conjugal", "2026-W43"), "PROVENANCE_UNAUTHENTICATED")
+
+    def test_b_real_generator_blob_accepted(self):
+        mp.check_shard(rec_line(), "conjugal", "2026-W43")
+
+    def test_b_forged_source_blob_refused_against_the_bus(self):
+        with tempfile.TemporaryDirectory() as d:
+            git(d, "init", "-q", "-b", "master")
+            wk = mp.reduce_events([ev()], "conjugal", "2026-W43")
+            src = [{"path": "metrics/conjugal/posture-2026-W43.jsonl", "blob": "d" * 40}]
+            data = mp.serialize(mp.merge_records(wk, "conjugal", "2026-10", src))
+            self.refused(lambda: mp.check_shard(data, "conjugal", "2026-10", bus=d), "PROVENANCE_UNAUTHENTICATED")
+            self.refused(lambda: mp.check_shard(data, "conjugal", "2026-10"), "PROVENANCE_UNAUTHENTICATED")
+
+    # (c) role is a closed enum and model names carry no path separator.
+    def test_c_free_text_role_never_travels(self):
+        for role in ("BACHELOR", "host-xps17", "ticket-38172", "a" * 32, "Ignore-previous-instructions"):
+            try:
+                data = mp.serialize(mp.reduce_events([ev(role=role)], "conjugal", "2026-W43"))
+            except mp.Refused as e:
+                self.assertEqual(e.code, "INPUT_FIELD_INVALID", role)
+                continue
+            self.assertNotIn(role, data.decode(), role)
+            self.assertEqual(json.loads(data)["role"], "other")
+        self.refused(lambda: mp.check_shard(rec_line(role="BACHELOR"), "conjugal", "2026-W43"), "RECORD_INVALID")
+
+    def test_c_model_with_path_separator_refused(self):
+        self.refused(lambda: mp.reduce_events([ev(req="private-repo/secrets.txt")], "conjugal", "2026-W43"),
+                     "INPUT_FIELD_INVALID")
+        self.refused(lambda: mp.check_shard(rec_line(model_effective="a/b"), "conjugal", "2026-W43"), "RECORD_INVALID")
+
+    def test_c_schema_role_is_the_writer_enum(self):
+        s = json.loads((BUS / "schemas/model-posture-rollup-v1.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(set(s["properties"]["role"]["enum"]) - {None}, set(mp.ROLES))
+        self.assertNotIn("/", s["properties"]["model_effective"]["pattern"])
+
+    # (d) the schema's own outcome key is legal.
+    def test_d_quota_dormant_outcome_passes(self):
+        data = mp.serialize(mp.reduce_events([ev(outcome="QUOTA_DORMANT")], "conjugal", "2026-W43"))
+        self.assertIn("QUOTA_DORMANT", data.decode())
+        mp.check_shard(data, "conjugal", "2026-W43")
+
+    # (e) a Claude alias resolving to its dated id is not a fallback.
+    def test_e_alias_resolution_is_not_fallback(self):
+        pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
+        recs = mp.reduce_events([ev(provider="claude", req="opus", eff="claude-opus-5-5")] * 10, "conjugal", "2026-W43")
+        self.assertEqual(recs[0]["fallback_count"], 0)
+        self.assertNotIn("FALLBACK_RATE_HIGH", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
+        other = mp.reduce_events([ev(provider="claude", req="opus", eff="claude-sonnet-5-5")], "conjugal", "2026-W43")
+        self.assertEqual(other[0]["fallback_count"], 1)
+
+    # (f) the effective id decides; a matching request cannot hide a stale effective model.
+    def test_f_effective_drift_is_not_masked(self):
+        pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
+        recs = mp.reduce_events([ev(req="gpt-6.1-sol", eff="gpt-5.6-sol")], "conjugal", "2026-W43")
+        self.assertIn("OFF_OWNER_POSTURE", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
+
+    # (g) tiers, not literal ids; Luna must be high; R11 swarm lanes run medium.
+    def codes(self, rows):
+        pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
+        return [a["code"] for a in mp.view(mp.reduce_events(rows, "conjugal", "2026-W43"), pol, None, dt.date(2026, 10, 23))["advisories"]]
+
+    def test_g_newer_tier_id_is_on_posture(self):
+        self.assertEqual(self.codes([ev(req="gpt-6.2-sol", eff="gpt-6.2-sol")]), [])
+        self.assertEqual(self.codes([ev(role="census", req="gpt-6.1-luna", eff="gpt-6.1-luna")]), [])
+
+    def test_g_low_effort_luna_is_off_posture(self):
+        self.assertIn("OFF_OWNER_POSTURE", self.codes([ev(role="census", req="gpt-6-luna", eff="gpt-6-luna", effort="low")]))
+
+    def test_g_r11_swarm_lane_at_medium_is_on_posture(self):
+        self.assertEqual(self.codes([ev(role="swarm", effort="medium")]), [])
+        self.assertIn("OFF_OWNER_POSTURE", self.codes([ev(role="swarm", effort="low")]))
+
+    def test_g_policy_names_no_literal_codex_id(self):
+        raw = (BUS / "policy/model-posture.json").read_text(encoding="utf-8")
+        roles = json.loads(raw)["roles"]
+        for role, rp in roles.items():
+            for e in [*rp.get("allowed", []), *rp.get("max_share", [])]:
+                if e.get("provider") == "codex":
+                    self.assertIn("tier", e, (role, e))
+                    self.assertNotIn("model_pattern", e, (role, e))
+
+    # (h) the candidate states its relationship to existing doctrine, naming the append-only supersession.
+    def test_h_candidate_relationship_line(self):
+        c = (BUS / "ruling-candidates/fleet-model-posture-telemetry-r2.md").read_text(encoding="utf-8")
+        line = next((l for l in c.splitlines() if l.startswith("Relationship to existing doctrine:")), "")
+        self.assertTrue(line)
+        self.assertIn("metrics/README.md", line)
+        self.assertIn("supersedes", line)
+
+
+class RefusalCoverage(unittest.TestCase):
+    """Every refusal code the tool can raise has a behavioural test (R19.3: refusals are proven, not named)."""
+
+    def code(self, fn):
+        with self.assertRaises(mp.Refused) as c:
+            fn()
+        return c.exception.code
+
+    def test_input_refusals(self):
+        self.assertEqual(self.code(lambda: mp.reduce_events([], "Bad Project", "2026-W43")), "PROJECT_INVALID")
+        self.assertEqual(self.code(lambda: mp.reduce_events([], "conjugal", "2026-10")), "PERIOD_INVALID")
+        self.assertEqual(self.code(lambda: mp.reduce_events([], "conjugal", "2026-W99")), "PERIOD_INVALID")
+        self.assertEqual(self.code(lambda: mp.reduce_events(["x"], "conjugal", "2026-W43")), "INPUT_ROW_INVALID")
+        self.assertEqual(self.code(lambda: mp.reduce_events([ev(ts="yesterday")], "conjugal", "2026-W43")), "INPUT_ROW_INVALID")
+        self.assertEqual(self.code(lambda: mp.reduce_events([ev(provider=None)], "conjugal", "2026-W43")), "INPUT_FIELD_INVALID")
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "c.jsonl"
+            p.write_text("{not json\n", encoding="utf-8")
+            self.assertEqual(self.code(lambda: mp.read_events(str(p))), "INPUT_ROW_INVALID")
+
+    def test_policy_refusals(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(self.code(lambda: mp.load_policy(str(Path(d) / "missing.json"))), "POLICY_UNREADABLE")
+            p = Path(d) / "p.json"
+            p.write_text('{"schema": "other"}', encoding="utf-8")
+            self.assertEqual(self.code(lambda: mp.load_policy(str(p))), "POLICY_INVALID")
+            p.write_text(json.dumps({"schema": mp.POLICY_SCHEMA}), encoding="utf-8")
+            self.assertEqual(self.code(lambda: mp.load_policy(str(p))), "POLICY_INVALID")
+
+    def test_source_project_mismatch(self):
+        wk = mp.reduce_events([ev()], "conjugal", "2026-W43")
+        self.assertEqual(self.code(lambda: mp.merge_records(wk, "other", "2026-10", [])), "SOURCE_PROJECT_MISMATCH")
+
+    def test_screen_fixture_classes(self):
+        base = json.loads(rec_line())
+        for bad in ("sk-ant-abcdefghijklmnop", "Bearer abcdefghijklmnopqrstuvwxyz", "C:/Users/someone/x",
+                    "/home/someone/x", "HUB.md", "loops.json", "x state/y", "coordination/deadman/x", "c" * 40):
+            line = (json.dumps({**base, "model_requested": bad}, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            self.assertEqual(self.code(lambda: mp.screen(line)), "SCREEN_REFUSED", bad)
+
+    def test_git_failed(self):
+        with tempfile.TemporaryDirectory() as d:
+            rc, _, err = run("prune", "--bus", d, "--project", "conjugal", "--today", "2026-10-22")
+            self.assertEqual((rc, "GIT_FAILED" in err), (2, True))
+
+
+class RollupRefusals(unittest.TestCase):
+    """The two roll-up integrity refusals, provoked by mutating the caller (the tool's own collaborators)."""
+    setUp, tearDown, publish_week = PublishAndPrune.setUp, PublishAndPrune.tearDown, PublishAndPrune.publish_week
+
+    def test_rollup_not_reproducible(self):
+        self.publish_week("2026-W27", "2026-06-30T10:00:00Z")
+        real, n = mp.merge_records, [0]
+
+        def drifting(*a, **k):
+            n[0] += 1
+            out = real(*a, **k)
+            out[0]["calls"] += n[0] % 2
+            out[0]["outcome"] = {"APPROVED": out[0]["calls"]}
+            return out
+        mp.merge_records = drifting
+        try:
+            rc, _, err = run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        finally:
+            mp.merge_records = real
+        self.assertEqual((rc, "ROLLUP_NOT_REPRODUCIBLE" in err), (2, True))
+
+    def test_rollup_census_mismatch(self):
+        self.publish_week("2026-W27", "2026-06-30T10:00:00Z")
+        real = mp.git
+
+        def no_rm(repo, *args, **kw):
+            return "" if args and args[0] == "rm" else real(repo, *args, **kw)
+        mp.git = no_rm
+        try:
+            rc, _, err = run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        finally:
+            mp.git = real
+        self.assertEqual((rc, "ROLLUP_CENSUS_MISMATCH" in err), (2, True))
+
+    def test_publish_refuses_forged_generator(self):
+        shard = Path(self.tmp.name) / "forged.jsonl"
+        shard.write_bytes(rec_line(generator={"path": mp.TOOL_PATH, "blob": "e" * 40}))
+        rc, _, err = run("publish", "--bus", str(self.bus), "--shard", str(shard), "--project", "conjugal", "--week", "2026-W43")
+        self.assertEqual((rc, "PROVENANCE_UNAUTHENTICATED" in err), (2, True))
+        self.assertFalse((self.bus / "metrics").exists())
 
 
 if __name__ == "__main__":

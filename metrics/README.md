@@ -76,4 +76,6 @@ the schema and examples are conformance candidates only.
 `metrics/<project>/posture-*.jsonl` holds weekly, then monthly, then yearly AGGREGATES of which model and effort each
 role actually ran (`schemas/model-posture-rollup-v1.schema.json`, writer `tools/factory/model-posture.py`). Raw
 per-call rows never travel. Entry: [`model-posture/README.md`](model-posture/README.md). Candidate:
-`ruling-candidates/fleet-model-posture-telemetry-r1.md`.
+`ruling-candidates/fleet-model-posture-telemetry-r2.md` (r1 vetoed, RULINGS.md R19.3). Posture shards are the one
+named exception to this directory's append-only rule: a roll-up commit deletes its weekly or monthly sources
+after byte-identical recomputation, and history is never rewritten (every source resolves at the parent).
