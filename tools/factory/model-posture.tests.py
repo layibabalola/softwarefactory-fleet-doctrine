@@ -332,6 +332,38 @@ class PublishAndPrune(unittest.TestCase):
         year = [json.loads(l) for l in (self.bus / "metrics/conjugal/posture-2025.jsonl").read_text().splitlines()]
         self.assertEqual(sum(r["calls"] for r in year), 4)
 
+    def republish(self, week, ts):
+        shard = Path(self.tmp.name) / f"re-{week}.jsonl"
+        shard.write_bytes(mp.serialize(mp.reduce_events([ev(ts=ts, input_tokens=10)], "conjugal", week)))
+        return run("publish", "--bus", str(self.bus), "--shard", str(shard), "--project", "conjugal", "--week", week)
+
+    def test_republish_of_a_week_rolled_into_a_month_is_refused(self):
+        self.publish_week("2026-W27", "2026-06-30T10:00:00Z")
+        rc, _, err = run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(sorted(os.listdir(self.bus / "metrics/conjugal")), ["posture-2026-07.jsonl"])
+        rc, _, err = self.republish("2026-W27", "2026-06-30T10:00:00Z")
+        self.assertEqual((rc, "SHARD_ROLLED_UP" in err), (2, True), err)
+
+    def test_republish_of_a_week_rolled_into_a_year_is_refused_but_a_late_week_publishes(self):
+        self.publish_week("2025-W27", "2025-07-01T10:00:00Z")
+        rc, _, err = run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(sorted(os.listdir(self.bus / "metrics/conjugal")), ["posture-2025.jsonl"])
+        rc, _, err = self.republish("2025-W27", "2025-07-01T10:00:00Z")
+        self.assertEqual((rc, "SHARD_ROLLED_UP" in err), (2, True), err)
+        rc, _, err = self.republish("2025-W36", "2025-09-02T10:00:00Z")   # never rolled: still publishes
+        self.assertEqual(rc, 0, err)
+
+    def test_republish_after_a_late_month_joined_the_year_is_refused(self):
+        self.publish_week("2025-W27", "2025-07-01T10:00:00Z")
+        run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        self.publish_week("2025-W36", "2025-09-02T10:00:00Z")
+        run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        for week, ts in (("2025-W27", "2025-07-01T10:00:00Z"), ("2025-W36", "2025-09-02T10:00:00Z")):
+            rc, _, err = self.republish(week, ts)
+            self.assertEqual((rc, "SHARD_ROLLED_UP" in err), (2, True), (week, err))
+
     def test_prune_refuses_a_dirty_index(self):
         self.publish_week("2026-W27", "2026-06-30T10:00:00Z")
         (self.bus / "other.txt").write_text("x", encoding="utf-8")

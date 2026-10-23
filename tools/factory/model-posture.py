@@ -697,6 +697,28 @@ def head_shards(bus, project: str) -> dict[str, str]:
     return names
 
 
+def rolled_up(bus, project: str, rel: str) -> bool:
+    """True when `rel` (a weekly shard path) is already counted in a roll-up at bus HEAD: some HEAD shard's sources[]
+    names it, directly (month) or through a chain of earlier month/year blobs read from history (year). A week that
+    was never rolled up is not found, so a late week still publishes."""
+    seen: set[str] = set()
+    stack = [f"HEAD:{p}" for p in head_shards(bus, project).values()]
+    while stack:
+        ref = stack.pop()
+        raw = git(bus, "show", ref, binary=True, check=False)
+        try:
+            first = json.loads(raw.decode("ascii").splitlines()[0])
+        except (ValueError, IndexError, UnicodeError):
+            continue
+        for s in first.get("sources", []):
+            if s.get("path") == rel:
+                return True
+            if s.get("blob") and s["blob"] not in seen:
+                seen.add(s["blob"])
+                stack.append(s["blob"])
+    return False
+
+
 def plan_prune(periods: list[str], today: dt.date) -> list[tuple[str, list[str]]]:
     """[(target_period, [source periods])] in a deterministic order: all weekly->monthly first, then monthly->yearly."""
     y, w, _ = today.isocalendar()
@@ -838,6 +860,8 @@ def main(argv=None) -> int:
             dest = pathlib.Path(a.bus) / rel
             if dest.exists() and dest.read_bytes().replace(b"\r\n", b"\n") != data:
                 raise Refused("SHARD_EXISTS", f"{rel} exists with different bytes; a published week is never rewritten")
+            if not dest.exists() and rolled_up(a.bus, a.project, rel):
+                raise Refused("SHARD_ROLLED_UP", f"{rel} is already counted in a roll-up; republishing would count it twice")
             if project_total(dest.parent, {dest.name: len(data)}) > PROJECT_CAP:
                 raise Refused("SHARD_OVER_BUDGET", f"metrics/{a.project}/ would exceed {PROJECT_CAP} B")
             dest.parent.mkdir(parents=True, exist_ok=True)
