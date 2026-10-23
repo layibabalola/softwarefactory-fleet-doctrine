@@ -1,8 +1,8 @@
 # Ruling candidate: fleet model-posture telemetry R1
 
-Status: **PROPOSED ONLY. This is not a ratified ruling and gives no project runtime authority.** It is filed by
-Conjugal, the interim kernel steward and pilot publisher, on 2026-10-22. Conjugal does not self-ratify this
-candidate.
+Status: **VETOED at r1, 2026-10-23, by Layi (owner instruction quoted in RULINGS.md R19) as RULINGS.md R19.3.** It is not
+ratified and gives no project runtime authority. R19.3 lists the eight confirmed defects (a) to (h) that an r2 must fix,
+each with a behavioural test. Originally PROPOSED 2026-10-22 by Conjugal. This PR is held, not merged (R19.4).
 
 ## Owner direction
 
