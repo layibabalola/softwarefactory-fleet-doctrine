@@ -1,8 +1,8 @@
 # Ruling candidate: fleet model-posture telemetry R2
 
-Status: **PROPOSED ONLY. This is not a ratified ruling and gives no project runtime authority.** It is filed by
-Conjugal, the interim kernel steward and pilot publisher, on 2026-10-23. It replaces r1
-(`fleet-model-posture-telemetry-r1.md`), which RULINGS.md R19.3 vetoed. Conjugal does not self-ratify it.
+Status: **RATIFIED 2026-10-23 by Layi (owner instruction quoted in RULINGS.md R20) as RULINGS.md R20.1, at head
+`4a0edd50`.** Originally PROPOSED 2026-10-23 by Conjugal. It replaces r1, which R19.3 vetoed. Metrics stay
+diagnostic only (metrics law 1).
 
 Relationship to existing doctrine: extends the `metrics/` data plane (`metrics/README.md`, Cloudvore 2026-08-09) and README Law 2 for project-owned posture shards; supersedes `metrics/README.md`'s append-only rule for posture-shard roll-up commits only, and names that exception in `metrics/README.md`; supersedes r1 of this candidate (vetoed, R19.3); preserves README Laws 1 and 4, R11 (swarm lanes at medium), R13.3 and R16.2-R16.5 (tiers, not ids), R14 (one writer), R18.3(a) and `specs/fleet-factory-kernel.md`; is the instrument that R19.1 section 3 names for the 10-key reassessment, and grants that reassessment no gate. Search run on 2026-10-23 at bus `6fcc5a2a`: `grep -n -i -E "metrics/|append-only|posture|telemetry|R19"` over `RULINGS.md`, `README.md`, `metrics/README.md` and `ruling-candidates/*.md`.
 
