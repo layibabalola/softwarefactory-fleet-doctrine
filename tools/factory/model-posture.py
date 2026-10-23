@@ -702,27 +702,30 @@ def rolled_up(bus, project: str, rel: str) -> bool:
     names it, directly (month) or through a chain of earlier month/year blobs read from history (year). A week that
     was never rolled up is not found, so a late week still publishes."""
     seen: set[str] = set()
-    stack = [f"HEAD:{p}" for p in head_shards(bus, project).values()]
+    stack = [(f"HEAD:{p}", grain_of(period)) for period, p in head_shards(bus, project).items()]
     while stack:
-        ref = stack.pop()
+        ref, grain = stack.pop()
         try:
-            raw = git(bus, "show", ref, binary=True)
-            first = json.loads(raw.decode("ascii").splitlines()[0])
-            if first["grain"] == "week":
-                continue   # a weekly shard has no ancestry
-            if first["grain"] not in ("month", "year"):
+            lines = git(bus, "show", ref, binary=True).decode("ascii").splitlines()
+            recs = [json.loads(l) for l in lines]
+            if not recs or any(r["grain"] != grain for r in recs):   # the shard's name decides its grain
                 raise ValueError("grain")
-            srcs = first["sources"]
-            if not isinstance(srcs, list) or not srcs:
+            if grain == "week":
+                continue   # a weekly shard has no ancestry
+            srcs = recs[0]["sources"]
+            if not isinstance(srcs, list) or not srcs or any(r["sources"] != srcs for r in recs):
                 raise ValueError("sources")
             for s in srcs:
                 if not (isinstance(s["path"], str) and isinstance(s["blob"], str) and re.fullmatch(r"[0-9a-f]{40}", s["blob"])):
                     raise ValueError("source")
+                m = SHARD_RX.fullmatch(s["path"].rsplit("/", 1)[-1])
+                if not m:
+                    raise ValueError("source path")
                 if s["path"] == rel:
                     return True
                 if s["blob"] not in seen:
                     seen.add(s["blob"])
-                    stack.append(s["blob"])
+                    stack.append((s["blob"], grain_of(m.group(1))))
         except (Refused, ValueError, IndexError, UnicodeError, AttributeError, TypeError, KeyError):
             # unreadable or malformed ancestry cannot prove the week is unrolled: refuse rather than risk a double count
             raise Refused("ROLLUP_ANCESTRY_UNREADABLE", ref[:60]) from None

@@ -395,6 +395,15 @@ class PublishAndPrune(unittest.TestCase):
             r = json.loads(json.dumps(base))
             mutate(r)
             variants.append((json.dumps(r, sort_keys=True) + "\n").encode())
+        other = json.loads(json.dumps(base))
+        other["sources"] = [{"path": "metrics/conjugal/posture-2025-08.jsonl", "blob": "1" * 40}]
+        two = lambda a, b: ((json.dumps(a, sort_keys=True) + "\n" + json.dumps(b, sort_keys=True) + "\n").encode())
+        variants.append(two(base, other))                       # records disagree on sources
+        variants.append(two(other, base))
+        wk = json.loads(json.dumps(base)); wk["grain"] = "week"
+        variants.append((json.dumps(wk, sort_keys=True) + "\n").encode())   # yearly shard declaring grain week
+        bad_later = (json.dumps(base, sort_keys=True) + "\nnot json\n").encode()
+        variants.append(bad_later)
         for bad in variants:
             year.write_bytes(bad)
             git(self.bus, "add", "-f", str(year))
