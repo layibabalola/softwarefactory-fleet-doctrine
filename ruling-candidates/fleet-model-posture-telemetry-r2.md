@@ -111,6 +111,27 @@ The panel also flagged two tests, the source-binding test and the forged-source 
 check fired before the source check could run, so neither tested source binding. Both now authenticate the
 generator first, so they reach the source check.
 
+## The final panel on `760b24c9`
+
+| Seat | Model | Angle | Vote |
+|---|---|---|---|
+| 1 | Codex `gpt-6-astra` | test adequacy | RATIFY. Nothing found; targeted mutants were killed. |
+| 2 | Claude `sonnet` | privacy | RATIFY. No bypass; five nits. |
+| 3 | Codex `gpt-6.1-sol` | conflicts | VETO, on one defect, introduced by the numeric cap. |
+
+Codex seat 3's defect: a measurement above the cap was silently dropped. It is now refused with
+`INPUT_FIELD_INVALID`, never dropped (metrics law 2). The applied nits:
+
+- A roll-up refuses a source record whose period or project differs from its shard file.
+- `main()` turns a bad `--today`, policy or byte input into exit 2.
+- The generator docstring states its limit: a historical tool blob proves the blob is real, not that it wrote
+  the shard.
+
+The remaining nits are accepted residuals:
+
+- Numbers at or under the cap carry no screen.
+- `reduce` without a bus accepts any well-formed project name; publish and prune require `specs/<project>.md`.
+
 Beyond the eight defects, every refusal code now has a behavioural test (classes `RefusalCoverage` and
 `RollupRefusals`). One bug was found on the way and fixed: an out-of-range ISO week such as `2026-W99`
 raised a bare `ValueError` instead of `PERIOD_INVALID`.

@@ -643,6 +643,14 @@ class R2ReviewFindings(unittest.TestCase):
             rc, _, err = run("publish", "--bus", d, "--shard", str(s), "--project", "conjugal", "--week", "2026-10")
             self.assertEqual((rc, "PERIOD_INVALID" in err), (2, True))
 
+    def test_oversize_measurement_refuses_never_drops(self):  # final panel (760b24c9)
+        self.refused(lambda: mp.reduce_events([ev(input_tokens=mp.MAX_COUNT + 1)], "conjugal", "2026-W43"),
+                     "INPUT_FIELD_INVALID")
+
+    def test_cli_bad_values_exit_2(self):                    # final panel (760b24c9)
+        rc, _, err = run("view", "x.jsonl", "--policy", str(BUS / "policy/model-posture.json"), "--today", "not-a-date")
+        self.assertEqual(rc, 2, err)
+
     def test_schema_mirrors_the_closed_vocabularies(self):
         s = json.loads((BUS / "schemas/model-posture-rollup-v1.schema.json").read_text(encoding="utf-8"))["properties"]
         self.assertEqual(set(s["provider"]["enum"]), set(mp.PROVIDERS))

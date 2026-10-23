@@ -207,7 +207,9 @@ def generator() -> dict:
 def _int_or_none(v):
     if isinstance(v, bool):
         return None
-    if isinstance(v, int) and 0 <= v <= MAX_COUNT:
+    if isinstance(v, int) and v > MAX_COUNT:      # refused, never silently dropped (metrics law 2)
+        raise Refused("INPUT_FIELD_INVALID", f"measurement {v} exceeds {MAX_COUNT}")
+    if isinstance(v, int) and v >= 0:
         return v
     return None
 
@@ -495,8 +497,8 @@ def provenance(records: list[dict], bus=None, known: set[str] | None = None) -> 
     """R19.3(b): a 40-hex field must name a real object, never merely look like one. generator.blob is this
     running tool's own blob or one the tool path has had in the bus; each sources[].blob is a blob object in the
     bus (or one this run is about to write, `known`). Without a bus, a rollup's sources cannot be authenticated."""
-    # With a bus, only a blob the tool path has had IN the bus vouches for a record: a locally edited tool cannot
-    # sign its own shards (r2 review). Without a bus (reduce, local only) the running tool is the generator.
+    # With a bus, only a blob the tool path has had IN the bus vouches for a record: this rules out a blob that was
+    # never in the bus (a locally edited tool), not a forger pasting a historical one (r2 review). Without a bus (reduce, local only) the running tool is the generator.
     legal_gen = tool_blobs(bus) if bus is not None else {generator()["blob"]}
     for r in records:
         if r["generator"]["blob"] not in legal_gen:
@@ -732,6 +734,8 @@ def rollup_bytes(bus, project: str, target: str, sources: list[str], pending: di
         for line in _ascii(data).splitlines():
             r = _record(line)
             validate(r)
+            if r["project"] != project or r["period"] != p:
+                raise Refused("RECORD_INVALID", f"{rel}: record outside this shard's project/period")
             recs.append(r)
         srcs.append({"path": rel, "blob": blob_id(data)})
     return serialize(merge_records(recs, project, target, srcs))
@@ -843,6 +847,9 @@ def main(argv=None) -> int:
             print(json.dumps({"prune": prune(a.bus, a.project, today(a.today), a.commit)}, indent=2))
     except Refused as e:
         print(f"[model-posture] REFUSED {e.code}: {e.detail}", file=sys.stderr)
+        return 2
+    except (ValueError, OSError, UnicodeError) as e:   # bad --today, policy or input bytes: a refusal, exit 2
+        print(f"[model-posture] REFUSED INPUT_INVALID: {e.__class__.__name__}", file=sys.stderr)
         return 2
     return 0
 
