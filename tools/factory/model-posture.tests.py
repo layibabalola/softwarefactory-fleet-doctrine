@@ -364,6 +364,16 @@ class PublishAndPrune(unittest.TestCase):
             rc, _, err = self.republish(week, ts)
             self.assertEqual((rc, "SHARD_ROLLED_UP" in err), (2, True), (week, err))
 
+    def test_republish_refuses_an_archived_week_restored_into_the_worktree(self):
+        self.publish_week("2026-W27", "2026-06-30T10:00:00Z")
+        run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        shard = Path(self.tmp.name) / "restored.jsonl"
+        shard.write_bytes(mp.serialize(mp.reduce_events([ev(ts="2026-06-30T10:00:00Z", input_tokens=10), ev(
+            ts="2026-06-30T10:00:00Z", role="census", req="gpt-6-luna", eff="gpt-6-luna", input_tokens=4)], "conjugal", "2026-W27")))
+        (self.bus / "metrics/conjugal/posture-2026-W27.jsonl").write_bytes(shard.read_bytes())   # restored, identical bytes
+        rc, _, err = run("publish", "--bus", str(self.bus), "--shard", str(shard), "--project", "conjugal", "--week", "2026-W27")
+        self.assertEqual((rc, "SHARD_ROLLED_UP" in err), (2, True), err)
+
     def test_republish_refuses_when_rollup_ancestry_is_unreadable_or_malformed(self):
         self.publish_week("2025-W27", "2025-07-01T10:00:00Z")
         run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
@@ -378,7 +388,14 @@ class PublishAndPrune(unittest.TestCase):
         rc, _, err = self.republish("2025-W36", "2025-09-02T10:00:00Z")
         self.assertEqual((rc, "ROLLUP_ANCESTRY_UNREADABLE" in err), (2, True), err)
         # malformed structures are a controlled refusal, never a traceback
-        for bad in (b"[]\n", b'{"sources":null}\n'):
+        base = json.loads(good.decode().splitlines()[0])
+        variants = [b"[]\n", b'{"sources":null}\n']
+        for mutate in (lambda r: r.pop("sources"), lambda r: r.update(sources=[]),
+                       lambda r: r["sources"][0].pop("blob"), lambda r: r["sources"][0].update(blob=["x"])):
+            r = json.loads(json.dumps(base))
+            mutate(r)
+            variants.append((json.dumps(r, sort_keys=True) + "\n").encode())
+        for bad in variants:
             year.write_bytes(bad)
             git(self.bus, "add", "-f", str(year))
             git(self.bus, "commit", "-qm", "malformed")

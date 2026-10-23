@@ -708,16 +708,24 @@ def rolled_up(bus, project: str, rel: str) -> bool:
         try:
             raw = git(bus, "show", ref, binary=True)
             first = json.loads(raw.decode("ascii").splitlines()[0])
-            pairs = [(s.get("path"), s.get("blob")) for s in first.get("sources", [])]
-        except (Refused, ValueError, IndexError, UnicodeError, AttributeError, TypeError):
+            if first["grain"] == "week":
+                continue   # a weekly shard has no ancestry
+            if first["grain"] not in ("month", "year"):
+                raise ValueError("grain")
+            srcs = first["sources"]
+            if not isinstance(srcs, list) or not srcs:
+                raise ValueError("sources")
+            for s in srcs:
+                if not (isinstance(s["path"], str) and isinstance(s["blob"], str) and re.fullmatch(r"[0-9a-f]{40}", s["blob"])):
+                    raise ValueError("source")
+                if s["path"] == rel:
+                    return True
+                if s["blob"] not in seen:
+                    seen.add(s["blob"])
+                    stack.append(s["blob"])
+        except (Refused, ValueError, IndexError, UnicodeError, AttributeError, TypeError, KeyError):
             # unreadable or malformed ancestry cannot prove the week is unrolled: refuse rather than risk a double count
             raise Refused("ROLLUP_ANCESTRY_UNREADABLE", ref[:60]) from None
-        for path, blob in pairs:
-            if path == rel:
-                return True
-            if blob and blob not in seen:
-                seen.add(blob)
-                stack.append(blob)
     return False
 
 
@@ -862,7 +870,7 @@ def main(argv=None) -> int:
             dest = pathlib.Path(a.bus) / rel
             if dest.exists() and dest.read_bytes().replace(b"\r\n", b"\n") != data:
                 raise Refused("SHARD_EXISTS", f"{rel} exists with different bytes; a published week is never rewritten")
-            if not dest.exists() and rolled_up(a.bus, a.project, rel):
+            if rolled_up(a.bus, a.project, rel):
                 raise Refused("SHARD_ROLLED_UP", f"{rel} is already counted in a roll-up; republishing would count it twice")
             if project_total(dest.parent, {dest.name: len(data)}) > PROJECT_CAP:
                 raise Refused("SHARD_OVER_BUDGET", f"metrics/{a.project}/ would exceed {PROJECT_CAP} B")
