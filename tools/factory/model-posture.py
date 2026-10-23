@@ -49,6 +49,12 @@ PROJECT_RX = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
 # provider-usage-event-v1's model pattern minus '/' and capped at 80 (R19.3(c)): no path-shaped value travels.
 NAME_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+-]{0,79}$")
 EFFORT_RX = re.compile(r"^[a-z]{2,12}$")
+# What TRAVELS in the model, provider and effort fields is a closed grammar or enum (r2 review): a well-formed
+# input outside it travels as "other", so none of these fields can carry a hostname, a ticket, a padded SHA or
+# any other free text. A new tier or family is a schema bump, ratified first.
+MODEL_RX = re.compile(r"^(?:gpt-\d+(?:\.\d+)*-(?:sol|luna|astra)|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\d+(?:-\d+)*|other)$")
+PROVIDERS = ("claude", "codex", "other")
+EFFORTS = ("minimal", "low", "medium", "high", "xhigh", "max", "other")
 ROLE_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")     # INPUT shape only; what travels is ROLES
 # The published role is a closed enum (R19.3(c)): a well-formed input role outside it travels as "other", so no
 # free text (host, ticket, subject or prompt fragment) can ride in the role field. Mirrored by the schema enum.
@@ -68,7 +74,7 @@ HEX40 = re.compile(r"^[0-9a-f]{40}$")
 SCREEN = (
     ("email address", re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")),
     ("account/org uuid", re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.I)),
-    ("bearer/API token", re.compile(r"\b(sk-ant-|sk-|pk1:|gh[pousr]_[A-Za-z0-9]{20,}|Bearer\s+[A-Za-z0-9._-]{20,})")),
+    ("bearer/API token", re.compile(r"(?<![A-Za-z0-9])(sk-ant-|sk-|pk1:|gh[pousr]_[A-Za-z0-9]{20,}|Bearer\s+[A-Za-z0-9._-]{20,})")),
     ("user home path", re.compile(r"(?:[A-Za-z]:[\\/]+Users[\\/]+|/Users/|/home/)[^\s\\/\"]+", re.I)),
     ("project coordination path", re.compile(r"coordination[\\/]")),
     ("lane wire path", re.compile(r"coordination/(lanes|comms)/")),
@@ -76,7 +82,7 @@ SCREEN = (
     ("owner transcript store", re.compile(r"loops\.json")),
     ("owner state dir", re.compile(r"(?<![A-Za-z0-9_./-])state/")),
     ("dead-man floor surface", re.compile(r"coordination/deadman/")),
-    ("project subject id", re.compile(r"\bS\d+\b")),
+    ("project subject id", re.compile(r"(?<![A-Za-z0-9])S\d+(?![0-9])")),
     ("project-internal identifier", re.compile(r"\bpairprog_\w*", re.I)),
     # This data plane's own never-publish classes.
     ("per-call timestamp", re.compile(r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}")),
@@ -205,6 +211,14 @@ def _clean(v, rx, field):
     return v
 
 
+def _fold(v, allowed):
+    """A well-formed input value outside the published vocabulary travels as "other"."""
+    if v is None:
+        return None
+    ok = allowed.match(v) if isinstance(allowed, re.Pattern) else v in allowed
+    return v if ok else "other"
+
+
 def alias_resolves(req: str, eff: str) -> bool:
     """A Claude family alias resolving to its own dated id (opus -> claude-opus-5-5) is the mandated mechanism
     (R16.2), not a fallback (R19.3(e)). A different family (opus -> claude-sonnet-5-5) is a fallback."""
@@ -233,10 +247,10 @@ def reduce_events(events: list[dict], project: str, week: str, gen: dict | None 
             raise Refused("INPUT_ROW_INVALID", f"row {i}: ts unparseable") from None
         actor = e.get("actor") if isinstance(e.get("actor"), dict) else {}
         role = _clean(actor.get("role"), ROLE_RX, "actor.role")
-        key = (_clean(e.get("provider"), PROVIDER_RX, "provider"),
-               _clean(e.get("model_requested"), NAME_RX, "model_requested"),
-               _clean(e.get("model_effective"), NAME_RX, "model_effective"),
-               _clean(e.get("effort_effective"), EFFORT_RX, "effort_effective"),
+        key = (_fold(_clean(e.get("provider"), PROVIDER_RX, "provider"), PROVIDERS),
+               _fold(_clean(e.get("model_requested"), NAME_RX, "model_requested"), MODEL_RX),
+               _fold(_clean(e.get("model_effective"), NAME_RX, "model_effective"), MODEL_RX),
+               _fold(_clean(e.get("effort_effective"), EFFORT_RX, "effort_effective"), EFFORTS),
                None if role is None else (role.lower() if role.lower() in ROLES else "other"))
         if key[0] is None:
             raise Refused("INPUT_FIELD_INVALID", f"row {i}: provider missing")
@@ -347,11 +361,13 @@ def validate(r: dict) -> None:
         bad("grain/period")
     if not isinstance(r["project"], str) or not PROJECT_RX.match(r["project"]):
         bad("project")
-    if not isinstance(r["provider"], str) or not PROVIDER_RX.match(r["provider"]):
+    if r["provider"] not in PROVIDERS:
         bad("provider")
-    for k, rx in (("model_requested", NAME_RX), ("model_effective", NAME_RX), ("effort_effective", EFFORT_RX)):
-        if r[k] is not None and (not isinstance(r[k], str) or not rx.match(r[k])):
+    for k in ("model_requested", "model_effective"):
+        if r[k] is not None and (not isinstance(r[k], str) or not MODEL_RX.match(r[k])):
             bad(k)
+    if r["effort_effective"] is not None and r["effort_effective"] not in EFFORTS:
+        bad("effort_effective")
     if r["role"] is not None and r["role"] not in ROLES:
         bad("role")
     for k in ("calls", "tasks", "first_pass_accept", "fallback_count"):
@@ -369,7 +385,7 @@ def validate(r: dict) -> None:
         bad("outcome")
     if sum(r["outcome"].values()) != r["calls"]:
         bad("outcome histogram does not sum to calls")
-    if r["percentile_basis"] not in ("calls", "weighted-shard-percentiles"):
+    if r["percentile_basis"] != ("calls" if r["grain"] == "week" else "weighted-shard-percentiles"):
         bad("percentile_basis")
     g = r["generator"]
     if not isinstance(g, dict) or set(g) != {"path", "blob"} or g["path"] != TOOL_PATH or not HEX40.match(str(g["blob"])):
@@ -389,10 +405,28 @@ def validate(r: dict) -> None:
                 bad("source path")
 
 
-HEX40_ANY = re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{40}(?![0-9A-Fa-f])")
+# Any run of 12+ hex digits outside a provenance field is refused: padding cannot smuggle a SHA past it.
+HEX_RUN = re.compile(r"[0-9A-Fa-f]{12,}")
 # Keys are a closed whitelist (validate()); only these may appear as keys, and they are never screened, so the
 # schema's own vocabulary (QUOTA_DORMANT) cannot trip a class meant for values (R19.3(d)).
 KEY_VOCAB = frozenset({*TOP_REQUIRED, "sources", *MEASURES, *OUTCOMES, *STAT_KEYS, "path", "blob"})
+
+
+def _ascii(data: bytes) -> str:
+    try:
+        return data.decode("ascii")
+    except UnicodeDecodeError:
+        raise Refused("RECORD_INVALID", "a shard is ASCII") from None
+
+
+def _record(line: str) -> dict:
+    try:
+        r = json.loads(line)
+    except ValueError:
+        raise Refused("RECORD_INVALID", "unparseable line") from None
+    if not isinstance(r, dict):
+        raise Refused("RECORD_INVALID", "not an object")
+    return r
 
 
 def _strings(node, path=()):
@@ -415,11 +449,8 @@ def _is_provenance(path) -> bool:
 def screen(data: bytes) -> None:
     """The never-publish screen runs over DECODED strings (R19.3(a)): a JSON \\u escape cannot hide a value
     from it. A 40-hex value is legal only AS generator.blob or sources[].blob, which provenance() authenticates."""
-    for line in data.decode("ascii").splitlines():
-        try:
-            r = json.loads(line)
-        except ValueError:
-            raise Refused("RECORD_INVALID", "unparseable line") from None
+    for line in _ascii(data).splitlines():
+        r = _record(line)
         for path, s in _strings(r):
             if path and path[-1] == "<key>" and s in KEY_VOCAB:
                 continue
@@ -431,7 +462,7 @@ def screen(data: bytes) -> None:
                 m = rx.search(s)
                 if m:
                     raise Refused("SCREEN_REFUSED", f"{name}: {m.group(0)[:24]!r}")
-            if HEX40_ANY.search(s):
+            if HEX_RUN.search(s):
                 raise Refused("SCREEN_REFUSED", "a 40-hex value outside generator.blob/sources[].blob")
 
 
@@ -456,7 +487,7 @@ def provenance(records: list[dict], bus=None, known: set[str] | None = None) -> 
             raise Refused("PROVENANCE_UNAUTHENTICATED", f"generator.blob {r['generator']['blob'][:12]} is not a blob of {TOOL_PATH}")
         for s in r.get("sources", []):
             b = s["blob"]
-            if known and b in known:
+            if known and b in known and bus is not None:
                 continue
             if bus is None or git(bus, "cat-file", "-t", b, check=False) != "blob":
                 raise Refused("PROVENANCE_UNAUTHENTICATED", f"sources[].blob {b[:12]} is not a blob in the bus")
@@ -467,11 +498,8 @@ def check_shard(data: bytes, project: str, period: str, bus=None, known: set[str
     if not data:
         return
     records = []
-    for line in data.decode("ascii").splitlines():
-        try:
-            r = json.loads(line)
-        except ValueError:
-            raise Refused("RECORD_INVALID", "unparseable line") from None
+    for line in _ascii(data).splitlines():
+        r = _record(line)
         validate(r)
         if r["project"] != project or r["period"] != period:
             raise Refused("RECORD_INVALID", "record outside this shard's project/period")
@@ -524,7 +552,7 @@ def read_records(paths: list[str]) -> list[dict]:
     for p in paths:
         for line in pathlib.Path(p).read_text(encoding="utf-8").splitlines():
             if line.strip():
-                r = json.loads(line)
+                r = _record(line)
                 validate(r)
                 out.append(r)
     return out
@@ -569,7 +597,7 @@ def _matches(entry: dict, row: dict) -> bool:
     rx = entry.get("model_pattern")
     if rx and not re.fullmatch(rx, model):
         return False
-    if "effort" in entry and row["effort_effective"] not in (entry["effort"], None):
+    if "effort" in entry and row["effort_effective"] != entry["effort"]:   # unrecorded effort proves nothing
         return False
     return True
 
@@ -676,8 +704,8 @@ def rollup_bytes(bus, project: str, target: str, sources: list[str], pending: di
     for p in sorted(sources, key=lambda s: shard_name(s)):
         rel = f"metrics/{project}/{shard_name(p)}"
         data = pending[rel] if rel in pending else head_blob(bus, rel)
-        for line in data.decode("ascii").splitlines():
-            r = json.loads(line)
+        for line in _ascii(data).splitlines():
+            r = _record(line)
             validate(r)
             recs.append(r)
         srcs.append({"path": rel, "blob": blob_id(data)})

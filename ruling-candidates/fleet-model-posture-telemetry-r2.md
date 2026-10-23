@@ -16,8 +16,8 @@ Relationship to existing doctrine: extends the `metrics/` data plane (`metrics/R
 
 ## What r2 changes against the R19.3 defects
 
-Each defect has a test in `tools/factory/model-posture.tests.py` (class `R19Defects`). Every one of those
-tests failed on r1 head `6b6d79dd` and passes on this head.
+Each R19.3 defect has a test in `tools/factory/model-posture.tests.py` (class `R19Defects`), including
+positive controls. Every defect test (not the positive controls) failed on r1 head `6b6d79dd`.
 
 - **(a) Escaped values.** The screen runs over decoded string values, never over the raw text. A shard must
   also be the writer's canonical bytes, or it is refused with `RECORD_NOT_CANONICAL`.
@@ -37,6 +37,31 @@ tests failed on r1 head `6b6d79dd` and passes on this head.
   high. A `swarm` role runs at medium, per R11.
 - **(h) Relationship line.** The line above.
 
+## What the r2 panel found on `8b250107`, and how this head answers it
+
+A fresh panel reviewed the first r2 head, `8b250107`. Its seats were Codex `gpt-6.1-sol` on privacy, Codex
+`gpt-6.1-sol` on conflicts, Codex `gpt-6-astra` on test adequacy, and Claude `sonnet` on privacy. Every
+finding it confirmed is fixed on this head, and each fix has a test in class `R2ReviewFindings` that was red
+on `8b250107`:
+
+- **Free text in the model, provider and effort fields.** A hostname, a padded SHA or prompt text could ride
+  in these fields. Model ids now travel only if they match a closed grammar: the `gpt-<v>-(sol|luna|astra)`
+  tiers, the Claude aliases, and `claude-<family>-<n>`. Provider and effort are enums. Any well-formed value
+  outside them travels as `other`.
+- **Boundary bypasses in the screen.** A prefixed `m_sk-ant-…` token, a prefixed `m_S147` subject id and a
+  hex-padded SHA all got past it. The screen now anchors on a non-alphanumeric lookbehind, and any run of 12 or
+  more hex digits outside a provenance field is refused.
+- **Malformed shards.** A non-ASCII or non-object shard crashed the tool with exit 1. It now refuses with
+  `RECORD_INVALID` and exit 2.
+- **The `known` blob set.** It authenticated a source without a bus. It now applies only when a bus is given.
+- **Weekly percentile basis.** A weekly record could carry the roll-up `percentile_basis`. That is now
+  refused.
+- **Unrecorded effort.** A call with no recorded effort satisfied a required effort. It now never does.
+
+Three tests were strengthened after the Astra seat showed that each would survive a mutation of its own fix:
+(e) now covers every alias, (f) now covers a request-only match, and (g) now proves that `load_policy` refuses
+a literal id.
+
 Beyond the eight defects, every refusal code now has a behavioural test (classes `RefusalCoverage` and
 `RollupRefusals`). One bug was found on the way and fixed: an out-of-range ISO week such as `2026-W99`
 raised a bare `ValueError` instead of `PERIOD_INVALID`.
@@ -54,7 +79,7 @@ raised a bare `ValueError` instead of `PERIOD_INVALID`.
 3. **Never published:** emails, account or org ids, quota percentages, prompts, verdict reasoning, subject
    ids, session ids, paths, private-repository SHAs and per-call timestamps. They are kept out by five
    layers, each of which refuses rather than warns:
-   - a field whitelist;
+   - a field whitelist, with closed vocabularies for model, provider, effort and role;
    - canonical bytes;
    - a screen over decoded values;
    - a closed role enum;

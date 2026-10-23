@@ -76,8 +76,10 @@ The following never appear in a shard:
 
 These protections are enforced in layers, and any breach is **refused, never edited and never warned past**:
 
-1. A field whitelist, which is the schema mirrored in code. Model names carry no `/` and at most 80
-   characters; effort is lower-case letters; `role` is a closed enum.
+1. A field whitelist, which is the schema mirrored in code. Model ids travel only as a closed grammar (the
+   `gpt-<v>-(sol|luna|astra)` tiers, the Claude aliases, `claude-<family>-<n>`); provider, effort and `role`
+   are closed enums; a well-formed input value outside them travels as `other`. A non-ASCII or non-object
+   shard is `RECORD_INVALID` (exit 2).
 2. Canonical form: a shard must be exactly the writer's serialisation, byte for byte
    (`RECORD_NOT_CANONICAL`), so no JSON escape or spacing variant reaches the screen.
 3. A screen. It is the union of the bus `fleet-scorecard.py` `SCREEN`, Conjugal's `doctrine_outbox.LAW4`
@@ -85,7 +87,7 @@ These protections are enforced in layers, and any breach is **refused, never edi
    words. It runs over every DECODED string value (and every key outside the schema's own vocabulary), never
    over the raw text, so a `\u` escape cannot hide a value and the schema's own `QUOTA_DORMANT` key cannot
    trip it.
-4. A rule that a 40-hex value may appear only as `generator.blob` or `sources[].blob`, and provenance
+4. A rule that a run of 12 or more hex digits may appear only as a 40-hex `generator.blob` or `sources[].blob`, and provenance
    authentication (`PROVENANCE_UNAUTHENTICATED`): `generator.blob` must be the running tool's own blob or one
    `tools/factory/model-posture.py` has had in the bus history, and each `sources[].blob` must be a blob object
    in the bus. A value that merely looks like a SHA is never trusted for its shape.
@@ -125,7 +127,8 @@ truncated.
 
 The policy names Codex TIERS with a dated `min_version` floor, never a literal id (R16.2): a newer id of the
 tier stays on posture and an older one does not. Matching uses `model_effective`; `model_requested` is read
-only when no effective id was recorded.
+only when no effective id was recorded. A role that requires an effort is met only by that recorded effort;
+an unrecorded effort never satisfies it.
 
 - **Codex default:** the Sol tier, at or above 6.1 (resolved 2026-10-22: `gpt-6.1-sol`), effort high.
 - **Astra tier:** an occasional diversity seat only, never a gate. The policy caps its share at 25% of a

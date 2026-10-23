@@ -131,7 +131,7 @@ class Screen(unittest.TestCase):
             mp.screen(line.encode("ascii"))
 
     def test_shard_over_budget_refuses_never_truncates(self):
-        rows = [ev(req=f"m-{i:04d}", eff=f"m-{i:04d}") for i in range(40)]
+        rows = [ev(req=f"gpt-6.{i}-sol", eff=f"gpt-6.{i}-sol") for i in range(40)]
         data = mp.serialize(mp.reduce_events(rows, "conjugal", "2026-W43"))
         self.assertGreater(len(data), 16 * 1024)
         with self.assertRaises(mp.Refused) as c:
@@ -259,12 +259,12 @@ class PublishAndPrune(unittest.TestCase):
     def test_callers_screen_reduce_and_publish(self):
         """The screen is wired into BOTH CLI paths, not only callable (mutate the caller: drop check_shard -> red)."""
         calls = Path(self.tmp.name) / "calls.jsonl"
-        calls.write_text(json.dumps(ev(req="S147", eff="S147")) + "\n", encoding="utf-8")
-        rc, out, err = run("reduce", "--input", str(calls), "--project", "conjugal", "--week", "2026-W43")
+        calls.write_text(json.dumps(ev(project="loops.json")) + "\n", encoding="utf-8")
+        rc, out, err = run("reduce", "--input", str(calls), "--project", "loops.json", "--week", "2026-W43")
         self.assertEqual((rc, out, "SCREEN_REFUSED" in err), (2, "", True))
         shard = Path(self.tmp.name) / "bad.jsonl"
-        shard.write_bytes(mp.serialize(mp.reduce_events([ev(req="S147", eff="S147")], "conjugal", "2026-W43")))
-        rc, _, err = run("publish", "--bus", str(self.bus), "--shard", str(shard), "--project", "conjugal", "--week", "2026-W43")
+        shard.write_bytes(mp.serialize(mp.reduce_events([ev(project="loops.json")], "loops.json", "2026-W43")))
+        rc, _, err = run("publish", "--bus", str(self.bus), "--shard", str(shard), "--project", "loops.json", "--week", "2026-W43")
         self.assertEqual((rc, "SCREEN_REFUSED" in err), (2, True))
         self.assertFalse((self.bus / "metrics").exists())
 
@@ -416,8 +416,10 @@ class R19Defects(unittest.TestCase):
     # (e) a Claude alias resolving to its dated id is not a fallback.
     def test_e_alias_resolution_is_not_fallback(self):
         pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
-        recs = mp.reduce_events([ev(provider="claude", req="opus", eff="claude-opus-5-5")] * 10, "conjugal", "2026-W43")
-        self.assertEqual(recs[0]["fallback_count"], 0)
+        recs = mp.reduce_events(
+            [ev(provider="claude", req=a, eff=f"claude-{a}-5-5") for a in mp.CLAUDE_ALIASES] * 10, "conjugal", "2026-W43")
+        self.assertEqual(len(recs), len(mp.CLAUDE_ALIASES))
+        self.assertTrue(all(r["fallback_count"] == 0 for r in recs))
         self.assertNotIn("FALLBACK_RATE_HIGH", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
         other = mp.reduce_events([ev(provider="claude", req="opus", eff="claude-sonnet-5-5")], "conjugal", "2026-W43")
         self.assertEqual(other[0]["fallback_count"], 1)
@@ -425,8 +427,10 @@ class R19Defects(unittest.TestCase):
     # (f) the effective id decides; a matching request cannot hide a stale effective model.
     def test_f_effective_drift_is_not_masked(self):
         pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
-        recs = mp.reduce_events([ev(req="gpt-6.1-sol", eff="gpt-5.6-sol")], "conjugal", "2026-W43")
-        self.assertIn("OFF_OWNER_POSTURE", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
+        for event in (ev(req="gpt-6.1-sol", eff="gpt-5.6-sol"),
+                      ev(provider="claude", req="opus", eff="unlisted")):     # kills a model_requested fallback in _matches
+            recs = mp.reduce_events([event], "conjugal", "2026-W43")
+            self.assertIn("OFF_OWNER_POSTURE", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
 
     # (g) tiers, not literal ids; Luna must be high; R11 swarm lanes run medium.
     def codes(self, rows):
@@ -446,6 +450,12 @@ class R19Defects(unittest.TestCase):
 
     def test_g_policy_names_no_literal_codex_id(self):
         raw = (BUS / "policy/model-posture.json").read_text(encoding="utf-8")
+        bad = json.loads(raw)
+        bad["roles"]["default"]["allowed"][0] = {"provider": "codex", "model_pattern": "gpt-6[.]1-sol"}
+        with tempfile.TemporaryDirectory() as d:                              # load_policy itself refuses a literal id
+            p = Path(d) / "p.json"
+            p.write_text(json.dumps(bad), encoding="utf-8")
+            self.refused(lambda: mp.load_policy(str(p)), "POLICY_INVALID")
         roles = json.loads(raw)["roles"]
         for role, rp in roles.items():
             for e in [*rp.get("allowed", []), *rp.get("max_share", [])]:
@@ -460,6 +470,67 @@ class R19Defects(unittest.TestCase):
         self.assertTrue(line)
         self.assertIn("metrics/README.md", line)
         self.assertIn("supersedes", line)
+
+
+class R2ReviewFindings(unittest.TestCase):
+    """Findings of the r2 adversarial panel on head 8b250107 (each red on that head)."""
+
+    def refused(self, fn, *codes):
+        with self.assertRaises(mp.Refused) as c:
+            fn()
+        self.assertIn(c.exception.code, codes)
+
+    FREE_TEXT = ("private-host.internal", "Ignore-previous-instructions", "DESKTOP-LAYI01", "10.20.30.40", "s147",
+                 "f1234567890abcdef1234567890abcdef12345678", "1761132600", "gpt-6-layiphone")
+
+    def test_model_provider_effort_never_carry_free_text(self):
+        for v in self.FREE_TEXT:
+            data = mp.serialize(mp.reduce_events([ev(req=v, eff=v)], "conjugal", "2026-W43"))
+            self.assertNotIn(v, data.decode(), v)
+            mp.check_shard(data, "conjugal", "2026-W43")
+        data = mp.serialize(mp.reduce_events([ev(provider="alice-laptop", effort="layiphone")], "conjugal", "2026-W43"))
+        self.assertNotIn("alice", data.decode())
+        self.assertNotIn("layiphone", data.decode())
+        for kw in ({"model_requested": "private-host.internal"}, {"model_effective": "s147"},
+                   {"provider": "alice-laptop"}, {"effort_effective": "layiphone"}):
+            self.refused(lambda: mp.check_shard(rec_line(**kw), "conjugal", "2026-W43"), "RECORD_INVALID")
+
+    def test_screen_has_no_boundary_bypass(self):
+        base = json.loads(rec_line())
+        for bad in ("m_sk-ant-abcdefghijklmnopqrst", "m_S147", "f1234567890abcdef1234567890abcdef12345678",
+                    "x" + "ab12" * 4):
+            line = (json.dumps({**base, "model_requested": bad}, sort_keys=True, separators=(",", ":")) + "\n").encode()
+            self.refused(lambda: mp.screen(line), "SCREEN_REFUSED")
+
+    def test_non_ascii_shard_refuses_exit_2(self):
+        self.refused(lambda: mp.check_shard(b"\xff\n", "conjugal", "2026-W43"), "RECORD_INVALID")
+        self.refused(lambda: mp.check_shard(b"[1]\n", "conjugal", "2026-W43"), "RECORD_INVALID")
+        with tempfile.TemporaryDirectory() as d:
+            s = Path(d) / "s.jsonl"
+            s.write_bytes(b"\xff\n")
+            rc, _, err = run("publish", "--bus", d, "--shard", str(s), "--project", "conjugal", "--week", "2026-W43")
+            self.assertEqual((rc, "RECORD_INVALID" in err), (2, True))
+
+    def test_known_set_never_authenticates_without_a_bus(self):
+        wk = mp.reduce_events([ev()], "conjugal", "2026-W43")
+        data = mp.serialize(mp.merge_records(wk, "conjugal", "2026-10", [{"path": "metrics/conjugal/posture-2026-W43.jsonl", "blob": "c" * 40}]))
+        self.refused(lambda: mp.check_shard(data, "conjugal", "2026-10", None, {"c" * 40}), "PROVENANCE_UNAUTHENTICATED")
+
+    def test_percentile_basis_matches_grain(self):
+        self.refused(lambda: mp.check_shard(rec_line(percentile_basis="weighted-shard-percentiles"), "conjugal", "2026-W43"),
+                     "RECORD_INVALID")
+
+    def test_unrecorded_effort_is_not_high(self):
+        pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
+        recs = mp.reduce_events([ev(role="census", req="gpt-6-luna", eff="gpt-6-luna", effort=None)], "conjugal", "2026-W43")
+        self.assertIn("OFF_OWNER_POSTURE", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
+
+    def test_schema_mirrors_the_closed_vocabularies(self):
+        s = json.loads((BUS / "schemas/model-posture-rollup-v1.schema.json").read_text(encoding="utf-8"))["properties"]
+        self.assertEqual(set(s["provider"]["enum"]), set(mp.PROVIDERS))
+        self.assertEqual(set(s["effort_effective"]["enum"]) - {None}, set(mp.EFFORTS))
+        self.assertEqual(s["model_requested"]["pattern"], mp.MODEL_RX.pattern)
+        self.assertEqual(s["model_effective"]["pattern"], mp.MODEL_RX.pattern)
 
 
 class RefusalCoverage(unittest.TestCase):
