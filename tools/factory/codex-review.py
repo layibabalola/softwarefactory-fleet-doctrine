@@ -169,6 +169,10 @@ CACHE_MAX_AGE = timedelta(days=7)
 CACHE_NAME = "models_cache.json"
 LAST_GOOD_NAME = "codex-review-last-good.json"
 _SLUG_RE = re.compile(r"gpt-(\d+(?:\.\d+)*)-([a-z]+)")
+# The owner's stated default per tier (ruling 2026-10-22: sol -> gpt-6.1-sol). A FLOOR that only REPORTS: an id older
+# than it is flagged `stale` (Conjugal request 1), but the floor never selects an id -- a floor newer than anything
+# visible must not change which id launches. Raise it with a new owner ruling.
+OWNER_DEFAULT_FLOOR: dict[str, str] = {"sol": "gpt-6.1-sol"}
 
 _BANNER_RE = re.compile(r"OpenAI Codex v\S+")
 _SEPARATOR = "--------"
@@ -250,6 +254,14 @@ def _parse_time(text: object) -> datetime | None:
         return None
 
 
+def _floor_finding(tier: str, model: str) -> str | None:
+    """The finding when `model` is older than the owner's default for its tier, else None. Reports only."""
+    floor = OWNER_DEFAULT_FLOOR.get(tier)
+    if floor is not None and _version(model) < _version(floor):
+        return f"resolved {model} is older than the owner default {floor} (ruling 2026-10-22)"
+    return None
+
+
 def _read_json(path: Path) -> object:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -297,6 +309,9 @@ def resolve_tier(tier: str, effort: str, home: Path | None = None, now: datetime
             if newest_listed is not None and _version(newest_listed) > _version(best):
                 stale = (f"resolved {best} is older than {newest_listed}, which the cache lists but not as visible "
                          f"with {effort} effort")
+            floor = _floor_finding(tier, best)
+            if floor is not None:
+                stale = floor if stale is None else f"{stale}; {floor}"
             return {"model": best, "resolution": "cache", "reason": None, "stale": stale}
         reason = f"{CACHE_NAME} lists no visible gpt-<version>-{tier} model supporting {effort}"
 
@@ -306,8 +321,11 @@ def resolve_tier(tier: str, effort: str, home: Path | None = None, now: datetime
     if not isinstance(model, str) or not _SLUG_RE.fullmatch(model) or _SLUG_RE.fullmatch(model).group(2) != tier:
         raise ValueError(f"cannot resolve tier {tier!r} at {effort}: {reason}, and {home / LAST_GOOD_NAME} records no "
                          f"last-good id for it (run any codex command once to refresh the cache, or restore the file)")
-    return {"model": model, "resolution": "fallback", "reason": reason,
-            "stale": f"fallback to the last-good {model}: {reason}; a newer {tier} model may exist"}
+    stale = f"fallback to the last-good {model}: {reason}; a newer {tier} model may exist"
+    floor = _floor_finding(tier, model)
+    if floor is not None:
+        stale += f"; {floor}"
+    return {"model": model, "resolution": "fallback", "reason": reason, "stale": stale}
 
 
 def _store_last_good(home: Path, tier: str, model: str, effort: str) -> None:

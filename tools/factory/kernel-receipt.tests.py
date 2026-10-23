@@ -2130,6 +2130,14 @@ class TierKeyClassTests(unittest.TestCase):
                     ({"actual_sandbox": "workspace-write"}, "sandbox 'workspace-write'", "writable")):
                 self.refused(land, self.sol(v, **over), says, f"{key} {why}")
 
+    def test_a_class_naming_a_tier_at_an_effort_no_role_has_is_refused(self):
+        for key in ("cross-family:codex-sol-low", "cross-family:codex-sol-xhigh", "cross-family:codex-gpt-6-sol-low",
+                    "cross-family:codex-luna-low"):
+            land = self.landing(key)
+            code, out, err = self.receipt(land, self.sol(land[3]))
+            self.assertEqual(2, code, key)
+            self.assertIn("names no tools/codex-review.py role", err, key)
+
     def test_the_refusal_for_an_unknown_class_lists_the_tier_classes(self):
         land = self.landing("cross-family:codex-terra-high")
         code, out, err = self.receipt(land, self.sol(land[3]))

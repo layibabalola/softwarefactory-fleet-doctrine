@@ -1118,6 +1118,27 @@ class TierResolutionTests(unittest.TestCase):
         self.assertEqual(("gpt-6.1-sol", "cache"), (got["model"], got["resolution"]))
         self.assertIn("gpt-6.3-sol", got["stale"])             # Conjugal: never silently keep an older id
 
+    def test_a_cache_resolution_older_than_the_owner_default_floor_is_stale_and_still_launches_it(self):
+        # Conjugal request 1 / K180 seat finding 4: the floor (sol: gpt-6.1-sol) only REPORTS; it never selects.
+        write_cache(self.home, _models(("gpt-6-sol", "list", ALL)))
+        got = self.resolve()
+        self.assertEqual(("gpt-6-sol", "cache"), (got["model"], got["resolution"]))
+        self.assertIn("gpt-6.1-sol", got["stale"])
+        self.assertIn("owner default", got["stale"])
+
+    def test_a_fallback_older_than_the_owner_default_floor_names_the_floor(self):
+        self.home.mkdir(parents=True)
+        self.state.write_text(json.dumps({"sol": {"model": "gpt-6-sol", "effort": "high"}}), encoding="utf-8")
+        got = self.resolve()
+        self.assertEqual(("gpt-6-sol", "fallback"), (got["model"], got["resolution"]))
+        self.assertIn("gpt-6.1-sol", got["stale"])
+        self.assertIn("owner default", got["stale"])
+
+    def test_the_floor_does_not_flag_a_tier_without_one_or_an_id_at_or_above_it(self):
+        write_cache(self.home, _models(("gpt-6.2-sol", "list", ALL), ("gpt-6-luna", "list", ALL)))
+        self.assertIsNone(self.resolve()["stale"])
+        self.assertIsNone(self.resolve("luna")["stale"])
+
     def test_versions_compare_as_numbers_not_text(self):
         write_cache(self.home, _models(("gpt-6.9-sol", "list", ALL), ("gpt-6.10-sol", "list", ALL),
                                        ("gpt-6-sol", "list", ALL)))
@@ -1142,6 +1163,20 @@ class TierResolutionTests(unittest.TestCase):
     def test_a_cache_inside_seven_days_is_read(self):
         write_cache(self.home, DEFAULT_MODELS, age=timedelta(days=6, hours=23))
         self.assertEqual("cache", self.resolve()["resolution"])
+
+    def test_the_seven_day_limit_is_inclusive_at_exactly_seven_days(self):
+        self.home.mkdir(parents=True)
+        (self.home / "models_cache.json").write_text(json.dumps(
+            {"fetched_at": "2026-10-01T00:00:00.000000000Z", "models": DEFAULT_MODELS}), encoding="utf-8")
+        at = datetime(2026, 10, 8, 0, 0, 0, tzinfo=timezone.utc)
+        self.assertEqual("cache", self.resolve(now=at)["resolution"])                       # exactly 7 days: read
+        self.assertEqual("fallback", self.resolve(now=at + timedelta(seconds=1))["resolution"])
+
+    def test_the_result_reports_the_effort_the_run_actually_had_not_the_requested_one(self):
+        got = self.mod.usage_fields("counterpart", "gpt-6.1-sol", "medium",
+                                    {"resolution": "cache", "reason": None, "stale": None}, 1.5, None, "")
+        self.assertEqual(("high", "medium"), (got["effort_requested"], got["effort_effective"]))
+        self.assertEqual(("sol", "gpt-6.1-sol"), (got["model_requested"], got["model_effective"]))
 
     def test_a_cache_older_than_seven_days_falls_back_and_says_why(self):
         write_cache(self.home, DEFAULT_MODELS)

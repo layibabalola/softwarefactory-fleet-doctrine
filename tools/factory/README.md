@@ -191,7 +191,9 @@ visible (`visibility: list`) and supporting the effort, when the cache's `fetche
 is stored as the tier's last-good id in `$CODEX_HOME/codex-review-last-good.json`. A missing, unreadable or older cache,
 or no match, falls back to that last-good id and records it (`resolution: fallback`, `resolution_reason`, `stale`);
 with no last-good id the tool refuses (exit 2) rather than invent one. `stale` is also set when the resolved id is older
-than a newer same-tier id the cache lists. The result line gains (after bus master's keys, before the K178 credential
+than a newer same-tier id the cache lists, AND when it is older than the owner's default for the tier
+(`OWNER_DEFAULT_FLOOR`, sol: gpt-6.1-sol, ruling 2026-10-22), on the cache path and the last-good fallback path alike;
+the floor only reports and never selects an id. The result line gains (after bus master's keys, before the K178 credential
 keys): `model_requested` (the selector), `model_effective` (the id the banner reports), `effort_requested`,
 `effort_effective`, `resolution`, `resolution_reason`, `stale`, `tokens_used` (the transcript's `tokens used` total, null
 when absent), `measurement` (`input_tokens`, `cached_input_tokens`, `reasoning_tokens`, `output_tokens` null when the
