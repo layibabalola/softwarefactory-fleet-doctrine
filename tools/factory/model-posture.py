@@ -719,7 +719,7 @@ def rolled_up(bus, project: str, rel: str) -> bool:
                 if not (isinstance(s["path"], str) and isinstance(s["blob"], str) and re.fullmatch(r"[0-9a-f]{40}", s["blob"])):
                     raise ValueError("source")
                 m = SHARD_RX.fullmatch(s["path"].rsplit("/", 1)[-1])
-                if not m:
+                if not m or s["path"] != f"metrics/{project}/{shard_name(m.group(1))}":   # canonical, project-local
                     raise ValueError("source path")
                 if s["path"] == rel:
                     return True

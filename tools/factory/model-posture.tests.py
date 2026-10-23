@@ -402,7 +402,12 @@ class PublishAndPrune(unittest.TestCase):
         variants.append(two(other, base))
         wk = json.loads(json.dumps(base)); wk["grain"] = "week"
         variants.append((json.dumps(wk, sort_keys=True) + "\n").encode())   # yearly shard declaring grain week
-        bad_later = (json.dumps(base, sort_keys=True) + "\nnot json\n").encode()
+        for p in ("metrics/conjugal/./posture-2025-07.jsonl", "metrics/other/posture-2025-07.jsonl",
+                  "x/../metrics/conjugal/posture-2025-07.jsonl"):
+            dot = json.loads(json.dumps(base))
+            dot["sources"][0]["path"] = p                       # non-canonical or foreign source path
+            variants.append((json.dumps(dot, sort_keys=True) + "\n").encode())
+        bad_later =(json.dumps(base, sort_keys=True) + "\nnot json\n").encode()
         variants.append(bad_later)
         for bad in variants:
             year.write_bytes(bad)
