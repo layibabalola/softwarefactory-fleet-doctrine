@@ -648,8 +648,15 @@ class R2ReviewFindings(unittest.TestCase):
                      "INPUT_FIELD_INVALID")
 
     def test_cli_bad_values_exit_2(self):                    # final panel (760b24c9)
-        rc, _, err = run("view", "x.jsonl", "--policy", str(BUS / "policy/model-posture.json"), "--today", "not-a-date")
-        self.assertEqual(rc, 2, err)
+        with tempfile.TemporaryDirectory() as d:
+            good = Path(d) / "good.jsonl"
+            good.write_bytes(rec_line())
+            rc, _, err = run("view", str(good), "--policy", str(BUS / "policy/model-posture.json"), "--today", "not-a-date")
+            self.assertEqual((rc, "INPUT_INVALID: ValueError" in err), (2, True), err)
+            bad = Path(d) / "bad.jsonl"
+            bad.write_bytes(b"\xff\xfe\n")
+            rc, _, err = run("view", str(bad), "--policy", str(BUS / "policy/model-posture.json"), "--today", "2026-10-23")
+            self.assertEqual((rc, "INPUT_INVALID: UnicodeDecodeError" in err), (2, True), err)
 
     def test_schema_mirrors_the_closed_vocabularies(self):
         s = json.loads((BUS / "schemas/model-posture-rollup-v1.schema.json").read_text(encoding="utf-8"))["properties"]
