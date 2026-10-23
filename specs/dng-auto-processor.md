@@ -522,6 +522,10 @@ KERNEL: DOGFOOD fleet-factory-kernel r5 · profile code@r10 + measured-objective
 
 R18: DISTINGUISHED (this board has no CoS merge gate to remove: no governing document names one, `cos-feedback/` reaches it as data with zero authority, and it lands on its own local trunk by §4's two-key rule rather than through pull requests, so R18.3's PR floor has no surface here and R18.4 compensates no removed gate)
 
+## Fleet RULINGS R20 (R20.5: each board records its disposition in its own spec; beside the posture, not part of it)
+
+MODEL-POSTURE-TELEMETRY: DISTINGUISHED (publishing posture shards would give this board a new publisher and a recurring duty, and a new standing duty here waits for the USER's word "unfreeze" (docs/14 §0, WORK.md rule 3), which the doctrine loop cannot supply — docs/13 P-STEWARD step 7 "adds no tool, gate, lane, standard or scheduled task"; the plane is diagnostic and gates nothing, and R20.4 bars every board from publishing until its merge; until it exists, section 3 of R19.1's candidate counts from each board's own key receipts, which here are each card ledger's launch and key records)
+
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
 | Source | Disposition |

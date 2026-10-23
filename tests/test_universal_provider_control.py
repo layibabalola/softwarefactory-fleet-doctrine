@@ -6858,17 +6858,21 @@ class ReviewResourceAdmissionR29Tests(unittest.TestCase):
             for descriptor in checker.LAYER_DESCRIPTORS
         )
         self.assertIn(f"MANIFEST_PASS {expected_counts} self=PASS", output.getvalue())
+        # claim_scoped mirrors check() on the current layer (A3, 20e04a52): an unrelated
+        # README.md edit must not mask the self-binding control below.
         changed = copy.deepcopy(manifest)
         changed["subjectFiles"][0]["sha256"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SUBJECT_MISMATCH"):
             checker._verify_subjects_and_self(
-                changed, raw, manifest_path=current.manifest_path, candidate=current.candidate
+                changed, raw, manifest_path=current.manifest_path, candidate=current.candidate,
+                claim_scoped=True,
             )
         changed = copy.deepcopy(manifest)
         changed["manifestSelf"]["canonicalGitBlobSha256"] = "sha256:" + "0" * 64
         with self.assertRaisesRegex(checker.ManifestError, "MANIFEST_SELF_MISMATCH"):
             checker._verify_subjects_and_self(
-                changed, raw, manifest_path=current.manifest_path, candidate=current.candidate
+                changed, raw, manifest_path=current.manifest_path, candidate=current.candidate,
+                claim_scoped=True,
             )
         source = inspect.getsource(type(self))
         syntax = ast.parse(textwrap.dedent(source))

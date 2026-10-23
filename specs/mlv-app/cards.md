@@ -412,3 +412,34 @@ evidence: measured
 - **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 20805eb68f1e678201bd382efee4a09a50206b8ee961aa1e925512f6287cefc9.
 - **Pin:** each project reviews that bus SHA, then runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`, runs it as `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`, sets `"tool_pin": "doctrine-outbox"`, runs `install-hooks` that way once. OUTBOX-PIN-AWARE-TOOL-AT-REF-1 shipped the pin-aware hook; only after the pin is reviewed does a project delete its copy. Without `tool_pin` it KEEPS it.
 - **Outbox:** outbox:a0695837f576726a mlv-app:c975f3c362ce
+
+## mlv-app/one-config-driven-doctrine-outbox-comment-history-1
+rule: the fleet carries ONE doctrine_outbox.py, in the bus at tools/factory/, pinned by each project through factory-pins; every project value sits in doctrine-outbox.config.json. A project never edits the tool; it sets `tool_pin` in its config once its pin is reviewed.
+mechanism: per-project copies drift under tool-census. The mlv-app copy is the candidate, pin-aware (doctrine-outbox/README.md). This revision changes comments only: the round history and two commented-out `candidates.extend(...)` lines in `_remote_default_base` become one invariant line, so the single source carries no dead code. Behaviour is unchanged.
+applies: mlv-app, airmypc, agent-bridge, conjugal
+check: on the bus run `node tools/tool-census.mjs`; once projects pin and drop their copies, the family reads 1 distinct version.
+supersedes: mlv-app/one-config-driven-doctrine-outbox-sent-ledger-read-1 (its digest)
+evidence: measured
+- **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 2b772034ce668f18e8776933ecded511e325cdc20f5dee674ec4194523dcca4c.
+- **Pin:** each project reviews that bus SHA, then runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`, runs it as `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`, sets `"tool_pin": "doctrine-outbox"`, runs `install-hooks` that way once. OUTBOX-PIN-AWARE-TOOL-AT-REF-1 shipped the pin-aware hook; only after the pin is reviewed does a project delete its copy. Without `tool_pin` it KEEPS it.
+- **Outbox:** outbox:a9e0139d6d31cb0f mlv-app:d9a4160e9ebb
+
+## mlv-app/agent-bridge-stop-hook-whole-tree-doc-size-sweep-25s
+rule: agent-bridge owns this; MLV-App does not edit it. Its per-turn Stop hook must not run the full doc-size sweep. Check only documents changed this turn, or cache verdicts by (mtime, size), or run the full sweep at pre-push or on a schedule. Keep any walk pruned of exempt trees before descending (precedent mlv-app/per-turn-hook-tree-walks-grow-the-kernel-pool), and compare size before reading a 1 MiB prefix per file.
+mechanism: Measured 2026-10-22, read-only, agent-bridge 3760d5de. `.claude/settings.local.json:27` registers `hook_doc_size.py --stop` as a Stop hook; `tools/hook_doc_size.py:117` runs `check_doc_size.py --sweep --quiet-ok`. One sweep: 23.6 s in-process, 25.4 to 26.3 s over three timed runs; 600,174 IO-Other ops (about 25,400/s), 501 MB read, 0 written; 7,276 files governed, 6,539 from an unpruned `rglob` of the git-ignored state tree (`tools/check_doc_size.py:424`). It exits 1, so `--quiet-ok` prints a 39 KB report each time. By code reading the cost is `is_wal_copy` (:238-263, opens every file, reads up to 1 MiB) and `nested_checkout_root` (:292). A host census ranked it first for IO Other at 23,676 ops/s.
+check: run agent-bridge `check_doc_size.py --sweep --quiet-ok` in-process under `py -3 -I -B`, read `psutil.Process().io_counters()` and wall time. Fixed means under about 5 s and 100,000 other-ops per Stop event.
+applies: agent-bridge, mlv-app
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:2a57003ad2dbd9f7 mlv-app:821102adca3d
+
+## mlv-app/one-config-driven-doctrine-outbox-nlf-old-git-refuse-1
+rule: the fleet carries ONE doctrine_outbox.py, in the bus at tools/factory/, pinned by each project through factory-pins; every project value sits in doctrine-outbox.config.json. A project never edits the tool; it sets `tool_pin` in its config once its pin is reviewed.
+mechanism: per-project copies drift under tool-census. The mlv-app copy is the candidate, pin-aware (doctrine-outbox/README.md). This revision makes the bus read refuse, by name, a git that ignores GIT_NO_LAZY_FETCH (older than 2.44, or a version it cannot read) when the bus clone is a partial (promisor) clone, so a ruling-target check can never lazy-fetch from the bus's remote mid-lookup; a full bus clone, or a git that honours the variable, reads as before.
+applies: mlv-app, airmypc, agent-bridge, conjugal
+check: on the bus run `node tools/tool-census.mjs`; once projects pin and drop their copies, the family reads 1 distinct version.
+supersedes: mlv-app/one-config-driven-doctrine-outbox-comment-history-1 (its digest)
+evidence: measured
+- **Adopt:** bus steward adds tools/coordination/doctrine_outbox.py as tools/factory/doctrine_outbox.py, byte for byte; sha256 of its LF bytes 4e29138114f4f6a04484605d11fcd3502f639eada1f6a84599b4a1f518411fa5.
+- **Pin:** each project reviews that bus SHA, then runs `python factory-pins/pin-runner.py pin doctrine-outbox --commit <bus-sha> --path tools/factory/doctrine_outbox.py --reviewer <who> --reason <why>`, runs it as `python factory-pins/pin-runner.py run doctrine-outbox -- --config doctrine-outbox.config.json <command>`, sets `"tool_pin": "doctrine-outbox"`, runs `install-hooks` that way once. OUTBOX-PIN-AWARE-TOOL-AT-REF-1 shipped the pin-aware hook; only after the pin is reviewed does a project delete its copy. Without `tool_pin` it KEEPS it.
+- **Outbox:** outbox:93777e2ae83d182e mlv-app:3582f955ad95
