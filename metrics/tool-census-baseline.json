@@ -94,7 +94,8 @@
         "codex-review",
         "kernel-config",
         "bus-tests",
-        "delivery-at-identity"
+        "delivery-at-identity",
+        "model-posture"
       ],
       "total": 0,
       "measuredAt": "2026-10-16T20:01:55.046Z"

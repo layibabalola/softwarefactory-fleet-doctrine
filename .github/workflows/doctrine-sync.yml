@@ -24,6 +24,8 @@ on:
       - '**/session_checkpoint.py'
       - '**/delivery-at-identity.py'
       - '**/delivery_at_identity.py'
+      - '**/model-posture.py'
+      - '**/model_posture.py'
       - '**/doctrine_outbox.py'
       - '**/doctrine-outbox.py'
       - '**/check-doc-size.py'
@@ -95,6 +97,8 @@ on:
       - '**/session_checkpoint.py'
       - '**/delivery-at-identity.py'
       - '**/delivery_at_identity.py'
+      - '**/model-posture.py'
+      - '**/model_posture.py'
       - '**/doctrine_outbox.py'
       - '**/doctrine-outbox.py'
       - '**/check-doc-size.py'
@@ -184,6 +188,7 @@ jobs:
           python3 tools/factory/check-doc-size.tests.py
           python3 tools/factory/session-start-auth.tests.py
           python3 tools/factory/fleet-scorecard.tests.py
+          python3 tools/factory/model-posture.tests.py
           python3 hooks/hooks.tests.py
       - name: Shared-tool census - every view this runner can see (the 'bus' view always; fleet views UNMEASURED)
         # tools/tool-census.mjs rule 7: the baseline holds one count per root set. The 'bus' view counts

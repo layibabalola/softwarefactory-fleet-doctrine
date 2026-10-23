@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/layibabalola/softwarefactory-fleet-doctrine/schemas/model-posture-rollup-v1.schema.json",
+  "title": "Fleet model-posture rollup v1 (CANDIDATE; specs/fleet-model-posture/spec.md)",
+  "description": "One AGGREGATE per (period, project, provider, model_requested, model_effective, effort_effective, role). Field names derive from provider-usage-event-v1. Never carries per-call rows, timestamps, ids, quota, prompts, reasoning or local paths. Writer: tools/factory/model-posture.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "grain", "period", "project", "provider", "model_requested", "model_effective",
+               "effort_effective", "role", "calls", "tasks", "measurement", "rounds", "outcome",
+               "first_pass_accept", "fallback_count", "percentile_basis", "generator"],
+  "properties": {
+    "schema": { "const": "fleet/model-posture-rollup/v1" },
+    "grain": { "enum": ["week", "month", "year"] },
+    "period": { "type": "string", "pattern": "^\\d{4}(-W\\d{2}|-\\d{2})?$" },
+    "project": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$" },
+    "provider": { "enum": ["claude", "codex", "other"] },
+    "model_requested": { "type": ["string", "null"], "pattern": "^(?:gpt-\\d{1,2}(?:\\.\\d{1,2}){0,2}-(?:sol|luna|astra)|sol|luna|astra|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\\d{1,2}(?:-\\d{1,2}){0,3}|other)$" },
+    "model_effective": { "type": ["string", "null"], "pattern": "^(?:gpt-\\d{1,2}(?:\\.\\d{1,2}){0,2}-(?:sol|luna|astra)|sol|luna|astra|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\\d{1,2}(?:-\\d{1,2}){0,3}|other)$" },
+    "effort_effective": { "enum": ["minimal", "low", "medium", "high", "xhigh", "max", "other", null] },
+    "role": { "enum": ["default", "key", "pre-key-review", "review", "adversarial", "swarm", "census", "measurement", "survey", "research", "implementation", "orchestration", "drafting", "diversity", "loop", "other", null],
+              "description": "provider-usage-event-v1 actor.role, folded to a closed enum by the writer (an input role outside it travels as other)" },
+    "calls": { "$ref": "#/$defs/count", "description": "TERMINAL provider-usage events in the period" },
+    "tasks": { "$ref": "#/$defs/count", "description": "distinct task_id_hash values (the hashes themselves never travel)" },
+    "measurement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_tokens", "cached_input_tokens", "reasoning_tokens", "output_tokens", "active_seconds"],
+      "properties": {
+        "input_tokens": { "$ref": "#/$defs/stat" },
+        "cached_input_tokens": { "$ref": "#/$defs/stat" },
+        "reasoning_tokens": { "$ref": "#/$defs/stat" },
+        "output_tokens": { "$ref": "#/$defs/stat" },
+        "active_seconds": { "$ref": "#/$defs/stat" }
+      }
+    },
+    "rounds": { "$ref": "#/$defs/stat", "description": "calls per task" },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "histogram over the provider-usage-event-v1 outcome enum (null and unknown values count as UNKNOWN); sums to calls",
+      "properties": {
+        "WIP": { "$ref": "#/$defs/count" }, "COMPLETED": { "$ref": "#/$defs/count" },
+        "APPROVED": { "$ref": "#/$defs/count" }, "CHANGES_REQUESTED": { "$ref": "#/$defs/count" },
+        "BLOCKED": { "$ref": "#/$defs/count" }, "REFUSED": { "$ref": "#/$defs/count" },
+        "QUOTA_DORMANT": { "$ref": "#/$defs/count" }, "NO_ACTIONABLE_WORK": { "$ref": "#/$defs/count" },
+        "FAILED": { "$ref": "#/$defs/count" }, "UNKNOWN": { "$ref": "#/$defs/count" }
+      }
+    },
+    "first_pass_accept": { "$ref": "#/$defs/count", "description": "tasks whose first call ended APPROVED or COMPLETED" },
+    "fallback_count": { "$ref": "#/$defs/count", "description": "calls with a *FALLBACK* reason code, or model_effective != model_requested" },
+    "percentile_basis": { "enum": ["calls", "weighted-shard-percentiles"],
+                          "description": "week: nearest-rank over calls; month/year: known-weighted median of the source records' percentiles" },
+    "generator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "blob"],
+      "properties": {
+        "path": { "const": "tools/factory/model-posture.py" },
+        "blob": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "description": "rollups only: the bus shards this record replaced, by path and git blob id",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "blob"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^metrics/[a-z0-9][a-z0-9._-]{0,79}/posture-\\d{4}(-W\\d{2}|-\\d{2})?\\.jsonl$" },
+          "blob": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+        }
+      }
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "grain": { "const": "week" } } },
+      "then": { "not": { "required": ["sources"] }, "properties": { "percentile_basis": { "const": "calls" } } },
+      "else": { "required": ["sources"], "properties": { "percentile_basis": { "const": "weighted-shard-percentiles" } } } }
+  ],
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
+    "stat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["known", "sum", "p50", "p90"],
+      "properties": {
+        "known": { "$ref": "#/$defs/count" },
+        "sum": { "$ref": "#/$defs/count" },
+        "p50": { "$ref": "#/$defs/count" },
+        "p90": { "$ref": "#/$defs/count" }
+      }
+    }
+  }
+}

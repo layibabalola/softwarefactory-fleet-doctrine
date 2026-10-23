@@ -22,7 +22,8 @@
     { "name": "codex-review", "names": ["codex-review.py", "codex_review.py"], "canonical": "tools/factory/codex-review.py" },
     { "name": "kernel-config", "names": ["kernel-config.py", "kernel_config.py"], "canonical": "tools/factory/kernel-config.py" },
     { "name": "bus-tests", "names": ["pre-push-bus-tests.py", "pre_push_bus_tests.py"], "canonical": "hooks/pre-push-bus-tests.py" },
-    { "name": "delivery-at-identity", "names": ["delivery-at-identity.py", "delivery_at_identity.py"], "canonical": "tools/factory/delivery-at-identity.py" }
+    { "name": "delivery-at-identity", "names": ["delivery-at-identity.py", "delivery_at_identity.py"], "canonical": "tools/factory/delivery-at-identity.py" },
+    { "name": "model-posture", "names": ["model-posture.py", "model_posture.py"], "canonical": "tools/factory/model-posture.py" }
   ],
   "roots": [
     { "name": "bus", "path": "@bus", "kind": "bus" },
