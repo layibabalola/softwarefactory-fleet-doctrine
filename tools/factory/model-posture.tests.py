@@ -239,7 +239,12 @@ class PublishAndPrune(unittest.TestCase):
         git(self.bus, "init", "-q", "-b", "master")
         git(self.bus, "config", "core.autocrlf", "false")
         (self.bus / "README.md").write_text("x\n", encoding="utf-8")
-        git(self.bus, "add", "README.md")
+        (self.bus / "specs").mkdir()
+        (self.bus / "specs/conjugal.md").write_text("# conjugal\n", encoding="utf-8")   # a registered member
+        tool = self.bus / mp.TOOL_PATH                                  # the bus carries the tool that vouches
+        tool.parent.mkdir(parents=True)
+        tool.write_bytes((HERE / "model-posture.py").read_bytes().replace(b"\r\n", b"\n"))
+        git(self.bus, "add", "README.md", "specs/conjugal.md", mp.TOOL_PATH)
         git(self.bus, "commit", "-qm", "init")
 
     def tearDown(self):
@@ -382,7 +387,7 @@ class R19Defects(unittest.TestCase):
             wk = mp.reduce_events([ev()], "conjugal", "2026-W43")
             src = [{"path": "metrics/conjugal/posture-2026-W43.jsonl", "blob": "d" * 40}]
             data = mp.serialize(mp.merge_records(wk, "conjugal", "2026-10", src))
-            self.refused(lambda: mp.check_shard(data, "conjugal", "2026-10", bus=d), "PROVENANCE_UNAUTHENTICATED")
+            self.refused(lambda: mp.provenance([json.loads(data)], d), "PROVENANCE_UNAUTHENTICATED")
             self.refused(lambda: mp.check_shard(data, "conjugal", "2026-10"), "PROVENANCE_UNAUTHENTICATED")
 
     # (c) role is a closed enum and model names carry no path separator.
@@ -417,8 +422,8 @@ class R19Defects(unittest.TestCase):
     def test_e_alias_resolution_is_not_fallback(self):
         pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
         recs = mp.reduce_events(
-            [ev(provider="claude", req=a, eff=f"claude-{a}-5-5") for a in mp.CLAUDE_ALIASES] * 10, "conjugal", "2026-W43")
-        self.assertEqual(len(recs), len(mp.CLAUDE_ALIASES))
+            [ev(provider="claude", req=a, eff=f"claude-{a}-5-5") for a in ("opus", "sonnet", "haiku", "fable")] * 10, "conjugal", "2026-W43")
+        self.assertEqual(len(recs), 4)
         self.assertTrue(all(r["fallback_count"] == 0 for r in recs))
         self.assertNotIn("FALLBACK_RATE_HIGH", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
         other = mp.reduce_events([ev(provider="claude", req="opus", eff="claude-sonnet-5-5")], "conjugal", "2026-W43")
@@ -456,6 +461,9 @@ class R19Defects(unittest.TestCase):
             p = Path(d) / "p.json"
             p.write_text(json.dumps(bad), encoding="utf-8")
             self.refused(lambda: mp.load_policy(str(p)), "POLICY_INVALID")
+            bad["roles"]["default"]["allowed"][0]["tier"] = "sol"                # a tier does not excuse a literal id
+            p.write_text(json.dumps(bad), encoding="utf-8")
+            self.refused(lambda: mp.load_policy(str(p)), "POLICY_INVALID")
         roles = json.loads(raw)["roles"]
         for role, rp in roles.items():
             for e in [*rp.get("allowed", []), *rp.get("max_share", [])]:
@@ -469,7 +477,7 @@ class R19Defects(unittest.TestCase):
         line = next((l for l in c.splitlines() if l.startswith("Relationship to existing doctrine:")), "")
         self.assertTrue(line)
         self.assertIn("metrics/README.md", line)
-        self.assertIn("supersedes", line)
+        self.assertIn("supersedes `metrics/README.md`'s append-only rule for posture-shard roll-up commits only", line)
 
 
 class R2ReviewFindings(unittest.TestCase):
@@ -524,6 +532,74 @@ class R2ReviewFindings(unittest.TestCase):
         pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
         recs = mp.reduce_events([ev(role="census", req="gpt-6-luna", eff="gpt-6-luna", effort=None)], "conjugal", "2026-W43")
         self.assertIn("OFF_OWNER_POSTURE", [a["code"] for a in mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"]])
+
+    def test_model_digit_runs_are_bounded(self):          # second r2 panel (d8fa7898)
+        for v in ("claude-opus-1761100000", "claude-opus-1-2-3-4-5-6-7-8-9-10-11-12", "gpt-12345678901.12345678901-sol"):
+            data = mp.serialize(mp.reduce_events([ev(req=v, eff=v)], "conjugal", "2026-W43"))
+            self.assertNotIn(v, data.decode(), v)
+        for v in ("gpt-6.1-sol", "gpt-6-luna", "claude-opus-5-5", "claude-sonnet-5", "opus"):
+            self.assertIsNotNone(mp.MODEL_RX.fullmatch(v), v)
+
+    def test_trailing_newline_never_matches(self):           # second r2 panel (d8fa7898)
+        self.refused(lambda: mp.check_shard(rec_line(model_effective="opus\n"), "conjugal", "2026-W43"), "RECORD_INVALID")
+        self.refused(lambda: mp.reduce_events([ev(project="p1\n")], "p1\n", "2026-W43"), "PROJECT_INVALID")
+        self.refused(lambda: mp.grain_of("2026-W43\n"), "PERIOD_INVALID")
+
+    def test_publish_refuses_an_unregistered_project(self):  # second r2 panel (d8fa7898)
+        with tempfile.TemporaryDirectory() as d:
+            bus = Path(d) / "bus"
+            bus.mkdir()
+            git(bus, "init", "-q", "-b", "master")
+            (bus / "README.md").write_text("x\n", encoding="utf-8")
+            git(bus, "add", "README.md")
+            git(bus, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "init")
+            shard = Path(d) / "s.jsonl"
+            shard.write_bytes(mp.serialize(mp.reduce_events([ev(project="alice-home.lan")], "alice-home.lan", "2026-W43")))
+            rc, _, err = run("publish", "--bus", str(bus), "--shard", str(shard), "--project", "alice-home.lan", "--week", "2026-W43")
+            self.assertEqual((rc, "PROJECT_UNREGISTERED" in err), (2, True))
+            self.assertFalse((bus / "metrics").exists())
+
+    def test_publish_refuses_a_self_vouched_generator(self):  # second r2 panel (d8fa7898)
+        with tempfile.TemporaryDirectory() as d:
+            bus = Path(d) / "bus"
+            (bus / "specs").mkdir(parents=True)
+            git(bus, "init", "-q", "-b", "master")
+            (bus / "specs/conjugal.md").write_text("# conjugal\n", encoding="utf-8")
+            git(bus, "add", "specs/conjugal.md")
+            git(bus, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "init")
+            shard = Path(d) / "s.jsonl"
+            shard.write_bytes(rec_line())                       # generator = the running tool, absent from this bus
+            rc, _, err = run("publish", "--bus", str(bus), "--shard", str(shard), "--project", "conjugal", "--week", "2026-W43")
+            self.assertEqual((rc, "PROVENANCE_UNAUTHENTICATED" in err), (2, True))
+
+    def test_source_blob_is_bound_to_its_path(self):           # second r2 panel (d8fa7898)
+        with tempfile.TemporaryDirectory() as d:
+            git(d, "init", "-q", "-b", "master")
+            for name, body in (("a.txt", "a\n"), ("metrics/conjugal/posture-2026-W43.jsonl", "w\n")):
+                (Path(d) / name).parent.mkdir(parents=True, exist_ok=True)
+                (Path(d) / name).write_text(body, encoding="utf-8")
+            git(d, "add", ".")
+            git(d, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "init")
+            other = git(d, "rev-parse", "HEAD:a.txt")             # a real bus blob, at a different path
+            wk = mp.reduce_events([ev()], "conjugal", "2026-W43")
+            data = mp.serialize(mp.merge_records(wk, "conjugal", "2026-10", [{"path": "metrics/conjugal/posture-2026-W43.jsonl", "blob": other}]))
+            self.refused(lambda: mp.provenance([json.loads(data)], d), "PROVENANCE_UNAUTHENTICATED")
+
+    def test_luna_measurement_is_on_posture(self):            # second r2 panel (d8fa7898): R19.1 section 1.2
+        pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
+        recs = mp.reduce_events([ev(role="measurement", req="gpt-6-luna", eff="gpt-6-luna")], "conjugal", "2026-W43")
+        self.assertEqual(mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"], [])
+
+    def test_non_string_provenance_refuses_exit_2(self):     # second r2 panel (d8fa7898)
+        line = rec_line().decode()
+        blob = json.loads(line)["generator"]["blob"]
+        bad = line.replace(f'"blob":"{blob}"', '"blob":' + "1" * 40).encode()
+        self.refused(lambda: mp.check_shard(bad, "conjugal", "2026-W43"), "RECORD_INVALID")
+        with tempfile.TemporaryDirectory() as d:
+            s = Path(d) / "s.jsonl"
+            s.write_bytes(bad)
+            rc, _, err = run("publish", "--bus", d, "--shard", str(s), "--project", "conjugal", "--week", "2026-W43")
+            self.assertEqual((rc, "RECORD_INVALID" in err), (2, True))
 
     def test_schema_mirrors_the_closed_vocabularies(self):
         s = json.loads((BUS / "schemas/model-posture-rollup-v1.schema.json").read_text(encoding="utf-8"))["properties"]

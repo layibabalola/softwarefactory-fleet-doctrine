@@ -25,7 +25,7 @@ positive controls. Every defect test (not the positive controls) failed on r1 he
   blob or a blob that `tools/factory/model-posture.py` has had in the bus history. Each `sources[].blob`
   must be a blob object in the bus.
 - **(c) Free-text fields.** `role` is a closed enum, and a well-formed role outside the enum travels as
-  `other`. Model names may not contain `/` and are capped at 80 characters. Effort is lower-case letters.
+  `other`. Model names follow the closed grammar without `/`; effort is an enum.
 - **(d) The `QUOTA_DORMANT` self-refusal.** Keys in the schema's own vocabulary are not screened, so a legal
   `QUOTA_DORMANT` record passes.
 - **(e) Alias resolution.** `opus` resolving to `claude-opus-5-5` is not counted as a fallback. A change of
@@ -61,6 +61,28 @@ on `8b250107`:
 Three tests were strengthened after the Astra seat showed that each would survive a mutation of its own fix:
 (e) now covers every alias, (f) now covers a request-only match, and (g) now proves that `load_policy` refuses
 a literal id.
+
+## What the second panel found on `d8fa7898`, and how this head answers it
+
+The second panel had four seats. Codex `gpt-6.1-sol` covered conflicts and voted VETO. Codex `gpt-6-astra`
+covered test adequacy and voted RATIFY-WITH-AMENDMENT. Claude `sonnet` covered privacy and voted
+RATIFY-WITH-AMENDMENT. A second Claude `sonnet` seat voted RATIFY-WITH-AMENDMENT; it re-seated the privacy
+prompt after the Codex `gpt-6.1-sol` privacy seat was filter-killed. Every finding it confirmed is fixed on
+this head. Each fix has a test that was red on `d8fa7898`:
+
+- **Model digit runs** are bounded to `gpt-<1-2 digits>(.<1-2 digits>){0,2}-<tier>` and
+  `claude-<family>-<1-2 digits>(-<1-2 digits>){0,3}`, so no epoch timestamp can travel.
+- **Full matches only.** Every closed grammar uses a full match, so a trailing newline never matches.
+- **Registered projects.** A publish or roll-up refuses a project that has no `specs/<project>.md` at the bus
+  HEAD (`PROJECT_UNREGISTERED`).
+- **No self-vouching.** With a bus, only a blob that the tool path has had in the bus vouches for
+  `generator.blob`, so a locally edited tool cannot sign its own shards.
+- **Bound sources.** Each `sources[].blob` must be the bus HEAD blob at its own path.
+- **Luna measurement.** Luna measurement is on posture, per R19.1 §1.2.
+- **Non-string provenance.** A non-string provenance value is refused with `RECORD_INVALID` and exit 2.
+
+Astra's three further mutation survivors are killed: an alias list fixed in the test, a policy that names a
+tier together with a literal id, and the exact supersession phrase.
 
 Beyond the eight defects, every refusal code now has a behavioural test (classes `RefusalCoverage` and
 `RollupRefusals`). One bug was found on the way and fixed: an out-of-range ISO week such as `2026-W99`

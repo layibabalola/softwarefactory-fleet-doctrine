@@ -52,7 +52,7 @@ EFFORT_RX = re.compile(r"^[a-z]{2,12}$")
 # What TRAVELS in the model, provider and effort fields is a closed grammar or enum (r2 review): a well-formed
 # input outside it travels as "other", so none of these fields can carry a hostname, a ticket, a padded SHA or
 # any other free text. A new tier or family is a schema bump, ratified first.
-MODEL_RX = re.compile(r"^(?:gpt-\d+(?:\.\d+)*-(?:sol|luna|astra)|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\d+(?:-\d+)*|other)$")
+MODEL_RX = re.compile(r"^(?:gpt-\d{1,2}(?:\.\d{1,2}){0,2}-(?:sol|luna|astra)|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\d{1,2}(?:-\d{1,2}){0,3}|other)$")
 PROVIDERS = ("claude", "codex", "other")
 EFFORTS = ("minimal", "low", "medium", "high", "xhigh", "max", "other")
 ROLE_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")     # INPUT shape only; what travels is ROLES
@@ -108,7 +108,7 @@ def week_of(ts: str) -> str:
 
 
 def week_thursday(week: str) -> dt.date:
-    m = WEEK_RX.match(week)
+    m = WEEK_RX.fullmatch(week)
     if not m:
         raise Refused("PERIOD_INVALID", week)
     try:
@@ -124,12 +124,12 @@ def month_of_week(week: str) -> str:
 
 
 def grain_of(period: str) -> str:
-    if WEEK_RX.match(period):
+    if WEEK_RX.fullmatch(period):
         week_thursday(period)
         return "week"
-    if MONTH_RX.match(period) and 1 <= int(period[5:]) <= 12:
+    if MONTH_RX.fullmatch(period) and 1 <= int(period[5:]) <= 12:
         return "month"
-    if YEAR_RX.match(period):
+    if YEAR_RX.fullmatch(period):
         return "year"
     raise Refused("PERIOD_INVALID", period)
 
@@ -206,7 +206,7 @@ def _int_or_none(v):
 def _clean(v, rx, field):
     if v is None or v == "":
         return None
-    if not isinstance(v, str) or not rx.match(v):
+    if not isinstance(v, str) or not rx.fullmatch(v):
         raise Refused("INPUT_FIELD_INVALID", f"{field}={str(v)[:40]!r}")
     return v
 
@@ -215,7 +215,7 @@ def _fold(v, allowed):
     """A well-formed input value outside the published vocabulary travels as "other"."""
     if v is None:
         return None
-    ok = allowed.match(v) if isinstance(allowed, re.Pattern) else v in allowed
+    ok = allowed.fullmatch(v) if isinstance(allowed, re.Pattern) else v in allowed
     return v if ok else "other"
 
 
@@ -228,7 +228,7 @@ def alias_resolves(req: str, eff: str) -> bool:
 def reduce_events(events: list[dict], project: str, week: str, gen: dict | None = None) -> list[dict]:
     """provider-usage-event-v1 TERMINAL events of one ISO week -> sorted aggregate records. Every other event
     kind is ignored (it is not a call). Grouping fields never travel: task_id_hash only counts rounds."""
-    if not PROJECT_RX.match(project):
+    if not PROJECT_RX.fullmatch(project):
         raise Refused("PROJECT_INVALID", project)
     if grain_of(week) != "week":
         raise Refused("PERIOD_INVALID", f"reduce needs an ISO week, got {week}")
@@ -359,12 +359,12 @@ def validate(r: dict) -> None:
         bad("schema")
     if not isinstance(r["period"], str) or r["grain"] != grain_of(r["period"]):
         bad("grain/period")
-    if not isinstance(r["project"], str) or not PROJECT_RX.match(r["project"]):
+    if not isinstance(r["project"], str) or not PROJECT_RX.fullmatch(r["project"]):
         bad("project")
     if r["provider"] not in PROVIDERS:
         bad("provider")
     for k in ("model_requested", "model_effective"):
-        if r[k] is not None and (not isinstance(r[k], str) or not MODEL_RX.match(r[k])):
+        if r[k] is not None and (not isinstance(r[k], str) or not MODEL_RX.fullmatch(r[k])):
             bad(k)
     if r["effort_effective"] is not None and r["effort_effective"] not in EFFORTS:
         bad("effort_effective")
@@ -388,7 +388,7 @@ def validate(r: dict) -> None:
     if r["percentile_basis"] != ("calls" if r["grain"] == "week" else "weighted-shard-percentiles"):
         bad("percentile_basis")
     g = r["generator"]
-    if not isinstance(g, dict) or set(g) != {"path", "blob"} or g["path"] != TOOL_PATH or not HEX40.match(str(g["blob"])):
+    if not isinstance(g, dict) or set(g) != {"path", "blob"} or g["path"] != TOOL_PATH or not isinstance(g["blob"], str) or not HEX40.fullmatch(g["blob"]):
         bad("generator")
     if r["grain"] == "week":
         if "sources" in r:
@@ -398,10 +398,10 @@ def validate(r: dict) -> None:
         if not isinstance(src, list) or not src:
             bad("a rollup needs sources")
         for s in src:
-            if not isinstance(s, dict) or set(s) != {"path", "blob"} or not HEX40.match(str(s["blob"])):
+            if not isinstance(s, dict) or set(s) != {"path", "blob"} or not isinstance(s["blob"], str) or not HEX40.fullmatch(s["blob"]):
                 bad("source shape")
-            pm = re.match(r"^metrics/([a-z0-9][a-z0-9._-]{0,79})/(posture-[0-9W-]+\.jsonl)$", str(s["path"]))
-            if not pm or pm.group(1) != r["project"] or not SHARD_RX.match(pm.group(2)):
+            pm = re.fullmatch(r"^metrics/([a-z0-9][a-z0-9._-]{0,79})/(posture-[0-9W-]+\.jsonl)$", str(s["path"]))
+            if not pm or pm.group(1) != r["project"] or not SHARD_RX.fullmatch(pm.group(2)):
                 bad("source path")
 
 
@@ -455,7 +455,7 @@ def screen(data: bytes) -> None:
             if path and path[-1] == "<key>" and s in KEY_VOCAB:
                 continue
             if _is_provenance(path):
-                if not HEX40.match(s):
+                if not HEX40.fullmatch(s):
                     raise Refused("SCREEN_REFUSED", "provenance field is not a 40-hex blob id")
                 continue
             for name, rx in SCREEN:
@@ -473,7 +473,7 @@ def tool_blobs(bus) -> set[str]:
     for line in out.splitlines():
         parts = line.split("\t", 1)[0].split()
         if len(parts) >= 4:
-            blobs.update(b for b in parts[2:4] if HEX40.match(b) and set(b) != {"0"})
+            blobs.update(b for b in parts[2:4] if HEX40.fullmatch(b) and set(b) != {"0"})
     return blobs
 
 
@@ -481,7 +481,9 @@ def provenance(records: list[dict], bus=None, known: set[str] | None = None) -> 
     """R19.3(b): a 40-hex field must name a real object, never merely look like one. generator.blob is this
     running tool's own blob or one the tool path has had in the bus; each sources[].blob is a blob object in the
     bus (or one this run is about to write, `known`). Without a bus, a rollup's sources cannot be authenticated."""
-    legal_gen = {generator()["blob"]} | (tool_blobs(bus) if bus is not None else set())
+    # With a bus, only a blob the tool path has had IN the bus vouches for a record: a locally edited tool cannot
+    # sign its own shards (r2 review). Without a bus (reduce, local only) the running tool is the generator.
+    legal_gen = tool_blobs(bus) if bus is not None else {generator()["blob"]}
     for r in records:
         if r["generator"]["blob"] not in legal_gen:
             raise Refused("PROVENANCE_UNAUTHENTICATED", f"generator.blob {r['generator']['blob'][:12]} is not a blob of {TOOL_PATH}")
@@ -489,8 +491,15 @@ def provenance(records: list[dict], bus=None, known: set[str] | None = None) -> 
             b = s["blob"]
             if known and b in known and bus is not None:
                 continue
-            if bus is None or git(bus, "cat-file", "-t", b, check=False) != "blob":
-                raise Refused("PROVENANCE_UNAUTHENTICATED", f"sources[].blob {b[:12]} is not a blob in the bus")
+            if bus is None or git(bus, "rev-parse", f"HEAD:{s['path']}", check=False) != b:
+                raise Refused("PROVENANCE_UNAUTHENTICATED", f"sources[].blob {b[:12]} is not the bus HEAD blob at its path")
+
+
+def registered(project: str, bus) -> None:
+    """A shard is published only under a member project id: one with its own spec, specs/<project>.md, at the bus
+    HEAD. The project pattern alone would let a hostname-shaped name travel as a directory (r2 review)."""
+    if git(bus, "cat-file", "-t", f"HEAD:specs/{project}.md", check=False) != "blob":
+        raise Refused("PROJECT_UNREGISTERED", f"{project!r} has no specs/<project>.md at the bus HEAD")
 
 
 def check_shard(data: bytes, project: str, period: str, bus=None, known: set[str] | None = None) -> None:
@@ -507,6 +516,8 @@ def check_shard(data: bytes, project: str, period: str, bus=None, known: set[str
     if serialize(records) != data:
         raise Refused("RECORD_NOT_CANONICAL", "a shard is exactly the writer's serialisation, byte for byte")
     screen(data)
+    if bus is not None:
+        registered(project, bus)
     provenance(records, bus, known)
     soft, hard = BUDGET[grain_of(period)]
     if len(data) > hard:
@@ -523,7 +534,7 @@ def project_total(project_dir: pathlib.Path, replacing: dict[str, int]) -> int:
     names = set(replacing)
     if project_dir.is_dir():
         for p in project_dir.iterdir():
-            if SHARD_RX.match(p.name):
+            if SHARD_RX.fullmatch(p.name):
                 names.add(p.name)
     for n in names:
         if n in replacing:
@@ -589,7 +600,7 @@ def _matches(entry: dict, row: dict) -> bool:
         return False
     model = row["model_effective"] or row["model_requested"] or ""
     if "tier" in entry:
-        m = TIER_RX.match(model)
+        m = TIER_RX.fullmatch(model)
         if not m or m.group(2) != entry["tier"]:
             return False
         if "min_version" in entry and _version(m.group(1)) < _version(entry["min_version"]):
@@ -664,7 +675,7 @@ def head_shards(bus, project: str) -> dict[str, str]:
     names = {}
     for line in out.splitlines():
         name = line.rsplit("/", 1)[-1]
-        m = SHARD_RX.match(name)
+        m = SHARD_RX.fullmatch(name)
         if m:
             names[m.group(1)] = line
     return names

@@ -133,7 +133,7 @@ an unrecorded effort never satisfies it.
 - **Codex default:** the Sol tier, at or above 6.1 (resolved 2026-10-22: `gpt-6.1-sol`), effort high.
 - **Astra tier:** an occasional diversity seat only, never a gate. The policy caps its share at 25% of a
   role's calls, and it is not allowed in `key`.
-- **Luna tier:** mechanical census only (bus R16.1), effort high.
+- **Luna tier:** mechanical work only: census, measurement and scripted readouts (bus R16.1, R19.1), effort high.
 - **`swarm` role:** R11 adversarial swarm lanes run at effort medium.
 - **Claude:** requested by the `opus`/`fable`/`sonnet`/`haiku` aliases, at effort high. The resolved id is
   logged as `model_effective`.

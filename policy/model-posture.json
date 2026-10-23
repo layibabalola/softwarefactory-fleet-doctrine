@@ -38,6 +38,13 @@
         { "provider": "codex", "tier": "sol", "min_version": "6.1", "effort": "high" }
       ]
     },
+    "measurement": {
+      "_comment": "R19.1 section 1.2: the Luna tier also covers measurement and scripted readouts",
+      "allowed": [
+        { "provider": "codex", "tier": "luna", "min_version": "6", "effort": "high" },
+        { "provider": "codex", "tier": "sol", "min_version": "6.1", "effort": "high" }
+      ]
+    },
     "swarm": {
       "_comment": "R11: adversarial swarm lanes run at medium",
       "allowed": [
