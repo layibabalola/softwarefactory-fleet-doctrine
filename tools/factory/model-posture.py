@@ -706,8 +706,11 @@ def rolled_up(bus, project: str, rel: str) -> bool:
     while stack:
         ref, grain = stack.pop()
         try:
-            lines = git(bus, "show", ref, binary=True).decode("ascii").splitlines()
-            recs = [json.loads(l) for l in lines]
+            # the writer's own guarded parser and validator: every record must be a valid shard record (a weekly
+            # one carries no sources, a roll-up's sources have the closed shape), so ancestry is never half-trusted
+            recs = [_record(l) for l in _ascii(git(bus, "show", ref, binary=True)).splitlines()]
+            for r in recs:
+                validate(r)
             if not recs or any(r["grain"] != grain for r in recs):   # the shard's name decides its grain
                 raise ValueError("grain")
             if grain == "week":
@@ -726,7 +729,7 @@ def rolled_up(bus, project: str, rel: str) -> bool:
                 if s["blob"] not in seen:
                     seen.add(s["blob"])
                     stack.append((s["blob"], grain_of(m.group(1))))
-        except (Refused, ValueError, IndexError, UnicodeError, AttributeError, TypeError, KeyError):
+        except (Refused, ValueError, IndexError, UnicodeError, AttributeError, TypeError, KeyError, RecursionError):
             # unreadable or malformed ancestry cannot prove the week is unrolled: refuse rather than risk a double count
             raise Refused("ROLLUP_ANCESTRY_UNREADABLE", ref[:60]) from None
     return False

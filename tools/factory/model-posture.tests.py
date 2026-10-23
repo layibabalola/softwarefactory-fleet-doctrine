@@ -409,6 +409,18 @@ class PublishAndPrune(unittest.TestCase):
             variants.append((json.dumps(dot, sort_keys=True) + "\n").encode())
         bad_later =(json.dumps(base, sort_keys=True) + "\nnot json\n").encode()
         variants.append(bad_later)
+        variants.append(b"[" * 40000 + b"]" * 40000 + b"\n")      # nested JSON: RecursionError must be a refusal
+        variants.append(b"\xff\xfe\n")                                # non-ASCII
+        variants.append(b"")                                          # empty shard
+        # a weekly ancestor blob that carries sources is malformed, not a leaf
+        wkrec = json.loads(Path(self.bus / "metrics/conjugal/posture-2025.jsonl").read_text().splitlines()[0])
+        wkrec["grain"], wkrec["period"], wkrec["percentile_basis"] = "week", "2025-W27", "calls"
+        wkfile = Path(self.tmp.name) / "badweek.jsonl"
+        wkfile.write_text(json.dumps(wkrec, sort_keys=True) + "\n")
+        wkblob = git(self.bus, "hash-object", "-w", str(wkfile))
+        viaweek = json.loads(json.dumps(base))
+        viaweek["sources"] = [{"path": "metrics/conjugal/posture-2025-W27.jsonl", "blob": wkblob}]
+        variants.append((json.dumps(viaweek, sort_keys=True) + "\n").encode())
         for bad in variants:
             year.write_bytes(bad)
             git(self.bus, "add", "-f", str(year))
