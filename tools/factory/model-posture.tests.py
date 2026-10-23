@@ -364,6 +364,27 @@ class PublishAndPrune(unittest.TestCase):
             rc, _, err = self.republish(week, ts)
             self.assertEqual((rc, "SHARD_ROLLED_UP" in err), (2, True), (week, err))
 
+    def test_republish_refuses_when_rollup_ancestry_is_unreadable_or_malformed(self):
+        self.publish_week("2025-W27", "2025-07-01T10:00:00Z")
+        run("prune", "--bus", str(self.bus), "--project", "conjugal", "--today", "2026-10-22", "--commit")
+        year = self.bus / "metrics/conjugal/posture-2025.jsonl"
+        good = year.read_bytes()
+        # a source blob absent from the object store (shallow/pruned history) cannot prove the week unrolled
+        rec = json.loads(good.decode().splitlines()[0])
+        rec["sources"] = [{"path": "metrics/conjugal/posture-2025-07.jsonl", "blob": "0" * 40}]
+        year.write_bytes((json.dumps(rec, sort_keys=True, separators=(",", ":")) + "\n").encode())
+        git(self.bus, "add", "-f", str(year))
+        git(self.bus, "commit", "-qm", "break ancestry")
+        rc, _, err = self.republish("2025-W36", "2025-09-02T10:00:00Z")
+        self.assertEqual((rc, "ROLLUP_ANCESTRY_UNREADABLE" in err), (2, True), err)
+        # malformed structures are a controlled refusal, never a traceback
+        for bad in (b"[]\n", b'{"sources":null}\n'):
+            year.write_bytes(bad)
+            git(self.bus, "add", "-f", str(year))
+            git(self.bus, "commit", "-qm", "malformed")
+            rc, _, err = self.republish("2025-W36", "2025-09-02T10:00:00Z")
+            self.assertEqual((rc, "ROLLUP_ANCESTRY_UNREADABLE" in err, "Traceback" in err), (2, True, False), (bad, err))
+
     def test_prune_refuses_a_dirty_index(self):
         self.publish_week("2026-W27", "2026-06-30T10:00:00Z")
         (self.bus / "other.txt").write_text("x", encoding="utf-8")

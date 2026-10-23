@@ -705,17 +705,19 @@ def rolled_up(bus, project: str, rel: str) -> bool:
     stack = [f"HEAD:{p}" for p in head_shards(bus, project).values()]
     while stack:
         ref = stack.pop()
-        raw = git(bus, "show", ref, binary=True, check=False)
         try:
+            raw = git(bus, "show", ref, binary=True)
             first = json.loads(raw.decode("ascii").splitlines()[0])
-        except (ValueError, IndexError, UnicodeError):
-            continue
-        for s in first.get("sources", []):
-            if s.get("path") == rel:
+            pairs = [(s.get("path"), s.get("blob")) for s in first.get("sources", [])]
+        except (Refused, ValueError, IndexError, UnicodeError, AttributeError, TypeError):
+            # unreadable or malformed ancestry cannot prove the week is unrolled: refuse rather than risk a double count
+            raise Refused("ROLLUP_ANCESTRY_UNREADABLE", ref[:60]) from None
+        for path, blob in pairs:
+            if path == rel:
                 return True
-            if s.get("blob") and s["blob"] not in seen:
-                seen.add(s["blob"])
-                stack.append(s["blob"])
+            if blob and blob not in seen:
+                seen.add(blob)
+                stack.append(blob)
     return False
 
 
