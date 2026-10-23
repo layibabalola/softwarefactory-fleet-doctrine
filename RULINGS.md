@@ -2957,3 +2957,26 @@ Review: four adversarial read-only seats on bus `5dbb030e` and PR #91 head `6b6d
   - The prune path itself passed: it writes only `git rm` plus a new commit, with no history rewrite and no force push. Refusals exit 2.
   - The intent stands: telemetry that records which model and effort each seat ran, as R19.1 section 3 needs. An r2 on a new head is reviewed fresh.
 - **R19.4 — PR #91 is held, not merged.** R19.3 vetoes its candidate. Independently of that, its head fails R18.3(b) and (c): the `contracts` check is red (pre-existing on master) and the merge state is UNSTABLE. Until r2 lands, the R19.1 section 3 reassessment counts from each board's own key receipts, as that section already provides.
+
+## OWNER RULING, appended by conjugal (Claude Code desktop side session on BACHELOR, on Layi's instruction), 2026-10-23 — R20: model-posture telemetry r2 is ratified on the metrics data plane
+
+> *"Adversarially swarm, adjudicate, and Execute recommended: ... Ratify or veto the two ruling candidates on the bus: the Sol-default model posture, `codex-sol-default-and-capacity-routing-r1.md` (`b5a6418e`); the telemetry, `fleet-model-posture-telemetry-r1.md` (#91)"* (Layi, 2026-10-23, Conjugal dispatcher session; the ratification authority for this entry, as for R19)
+
+- **R20.1 — RATIFIED:** `ruling-candidates/fleet-model-posture-telemetry-r2.md`.
+  - It is ratified at PR #91 head `4a0edd50`, which answers R19.3's veto of r1.
+  - Its proposed rulings 1 to 6 are fleet doctrine from this entry: the data plane, field names, the never-published classes, archival, owner posture as tiers, and placement.
+  - The data plane carries `metrics/<project>/posture-*.jsonl` aggregates, written by `tools/factory/model-posture.py` against `schemas/model-posture-rollup-v1.schema.json` and `policy/model-posture.json`.
+  - The plane is diagnostic only (metrics law 1) and gates nothing.
+- **R20.2 — How it was reviewed.** Every R19.3 defect (a)-(h) and every finding a later panel confirmed was fixed, each with a behavioural test that was red on the head before the fix. Seat votes by head:
+  - `8b250107`: Codex `gpt-6.1-sol` privacy VETO, Codex `gpt-6.1-sol` conflicts VETO, Codex `gpt-6-astra` tests RATIFY-WITH-AMENDMENT, Claude `sonnet` privacy RATIFY-WITH-AMENDMENT.
+  - `d8fa7898`: Codex `gpt-6.1-sol` conflicts VETO, Codex `gpt-6-astra` RATIFY-WITH-AMENDMENT, Claude `sonnet` privacy RATIFY-WITH-AMENDMENT. The Codex `gpt-6.1-sol` privacy seat was FILTER_KILLED and re-seated on Claude `sonnet`: RATIFY-WITH-AMENDMENT.
+  - `9b82d331`: Codex `gpt-6.1-sol` conflicts VETO, Codex `gpt-6-astra` RATIFY-WITH-AMENDMENT, Claude `sonnet` privacy RATIFY-WITH-AMENDMENT. The Codex privacy seat was FILTER_KILLED again and re-seated on `sonnet`: RATIFY-WITH-AMENDMENT.
+  - `760b24c9`: Codex `gpt-6-astra` RATIFY, Claude `sonnet` privacy RATIFY, Codex `gpt-6.1-sol` conflicts VETO on one defect, fixed at `f8aa0829`.
+  - `f8aa0829`: a targeted Codex `gpt-6.1-sol` seat on that delta voted RATIFY-WITH-AMENDMENT. Its one test amendment was applied at `4a0edd50`, and it found no new runtime defect.
+  - Adjudicated by Claude `opus` (`claude-opus-5-5`). Confirmed evidence beat votes. Each VETO named defects, and those defects were fixed. No VETO reason was carried forward unanswered.
+- **R20.3 — Accepted residuals** (the candidate records them):
+  - A number at or under 10^12 is indistinguishable from a count.
+  - A historical blob of the tool path proves that the blob exists, not that it wrote the shard.
+  - `reduce` without a bus accepts any well-formed project name. `publish` and `prune` require `specs/<project>.md`.
+- **R20.4 — Merge.** PR #91 merges only when R18.3(b) and (c) hold on its exact head. Ratification does not wait for the merge. Until the merge, no board publishes posture shards.
+- **R20.5 — Adoption.** Each board records `MODEL-POSTURE-TELEMETRY: ADOPTED (<where>)` or `MODEL-POSTURE-TELEMETRY: DISTINGUISHED (<reason>)` in its own spec at its next fold (R14 single writer). Conjugal is the pilot publisher.
