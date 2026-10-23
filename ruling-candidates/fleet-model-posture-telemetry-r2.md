@@ -84,6 +84,33 @@ this head. Each fix has a test that was red on `d8fa7898`:
 Astra's three further mutation survivors are killed: an alias list fixed in the test, a policy that names a
 tier together with a literal id, and the exact supersession phrase.
 
+## What the verification panel found on `9b82d331`, and how this head answers it
+
+| Seat | Model | Angle | Vote |
+|---|---|---|---|
+| 1 | Codex `gpt-6.1-sol` | conflicts | VETO, on three accuracy defects |
+| 2 | Codex `gpt-6-astra` | test adequacy | RATIFY-WITH-AMENDMENT |
+| 3 | Claude `sonnet` | privacy | RATIFY-WITH-AMENDMENT |
+| 4 | Claude `sonnet` | privacy, re-seated after the Codex `gpt-6.1-sol` privacy seat was filter-killed | RATIFY-WITH-AMENDMENT |
+
+No seat found a string-field privacy bypass. Every finding the panel confirmed is fixed on this head, and each
+fix has a test that was red on `9b82d331`:
+
+- **Numeric fields** are capped at 10^12 in code and schema, so a long digit payload cannot ride in a number.
+  The residual is stated: a number at or under the cap is indistinguishable from a count.
+- **ASCII-only digits.** Every closed grammar uses ASCII-only `\d`.
+- **Deep nesting** refuses with `RECORD_INVALID` and exit 2.
+- **First-pass order.** `first_pass_accept` orders a task's calls in UTC time, not by timestamp string.
+- **The Claude degrade path.** Claude runs on the R19.1 §2.4 degrade path are on posture for census and
+  measurement.
+- **Tier selectors.** A bare tier selector (`sol`, `luna`, `astra`) resolving to its own tier's id is the
+  R16.2 mechanism, not a fallback.
+- **Publish writes weeks only.** Roll-ups come only from `prune`, which recomputes them.
+
+The panel also flagged two tests, the source-binding test and the forged-source test. In both, the generator
+check fired before the source check could run, so neither tested source binding. Both now authenticate the
+generator first, so they reach the source check.
+
 Beyond the eight defects, every refusal code now has a behavioural test (classes `RefusalCoverage` and
 `RollupRefusals`). One bug was found on the way and fixed: an out-of-range ISO week such as `2026-W99`
 raised a bare `ValueError` instead of `PERIOD_INVALID`.

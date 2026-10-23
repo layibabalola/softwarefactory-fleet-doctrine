@@ -12,6 +12,7 @@ import re
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -387,7 +388,8 @@ class R19Defects(unittest.TestCase):
             wk = mp.reduce_events([ev()], "conjugal", "2026-W43")
             src = [{"path": "metrics/conjugal/posture-2026-W43.jsonl", "blob": "d" * 40}]
             data = mp.serialize(mp.merge_records(wk, "conjugal", "2026-10", src))
-            self.refused(lambda: mp.provenance([json.loads(data)], d), "PROVENANCE_UNAUTHENTICATED")
+            with mock.patch.object(mp, "tool_blobs", return_value={mp.generator()["blob"]}):   # reach the SOURCE check
+                self.refused(lambda: mp.provenance([json.loads(data)], d), "PROVENANCE_UNAUTHENTICATED")
             self.refused(lambda: mp.check_shard(data, "conjugal", "2026-10"), "PROVENANCE_UNAUTHENTICATED")
 
     # (c) role is a closed enum and model names carry no path separator.
@@ -583,7 +585,8 @@ class R2ReviewFindings(unittest.TestCase):
             other = git(d, "rev-parse", "HEAD:a.txt")             # a real bus blob, at a different path
             wk = mp.reduce_events([ev()], "conjugal", "2026-W43")
             data = mp.serialize(mp.merge_records(wk, "conjugal", "2026-10", [{"path": "metrics/conjugal/posture-2026-W43.jsonl", "blob": other}]))
-            self.refused(lambda: mp.provenance([json.loads(data)], d), "PROVENANCE_UNAUTHENTICATED")
+            with mock.patch.object(mp, "tool_blobs", return_value={mp.generator()["blob"]}):   # reach the SOURCE check
+                self.refused(lambda: mp.provenance([json.loads(data)], d), "PROVENANCE_UNAUTHENTICATED")
 
     def test_luna_measurement_is_on_posture(self):            # second r2 panel (d8fa7898): R19.1 section 1.2
         pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
@@ -600,6 +603,45 @@ class R2ReviewFindings(unittest.TestCase):
             s.write_bytes(bad)
             rc, _, err = run("publish", "--bus", d, "--shard", str(s), "--project", "conjugal", "--week", "2026-W43")
             self.assertEqual((rc, "RECORD_INVALID" in err), (2, True))
+
+    def test_numbers_are_bounded(self):                        # verification panel (9b82d331)
+        big = 1761200000123456789012
+        self.refused(lambda: mp.check_shard(rec_line(calls=big, tasks=1, outcome={"APPROVED": big}), "conjugal", "2026-W43"),
+                     "RECORD_INVALID")
+        s = json.loads((BUS / "schemas/model-posture-rollup-v1.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(s["$defs"]["count"]["maximum"], mp.MAX_COUNT)
+
+    def test_non_ascii_digits_never_match(self):              # verification panel (9b82d331)
+        self.assertIsNone(mp.MODEL_RX.fullmatch("gpt-٥-sol"))
+        self.refused(lambda: mp.grain_of("٢٠٢٦-W43"), "PERIOD_INVALID")
+
+    def test_deep_nesting_refuses_exit_2(self):               # verification panel (9b82d331)
+        self.refused(lambda: mp.check_shard(b"[" * 200000 + b"\n", "conjugal", "2026-W43"), "RECORD_INVALID")
+
+    def test_first_pass_orders_chronologically_across_offsets(self):   # verification panel (9b82d331)
+        rows = [ev(ts="2026-10-20T12:00:00+02:00", task="1" * 64, outcome="CHANGES_REQUESTED"),   # 10:00Z, first
+                ev(ts="2026-10-20T10:30:00Z", task="1" * 64, outcome="APPROVED")]
+        self.assertEqual(mp.reduce_events(rows, "conjugal", "2026-W43")[0]["first_pass_accept"], 0)
+
+    def test_claude_census_and_measurement_degrade_is_on_posture(self):  # verification panel: R19.1 section 2.4
+        pol = mp.load_policy(str(BUS / "policy/model-posture.json"))
+        for role in ("census", "measurement"):
+            recs = mp.reduce_events([ev(role=role, provider="claude", req="opus", eff="claude-opus-5-5")], "conjugal", "2026-W43")
+            self.assertEqual(mp.view(recs, pol, None, dt.date(2026, 10, 23))["advisories"], [], role)
+
+    def test_tier_selector_resolution_is_not_fallback(self):  # verification panel: R16.2 resolve at launch
+        recs = mp.reduce_events([ev(req=t, eff=e) for t, e in (("sol", "gpt-6.1-sol"), ("luna", "gpt-6-luna"),
+                                                                ("astra", "gpt-6-astra"))] * 10, "conjugal", "2026-W43")
+        self.assertTrue(all(r["fallback_count"] == 0 for r in recs))
+        self.assertEqual({r["model_requested"] for r in recs}, {"sol", "luna", "astra"})
+        self.assertEqual(mp.reduce_events([ev(req="sol", eff="gpt-6-astra")], "conjugal", "2026-W43")[0]["fallback_count"], 1)
+
+    def test_publish_writes_weeks_only(self):                  # verification panel: roll-ups come only from prune
+        with tempfile.TemporaryDirectory() as d:
+            s = Path(d) / "s.jsonl"
+            s.write_bytes(b"x\n")
+            rc, _, err = run("publish", "--bus", d, "--shard", str(s), "--project", "conjugal", "--week", "2026-10")
+            self.assertEqual((rc, "PERIOD_INVALID" in err), (2, True))
 
     def test_schema_mirrors_the_closed_vocabularies(self):
         s = json.loads((BUS / "schemas/model-posture-rollup-v1.schema.json").read_text(encoding="utf-8"))["properties"]

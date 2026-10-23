@@ -52,7 +52,7 @@ EFFORT_RX = re.compile(r"^[a-z]{2,12}$")
 # What TRAVELS in the model, provider and effort fields is a closed grammar or enum (r2 review): a well-formed
 # input outside it travels as "other", so none of these fields can carry a hostname, a ticket, a padded SHA or
 # any other free text. A new tier or family is a schema bump, ratified first.
-MODEL_RX = re.compile(r"^(?:gpt-\d{1,2}(?:\.\d{1,2}){0,2}-(?:sol|luna|astra)|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\d{1,2}(?:-\d{1,2}){0,3}|other)$")
+MODEL_RX = re.compile(r"^(?:gpt-\d{1,2}(?:\.\d{1,2}){0,2}-(?:sol|luna|astra)|sol|luna|astra|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\d{1,2}(?:-\d{1,2}){0,3}|other)$", re.ASCII)
 PROVIDERS = ("claude", "codex", "other")
 EFFORTS = ("minimal", "low", "medium", "high", "xhigh", "max", "other")
 ROLE_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")     # INPUT shape only; what travels is ROLES
@@ -61,13 +61,17 @@ ROLE_RX = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")     # INPUT shape onl
 ROLES = ("default", "key", "pre-key-review", "review", "adversarial", "swarm", "census", "measurement", "survey",
          "research", "implementation", "orchestration", "drafting", "diversity", "loop", "other")
 CLAUDE_ALIASES = ("opus", "sonnet", "haiku", "fable")
-TIER_RX = re.compile(r"^gpt-(\d+(?:\.\d+)*)-([a-z]+)$")
-PROVIDER_RX = re.compile(r"^[a-z0-9-]{2,40}$")
-WEEK_RX = re.compile(r"^(\d{4})-W(\d{2})$")
-MONTH_RX = re.compile(r"^(\d{4})-(\d{2})$")
-YEAR_RX = re.compile(r"^(\d{4})$")
-SHARD_RX = re.compile(r"^posture-(\d{4}(?:-W\d{2}|-\d{2})?)\.jsonl$")
+CODEX_TIERS = ("sol", "luna", "astra")
+TIER_RX = re.compile(r"^gpt-(\d+(?:\.\d+)*)-([a-z]+)$", re.ASCII)
+PROVIDER_RX = re.compile(r"^[a-z0-9-]{2,40}$", re.ASCII)
+WEEK_RX = re.compile(r"^(\d{4})-W(\d{2})$", re.ASCII)
+MONTH_RX = re.compile(r"^(\d{4})-(\d{2})$", re.ASCII)
+YEAR_RX = re.compile(r"^(\d{4})$", re.ASCII)
+SHARD_RX = re.compile(r"^posture-(\d{4}(?:-W\d{2}|-\d{2})?)\.jsonl$", re.ASCII)
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
+# A count, sum or percentile above this is not a measurement: refusing it keeps an epoch-ms timestamp or any
+# other long digit payload out of the numeric fields (r2 verification panel).
+MAX_COUNT = 10 ** 12
 
 # The union of bus tools/factory/fleet-scorecard.py SCREEN and Conjugal coordination/tools/doctrine_outbox.py
 # LAW4 (2026-10-22), plus classes this data plane adds. Applied to every serialized record.
@@ -99,6 +103,11 @@ class Refused(Exception):
 
 
 # ---------- periods ----------
+
+def _utc(ts: str) -> dt.datetime:
+    t = dt.datetime.fromisoformat(ts.strip().replace("Z", "+00:00"))
+    return (t if t.tzinfo else t.replace(tzinfo=dt.timezone.utc)).astimezone(dt.timezone.utc)
+
 
 def week_of(ts: str) -> str:
     t = dt.datetime.fromisoformat(ts.strip().replace("Z", "+00:00"))
@@ -198,7 +207,7 @@ def generator() -> dict:
 def _int_or_none(v):
     if isinstance(v, bool):
         return None
-    if isinstance(v, int) and v >= 0:
+    if isinstance(v, int) and 0 <= v <= MAX_COUNT:
         return v
     return None
 
@@ -222,7 +231,12 @@ def _fold(v, allowed):
 def alias_resolves(req: str, eff: str) -> bool:
     """A Claude family alias resolving to its own dated id (opus -> claude-opus-5-5) is the mandated mechanism
     (R16.2), not a fallback (R19.3(e)). A different family (opus -> claude-sonnet-5-5) is a fallback."""
-    return req in CLAUDE_ALIASES and re.fullmatch(rf"claude-{req}-[0-9a-z.-]+", eff) is not None
+    if req in CLAUDE_ALIASES:
+        return re.fullmatch(rf"claude-{req}-[0-9a-z.-]+", eff) is not None
+    if req in CODEX_TIERS:                       # R16.2: a Codex seat requests its TIER and resolves an id at launch
+        m = TIER_RX.fullmatch(eff)
+        return m is not None and m.group(2) == req
+    return False
 
 
 def reduce_events(events: list[dict], project: str, week: str, gen: dict | None = None) -> list[dict]:
@@ -281,7 +295,7 @@ def reduce_events(events: list[dict], project: str, week: str, gen: dict | None 
         rounds = [len(v) for v in tasks.values()]
         first_pass = 0
         for v in tasks.values():
-            first = min(v, key=lambda r: (str(r.get("ts")), r["_i"]))
+            first = min(v, key=lambda r: (_utc(str(r.get("ts"))), r["_i"]))   # chronological across offsets
             if first.get("outcome") in ACCEPT:
                 first_pass += 1
         out.append({
@@ -340,7 +354,7 @@ TOP_REQUIRED = {"schema", "grain", "period", "project", *KEY, "calls", "tasks", 
 
 
 def _nonneg(v) -> bool:
-    return isinstance(v, int) and not isinstance(v, bool) and v >= 0
+    return isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= MAX_COUNT
 
 
 def validate(r: dict) -> None:
@@ -422,7 +436,7 @@ def _ascii(data: bytes) -> str:
 def _record(line: str) -> dict:
     try:
         r = json.loads(line)
-    except ValueError:
+    except (ValueError, RecursionError):
         raise Refused("RECORD_INVALID", "unparseable line") from None
     if not isinstance(r, dict):
         raise Refused("RECORD_INVALID", "not an object")
@@ -496,7 +510,7 @@ def provenance(records: list[dict], bus=None, known: set[str] | None = None) -> 
 
 
 def registered(project: str, bus) -> None:
-    """A shard is published only under a member project id: one with its own spec, specs/<project>.md, at the bus
+    """A shard is published only under a project id that has its own spec, specs/<project>.md, at the bus
     HEAD. The project pattern alone would let a hostname-shaped name travel as a directory (r2 review)."""
     if git(bus, "cat-file", "-t", f"HEAD:specs/{project}.md", check=False) != "blob":
         raise Refused("PROJECT_UNREGISTERED", f"{project!r} has no specs/<project>.md at the bus HEAD")
@@ -811,6 +825,8 @@ def main(argv=None) -> int:
             print(json.dumps(view(read_records(a.shards), pol, declared, today(a.today)), indent=2, sort_keys=True))
         elif a.cmd == "publish":
             data = pathlib.Path(a.shard).read_bytes().replace(b"\r\n", b"\n")
+            if grain_of(a.week) != "week":   # roll-ups come only from prune, which recomputes them (r2 verification)
+                raise Refused("PERIOD_INVALID", f"publish writes ISO weeks only, got {a.week}")
             if not data:
                 raise Refused("SHARD_EMPTY", "a week with no calls publishes nothing")
             check_shard(data, a.project, a.week, a.bus)

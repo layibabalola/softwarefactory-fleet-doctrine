@@ -14,8 +14,8 @@
     "period": { "type": "string", "pattern": "^\\d{4}(-W\\d{2}|-\\d{2})?$" },
     "project": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$" },
     "provider": { "enum": ["claude", "codex", "other"] },
-    "model_requested": { "type": ["string", "null"], "pattern": "^(?:gpt-\\d{1,2}(?:\\.\\d{1,2}){0,2}-(?:sol|luna|astra)|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\\d{1,2}(?:-\\d{1,2}){0,3}|other)$" },
-    "model_effective": { "type": ["string", "null"], "pattern": "^(?:gpt-\\d{1,2}(?:\\.\\d{1,2}){0,2}-(?:sol|luna|astra)|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\\d{1,2}(?:-\\d{1,2}){0,3}|other)$" },
+    "model_requested": { "type": ["string", "null"], "pattern": "^(?:gpt-\\d{1,2}(?:\\.\\d{1,2}){0,2}-(?:sol|luna|astra)|sol|luna|astra|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\\d{1,2}(?:-\\d{1,2}){0,3}|other)$" },
+    "model_effective": { "type": ["string", "null"], "pattern": "^(?:gpt-\\d{1,2}(?:\\.\\d{1,2}){0,2}-(?:sol|luna|astra)|sol|luna|astra|opus|sonnet|haiku|fable|claude-(?:opus|sonnet|haiku|fable)-\\d{1,2}(?:-\\d{1,2}){0,3}|other)$" },
     "effort_effective": { "enum": ["minimal", "low", "medium", "high", "xhigh", "max", "other", null] },
     "role": { "enum": ["default", "key", "pre-key-review", "review", "adversarial", "swarm", "census", "measurement", "survey", "research", "implementation", "orchestration", "drafting", "diversity", "loop", "other", null],
               "description": "provider-usage-event-v1 actor.role, folded to a closed enum by the writer (an input role outside it travels as other)" },
@@ -80,7 +80,7 @@
       "else": { "required": ["sources"], "properties": { "percentile_basis": { "const": "weighted-shard-percentiles" } } } }
   ],
   "$defs": {
-    "count": { "type": "integer", "minimum": 0 },
+    "count": { "type": "integer", "minimum": 0, "maximum": 1000000000000 },
     "stat": {
       "type": "object",
       "additionalProperties": false,
