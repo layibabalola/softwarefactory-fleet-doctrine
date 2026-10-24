@@ -366,7 +366,8 @@ def read_verdict(final_message: str) -> tuple[str, str | None]:
 def tokens_used(transcript: str, final_message: str) -> int | None:
     """The run's reported total, read ONLY from codex's trailer position (K180, K6 key round 2): codex ends a run with
     `tokens used`, the count, then the final message echoed once as the LAST block. One trailing copy of the final
-    message is removed from the END (when present); the last two non-blank lines must then be `tokens used` and a count.
+    message is removed from the END (a non-empty answer whose echo ends the transcript is required: with no answer, or no
+    such echo, the result is None); the last two non-blank lines must then be `tokens used` and a count.
     Anything else is None -- a pair in the prompt, in shell output or inside the answer is never the run's report, and
     nothing scans the transcript for one. Never estimated. A total is not an input/output split, so the split fields of
     `measurement` stay None."""
@@ -374,8 +375,9 @@ def tokens_used(transcript: str, final_message: str) -> int | None:
     while lines and not lines[-1]:
         lines.pop()
     block = _block(final_message)
-    if block and len(lines) >= len(block) and lines[-len(block):] == block:
-        del lines[-len(block):]
+    if not block or len(lines) < len(block) or lines[-len(block):] != block:
+        return None               # no answer, or no echo of it ending the transcript: nothing anchors a trailer
+    del lines[-len(block):]
     tail = [line for line in lines if line][-2:]
     if len(tail) == 2 and tail[0] == "tokens used":
         m = re.fullmatch(r"\d{1,3}(?:,\d{3})+|\d+", tail[1])

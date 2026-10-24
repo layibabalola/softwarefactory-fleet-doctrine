@@ -1263,7 +1263,7 @@ class TierResolutionTests(unittest.TestCase):
     # ---- the CLI (production wiring, against the fake codex) ------------------------------------------------------
 
     def cli(self, role: str, mode: str = "echo", final: str | None = None, models=None, age=timedelta(0),
-            write: bool = True, prompt: str = "Review this.\n", no_tokens: bool = False, emit=None) -> subprocess.CompletedProcess:
+            write: bool = True, prompt: str = "Review this.\n", no_tokens: bool = False, emit=None, last: str = "write", no_tail: bool = False) -> subprocess.CompletedProcess:
         bin_dir = self.root / "bin"
         if not bin_dir.exists():
             bin_dir.mkdir()
@@ -1274,8 +1274,11 @@ class TierResolutionTests(unittest.TestCase):
             write_cache(self.home, models, age)
         env = dict(os.environ)
         env.update({"PATH": str(bin_dir) + os.pathsep + env.get("PATH", ""), "ARGV_LOG": str(self.root / "argv.json"),
-                    "FAKE_CODEX_MODE": mode, "FAKE_CODEX_LAST": "write", "CODEX_HOME": str(self.home)})
+                    "FAKE_CODEX_MODE": mode, "FAKE_CODEX_LAST": last, "CODEX_HOME": str(self.home)})
         env.pop("FAKE_CODEX_FINAL", None)
+        env.pop("FAKE_CODEX_NO_TAIL", None)
+        if no_tail:
+            env["FAKE_CODEX_NO_TAIL"] = "1"
         env.pop("FAKE_CODEX_NO_TOKENS", None)
         env.pop("FAKE_CODEX_EMIT", None)
         if emit is not None:
@@ -1331,6 +1334,22 @@ class TierResolutionTests(unittest.TestCase):
             proc = self.cli("counterpart", mode="transcript", no_tokens=True, **kw)
             self.assertEqual(0, proc.returncode, (why, proc.stdout + proc.stderr))
             self.assertIsNone(self.line(proc)["tokens_used"], why)
+
+    def test_cli_no_final_message_means_no_count(self):
+        # K6 key round 3 on 0ebad3ed: with no answer there is no trailing echo to anchor the trailer, so shell output
+        # that ends with the pair is not the run's report.
+        for last in ("none", "empty"):
+            proc = self.cli("counterpart", mode="transcript", last=last, no_tail=True, emit=["tokens used", "999"])
+            self.assertEqual(1, proc.returncode, (last, proc.stdout + proc.stderr))   # no answer: the tool exits 1
+            got = self.line(proc)
+            self.assertFalse(got["last_message_ok"], last)
+            self.assertIsNone(got["tokens_used"], last)
+            self.assertTrue((self.root / "out.txt").read_text(encoding="utf-8").rstrip().endswith("999"), last)
+
+    def test_a_count_needs_a_non_empty_answer_whose_echo_ends_the_transcript(self):
+        self.assertIsNone(self.mod.tokens_used("exec\nls\ntokens used\n999\n", ""))
+        self.assertIsNone(self.mod.tokens_used("exec\nls\ntokens used\n999\n", "VERDICT: ACCEPT\n"))   # no echo at the end
+        self.assertEqual(999, self.mod.tokens_used("codex\nV\ntokens used\n999\nV\n", "V\n"))
 
     def test_cli_a_real_trailer_is_recorded_whatever_the_prompt_and_shell_output_quote(self):
         self.assertEqual(1234, self.line(self.cli("counterpart", mode="transcript"))["tokens_used"])
