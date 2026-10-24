@@ -2,25 +2,27 @@ schema: cos-feedback.v1
 project: adobe-ingester
 repo: layibabalola/adobe-document-cloud-ingester
 pr: 8
-head: 3a87c3e270b2d763e22454c33aa7985313be80d9
-reviewed_utc: 2026-10-24T09:22:30Z
-event: changed-head-delta
+head: 9d2f2cab46a666bebfdbfacd20ef8c0930585f5c
+reviewed_utc: 2026-10-24T10:19:35Z
+event: pr-pushed
 verdict: ADVISORY
+ci_summary: zero checks/statuses/reviews; factory evidence unverified
 reviewer: primary dot
-review_uuid: 507f98e3-d3b4-473b-9911-bd0651840f09
+review_uuid: 1a82b0f4-e27e-45f7-ad6c-1e1ca0ef1d72
 posture: non-gating ADVISORY under R18
 
-# layibabalola/adobe-document-cloud-ingester #8 / 3a87c3e270b2d763e22454c33aa7985313be80d9 / ADVISORY
+# layibabalola/adobe-document-cloud-ingester #8 / 9d2f2cab46a666bebfdbfacd20ef8c0930585f5c / ADVISORY
 ## Blockers
-B1 P2 ROW-DESCENDANT-PASS-THROUGH: spikes/adobe-session/AdobeSessionSpike/ListingProbe.cs:140-148 exempts every counted-row descendant. In the existing Header+Rows fixture, make the grid position:relative and insert an absolute inset:0 opaque white pointer-events:none div inside the first static data row. Its containing block is the grid, so it covers other rows too. Hit-testing passes through; rows.some(row.contains(e)) skips it. Earlier geometry/structure checks permit the fixture; source trace reaches aria-grid:2:3 and stable Counted, contrary to README:189 covered-row refusal. Ordinary loading mask, no hostile API forgery. Static demonstrated path, not executed. Restrict exemption without allowing row descendants to occlude other rows; add this combined fixture.
+B1 P2 ROW-PAINT-ESCAPE: spikes/adobe-session/AdobeSessionSpike/ListingProbe.cs:151-155 checks border-box containment, not painted extent. In Header+Rows, put a 1x1px absolute child at left:0;top:0 inside a position:relative counted row; give it pointer-events:none;z-index:1000;box-shadow:0 0 0 2000px white. Its box stays inside its row while opaque shadow covers siblings. Box shadow changes neither layout nor scrollable overflow; hit-testing passes through, unsupportedPaint omits boxShadow, and ownerRow exemption skips it. Static trace reaches stable Counted for an obscured list, contrary to README:190-193. Refuse unsupported ink overflow before exemption and add this fixture. Not executed.
 ## Improvements
-ListingProbeTests.cs:guarded-read tests still need query sentinels; Program.Main fixtures still need DEBUG/PWDEBUG/DEBUG_FILE isolation. Program.cs:69-71 now bounds root-lookup waiting, but filesystem work behind WaitAsync remains uncancelled.
+ListingProbe.cs:145-148 also rejects non-generated or zero-size pseudos, and pseudos whose host/ancestor is display:none or opacity:0. Check proven non-painting cases without requiring nonzero host geometry; zero-size hosts may own real fixed overlays. Conservative false refusals, not leakage.
+Prior guarded-query sentinel tests, DEBUG/PWDEBUG/DEBUG_FILE fixture isolation and uncancelled filesystem WaitAsync work remain.
 ## Nits
-ListingProbe.cs:72-73 ancestor-visibility prose and :234-236 no-early-exit prose still need qualification.
+ListingProbe.cs:72-73 visibility prose remains stale; README computed-style inventory lacks contain/position. Tests:427 regex is a guard, not complete obfuscation detection.
 ## Coverage and readiness
-Source-first e7bd5b6→00fb579 four-file +65/-23, then prepublication live-head move triggered full00fb579→3a87c3 three-file +48/-6 delta. Original surface-child overlay counterexample is now fixed/tested at ListingProbeTests.cs:478; broader omission narrowed to row descendants, not eliminated. Cell geometry, masks/filters, semantic-hidden rendering and final-deadline read changes inspected. Prior findings exposure disclosed.
-Post-pass Grok6382477787 reports148/148/no blockers, attributed; discusses conservative edge overlays, not B1. No SHARED BLOCKER.
-Open/non-draft/CLEAN; zero checks/statuses/reviews; synthetic501a540914e490b1fbc12fffff177dc27447804d has no runs. Independent keys/requiredCI/actualtree/applicable thirdkey unverified. No tests/browser/live Adobe.
+Full source-first three-file +24/-8 delta from3a87c3e. Exact prior oversized-row-descendant box case fixed by containment; paint escape remains. Three fixtures/pins, paint containment and pseudo checks reviewed. Prior finding exposure disclosed.
+Post-pass Grok6382787595 reports151/151 and pseudo no-content/zero-size false refusals, attributed; matches improvement, not B1. No SHARED BLOCKER.
+Open/non-draft/CLEAN, zero checks/statuses/reviews; synthetic39393a11b9bad7de72bd10f4424478df1ec0eb0f has no runs. Independent keys/requiredCI/actualtree/applicable thirdkey unverified. No tests/browser/live Adobe.
 
 R18 advice never authorizes merge or waives factory evidence/reserved actions. ACK/DISTINGUISH within24h citing UUID; older duties retained.
 Signed: primary dot.
