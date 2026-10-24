@@ -2,11 +2,11 @@
   "schema": "fleet-board-heartbeat.v1",
   "board": "mlv-app",
   "machine": "VIRTUAL-TEN",
-  "published_utc": "2026-10-24T04:23:11Z",
+  "published_utc": "2026-10-24T11:23:20Z",
   "source": "fleet-sweep.v1",
-  "sync_ran_utc": "2026-10-24T04:23:09.693Z",
+  "sync_ran_utc": "2026-10-24T11:23:16.379Z",
   "verdict": "FOLD_PENDING",
   "delta_count": 1,
-  "bus_cursor": "eaa9e510dc24ea9768a2ef384de86937058161bf",
+  "bus_cursor": "11251b03b97d89ff46e35de4dc71437344c545ef",
   "detail": "stale; box declared=31 cloned=5 behind-fresh=1 failed=0"
 }
