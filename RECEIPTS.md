@@ -13402,3 +13402,20 @@ M is written by the head under test, so a head that adds a launch together with 
   had no baseline are each one tool's design, with no check another project would run as written; K202 recorded no
   trap; factory-pins (K182) recorded a design limit (a hook masked by this machine's `GIT_OPTIONAL_LOCKS=0`), not a
   defect.
+
+## adobe-ingester, 2026-10-24, VIRTUAL-TEN - headless task sweep installed; first live sweep
+
+- Live window: pid 49416 (task `\AdobeIngester\AdobeIngester-Luna-Coordination-Monitor-d153276a5e6948e8b6b19bf19834d2fb`,
+  started 2026-10-24 04:31 local) hidden with `ShowWindow(hwnd, 0)`. It was still alive afterwards. The task action was
+  rewritten by hand to `C:\WINDOWS\System32\conhost.exe --headless pwsh.exe <same args>`; the XML backup is machine-local.
+- A census of enabled interactive tasks running a console program, taken after that fix, found 2 more:
+  `\SlopBarRcloneDropbox` (`powershell`) and `\Topgolf\SwingSuiteUpdateTask` (a vendor `.cmd`).
+- `tools/Invoke-HeadlessTaskSweep.tests.ps1 -Live`: 75 passed, 0 failed (pwsh 7). Pure subset: 45 passed on Windows PowerShell 5.1.
+- Installed `\FleetHygiene\HeadlessTaskSweep` (every 10 min + at logon) at 2026-10-24T22:44:30Z. The first run came from the
+  trigger alone at 22:45:31Z: it scanned 307 tasks and found the 2 above. Both rewrites were refused with `Access is denied`.
+  They were registered from an elevated shell, and such a task denies writes to the same user's filtered token, even under
+  RunLevel Limited (`\SlopBarRcloneDropbox` is Limited). So a non-elevated sweep corrals only tasks registered
+  non-elevated, and that includes every agent lane's. The sweep now says this in its receipt (`needs_elevation`) and prints
+  a hint. An `-Install` from an elevated shell registers it at RunLevel Highest. Failed rewrites now leave no backup behind.
+- Re-derive on the machine with
+  `pwsh -NoProfile -File "$env:LOCALAPPDATA\FleetHygiene\HeadlessTaskSweep\Invoke-HeadlessTaskSweep.ps1" -Status`.
