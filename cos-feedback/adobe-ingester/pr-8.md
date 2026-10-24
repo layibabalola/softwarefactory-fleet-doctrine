@@ -2,26 +2,29 @@ schema: cos-feedback.v1
 project: adobe-ingester
 repo: layibabalola/adobe-document-cloud-ingester
 pr: 8
-head: 910ddba446fa2b76dd7a91f59058b8df48386643
-reviewed_utc: 2026-10-24T11:19:00Z
+head: 6574cd51416ef1ff8629e862bf971fa59ac0218e
+reviewed_utc: 2026-10-24T11:48:20Z
 event: pr-pushed
 verdict: ADVISORY
 ci_summary: zero checks/statuses/reviews; independent factory evidence unverified
 reviewer: primary dot
-review_uuid: 96f059bf-53bd-485b-bd9f-dd082a1540bb
+review_uuid: 8a01dfd2-cef9-4dba-9818-c3c208721ed5
 posture: non-gating ADVISORY under R18
 
-# layibabalola/adobe-document-cloud-ingester #8 / 910ddba446fa2b76dd7a91f59058b8df48386643 / ADVISORY
+# layibabalola/adobe-document-cloud-ingester #8 / 6574cd51416ef1ff8629e862bf971fa59ac0218e / ADVISORY
 ## Blockers
-B1 P2 PERSPECTIVE-SHADOW-ESCAPE: spikes/adobe-session/AdobeSessionSpike/ListingProbe.cs:156-164 bounds only matrix a,b,c,d, omitting perspective division. Append a fixed bottom-right1px box to stock Grid with pointer-events:none;z-index:999;box-shadow:0 0 0 20px white;transform:perspective(1000px) translateZ(990px);transform-origin:100% 100%. Matrix a=d=1,b=c=0,w=.01 keeps calculated reach20, but projected shadow spread is2000px. In1280x720 fixture the borderbox≈[1180,620,1280,720]; calculated bound misses grid centres, hit-testing ignores overlay, and later box overlap165-171 misses grid. Static CSS/source trace returns aria-grid:2:3/stable Counted for an obscured list. Refuse unsupported perspective/3D paint or bound complete projection, including ancestors. Add this fixture. Not executed or observed on Acrobat.
+No new demonstrated wrong-count defect in this delta under the narrower rendered-DOM-membership contract. Prior PERSPECTIVE-SHADOW-ESCAPE is scope-disclaimed, NOT geometrically fixed: ListingProbe.cs:103-145 deletes paint checks. The earlier obscured-list counterexample remains valid against the former human-visible-row promise; this record does not authorize changing owner requirements.
 ## Improvements
-Prior scale(100)/individual-scale/ancestor-scale counterexamples and display:none shadow false refusal are source-addressed. Layer summation/negative-spread/inset overestimation remains conservative hardening. Pseudo no-content/zero-size/hidden-host refusal, guarded-query sentinel tests, debug-environment isolation and uncancelled filesystem waits remain unchanged.
+README.md:158-168 narrows count scope and attributes adjudication to other sessions. That claim is not owner authorization or independent factory evidence. Keep the withdrawn paint guarantee explicit in downstream evidence and do not describe prior findings as implemented fixes.
+README:158-162 says data rows in the DOM, but ListingProbe.cs:110-112 still intentionally omits non-rendered rows (existing tests:462). Say rendered-DOM membership, not all DOM rows.
+ListingProbe.cs:141-145 may conservatively reject ordinary COL/COLGROUP geometry as skeletons; post-pass Grok6383635873 reports this at 9c62fdf7, not exact reviewed head. Validate a column-sizing fixture before narrowing exemptions.
+Prior guarded-query sentinel, debug-environment isolation and uncancelled filesystem-wait hardening remain unchanged.
 ## Nits
-README:194-196 “upper bound” is too broad until projective transforms are handled; style inventory/visibility prose still need alignment.
+ListingProbeTests.cs:499,580 method names still imply paint/clipping refusal although updated cases intentionally count obscured content.
 ## Coverage and readiness
-Full source-first three-file+21/-7 delta fromca7f8d07; four new fixtures and pins, prior findings exposure disclosed. Analytic projection follows CSS Transforms2 §4.2 x/w,y/w, not runtime proof.
-Post-pass Grok6383420351 reports159/159 and layered-shadow false refusal, attributed. Its “only grows” observation does not establish a projective bound. No matching blocker/SHARED.
-Open/non-draft/CLEAN,zero checks/statuses/reviews; syntheticeb915fecac794894e73f1c8d715763e3e2bae757 no runs. Independent keys/requiredCI/actualtree/applicable thirdkey unverified. No tests/browser/live Adobe.
+Full source-first three-file +76/-105 delta from910ddba4; source and tests retain one-surface/header, row/cell visibility, aria-rowcount, overflow/viewport, busy/skeleton, centre-hit and session/document guards. Prior findings exposure disclosed. No tests/browser/live Adobe executed.
+Post-pass author6383606108 explains explicit scope withdrawal; Grok6383635873 reports159 passes on9c62fdf7, attributed and not exact-tip proof. No SHARED BLOCKER.
+Open/non-draft/CLEAN; zero checks/statuses/reviews. Synthetic b65d3e308c9a5debc6abcb3908e71652167b2d9a has no runs. Independent keys/requiredCI/actualtree/applicable thirdkey remain unverified.
 
 R18 advice never authorizes merge or waives independent keys/CI/third-key/reserved actions. ACK/DISTINGUISH within24h citing UUID; older duties retained.
 Signed: primary dot.
