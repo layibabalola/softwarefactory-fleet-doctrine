@@ -171,10 +171,11 @@ elif mode == "transcript":
     if os.environ.get("FAKE_CODEX_NO_TAIL") != "1":      # K178: a refused run prints no answer after its error
         print("codex")
         print(final, end="")
-        if os.environ.get("FAKE_CODEX_NO_TOKENS") != "1":     # K180 key round 1: a run that reports no usage
+        if os.environ.get("FAKE_CODEX_NO_TOKENS") != "1":
             print("tokens used")
             print("1,234")
-        print(final, end="")
+            print(final, end="")
+        # K180 key round 2: FAKE_CODEX_NO_TOKENS=1 is a run that reports no usage: the answer once, no trailer.
     sys.exit(int(os.environ.get("FAKE_CODEX_EXIT", "0")))
 elif mode == "silent":
     print("(codex ran; no header this time)")
@@ -1247,21 +1248,22 @@ class TierResolutionTests(unittest.TestCase):
         self.assertIsNone(self.mod.tokens_used("exec\nls\ncodex\n" + final, final))
         self.assertIsNone(self.mod.tokens_used("tokens used\nmany\n", ""))
 
-    def test_a_pair_quoted_in_the_echoed_prompt_is_not_the_runs_report(self):
-        # K6 key round 1 on 25c0ef22: a review prompt that quotes a codex transcript carries `tokens used` / a count.
-        prompt = "Review this transcript:\ntokens used\n999\nthat is all.\n"
+    def test_a_count_is_read_only_from_the_trailer_position(self):
+        # K6 key round 2 on 2385764b: `tokens used` + a count counts only as codex's trailer -- after the answer, before
+        # its last echo -- never from the prompt, shell output or the answer itself.
         final = "VERDICT: ACCEPT\n"
-        echoed = "OpenAI Codex v1\nuser\n" + prompt
-        self.assertIsNone(self.mod.tokens_used(echoed + "codex\n" + final + final, final, prompt))
-        self.assertEqual(12345, self.mod.tokens_used(
-            echoed + "codex\n" + final + "tokens used\n12,345\n" + final, final, prompt))
-        # a real report that happens to sit BEFORE the prompt-less default still reads, and the default is unchanged
-        self.assertEqual(999, self.mod.tokens_used(echoed, "", ""))
+        pair = "tokens used\n999\n"
+        self.assertEqual(999, self.mod.tokens_used("user\np\ncodex\n" + final + pair + final, final))
+        self.assertIsNone(self.mod.tokens_used("user\n" + pair + "codex\n" + final, final))          # prompt / shell
+        self.assertIsNone(self.mod.tokens_used("exec\nls\n" + pair + "codex\n" + final + final, final))
+        quoted = "Notes\n" + pair + "VERDICT: ACCEPT\n"
+        self.assertIsNone(self.mod.tokens_used("codex\n" + quoted, quoted))                          # the answer itself
+        self.assertEqual(7, self.mod.tokens_used("codex\n" + quoted + "tokens used\n7\n" + quoted, quoted))
 
     # ---- the CLI (production wiring, against the fake codex) ------------------------------------------------------
 
     def cli(self, role: str, mode: str = "echo", final: str | None = None, models=None, age=timedelta(0),
-            write: bool = True, prompt: str = "Review this.\n", no_tokens: bool = False) -> subprocess.CompletedProcess:
+            write: bool = True, prompt: str = "Review this.\n", no_tokens: bool = False, emit=None) -> subprocess.CompletedProcess:
         bin_dir = self.root / "bin"
         if not bin_dir.exists():
             bin_dir.mkdir()
@@ -1275,6 +1277,9 @@ class TierResolutionTests(unittest.TestCase):
                     "FAKE_CODEX_MODE": mode, "FAKE_CODEX_LAST": "write", "CODEX_HOME": str(self.home)})
         env.pop("FAKE_CODEX_FINAL", None)
         env.pop("FAKE_CODEX_NO_TOKENS", None)
+        env.pop("FAKE_CODEX_EMIT", None)
+        if emit is not None:
+            env["FAKE_CODEX_EMIT"] = json.dumps(emit)
         if no_tokens:
             env["FAKE_CODEX_NO_TOKENS"] = "1"
         if final is not None:
@@ -1314,15 +1319,26 @@ class TierResolutionTests(unittest.TestCase):
         self.assertIn("7 days", got["resolution_reason"])
         self.assertIsNotNone(got["stale"])
 
-    def test_cli_a_pair_quoted_in_the_prompt_is_not_recorded_as_the_runs_tokens(self):
-        quoted = "Review this transcript:\ntokens used\n999\nthat is all.\n"
-        proc = self.cli("counterpart", mode="transcript", prompt=quoted, no_tokens=True)
-        self.assertEqual(0, proc.returncode, proc.stdout + proc.stderr)
-        got = self.line(proc)
-        self.assertIsNone(got["tokens_used"])
-        self.assertIn("tokens used", (self.root / "out.txt").read_text(encoding="utf-8"))   # the echo is in the transcript
-        real = self.line(self.cli("counterpart", mode="transcript", prompt=quoted))
-        self.assertEqual(1234, real["tokens_used"])
+    def test_cli_a_count_outside_the_trailer_is_never_recorded(self):
+        # K6 key round 2 on 2385764b. Each case runs the real tool against the fake codex.
+        pair = "tokens used\n999\n"
+        prompt_pair = "Review this transcript:\n" + pair + "that is all.\n"
+        for why, kw in (
+                ("the pair only in shell output", dict(emit=["tokens used", "999"])),
+                ("the pair only in the prompt", dict(prompt=prompt_pair)),
+                ("the pair in both and no trailer", dict(prompt=prompt_pair, emit=["tokens used", "999"])),
+                ("the pair inside the final message, no trailer", dict(final="Notes\n" + pair + "VERDICT: ACCEPT\n"))):
+            proc = self.cli("counterpart", mode="transcript", no_tokens=True, **kw)
+            self.assertEqual(0, proc.returncode, (why, proc.stdout + proc.stderr))
+            self.assertIsNone(self.line(proc)["tokens_used"], why)
+
+    def test_cli_a_real_trailer_is_recorded_whatever_the_prompt_and_shell_output_quote(self):
+        self.assertEqual(1234, self.line(self.cli("counterpart", mode="transcript"))["tokens_used"])
+        self.assertEqual(1234, self.line(self.cli("counterpart", mode="transcript",
+                                                  prompt="tokens used\n1,234\n"))["tokens_used"])
+        self.assertEqual(1234, self.line(self.cli("counterpart", mode="transcript",
+                                                  prompt="Quote:\ntokens used\n999\n",
+                                                  emit=["tokens used", "888"]))["tokens_used"])
 
     def test_cli_refuses_an_unresolvable_tier_without_calling_codex(self):
         proc = self.cli("counterpart", write=False)

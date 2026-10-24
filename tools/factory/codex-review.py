@@ -363,20 +363,25 @@ def read_verdict(final_message: str) -> tuple[str, str | None]:
     return "UNKNOWN", None
 
 
-def tokens_used(transcript: str, final_message: str, prompt: str = "") -> int | None:
-    """The run's reported total, from codex's `tokens used` line followed by a count -- the last such pair outside the
-    final message's echoes and outside the echoed PROMPT (a review prompt may quote a codex transcript's own `tokens used`
-    pair; K6 key round 1 on 25c0ef22); None when the transcript has none (never estimated). A total is not an input/output split,
-    so the split fields of `measurement` stay None."""
-    lines = _remove_blocks(transcript.splitlines(), _block(prompt), 2, from_end=False)
-    lines = _remove_blocks(lines, _block(final_message), 2, from_end=True)
-    found: int | None = None
-    for i, line in enumerate(lines[:-1]):
-        if line.strip() == "tokens used":
-            m = re.fullmatch(r"\d{1,3}(?:,\d{3})+|\d+", lines[i + 1].strip())
-            if m:
-                found = int(m.group(0).replace(",", ""))
-    return found
+def tokens_used(transcript: str, final_message: str) -> int | None:
+    """The run's reported total, read ONLY from codex's trailer position (K180, K6 key round 2): codex ends a run with
+    `tokens used`, the count, then the final message echoed once as the LAST block. One trailing copy of the final
+    message is removed from the END (when present); the last two non-blank lines must then be `tokens used` and a count.
+    Anything else is None -- a pair in the prompt, in shell output or inside the answer is never the run's report, and
+    nothing scans the transcript for one. Never estimated. A total is not an input/output split, so the split fields of
+    `measurement` stay None."""
+    lines = [line.strip() for line in transcript.splitlines()]
+    while lines and not lines[-1]:
+        lines.pop()
+    block = _block(final_message)
+    if block and len(lines) >= len(block) and lines[-len(block):] == block:
+        del lines[-len(block):]
+    tail = [line for line in lines if line][-2:]
+    if len(tail) == 2 and tail[0] == "tokens used":
+        m = re.fullmatch(r"\d{1,3}(?:,\d{3})+|\d+", tail[1])
+        if m:
+            return int(m.group(0).replace(",", ""))
+    return None
 
 
 def usage_fields(role: str, actual_model: str | None, actual_effort: str | None, resolution: dict,
@@ -664,7 +669,7 @@ def run_review(role: str, cd: str, prompt_file: str, out_path: str, last_message
         "shell_succeeded": shell["succeeded"],
         "shell_failed": shell["failed"],
         **usage_fields(role, seen.get("model"), seen.get("reasoning effort"), resolution, active_seconds,
-                       tokens_used(out_text, _read(last_path), Path(prompt_file).read_text(encoding="utf-8", errors="replace")), _read(last_path)),
+                       tokens_used(out_text, _read(last_path)), _read(last_path)),
     }
     # Bus key on K154 packet 2, finding 2: the two K178 keys exist ONLY on a credential stop, appended after the
     # others, so every other run's JSON line is byte-compatible with the result before K178.
