@@ -2,24 +2,25 @@ schema: cos-feedback.v1
 project: adobe-ingester
 repo: layibabalola/adobe-document-cloud-ingester
 pr: 6
-head: 5f06ca417b4fe5f15cdf9f81f249fcbb01cf903e
-reviewed_utc: 2026-10-24T03:48:22Z
+head: baeb2128e5c589074bf6a291327a64ddb329ea18
+reviewed_utc: 2026-10-24T04:17:57Z
 event: changed-tip-delta
 verdict: ADVISORY
 reviewer: primary dot
-review_uuid: a02506ea-d3cd-45d5-8a5a-23ce6ab03b71
+review_uuid: df7016a7-4a2a-4b64-9edc-1d68d1c078ec
 posture: non-gating ADVISORY under R18
 
-# layibabalola/adobe-document-cloud-ingester #6 / 5f06ca417b4fe5f15cdf9f81f249fcbb01cf903e / ADVISORY
+# layibabalola/adobe-document-cloud-ingester #6 / baeb2128e5c589074bf6a291327a64ddb329ea18 / ADVISORY
 ## Blockers
-B1 P2 LATE-READ-TIMEOUT-FAIL-OPEN. spikes/adobe-session/AdobeSessionSpike/Program.cs:1947-1951 discards a timed-out final IMS observation and calls Decide(history). With2s budget, SignedIn reads at0/.5/1s do not early-return (1954-1958 excludes AcrobatRoot); read at1.5s times out at2s, then1982-1986 accepts the previous3samples. ClassifyAsync2047-2056/Resolve2085 return Authenticated with absent marker; Main123 cannot detect it when URL/navigation remain unchanged. Return Error/Unstable on timeout, not successful stale history. Source-proven fail-closed gap, not observed live signed-out acceptance.
+None newly demonstrated. Prior LATE-READ-TIMEOUT-FAIL-OPEN is source-addressed at spikes/adobe-session/AdobeSessionSpike/Program.cs:1963-1966: timed-out final observation returns Unknown/Unstable, never successful prior history. Earlier budget-overrun/privacy remedies retained.
 ## Improvements
-SessionBoundaryTests.cs:798-817 uses completed reads/fake elapsed increments, missing this exception branch. Add timeout after3SignedIn samples expecting fail-closed21, plus empty-history timeout.
-Prior SETTLE-BUDGET-OVERRUN is source-addressed by pre-read expiry, remaining-budget WaitAsync, capped delay and zero reads atzero budget. Prior privacy suppression remains; strict boolean IMS and navigation tracking address earlier hardening.
+SessionBoundaryTests.cs:798-817 still uses completed reads/simulated elapsed time. Add pending final read after3SignedIn samples expecting Unknown/Unstable and fail-closed21.
+Program.cs:2254-2306 adds Task.Run, outer WaitAsync and10s cleanup grace; existing cancellation test230-241 is cooperative. Add token-ignoring continuation/cleanup fixtures checking bounded caller wait, retained lease while outstanding, eventual release.
+Program.cs:138-145 post-cleanup navigation recheck needs a cleanup-time navigation fixture lowering an initially authenticated verdict.
 ## Nits
-Post-pass Grok6379281941 notes abandoned read task observation and undocumented short-budget unstable outcome; attributed hardening, not SHARED BLOCKER.
+Post-pass Grok6379516728 matches coverage gaps, not an independent blocker. Its timeout+10s/short-budget README and abandoned-read observation suggestions are attributed hardening.
 ## Coverage and readiness
-Complete3file delta from650e02e3, immutable surrounding source/tests before same-tip feedback. No execution/browser/liveAdobe actions. Post-pass Grok found no blockers; no independent matching blocker.
-Live open/non-draft/CLEAN; zero head checks/statuses/runs. Exact-head independent Claude+Codex/HIGH-RISK third-key/requiredCI/actualtree evidence unverified; live/commit claims not authority.
-R18 ADVISORY never merge authorization or CoS gate. Preserve factory evidence, CI, third-key, ACK and reserved-human/live-action requirements. ACK/DISTINGUISH within24h citing UUID; old duties not reset.
+Complete one-file delta from5f06ca41 plus immutable call chain/tests inspected source-first; no execution/browser/liveAdobe. Commit's Codex/live-validation claims not independent evidence or new authority.
+Closed/merged during completed review at04:16:12Z, reviewed tip unchanged on delivery recheck. Earlier zero head checks/statuses/runs and synthetic99026bca251bde97716a8fd2d6834662184c8596 runs; no merge authorization inferred. Exact-head Claude+Codex/HIGH-RISK third-key/requiredCI/actualtree evidence unverified; Grok is advisory, not factory leg. No SHARED BLOCKER.
+R18 advice not merge authorization or CoS gate. Preserve all independent factory evidence/CI/third-key, live-action/owner reservations and ACK duties. ACK/DISTINGUISH within24h citing UUID; prior duties not reset.
 Signed: primary dot.
