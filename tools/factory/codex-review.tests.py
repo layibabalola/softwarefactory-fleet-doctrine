@@ -171,8 +171,9 @@ elif mode == "transcript":
     if os.environ.get("FAKE_CODEX_NO_TAIL") != "1":      # K178: a refused run prints no answer after its error
         print("codex")
         print(final, end="")
-        print("tokens used")
-        print("1,234")
+        if os.environ.get("FAKE_CODEX_NO_TOKENS") != "1":     # K180 key round 1: a run that reports no usage
+            print("tokens used")
+            print("1,234")
         print(final, end="")
     sys.exit(int(os.environ.get("FAKE_CODEX_EXIT", "0")))
 elif mode == "silent":
@@ -1246,22 +1247,36 @@ class TierResolutionTests(unittest.TestCase):
         self.assertIsNone(self.mod.tokens_used("exec\nls\ncodex\n" + final, final))
         self.assertIsNone(self.mod.tokens_used("tokens used\nmany\n", ""))
 
+    def test_a_pair_quoted_in_the_echoed_prompt_is_not_the_runs_report(self):
+        # K6 key round 1 on 25c0ef22: a review prompt that quotes a codex transcript carries `tokens used` / a count.
+        prompt = "Review this transcript:\ntokens used\n999\nthat is all.\n"
+        final = "VERDICT: ACCEPT\n"
+        echoed = "OpenAI Codex v1\nuser\n" + prompt
+        self.assertIsNone(self.mod.tokens_used(echoed + "codex\n" + final + final, final, prompt))
+        self.assertEqual(12345, self.mod.tokens_used(
+            echoed + "codex\n" + final + "tokens used\n12,345\n" + final, final, prompt))
+        # a real report that happens to sit BEFORE the prompt-less default still reads, and the default is unchanged
+        self.assertEqual(999, self.mod.tokens_used(echoed, "", ""))
+
     # ---- the CLI (production wiring, against the fake codex) ------------------------------------------------------
 
     def cli(self, role: str, mode: str = "echo", final: str | None = None, models=None, age=timedelta(0),
-            write: bool = True) -> subprocess.CompletedProcess:
+            write: bool = True, prompt: str = "Review this.\n", no_tokens: bool = False) -> subprocess.CompletedProcess:
         bin_dir = self.root / "bin"
         if not bin_dir.exists():
             bin_dir.mkdir()
             _write_fake_codex(bin_dir)
         (self.root / "worktree").mkdir(exist_ok=True)
-        (self.root / "prompt.md").write_text("Review this.\n", encoding="utf-8")
+        (self.root / "prompt.md").write_text(prompt, encoding="utf-8")
         if write:
             write_cache(self.home, models, age)
         env = dict(os.environ)
         env.update({"PATH": str(bin_dir) + os.pathsep + env.get("PATH", ""), "ARGV_LOG": str(self.root / "argv.json"),
                     "FAKE_CODEX_MODE": mode, "FAKE_CODEX_LAST": "write", "CODEX_HOME": str(self.home)})
         env.pop("FAKE_CODEX_FINAL", None)
+        env.pop("FAKE_CODEX_NO_TOKENS", None)
+        if no_tokens:
+            env["FAKE_CODEX_NO_TOKENS"] = "1"
         if final is not None:
             env["FAKE_CODEX_FINAL"] = final
         return subprocess.run([sys.executable, str(TOOL), "--role", role, "--cd", str(self.root / "worktree"),
@@ -1298,6 +1313,16 @@ class TierResolutionTests(unittest.TestCase):
                          (got["requested_model"], got["model_effective"], got["resolution"], got["tier"]))
         self.assertIn("7 days", got["resolution_reason"])
         self.assertIsNotNone(got["stale"])
+
+    def test_cli_a_pair_quoted_in_the_prompt_is_not_recorded_as_the_runs_tokens(self):
+        quoted = "Review this transcript:\ntokens used\n999\nthat is all.\n"
+        proc = self.cli("counterpart", mode="transcript", prompt=quoted, no_tokens=True)
+        self.assertEqual(0, proc.returncode, proc.stdout + proc.stderr)
+        got = self.line(proc)
+        self.assertIsNone(got["tokens_used"])
+        self.assertIn("tokens used", (self.root / "out.txt").read_text(encoding="utf-8"))   # the echo is in the transcript
+        real = self.line(self.cli("counterpart", mode="transcript", prompt=quoted))
+        self.assertEqual(1234, real["tokens_used"])
 
     def test_cli_refuses_an_unresolvable_tier_without_calling_codex(self):
         proc = self.cli("counterpart", write=False)
