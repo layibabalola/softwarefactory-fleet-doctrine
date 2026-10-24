@@ -2,27 +2,28 @@ schema: cos-feedback.v1
 project: adobe-ingester
 repo: layibabalola/adobe-document-cloud-ingester
 pr: 8
-head: a01bb23ef893e2e29ae069f48c6d15b43084f136
-reviewed_utc: 2026-10-24T12:22:50Z
+head: 5471aefd41009b0d619bcf7495491e7c8927076c
+reviewed_utc: 2026-10-24T12:56:40Z
 event: pr-pushed
 verdict: ADVISORY
-ci_summary: zero checks/statuses/reviews; independent evidence unverified
+ci_summary: zero exact-head checks/statuses/runs; independent evidence unverified
 reviewer: primary dot
-review_uuid: a9ede705-3554-4a24-a8cc-5b72c084ed58
+review_uuid: f7333363-504d-4d73-8d16-630df193cbe4
 posture: non-gating ADVISORY under R18
 
-# layibabalola/adobe-document-cloud-ingester #8 / a01bb23ef893e2e29ae069f48c6d15b43084f136 / ADVISORY
+# layibabalola/adobe-document-cloud-ingester #8 / 5471aefd41009b0d619bcf7495491e7c8927076c / ADVISORY
 ## Blockers
-No new demonstrated defect in this delta under rendered-DOM-membership contract. Paint visibility remains withdrawn, NOT repaired or owner-authorized scope change.
+No new demonstrated functional defect or text-output leak in this delta. This is NOT approval of expanded live-data access.
 ## Improvements
-ListingProbe.cs:90-93 now rejects whitespace/case/fallback list roles before exact selectors omit them; :124 rejects data-shaped THEAD rows before counting. Nested-owner rows now refuse at :114 instead of silently skipping a presentation-table subtree. Seven fixtures added across both commits; pins updated.
-ListingProbe.cs:144-148 COL/COLGROUP skeleton false-refusal remains conservative hardening. README:158-166 all-DOM wording still exceeds rendered-row behavior; prior sentinel/debug-environment/uncancelled-wait concerns unchanged.
+ListingProbe.cs:108-111 now refuses rendered progress/progressbar inside the selected surface; :126-127 refuses all-whitespace data rows before incrementing the count. Four fixtures and fixed-output grammar assertions added.
+Privacy contract changed: :127 reads cell textContent to derive a boolean. README:179-182 discloses this, but :133-134 and PR body still claim no reading/no text. Reconcile these claims and retain applicable owner authorization before live use; count-only output does not mean no text access. Paint visibility remains previously withdrawn, not repaired or owner-approved.
+Static trace finds only fixed labels/count returned; catch:152, Parse:190-216 and read catch:410-412 do not echo text/exceptions. This is bounded source evidence, not universal leak-proof certification.
 ## Nits
-ListingProbe.cs:90-93 page-wide malformed-role refusal also rejects unrelated header cells; narrow only with omission coverage preserved. ListingProbeTests method names still overstate paint refusal.
+Existing COL/COLGROUP and page-wide malformed-role refusals remain hardening. Progressbar on a real row can conservatively refuse the entire surface; unrelated malformed progressbar also refuses page-wide (:91-94). Prior sentinel/debug-environment/uncancelled-wait concerns retained.
 ## Coverage and readiness
-Source-first full two-commit/three-file delta from6574cd5 (first+17/-4, second+6/-3), prior exposure disclosed. No tests/browser/live Adobe.
-Post-pass Grok6384138020 reports166 passes and matching G1 column/G2 pagewide hardening on exacthead, attributed; no SHARED BLOCKER. Track its same-thread24h ACK/DISTINGUISH duty without duplicate ask.
-Open/non-draft/CLEAN,zero checks/statuses/reviews. Synthetic4b017bc7a43d80238a0f54eeff96040778efce5a no runs. Independent keys/requiredCI/actualtree/applicablethirdkey unverified.
+Source-first complete three-file/two-commit delta from a01bb23; 2ce2 committed12:51:19,5471 test-only12:53:58. No execution/browser/live Adobe. Prior finding exposure disclosed.
+Post-pass Grok6384451067 binds older2ce2, G3/G4 match hardening, not SHARED BLOCKER; G1/G2 remain unanswered. No same-tip independent review verified.
+Open/non-draft/CLEAN; zero exact-head checks/statuses/runs, zero formal reviews. Synthetic e39975a4899e8fdb9e3280e9d474667d18dfafe3 has no verified CI. Independent keys/required CI/actual-tree/applicable third key unverified.
 
-R18 advice never authorizes merge or waives independent keys/CI/third-key/reserved actions. ACK: or DISTINGUISH: on the same thread within24h citing UUID; older duties retained. Owner-confirmed equal reply duty applies to Muse/Grok asks too.
+R18 advice never authorizes merge or waives factory evidence or reserved actions. Equal dot/Muse/Grok duty: substantive defect disposition target15min; nonurgent improvements24h outer duty, same-thread ACK:/DISTINGUISH:. Older duties retained.
 Signed: primary dot.
