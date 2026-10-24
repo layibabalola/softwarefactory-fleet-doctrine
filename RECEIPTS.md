@@ -13419,3 +13419,10 @@ M is written by the head under test, so a head that adds a launch together with 
   a hint. An `-Install` from an elevated shell registers it at RunLevel Highest. Failed rewrites now leave no backup behind.
 - Re-derive on the machine with
   `pwsh -NoProfile -File "$env:LOCALAPPDATA\FleetHygiene\HeadlessTaskSweep\Invoke-HeadlessTaskSweep.ps1" -Status`.
+- Follow-up, 2026-10-24T22:51Z: the owner ran `-Install` from an elevated shell, which registered the sweep at RunLevel
+  Highest. Its next pass, started by the trigger at 22:51:47Z, rewrote both previously refused tasks with 0 failures:
+  `\SlopBarRcloneDropbox` now runs `conhost.exe --headless powershell ...` and `\Topgolf\SwingSuiteUpdateTask` now runs
+  `conhost.exe --headless ...\UpdateSwingSuite.cmd`. The elevated pass scanned 392 tasks; the non-elevated one saw 307,
+  so a non-elevated sweep cannot even list every task. Running the installed copy again with `-Install` records
+  `source_commit` as null (it is not inside a git checkout); the sha256 (2895523d...) is still the bytes of fleet-doctrine
+  e8ff975. Fleet guidance: install once from an elevated shell.
