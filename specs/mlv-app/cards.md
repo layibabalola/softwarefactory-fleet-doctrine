@@ -453,3 +453,12 @@ supersedes: none
 evidence: measured
 - **Adopt:** bus steward applies the 20744-byte patch (LF sha256 bcf0b273d00d8bb8143f6555b891ec185c71abaa6f3f6ba430cd2d2626d2e1b5), blob doctrine-outbox/20261023-bus-check-doc-size-predescent-prune-extra-roots-r3.patch at mlv-app commit 223a06460de78c819fb93d27738a9d51502977bc (not in the outbox: an item is a .md card of at most 2000 bytes), to bus c82bddbac001bfeb488493dc8910402753904ed8: check-doc-size.py git blob 62485339 to 10ecdde7, its tests git blob 71f36aed to e4d8b571.
 - **Outbox:** outbox:baedc47635ca8347 mlv-app:56e990a4f1af
+
+## mlv-app/worktree-remover-must-see-detached-drivers
+rule: a remover that frees a lane worktree asks one shared live-reference guard right before it removes, and refuses on a live process naming the path (path-prefix match: lane-X-1 is never named by lane-X-10), on a live pid recorded in a run dir (pid file, child record, receipt pid) whose command line names the worktree or that run dir while the run dir names the worktree, and on any census failure (unknown is never free): a run-dir record or tie file that exists but cannot be read (a real lock, access denied, anything but "gone") refuses as rundir-census-failed naming the file and error class, and a tie scan that hits its file cap refuses the same way naming the run dir and the files read, never as absent evidence. Run-dir files are opened sharing ReadWrite|Delete: a log a live lane or detached driver merely holds open for writing is read, never refused, so an unrelated live run dir leaves other worktrees free. One typed REFUSED line, with reason=, per refusal.
+mechanism: 2026-10-24 06:02Z a retention pass removed a worktree under a detached venue driver whose command line named only its run dir; the lane that launched it had exited (receipt complete). A command-line regex and a running-receipt check both read it as idle; the driver then logged "not measured" every 5 min for 40 min. In Invoke-VenueChain only, a missing driver script is now typed (VENUE_DRIVER_SCRIPT_MISSING path=) and stops the chain; lane-local drivers are not yet wired.
+applies: mlv-app
+check: in mlv-app, pytest tests/coordination/test_retire_lane_worktree.py -k "live_refusal or live_driver or prefix_sibling or census or dead_driver" (28 cases; the refusal cases were RED before their fix, the dead-driver, gone-record, other-worktree and write-held-log cases pin no over-refusal).
+supersedes: none
+evidence: measured
+- **Outbox:** outbox:ae01969234b6ce0b mlv-app:3bb3ba38b0d5
