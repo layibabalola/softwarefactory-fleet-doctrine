@@ -184,6 +184,24 @@ wrapper must treat as STOP AND ESCALATE to the owner, never as a retry: the huma
 with command output, so an auth or quota cause is classified only from a typed source (`codex exec --json` events),
 which this tool does not use yet (a follow-up that needs one live run to record the event shapes).
 
+**Tier resolution (K180; R16.2, R16.5).** A codex-review role names a TIER and an effort, never a model id
+(`swarm` and `counterpart` sol/high, `sweep` astra/high, `census` luna/high); the id is resolved at launch from
+`$CODEX_HOME/models_cache.json` (default `~/.codex`): the newest numeric `gpt-<version>-<tier>` the cache lists as
+visible (`visibility: list`) and supporting the effort, when the cache's `fetched_at` is at most 7 days old. A success
+is stored as the tier's last-good id in `$CODEX_HOME/codex-review-last-good.json`. A missing, unreadable or older cache,
+or no match, falls back to that last-good id and records it (`resolution: fallback`, `resolution_reason`, `stale`);
+with no last-good id the tool refuses (exit 2) rather than invent one. `stale` is also set when the resolved id is older
+than a newer same-tier id the cache lists, AND when it is older than the owner's default for the tier
+(`OWNER_DEFAULT_FLOOR`, sol: gpt-6.1-sol, ruling 2026-10-22), on the cache path and the last-good fallback path alike;
+the floor only reports and never selects an id. The result line gains (after bus master's keys, before the K178 credential
+keys): `model_requested` (the selector), `model_effective` (the id the banner reports), `effort_requested`,
+`effort_effective`, `resolution`, `resolution_reason`, `stale`, `tokens_used` (the transcript's `tokens used` total, null
+when absent), `measurement` (`input_tokens`, `cached_input_tokens`, `reasoning_tokens`, `output_tokens` null when the
+run does not report them, `active_seconds`), `outcome` (APPROVED, CHANGES_REQUESTED, REFUSED, UNKNOWN from the final
+message's last line) and `verdict`. Names follow `schemas/provider-usage-event-v1.schema.json`. kernel-receipt.py
+matches a Codex key class `cross-family:codex-<tier>-<effort>` against the run's model FAMILY `gpt-<version>-<tier>`
+and actual effort; the legacy `cross-family:codex-gpt-<version>-<tier>-<effort>` is read as its tier and effort.
+
 **Optional sections (`ranker`, `evidence`).** A queue ranker's starvation window and an evidence store's names.
 Both are OPTIONAL: absent means that feature is off for the project and nothing is defaulted in. kernel-subjects.py
 reads and validates them when present: every key the schema lists, no other key, each value of its kind (a positive
