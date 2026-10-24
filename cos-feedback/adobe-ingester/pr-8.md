@@ -2,27 +2,25 @@ schema: cos-feedback.v1
 project: adobe-ingester
 repo: layibabalola/adobe-document-cloud-ingester
 pr: 8
-head: 9d2f2cab46a666bebfdbfacd20ef8c0930585f5c
-reviewed_utc: 2026-10-24T10:19:35Z
+head: ca7f8d07dd4cad2ce7081efdef9d2bfc3eb797f6
+reviewed_utc: 2026-10-24T10:50:20Z
 event: pr-pushed
 verdict: ADVISORY
-ci_summary: zero checks/statuses/reviews; factory evidence unverified
+ci_summary: see exact-head observations below; no merge authorization
 reviewer: primary dot
-review_uuid: 1a82b0f4-e27e-45f7-ad6c-1e1ca0ef1d72
+review_uuid: a67ed4f5-c710-497d-87ae-bc1995c3b7aa
 posture: non-gating ADVISORY under R18
 
-# layibabalola/adobe-document-cloud-ingester #8 / 9d2f2cab46a666bebfdbfacd20ef8c0930585f5c / ADVISORY
+# layibabalola/adobe-document-cloud-ingester #8 / ca7f8d07dd4cad2ce7081efdef9d2bfc3eb797f6 / ADVISORY
 ## Blockers
-B1 P2 ROW-PAINT-ESCAPE: spikes/adobe-session/AdobeSessionSpike/ListingProbe.cs:151-155 checks border-box containment, not painted extent. In Header+Rows, put a 1x1px absolute child at left:0;top:0 inside a position:relative counted row; give it pointer-events:none;z-index:1000;box-shadow:0 0 0 2000px white. Its box stays inside its row while opaque shadow covers siblings. Box shadow changes neither layout nor scrollable overflow; hit-testing passes through, unsupportedPaint omits boxShadow, and ownerRow exemption skips it. Static trace reaches stable Counted for an obscured list, contrary to README:190-193. Refuse unsupported ink overflow before exemption and add this fixture. Not executed.
+B1 P2 TRANSFORMED-SHADOW-ESCAPE: spikes/adobe-session/AdobeSessionSpike/ListingProbe.cs:151-155 combines transformed getBoundingClientRect with untransformed CSS shadow lengths. In the stock1280x720 fixture, append a fixed right:0;bottom:0;1x1px element with transform:scale(100);transform-origin:bottom right;box-shadow:0 0 0 20px white;z-index:999;pointer-events:none. Border box is x1180..1280/y620..720; calculated reach20 misses grid centres x640/y26..134. Actual2000px shadow covers them. Hit-testing passes through and later box overlap also misses the grid. Static trace returns aria-grid:2:3/stable Counted. Refuse unsupported transformed shadow paint or compute conservative transformed extent; add this combined fixture. Not executed.
 ## Improvements
-ListingProbe.cs:145-148 also rejects non-generated or zero-size pseudos, and pseudos whose host/ancestor is display:none or opacity:0. Check proven non-painting cases without requiring nonzero host geometry; zero-size hosts may own real fixed overlays. Conservative false refusals, not leakage.
-Prior guarded-query sentinel tests, DEBUG/PWDEBUG/DEBUG_FILE fixture isolation and uncancelled filesystem WaitAsync work remain.
+ListingProbe.cs:150-155 scans shadow styles before rendered/ancestor suppression; invisible elements can cause conservative false refusals. Layer lengths/negative spread/inset are overapproximated. Pseudo guard145-148 still omits generated-content/hidden-host checks. Prior query sentinels, debug-environment fixture isolation and uncancelled filesystem waits remain.
 ## Nits
-ListingProbe.cs:72-73 visibility prose remains stale; README computed-style inventory lacks contain/position. Tests:427 regex is a guard, not complete obfuscation detection.
+Computed-style documentation/comment inventories need synchronization.
 ## Coverage and readiness
-Full source-first three-file +24/-8 delta from3a87c3e. Exact prior oversized-row-descendant box case fixed by containment; paint escape remains. Three fixtures/pins, paint containment and pseudo checks reviewed. Prior finding exposure disclosed.
-Post-pass Grok6382787595 reports151/151 and pseudo no-content/zero-size false refusals, attributed; matches improvement, not B1. No SHARED BLOCKER.
-Open/non-draft/CLEAN, zero checks/statuses/reviews; synthetic39393a11b9bad7de72bd10f4424478df1ec0eb0f has no runs. Independent keys/requiredCI/actualtree/applicable thirdkey unverified. No tests/browser/live Adobe.
+Full three-file +20/-6 source-first delta9d2f2ca→ca7f8d0. Prior untransformed2000px row-child shadow is source-addressed; transformed variant remains. Fourfixtures/pins; positioned pseudo refusal now includes relative/sticky. Prior findings exposure disclosed.
+Post-pass Grok6383064320 reports155/155 and layered-shadow false refusal, attributed. No matching blocker/SHARED. Open/non-draft/CLEAN,zero checks/statuses/reviews; synthetic4eea39f7573d4ecc41107d1c9fac61b17cfa1a6b no runs. Independent keys/requiredCI/actualtree/applicable thirdkey unverified. No tests/browser/live Adobe.
 
-R18 advice never authorizes merge or waives factory evidence/reserved actions. ACK/DISTINGUISH within24h citing UUID; older duties retained.
+R18 advice never authorizes merge or waives independent keys/CI/third-key/reserved actions. ACK/DISTINGUISH within24h citing UUID; older duties retained.
 Signed: primary dot.
