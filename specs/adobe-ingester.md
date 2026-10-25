@@ -1598,3 +1598,35 @@ Still OWED from earlier addenda, re-checked on 2026-10-23 UTC:
 - R18.2, auditor: PR #3 is OPEN, with 6 comments, and the last is still the CoS-ASK of 2026-10-17T03:41Z.
 
 New: the auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`) and the integration-ref declaration (`8a01c92`). None counts as done until its owner records it.
+
+## Fold addendum, 2026-10-25 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `cea2659..9b535fd` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `cea2659`). Binding: 7 commits
+(R19 `6fcc5a2`, R20 `9063a13`, the telemetry r2 commits `5589adf`, `8b25010`, `d8fa789`, `9b82d33` and merge `e82e65d`).
+Sibling: 11 commits touching `TRAPS.md`, `RECEIPTS.md` or another board's `specs/`; heartbeats, CoS feedback and Adobe's
+own `c90c4bf` are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-10-25 UTC against Adobe HEAD
+`abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `9775422`. Every `git grep` ran over
+tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| R19.1/R19.2 (owner ruling): the Sol tier is the Codex default, Luna is mechanical, Astra an occasional diversity seat that no procedure requires; read-only seats prefer Codex while Claude quota binds | `6fcc5a2` | **MODEL-POSTURE-2026-10-22: ADOPTED for lane tiers, OWED in part.** Held: `.claude-state/tools/Invoke-FactorySolLane.ps1:36,38` defaults to `gpt-6.1-sol` at `high`, and `.claude-state/tools/Invoke-FactoryLunaLane.ps1:75,77` to `gpt-6-luna` at `high`. `%USERPROFILE%\.codex\config.toml` defaults to `gpt-6.1-sol` at `high`, and `.claude-state/tools/codex-auditor.ps1` passes no model, so the auditor's Codex falsifier runs that default. **OWED (Sol):** owner directive 2026-09-17b in `.factory/prompts/sol.md:2424-2432` makes an Astra (`gpt-6-astra`) advisory pass standard on every design-class artifact, and its paragraph 2 (`:2440-2446`) asks Sol to bring an Astra lane to quorum as a keyholder. R19.1 section 1.3 says no procedure requires Astra and a role reserved for Astra re-points to the Sol tier. The pass is already non-blocking (`:2435-2437`), so no gate changes. **OWED (auditor):** the section 2 trigger cannot be re-derived at dispatch, because the doctrine loop's usage sample read 2,195 min stale at 2026-10-24T21:48Z (`status.json`; the reason is raised at `.claude-state/tools/Invoke-DoctrineLoop.ps1:138`). Not traced: whether any Adobe round records `astra: diversity`. |
+| R19.3/R19.4: telemetry r1 vetoed, PR #91 held | `6fcc5a2` | NOT-APPLICABLE: r1 is vetoed and R20 below replaces it. |
+| R20 (owner ruling): model-posture telemetry r2 ratified on the metrics data plane; diagnostic only | `9063a13`, `5589adf`, `8b25010`, `d8fa789`, `9b82d33`, `e82e65d` | **MODEL-POSTURE-TELEMETRY: DISTINGUISHED.** The plane gates nothing (metrics law 1) and Conjugal is the pilot publisher. At `9b535fd` the tool, schema and policy are on master (`tools/factory/model-posture.py`, `schemas/model-posture-rollup-v1.schema.json`, `policy/model-posture.json`), and `metrics/model-posture/` holds only `README.md`. Adobe tracks 0 `model-posture` references and runs no publisher. Adobe's resolved-id source stays the Codex rollout file (R16 table above). |
+| cli-orchestration-standard §2: Claude's `--model` takes the family alias; Codex `-m` takes an id resolved from the tier at launch | `6fcc5a2` | ALREADY-HELD for Claude: `.factory/tools/Invoke-FactoryClaudeLane.ps1:1697,1701` map the lanes to the `opus` and `sonnet` aliases, passed at `:471` as `--model $Model`. Codex: the lane defaults are literal ids that are current today (row above), not resolved at launch; that stays the R16.2/R16.5 work (OWED list below). |
+| adobe-ingester trap and tool: an agent's hook cannot see another agent's task registrations; `Invoke-HeadlessTaskSweep`; `conhost --headless` re-quotes its child | `e8ff975` | ALREADY-HELD (Adobe-authored, VIRTUAL-TEN). `\FleetHygiene\HeadlessTaskSweep` is Ready at RunLevel Highest, last result 0. Its newest receipt (2026-10-25T00:41:45Z) scanned 392 tasks with 0 offenders and 0 failures. The installed copy's sha256 starts `2895523D`, the bytes `301ceb3` names. The Luna coordination monitor task now runs `C:\WINDOWS\System32\conhost.exe --headless pwsh.exe ...`. |
+| adobe-ingester receipt: the elevated install closes the two refused rewrites | `301ceb3` | ALREADY-HELD: same evidence as the row above. |
+| dng trap: a witness comparing an emitted record with a trace built by the same recorder checks the recorder against itself | `1036ee1` | APPLIES in principle, NOT TRACED (auditor). Adobe's receipt witnesses (for example `.factory/tests/Test-FactoryActuationCodexExec.Tests.ps1`) were not given the trap's producer-mutation check. Adobe runs no mutation passes (2026-10-21 addendum). |
+| mlv-app cards: defect-regression evidence is a record; PR provenance is a receipt-bound record; worktree guard and remover see unknown and detached drivers | `dead24d`, `31bf5f0`, `6a3fd64`, `a24b23e` | NOT-APPLICABLE: `applies: mlv-app` only. |
+| mlv-app cards: doc-size check prunes before descent; agent-bridge Stop-hook doc-size sweep cost; doctrine outbox on old git | `a88ee92`, `345be30`, `f3d022f` | NOT-APPLICABLE: no `applies:` list names adobe-ingester. Adobe tracks no doc-size check and no `doctrine_outbox` (one `git grep` hit, prose at `docs/ROTATION-install-prompt.md:157`). |
+| dng spec: R20 DISTINGUISHED beside its posture | `4b2873a` | NOT-APPLICABLE: dng-auto-processor's own spec. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-25 UTC:
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json` still registers it.
+- The falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:8` still pins `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments. The last two are CoS `R18 ADVISORY` notices (2026-10-24T12:33Z and 13:14Z), and no Adobe reply follows them.
+- Carried from 2026-10-23 and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`) and the integration-ref declaration (`8a01c92`).
+
+New: the Astra re-point (Sol, R19.1) and the stale usage sample behind the R19 section 2 trigger (auditor). None counts as done until its owner records it.
