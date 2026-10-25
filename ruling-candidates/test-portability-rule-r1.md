@@ -1,8 +1,13 @@
 # Ruling candidate: tests fake failures by patching the call, look up environment values, and fail on the pre-change code R1
 
-Status: **PROPOSED ONLY. NOT YET A RATIFIED RULING OR PROJECT RUNTIME AUTHORITY.** For Layi to rule on and for Dot (primary CoS seat) to review. It grants no runtime authority, is not a merge gate under R18, and changes no board's posture until Layi rules and each board's hub adopts or distinguishes it. Reply `ACK: <plan or ETA>` or `DISTINGUISH: <reason>`.
+Status: **PROPOSED ONLY. NOT YET A RATIFIED RULING OR PROJECT RUNTIME AUTHORITY.** For Layi to rule on and for Dot (primary CoS seat) to review. It grants no runtime authority, is not a merge gate under R18, and changes no board's posture until Layi rules and each board's hub adopts or distinguishes it.
 
-Origin: advisory Claude and Codex reviews run by Iverson, relayed by Grok CoS at Layi's request on 2026-10-25 (about 12:30 AM CT). Filed by Grok CoS as a coordination item under the 2026-10-24 7:13 AM CT ruling; no seat claim.
+Who replies: **now**, Dot reviews this candidate on this PR with `ACK: <plan or ETA>` or `DISTINGUISH: <reason>`, and Layi rules. Factories and board hubs do not need to reply yet. **After Layi rules**, each board's hub adopts or distinguishes it, and each factory replies `ACK: <plan or ETA>` or `DISTINGUISH: <reason>` once the rule is adopted into its briefs.
+
+Origin: advisory Claude and Codex reviews run by Iverson, relayed by Grok CoS at Layi's request on 2026-10-25 (about 12:30 AM CT). The review records are local, unpublished files on the shared agent machine, not GitHub comments:
+- `/workspace/advisory-reviews/agent-bridge/pr-270-5db5a5ea.md` (layibabalola/agent-bridge #270 at `5db5a5ea6d950df2d4804e6a617f788217f6ceae`, about 11:30 PM CT Oct 24; both models raise the chmod fault injection as a shared Blocker).
+- `/workspace/advisory-reviews/AdversarialLLM-ClaudeCode/pr-310-73c3fa08.md` (layibabalola/AdversarialLLM-ClaudeCode #310 at `73c3fa084bcc40637791ec47e990a54aaacfd95f`, about 12:15 AM CT Oct 25; the guessed 8.3 aliases are a shared Improvement, Codex says they can pass vacuously and Claude rates it a nit).
+- Index: `/workspace/advisory-reviews/ledger.tsv`. The exact models behind those runs are unverified. Filed by Grok CoS as a coordination item under the 2026-10-24 7:13 AM CT ruling; no seat claim.
 
 ## Evidence
 
@@ -19,7 +24,7 @@ A test proves a failure path or an environment-dependent path by changing real O
 1. **Fake failures at the call.** A test that needs an operation to fail makes that call fail directly, for example by patching `os.replace` or `Path.replace` to raise `PermissionError`, or by injecting a stub. It does not change file permissions, ownership, locks or other OS behavior to make the failure happen. A test that genuinely needs real OS behavior is gated to the platforms where that behavior holds, with a stated reason (for example `skipUnless(sys.platform == "win32", ...)`).
 2. **Look up environment values.** A test reads environment-dependent values (8.3 short names, temp paths, home directories, path separators, drive letters, case rules) from the system at run time, for example `GetShortPathNameW` or `cmd /c dir /x` for short names. When the lookup returns nothing (for example 8.3 generation is disabled), the test skips with a visible reason. It never hard-codes a guessed value.
 3. **Fail first.** Every new or changed test must fail on the pre-change code. The PR body records that RED run (command, base SHA, and the failing assertion), or states why the test cannot be red at base (for example a pure refactor guard).
-4. **Assert one expected outcome.** A test asserts the specific result for its case, not "either A or B", unless it also checks which branch ran.
+4. **Assert one expected outcome.** A test asserts the specific result for its case, not "either A or B", unless it also checks which branch ran. This does not narrow rule 3 of `ci-matrix-covers-declared-runtime-floor-r1.md`: an outcome-class assertion is still allowed when the test is keyed to the runtime version or platform and the case states which class it expects there. What this rule forbids is a bare "either A or B" with no version key and no branch check, as in #310.
 
 ## How it would be checked
 
