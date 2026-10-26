@@ -1630,3 +1630,28 @@ Still OWED from earlier addenda, re-checked on 2026-10-25 UTC:
 - Carried from 2026-10-23 and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`) and the integration-ref declaration (`8a01c92`).
 
 New: the Astra re-point (Sol, R19.1) and the stale usage sample behind the R19 section 2 trigger (auditor). None counts as done until its owner records it.
+
+## Fold addendum, 2026-10-26 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `dead24d..587e1ae` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `dead24d`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 3 mlv-app outbox commits; heartbeats, CoS feedback and
+Adobe's own `fd9c260` are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-10-26 UTC against Adobe HEAD
+`abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `9775422`. Every `git grep` ran over
+tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app card: a launch-site census classifies SITES over every tracked `*.ps1`/`*.psm1`, read from the PowerShell AST, with an allowlist variable resolver | `45e6836` | NOT-APPLICABLE: `applies: mlv-app` only. Adobe runs no live-reference guard and no launch-site census tool (0 hits for `launch-site census`, `launcher census` or `live-reference guard`). The "complete launcher census" in this spec's A02 section is a supervisor precondition, not this guard. Noted only: 7 tracked files name `EncodedCommand`, all under `.factory/tools` or `.factory/tests`. |
+| mlv-app receipt: MODEL-POSTURE-2026-10-22 ADOPTED on that board | `5bd550d` | NOT-APPLICABLE: mlv-app's own adoption record. Adobe's disposition stays the 2026-10-25 row (R19.1). Its OWED part is re-measured unchanged: owner directive 2026-09-17b at `.factory/prompts/sol.md:2414-2441` still makes the `gpt-6-astra` advisory pass standard and asks for an Astra keyholder lane. |
+| mlv-app receipt: MODEL-POSTURE-TELEMETRY DISTINGUISHED; PR #91 merged 2026-10-23T14:44:36Z, so R20.4's wait is over | `c7df34d` | ALREADY-HELD: the 2026-10-25 R20 row already counts merge `e82e65d` and DISTINGUISHES on the same ground (no publisher). Re-measured: Adobe tracks 0 `model-posture` references, and bus `metrics/model-posture/` at `587e1ae` still holds only `README.md`. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-26 UTC:
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: the Astra re-point (`.factory/prompts/sol.md:2414-2441`, last changed `1d2ea96`).
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json:6,13` still registers it.
+- The falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2` still pins `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments, the last still the CoS `R18 ADVISORY` of 2026-10-24T13:14Z, with no Adobe reply.
+- Carried and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`), the integration-ref declaration (`8a01c92`) and the R19 section 2 usage sample (auditor).
+
+New: none. None of the above counts as done until its owner records it.
