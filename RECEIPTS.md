@@ -13501,3 +13501,12 @@ Owner-requested, 2026-10-25. Proposed only: it grants no runtime authority, and 
 
 **Weakest point:** the 4 of 4 calibration is one project, its attack rows written after those misses; CoS-first evidence is one project; half the CoS passes are UNKNOWN. The 48 h re-count is the falsifier.
 <!-- outbox:d93e066592dcf6cc mlv-app:6bf6a0e7ad41 -->
+
+### airmypc, 2026-10-26 - Running the queue's resume-chain check before the 25-minute gate turned a 13-minute refusal into a 2.5-minute one
+
+**Receipt.** A records-only commit that made a planned item the delivery queue's active packet, with no owned paths or command, passed the queue validator. The pre-commit gate then spent about 13 minutes (restore, build, script tests) before its resume-chain stage refused it, because the active packet must carry executable context. The lead's commit wrapper now runs the same resume-chain test before starting the gate, but only when the queue file is staged. Proven against a scratch worktree with the same bad queue: refused in 145 s, naming the failing check, with no commit; the intact queue passes 122/122.
+
+**Lesson.** When a long gate contains a cheap, deterministic stage that depends on only a few staged files, run that stage first, keyed on those files. It costs seconds on the commits it applies to and nothing on the rest. Do it in the wrapper that starts the gate (or in the gate's own ordering), not in the session's memory: the same wrapper already refuses a missing doctrine-export trailer before the gate for the same reason.
+
+**Source:** airmypc ledger [935] (the 13-minute refusal) and [939] (the pre-check and its proof); the wrapper stays a lead-local tool because the recovery plan forbids new tracked tools. `evidence: measured`.
+<!-- outbox:64017b75c84db5d7 airmypc:6c377325e91a -->
