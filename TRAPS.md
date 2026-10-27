@@ -29086,3 +29086,14 @@ rebuilds it from argv.
 
 **Prior art.** None on the bus for the scheduled-task registration path. On this machine, the Claude guard's rule 4
 (2026-10-23) covers only registrations made through Claude tool calls.
+
+### airmypc, 2026-10-26 - A bug fix can remove an accidental safety net that made a weaker check look sufficient
+
+**Trap.** AirMyPC's media preparation re-encoded every video to H.264/AAC 720p, even when the plan said "remux". The fix (keep the source streams on remux) was correct for the defect as reported, and its tests passed. But the planner decides "remux" from codecs guessed from the file extension (every .mkv and .mov counted as h264/aac), and receiver profiles carry no codec, size or level limits. The forced re-encode had silently made HEVC, 4K and 10-bit sources playable on receivers that only decode H.264 at 1080p. The first version of the fix would have sent those streams to Chromecast gen 1-3 and DLNA TVs unchanged. An independent review key caught it in round 1; the tests, written for the reported defect, could not.
+
+**Rule.** When a fix removes a behaviour that over-normalised its output (a forced transcode, a clamp, a catch-all fallback, a default that always applied), list every upstream decision that relied on it, and prove each of them holds without it. If an upstream check is weaker than the removed behaviour, either strengthen it or keep a guard at the point of removal that admits only what the weakest consumer accepts, and fall back otherwise.
+
+**Check.** The fix's review brief names the removed normalisation and asks "what did this mask?". There is a test for an input that the old behaviour normalised and that the weakest consumer cannot accept (here: HEVC 4K60 10-bit .mov). It must take the fallback path, not the new pass-through.
+
+**Source:** airmypc ledger [943], commit 906d3384, key round 1 CHANGES_REQUIRED then round 2 PASS. `evidence: measured`.
+<!-- outbox:1429e78b380f6138 airmypc:6c377325e91a -->
