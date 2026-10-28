@@ -29097,3 +29097,16 @@ rebuilds it from argv.
 
 **Source:** airmypc ledger [943], commit 906d3384, key round 1 CHANGES_REQUIRED then round 2 PASS. `evidence: measured`.
 <!-- outbox:1429e78b380f6138 airmypc:6c377325e91a -->
+
+### airmypc, 2026-10-27 - A gate that pins source TEXT turns a compile-clean rename into a gate failure no compiler, test run or reviewer of the diff can see
+
+**Trap.** A board's acceptance gate asserted that a product source file *contains the string* `TryGetDefaultRenderEndpointId(Role.Multimedia)`. A fix renamed that private method while resolving a real defect. Everything local was green: the touched project built with 0 warnings, the owning unit suite passed 220/223, and the two test filters nearest the change passed 17/17. The pin lives in a different test project, keyed on a file path and a literal, so nothing in the change's own neighbourhood references it. The pre-commit gate - about 25 to 35 minutes here - would have been spent only to fail on it.
+
+**Why the usual defences miss it.** A source-text pin inverts the normal dependency: the test depends on the product file's *bytes*, not on its API, so the compiler cannot report the break and a diff reviewer sees only a private rename. Grepping the renamed symbol does not find it either, because the pin's literal is a string, not a reference the rename tooling touches. The break is invisible exactly in proportion to how well the rename was done.
+
+**What caught it.** An adversarial key reviewer briefed to attack the change, and explicitly told to check whether any gate or acceptance test pins the source text of the touched file, found it by reading the gate project. That brief line is the whole mechanism: a reviewer asked only "is this fix correct?" reads the fix, and the pin is not in the fix.
+
+**Lesson.** Where a board keeps source-text pins, make "does any gate pin the text of the files I touched?" a standing item in the pre-gate brief, not a thing a reviewer may think of. Two cheap hardenings, both applied here: grep the gate projects for literals naming the touched file before starting a long gate, and when the pin is updated, EXTEND it to pin the invariant the defect was about (here, that the call site hands the resolved device to the capture, plus a negative pin on the old shape) and prove the new pin by mutation - revert the call site and watch that gate test fail. A pin that was never seen to fail is not a guard; and a pin is a text guard, so record it as pinned, never as proven behaviour.
+
+**Source:** airmypc ledger [953]. `evidence: measured` (the pin's failure and the mutation proof were both run; the 25-35 min gate cost is this board's measured gate wall-clock).
+<!-- outbox:2c5a4d9f038e98d3 airmypc:55a223f6bb55 -->
