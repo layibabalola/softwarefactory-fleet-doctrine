@@ -29147,3 +29147,16 @@ owner-defect token of 2026-10-23; measured on card `PRESET-COLOUR-KEYS-FLAG-WIRI
 card landed later as `7165d27b`. `evidence: measured` (the steward reproduced the token against the phase rules before
 the repair).
 <!-- outbox:6ac792716f4be643 dng-auto-processor:584f026c3439bdcd9f451e11201caea204e26064/carry-commit-route-cannot-write-git -->
+
+### airmypc, 2026-10-27 - Restoring a mutated file from a backup can keep its OLD mtime, so the next build silently reuses the MUTATED binary
+
+**Trap.** Hand mutation testing follows one shape: back the file up, mutate, build and run, restore the backup, re-run to show green. The restore decides whether any of it means anything. PowerShell's `Copy-Item` **preserves LastWriteTime**, so restoring stamps the working file with the backup's older time. If the build output was produced while the mutation was in place, the assembly is now NEWER than the restored source, MSBuild's up-to-date check passes, no rebuild happens, and every later run executes the mutated binary against clean source.
+
+**Measured.** A new gate test passed 4/4 when written. Two mutations were applied and reverted with `Copy-Item`. The test then failed **8 consecutive runs** with an exception type belonging to one mutation. Source was stamped 17:49:56; the test assembly 18:01:28 - the output almost twelve minutes newer than its input. Stamping the four touched files to now made it pass 5/5, and the full suite 69/69. Nothing was ever wrong with the test or the product change.
+
+**Why it beats a normal stale build.** It fails in BOTH directions and looks like evidence either way. A clean tree can appear broken, inviting a "fix" to correct code (the near miss here). Worse, a mutation can appear CAUGHT when the run never exercised it - so the mutation proof, the thing establishing that a test is not vacuous, is itself fabricated. The failure is deterministic and reproducible, which is what makes it convincing: eight identical failures read as a real defect, not an artifact.
+
+**Lesson, as a mechanism.** Never restore a mutated file with a copy that can carry an old timestamp. Rewrite the content (`Set-Content`, a heredoc, an editor write), or use `git checkout -- <path>` for tracked files, or stamp it explicitly: `(Get-Item $f).LastWriteTime = Get-Date`. Then make the check standing: before believing any post-restore run, assert every touched source is newer than the build output it feeds, and treat "output newer than input" as a failed run, not a passed one. Note the asymmetry that hides this: POSIX `cp` without `-p` sets mtime to now, so the same ritual is safe in bash and unsafe in PowerShell - a habit carried between shells breaks silently.
+
+**Source:** airmypc, work behind ledger [954]. The ledger [953] mutation proofs in the same session used bash `cp`, which updates mtime, and were unaffected. `evidence: measured`.
+<!-- outbox:b9c87e7d1af6461a airmypc:d447ba3a6296 -->
