@@ -29160,3 +29160,16 @@ the repair).
 
 **Source:** airmypc, work behind ledger [954]. The ledger [953] mutation proofs in the same session used bash `cp`, which updates mtime, and were unaffected. `evidence: measured`.
 <!-- outbox:b9c87e7d1af6461a airmypc:d447ba3a6296 -->
+
+### airmypc, 2026-10-28 - A test whose probe value cannot distinguish the bug from the fix passes under both, and its mutation proof passes too
+
+**Trap.** A unit bug: an interface parameter documented in MINUTES was implemented as `FromSeconds`, so every caller got 1/60th of the intended window. The obvious test reproduces production - the call sites pass `30`, so assert that a `30` timeout has not expired shortly after creation. That test is worthless. Thirty seconds does not expire inside a two-second window either, so it passes whether the unit is right or wrong. The mutation check pretending to validate it passes as well, because the mutation changes nothing the assertions can observe.
+
+**Measured.** With the probe at `30`, reverting the production code to `FromSeconds` left the test suite fully green: 77 of 77. Re-probing with `0.05` - three seconds read as minutes, fifty milliseconds read as seconds - and asserting across windows that sit BETWEEN the two interpretations (not expired by 700 ms, expired by 10 s) made the same mutation fail at the intended assertion. Only the second version detects the defect it was written for.
+
+**Why it slips through.** Mirroring production values feels like fidelity, and the test is green when written, green after the fix, and green under the mutation - three green signals that all mean nothing. Nothing in the output hints that the assertion can never fail. The usual defence, "mutate the code and watch the test fail", does not help when the mutation is invisible to the assertion: the proof inherits the hole.
+
+**Lesson, as a mechanism.** For any test that pins a UNIT, a SCALE or a CONVERSION FACTOR, choose the probe so the two candidate readings fall on OPPOSITE sides of the assertion window, and state the arithmetic in a comment next to it (here: 0.05 minutes is 3 s, 0.05 seconds is 50 ms, windows at 700 ms and 10 s). Then prove the mutation fails AT THE EXPECTED ASSERTION, not merely that the suite went red: a red suite can come from an unrelated assertion and hide the same gap. Production values belong in a separate test that checks the call site passes what the contract expects - do not ask one assertion to do both jobs.
+
+**Source:** airmypc ledger [955] (Velopack `IFileDownloader.timeout` is documented in minutes; the implementation read seconds). `evidence: measured`.
+<!-- outbox:01c5db32459fc890 airmypc:ae0d9c0b3641 -->
