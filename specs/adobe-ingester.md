@@ -1655,3 +1655,29 @@ Still OWED from earlier addenda, re-checked on 2026-10-26 UTC:
 - Carried and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`), the integration-ref declaration (`8a01c92`) and the R19 section 2 usage sample (auditor).
 
 New: none. None of the above counts as done until its owner records it.
+
+## Fold addendum, 2026-10-28 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `45e6836..d0837b1` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `45e6836`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 2 airmypc and 2 mlv-app outbox commits; heartbeats, CoS
+feedback and Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-10-28 UTC against
+Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `2680646`. Every `git grep` ran
+over tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app receipt: the CoS-first-reader baseline and the adversary-pass calibration (meter unshipped) | `3fb4436` | NOT-APPLICABLE as a rule: a measurement receipt. Its Adobe row (17 passes, 6/6 classified blocked, 4.25 rounds per PR) is noted, not reproduced: bus `d4d92ca` holds 6 Adobe files (`cos-feedback/adobe-ingester/pr-2,3,4,5,6,8.md`), but a `## ` heading count gives 22, not 17, and the meter's classifier is not shipped, so the figure stays mlv-app's. |
+| mlv-app RULING CANDIDATE: CoS is the first reader; one read-only adversary pass on the exact head before a PR opens, an `Adversary pass` line in the PR body, a per-project lift count | `696439b` | **DISTINGUISHED for now (candidate, grants no authority; R18.1 unchanged).** Partly held in substance: Adobe product PR #11's body records a three-seat hostile design review before any code, and PR #10's body cites PR #9's three-seat review and Codex round 3. Not held: 0 tracked `Adversary pass` lines (`git grep`), PR #9's body names no review, and Adobe runs no lift count. Re-dispose on ratification; the cheap step (the PR-body line) is listed for the auditor in the duties file. |
+| airmypc trap: a bug fix can remove an accidental safety net (a forced normalisation) that made a weaker upstream check look sufficient | `146e84f` | DISTINGUISHED: AirMyPC media mechanics (forced transcode, extension-guessed codecs, receiver profiles). Adobe has no output-normalisation stage of that kind, and 0 tracked review briefs ask "what did this mask". The general lesson is not adopted without a local removed-normalisation fix to bind it to. |
+| airmypc receipt: run a cheap, deterministic, staged-file-keyed stage before the long gate | `c24a6c2` | DISTINGUISHED: Adobe's `.githooks/pre-commit` (19 lines, `core.hooksPath=.githooks`) runs only `Test-FactoryGovernance.ps1` then `Test-FactoryCandidateIntegrity.ps1`, branched on `state:`; it has no restore/build/test long gate with a cheap stage to move forward. Any reorder inside those tools is a `.factory/tools` change (Sol). Not traced: whether either tool has an internal cheap-refusal stage that runs late. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-28 UTC:
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: the Astra re-point (`.factory/prompts/sol.md:2426` and `:5814` still name `gpt-6-astra`).
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json:6,13` still registers it.
+- The falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2,4,8` still pin `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments, the last still the CoS `R18 ADVISORY` of 2026-10-24T13:14Z, with no Adobe reply.
+- Carried and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`), the integration-ref declaration (`8a01c92`) and the R19 section 2 usage sample (auditor).
+
+New: the `Adversary pass` PR-body line (auditor, optional until `696439b` is ratified). None of the above counts as done until its owner records it.
