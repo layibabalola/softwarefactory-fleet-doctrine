@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 9502630c4bdd6ffcf3d5e7c0a9f41c36070d81b9
+source_commit: 0356eea216c7ec89ebae4f7ee42a80a815881215
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -335,7 +335,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   stays where it is, and quality outranks token savings. A retry after a confirmed defect class is authored by the
   top-tier model of the card's own family, and its brief owes the closed set including negatives: every witness, the
   wrong implementation it kills, and the run that shows it. The top-tier model that wrote a lineage's product bytes,
-  or served as its instrument, never writes that lineage's disposition, challenge or successor design. When the
+  or served as its instrument, never writes that lineage's disposition, challenge or successor design (a Sol-tier writer included, §2 "The Codex T3 seat"; where that bars a top-tier writer of each family, or no top-tier seat it leaves is live, Opus writes the disposition). When the
   derived lever set is empty, a lineage closes or parks twice on one class, or evidence invalidates a premise,
   direction is a design card by the top-tier seat by turn, challenged once by the other top-tier family: at most
   three ranked levers, each with arms, a null, an arms-differ witness, a stop rule and a compute estimate; a decision
@@ -347,9 +347,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   seat from §2 and nothing in the bound defers it — read as a bar on every top-tier seat, it held a retry card's
   implementation tick after tick while the ticks-per-landing alarm fired and each tick named that card the only open
   card able to land. A swarm, convened by the USER-directed orchestrator for a consequential unresolved choice only,
-  runs Opus, Fable and Astra lanes at medium effort (fleet R11's one exception to high) and decides 2 of 3 with both
+  runs Opus, Fable and Sol-tier lanes at medium effort (fleet R11's one exception to high) and decides 2 of 3 with both
   providers in the majority; an
-  Anthropic-only majority against the Astra lane has that dissent's decisive premise measured and one re-vote, and
+  Anthropic-only majority against the Codex lane has that dissent's decisive premise measured and one re-vote, and
   every decisive premise is re-measured before acting. An instrument run pauses and resumes on one model id and
   never mixes models in one scored run; every other top-tier seat falls through at once, never to Opus as an
   author. The posture proves itself per review round, intent-to-treat with parks counted, scored by a seat that did
@@ -364,7 +364,10 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   that the held seat answers — a one-line probe on its own model at most once per tick, or any completed call on
   its meter — never because the error window emptied while nothing ran, since a seat that is not launched cannot
   return an error; two models of one provider are never
-  cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness. **A family is
+  cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness, and so does a card whose
+  Base orders a carry commit its branch does not yet hold, because the Codex author route writes no git: Fable at attempt 2
+  or later, Sonnet for an exhausted Fable, and HELD-FOR-CAPACITY at its current attempt only while the Claude family has no
+  live author seat (§2). **A family is
   read live by a call that answers, never by local credential state** (§2; docs/13 P-RESUME step 4; adopted from
   this bus): the tick-start probe is §10's PONG smoke form, one call per tick on the family's lowest-tier model by the
   CLI route, and the family fails it unless that call answers — it asks whether a family answers, never whether its
@@ -450,11 +453,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
 | Traffic cop `dng-traffic-cop` | Opus; an exhausted Opus defers the tick, never swaps | stateless scheduled tick, fresh session per fire: collect, land, dispatch, record; proceeds under stated assumptions (§2, §3; docs/13 P-COP) |
 | Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included; P-STEWARD is edited by no seat, only by the USER or a session acting on the USER's direct words, §10 "Net rules", §7a) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec and this board's kernel filing; a receipt every run (§7a; docs/13 P-STEWARD) |
 | USER-directed orchestrator | Opus at high effort (USER, §0, superseding an earlier medium) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and, once it starts, its `pid` with that process's own creation time; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
-| Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark; a retry (attempt 2 or later of an implementation card) the top-tier model of the card's own family at high effort, Fable for a Claude-family card and Astra for a Codex-family card, and Sonnet for a Claude-family retry while Codex is dark (USER, §0) | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
-| Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; Astra or Fable when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path, or when its deliverable is a test, fixture, receipt, scorer or harness (USER, §0) | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
+| Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark; a retry (attempt 2 or later of an implementation card) the top-tier model of the card's own family at high effort, Fable for a Claude-family card and the Sol tier for a Codex-family card (fleet R19.1, §2 "The Codex T3 seat"), and Sonnet for a Claude-family retry while Codex is dark (USER, §0) | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
+| Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; for a Codex author Fable instead of Opus when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path, or when its deliverable is a test, fixture, receipt, scorer or harness (the test/scorer clause USER, §0, the guard clause §2's own design; for a Claude author the Sol tier either way, fleet R19.1) | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
 | Key 1 correctness | opposite family: Sol for a Claude author, Fable at high effort for a Codex author (USER, §0; the fleet's Opus floor for a review act) | per subject; named paths and a command budget (§2, §4a) |
 | Key 2 adversarial | Anthropic, never the author's model: Opus, the acceptance surface included. Fleet RULINGS R1 (an owner ruling, not subject to adopt-or-distinguish) makes Opus the floor for a review act and bars Haiku from one, so docs/14 §2's Haiku tier for a chore of at most 50 lines is never filled; a pool the bar empties is HELD-FOR-KEY, never a substitute (§2). | per subject; Opus, the default key 2, never authors a reviewed subject (§2, §4a) |
-| Fable / Astra | taking turns by card | experiment dispositions, `needs: fable` design cards and T3 approach reviews; and, by the USER's ruling in §0, the retry author, key 1 for a Codex author (Fable), the blind done-test judge (Fable, launched only by the USER-directed orchestrator on the CLI route) and USER-directed decision-swarm lanes; never a key-2 tier, never scheduled, never the cop (§2) |
+| Fable / Sol (T3) | taking turns by card; Astra is seated nowhere: fleet R19.1 §1.3 lets a board add an Astra diversity seat and requires none, so Astra is never a default, never a gate and never the only Codex seat a step waits for (§2 "The Codex T3 seat") | experiment dispositions, `needs: fable` design cards and T3 approach reviews; and, by the USER's ruling in §0, the retry author, key 1 for a Codex author (Fable), the blind done-test judge (Fable, launched only by the USER-directed orchestrator on the CLI route) and USER-directed decision-swarm lanes; never a key-2 tier, never scheduled, never the cop (§2) |
 | Status | Haiku, cross-checked by a read-only Haiku swarm | reads, and writes only its own run receipt and report (§8); `dng-status-digest` where the USER added it, otherwise chat on "status"; pushes only on exception (§2, §8) |
 
 - **The factory is frozen** (WORK.md rule 3): no new tool, standard, lane, gate or scheduled task without the
@@ -522,9 +525,13 @@ KERNEL: DOGFOOD fleet-factory-kernel r5 · profile code@r10 + measured-objective
 
 R18: DISTINGUISHED (this board has no CoS merge gate to remove: no governing document names one, `cos-feedback/` reaches it as data with zero authority, and it lands on its own local trunk by §4's two-key rule rather than through pull requests, so R18.3's PR floor has no surface here and R18.4 compensates no removed gate)
 
+## Fleet RULINGS R19 (R19.2: each board records its disposition in its own spec; beside the posture, not part of it)
+
+MODEL-POSTURE-2026-10-22: DISTINGUISHED (R19.1 section 2's capacity routing only: §2's rows fix each seat by the author's family, by turn or by name, and keep key 2 Anthropic, and a per-dispatch quota derivation that moves seats would be a new standing duty, which waits for the USER's word "unfreeze" (docs/14 §0, WORK.md rule 3); §2's failover already moves work to the live family when one is dark. Sections 1, 3 and 4 are adopted at docs/14 §2 "The Codex T3 seat is the Sol tier": every seat docs/14 gave Astra, the uses the USER's 2026-09-19 ruling named included, is the Sol tier at the same effort; Astra is seated nowhere, so it is never a default, never a gate and never the only Codex seat a step waits for; a Sol-tier model that wrote a lineage's product bytes, or served as its instrument, is barred from that lineage's disposition, challenge and successor design as a top-tier writer is, and so is an Astra model that did; a disposition is written by Opus where a top-tier writer of each family is barred or where no top-tier seat the bar leaves is live; where a top-tier writer of each family is barred, a challenge degrades by one tier and a successor design's author falls through by §2 posture (5) to Sonnet at its last rung; a retry author keeps its family. Section 3's count reads each card ledger's key launch records)
+
 ## Fleet RULINGS R20 (R20.5: each board records its disposition in its own spec; beside the posture, not part of it)
 
-MODEL-POSTURE-TELEMETRY: DISTINGUISHED (publishing posture shards would give this board a new publisher and a recurring duty, and a new standing duty here waits for the USER's word "unfreeze" (docs/14 §0, WORK.md rule 3), which the doctrine loop cannot supply — docs/13 P-STEWARD step 7 "adds no tool, gate, lane, standard or scheduled task"; the plane is diagnostic and gates nothing, and R20.4 bars every board from publishing until its merge; until it exists, section 3 of R19.1's candidate counts from each board's own key receipts, which here are each card ledger's launch and key records)
+MODEL-POSTURE-TELEMETRY: DISTINGUISHED (publishing posture shards would give this board a new publisher and a recurring duty, and a new standing duty here waits for the USER's word "unfreeze" (docs/14 §0, WORK.md rule 3), which the doctrine loop cannot supply — docs/13 P-STEWARD step 7 "adds no tool, gate, lane, standard or scheduled task"; the plane is diagnostic and gates nothing; until it exists here, section 3 of R19.1's candidate counts from each board's own key receipts, which here are each card ledger's launch and key records)
 
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
