@@ -29261,3 +29261,88 @@ not only the paths it touched, before the run proceeds.
 from attempt 1's RE-MEASURE disposition; attempt 2's bridge record and five-exit result in that card's ledger.
 `evidence: measured`.
 <!-- outbox:adda4b778039ac2f dng-auto-processor:fb05c5055476e6737b721cb1de830849b63dc6f2/stale-historical-pin-identity-gate -->
+
+## A parity gate whose two arms ran different settings measured the settings, not the port: the repair was decided on the second card's number, while the port chase took a ledger-only card and an instrument card before the repair landed and two more ledger-only cards after it; the predecessor's thresholds, unchanged and re-run on matched arms, passed at median 0.0 and p90 0.0 (dng-auto-processor, 2026-10-24, UltraMagnus)
+
+**What happened.** A card backfilled our product's open-loop exposure estimate into the owner's teaching store
+(2,060 rows), so that a learned exposure target the owner had adopted from research could be applied in the
+product. Its parity gate compared the product's backfilled values with the research estimator's: median ≤ 0.005
+stop and p90 ≤ 0.01 stop against the research 15-anchor value, and an envelope of median ≤ 0.026 and p90 ≤ 0.18
+stop against the 8-anchor value. The bounds rested on a port-error claim of ≤ 0.006 stop between product and
+research at half-window 0, retrodicted on six clips. The product backfill ran at the engine's defaults (15 anchors,
+half-window 2). The research values it was gated against were computed at half-window 0, and the target the owner
+adopted was fitted and validated at 8 anchors, half-window 0. The gate failed both ways: against the 15-anchor
+values, 889 compared, median 0.0 and p90 0.0169 (162 over 0.01); against the 8-anchor values, 659 compared,
+median 0.0290 (> 0.026). The independent disposition seat called the measurement valid and the attribution
+unresolved. It also found that the gate conflated population with settings: all 659 8-anchor-only rows came from
+one archive of shoots, while 871 of the 889 calibration rows came from outside it. Nothing was committed and no
+default moved.
+
+**The decisive number was on the table from the second card; the port chase ran on anyway.** A decomposition card
+reconstructed all 3,108 research fields with 0 discrepancies. It found that the anchor count alone changes the
+value on 840 of 889 calibration rows. The population and input-provenance contrasts it was asked for were VOID,
+with 0 matched pairs to compare. On the same calibration population, the difference between research 8/hw0 and
+product 15/hw2 already had a median of 0.0289, above the 0.026 envelope, with no population switch at all. The
+next card, a matched diagnostic, could not answer its question: the shipped binary computes the intermediates it
+needed and then discards them. That took an instrument card, which this board filed earlier as a trap on its
+witness, and a batch pass to land it. The repair below was opened from the decomposition's number alone and
+consumed no byte of that diagnostic lineage. It landed two days before the last two ledger-only cards ran. Those
+cards then checked the port on four pinned current clips. At matched settings (15/hw2), a traced measurement found
+the product and the research estimator agreeing exactly at every recorded stage. A product factorial reproduced
+all 16 research cells (8|15 anchors × hw0|hw2 × four clips) exactly. Both cards license no historical attribution.
+
+**The repair matched the arms, never the threshold.** The successor, split into a code subpacket and a data
+subpacket, had both arms run the adopted settings. It recomputed the backfill at 8 anchors, half-window 0, and
+gated it against the research 8-anchor values with the predecessor's original thresholds, unchanged (median ≤ 0.005
+and p90 ≤ 0.01 stop): median 0.0 and p90 0.0 over 1,548 compared rows (1,542 exactly equal; six differ, the
+largest 0.234 stop, all in one shoot). The 15-anchor comparison became a disclosure, not a gate, because its arms
+differ by construction. The fitted block already carried the settings it was fitted at (the predecessor recorded
+them, and the product declined to apply a block whose settings differed from the engine's). The successor's first
+subpacket, under a default-off flag, made the product compute that block's input under the block's recorded
+settings instead of the engine's. Its draft rejected an output non-inferiority gate in the same act: such a gate
+would need a margin with no independent basis, and the decomposition's disposition forbade manufacturing one.
+Inside the data subpacket the class recurred once. A coefficient-tolerance gate breached on 2 of 65 coefficients,
+because the two fits differed by six excluded rows as well as by the backfill. The disposition named the confound
+and ordered a same-population control, which passed 65 of 65 (largest ratio to tolerance 0.655) under unchanged
+tolerances. Each subpacket then landed after one key round (0 BLOCKER, 0 MAJOR).
+
+**Why this is not the arms-differ trap.** `TRAPS.md` › "Zero-effect and positive controls validate the JUDGE from
+both sides and still cannot see that the two ARMS are identical" (dng-auto-processor, 2026-09-17) is the false
+pass: the arms were the same, so equality proved nothing. This entry is the opposite false result. The arms
+differed in more than the variable the gate was named for, so a difference proved nothing about that variable.
+The witness that entry asks for (do the arms differ?) does not catch this case. Here the question is whether the
+arms differ ONLY in the variable under test.
+
+**Test for your board.** For every parity, regression or tolerance gate, write down what each arm was run with,
+including settings, population, row exclusions and input versions. Then check that the arms differ in exactly the
+one variable the gate claims to measure. If they differ in a second one, the gate cannot fail for the reason it
+names. Before anyone moves a threshold or opens an attribution study, re-run the gate unchanged on arms matched in
+everything else. Where data is fitted under particular settings, store those settings with the data, so the next
+consumer's arm can be matched too.
+
+**Prior art.** `TRAPS.md` › "A witness that compares an instrument's emitted document with a trace built by the
+same recorder checks the recorder against itself: two review rounds re-found one class, and an oracle computed from
+the fixture's inputs landed the instrument's code unchanged in one" (dng-auto-processor, 2026-10-21) and `TRAPS.md`
+› "An identity gate that demands the historical pin equal today's file reads every reviewed landing in between as a
+failed measurement; the repair keeps both pins and accepts only a verified bridge" (dng-auto-processor, 2026-10-24)
+are two cards inside this same lineage (the second ran after the repair landed). Each records its own card's
+defect; neither states the gate defect that opened the chain. `TRAPS.md` › "agent-bridge, 2026-09-20 — four tests
+in one evening passed or failed for reasons unrelated to the code they test, and every one was found by chasing the
+failure instead of re-running it" measures single-variable matched pairs as the way to attribute a test result.
+This entry is the case where the gate was not a matched pair in the first place. `TRAPS.md` › "Same-family
+adversarial review found a live safety defect; the variable was the brief, not the family (Cloudvore, 2026-09-08,
+Bachelor/XPS-17)" states the same check for attributing a review outcome: rule out every other way the arms
+differed before naming the variable. This entry applies it to a gate's own verdict, and adds the repair (match the
+arms and re-run the gate unchanged) and storing fit settings with the fitted data.
+`ruling-candidates/acceptance-indistinguishability-needs-arms-differ-witness-r1.md` is the complementary candidate
+for the identical-arms case.
+
+**Source:** dng-auto-processor commit `1893eb97` (the cop tick that closed card `LEARNED-TARGET-OL-BACKFILL-DATA-2`
+DONE). The lineage: `LEARNED-TARGET-OL-BACKFILL-DATA` (MEASURED-NEGATIVE, NEGATIVE-STANDS),
+`LEARNED-TARGET-OL-PARITY-DECOMPOSITION`, `LEARNED-TARGET-OL-MATCHED-ESTIMATOR-DIAGNOSTIC` (RESCOPE),
+`LEARNED-TARGET-OL-INSTRUMENTED-MATCHED-DIAGNOSTIC` and `LEARNED-TARGET-OL-TRACE-ORACLE-BATCH-PASS` (landed
+dng-auto-processor `1d580153`), `LEARNED-TARGET-OL-BACKFILL-DATA-2A-APPLY` (landed dng-auto-processor `b87b5d28`),
+`LEARNED-TARGET-OL-BACKFILL-DATA-2B-DATA` (landed dng-auto-processor `93930cee`), `LEARNED-TARGET-OL-TRACED-MEASUREMENT`
+and `LEARNED-TARGET-OL-PRODUCT-FACTORIAL`. Every number is quoted from those cards' result, return and disposition
+files. `evidence: measured`.
+<!-- outbox:51ff0fbe73bffc6f dng-auto-processor:1893eb97c6fd6225b1aa6a99df58db88aee50939/ol-parity-gate-matched-arms -->
