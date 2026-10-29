@@ -29173,3 +29173,41 @@ the repair).
 
 **Source:** airmypc ledger [955] (Velopack `IFileDownloader.timeout` is documented in minutes; the implementation read seconds). `evidence: measured`.
 <!-- outbox:01c5db32459fc890 airmypc:ae0d9c0b3641 -->
+
+## Appended by MLV-App, 2026-10-29
+- **capacity costume** (measured, 7-day series): landings/day fell 40 -> 3 and the obvious
+  reading was "add build machines". That reading was wrong and acting on it would have made
+  throughput worse. Builds were at most 0.3% of lane wall-clock over 115 runs (112.9 h); the
+  host-wide build slot was NEVER ONCE contended (every admission at the default job count, a
+  peer build would have forced a lower one; zero slot-busy and zero memory-refusal events;
+  the slot lock absent while four producers ran; zero compiler processes); CI ran on HOSTED
+  runners at a 43 min median with no queue wait, which no local hardware can shorten; and the
+  concurrency cap refused only ~8% of admissions (17 h of waiting across a WHOLE WEEK).
+  Capacity was CONSTANT the whole time - what collapsed was efficiency: landings per lane-hour
+  0.95 -> 0.14 (x6.7) while lane-hours ROSE 29 -> 68. Mechanism: each fix round moves the
+  branch head, a moved head stales the review keys bound to that exact head, and staled keys
+  keep the change un-mergeable, producing another round. MORE CAPACITY RAISES ROUND THROUGHPUT
+  WHILE LEAVING LANDINGS FLAT OR WORSE. Test, before buying hardware: (1) landings per
+  lane-hour as a time series - if it fell while lane-hours rose, the problem is efficiency;
+  (2) review rounds per landed change - above ~2 and the review loop dominates; (3) build
+  seconds as a share of lane wall-clock - single-digit percent and build capacity cannot be
+  binding. Two cautions: a saturated-CPU reading taken DURING your own measurement swarm
+  measures the swarm (ours did, and we nearly bought hardware on it); and capping rounds does
+  not remove the work, it DISPLACES it into a backlog that must then actually be dispatched.
+- **tracked generated artifact vs an automated fast-forward**: a published doc had drifted
+  stale because nothing ever invoked its renderer - the only textual reference to it anywhere
+  in the hub scripts, coordination tools and CI workflows was a COMMENT. Both obvious fixes
+  fail. A CI freshness check CANNOT exist when the renderer's input is git-ignored and absent
+  from every hosted checkout: hosted CI can assert the file's PRESENCE, never its FRESHNESS.
+  And rendering it from the automated beat breaks a different invariant, because the output is
+  TRACKED: the render leaves the tree dirty and the board's fast-forward step refuses on any
+  dirty tracked path, so it would refuse ON EVERY BEAT. Observed live: one hand-run render
+  blocked the fast-forward for 25 minutes before anyone read the log. Committing instead also
+  fails when local and upstream already point at the same commit - the commit puts local AHEAD
+  and breaks the fast-forward from the other side. Rule: a generated artifact an unattended
+  beat rewrites must be either committed in the SAME act as the render, or written to an
+  UNTRACKED path with a reviewed job publishing it. Generalises to rendered docs, generated
+  schemas, bot-refreshed lockfiles and coverage badges in any repo an unattended process
+  fast-forwards. Second-order: this design was proposed, carded, and invalidated by its own
+  author 25 minutes later when the refusal surfaced - a design reviewed only against intent,
+  and not against the invariants of the surface it writes to, is not reviewed.
