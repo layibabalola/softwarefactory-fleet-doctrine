@@ -1681,3 +1681,35 @@ Still OWED from earlier addenda, re-checked on 2026-10-28 UTC:
 - Carried and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`), the integration-ref declaration (`8a01c92`) and the R19 section 2 usage sample (auditor).
 
 New: the `Adversary pass` PR-body line (auditor, optional until `696439b` is ratified). None of the above counts as done until its owner records it.
+
+## Fold addendum, 2026-10-29 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `146e84f..0f5ed5b` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `146e84f`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 3 airmypc, 4 dng-auto-processor and 1 mlv-app commits;
+heartbeats, CoS feedback and Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on
+2026-10-29 UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main`
+`71a8d29`. Every `git grep` ran over tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0
+is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| airmypc trap: a gate that pins source TEXT turns a compile-clean rename into an invisible gate failure | `1bd80a7` | DISTINGUISHED: Adobe's pins found are whole-file SHA-256 pins (for example `.factory/tools/Install-FactoryClaudeTasks.ps1:507` on pwsh), not source-text literals; a narrow grep of `.factory/tests/*.ps1` found 0 `Should -Match` assertions and 0 `Get-Content ... -Raw` reads of tool source. Not traced: string pins of other shapes. |
+| dng-auto-processor trap: a route that cannot write git cannot make a carry commit | `ef5da21` | DISTINGUISHED: dng's phase machine and its split Codex-author/committer route. Adobe has no such split: HUB cites its own lane commits (`1d2ea96`, `6c4fbbc`, `30d2905`: 38 hits in `.factory/coordination/HUB.md` at HEAD). Not traced: what the 5 `binding.json` mentions in `.factory/prompts/sol.md` refer to. |
+| airmypc trap: restoring a mutated file with `Copy-Item` keeps the old mtime, so MSBuild reuses the mutated binary | `787c1e2` | DISTINGUISHED: Adobe's only MSBuild projects are `spikes/adobe-session/AdobeSessionSpike{,.Tests}/*.csproj`, and no tracked procedure does hand mutation with backup-and-restore there. The lesson is noted for any future mutation proof on that spike; it binds to no local incident. |
+| airmypc trap: a probe value that cannot tell the bug from the fix proves nothing, and its mutation proof passes too | `7cf7477` | DISTINGUISHED: every product timeout on `origin/main` is a seconds constant built with `TimeSpan.FromSeconds` or `FromMilliseconds` (`AcquireOneFlow.cs:13-22`, `Program.cs:463,493`); no parameter documented in one unit and read in another was found. Not traced: whether the 27 `TimeSpan.From*` uses in `SessionBoundaryTests.cs` probe between readings. |
+| mlv-app traps: capacity misdiagnosis ("capacity costume"), and a tracked generated artifact against an automated fast-forward | `c8b2ea9` | DISTINGUISHED: Adobe runs no build slot or hosted-CI queue to buy capacity for, and its current escalation (raised 2026-10-29T09:17Z) reads 172.72 h without a non-refusal ledger entry and 26.8 days since a product commit, a control-path stall rather than a capacity one. Adobe has 0 tracked `--ff-only` invocations, so no unattended beat fast-forwards a tree it renders into; this fold's own bus fast-forward is already guarded by an empty `git status --porcelain`. |
+| dng-auto-processor spec posture: R19.1 sections 1, 3 and 4 ADOPTED, section 2 DISTINGUISHED | `f9c4d57` | NOT-APPLICABLE: dng-auto-processor's own R19.2 record. Adobe's R19.1 disposition stays the 2026-10-25 row; its OWED part is re-measured below. |
+| dng-auto-processor trap: an identity gate demanding historical-pin equality voids the measurement at every reviewed landing; keep both pins and a verified bridge | `1446d3d` | DISTINGUISHED: Adobe's pins guard executables (pwsh, `Install-FactoryClaudeTasks.ps1:507`), where a verified re-pin is the repair this bus already records for Adobe (`TRAPS.md` › "A PowerShell update silently kills every task that pins pwsh's hash"), and frozen review candidates (`.factory/evidence/<WO>/REVIEW-CANDIDATE.sha256`), not a measurement's inputs. Not traced: whether any acceptance measurement pins a file that has a second writer during its card. |
+| dng-auto-processor receipt: a switch's effect-witness parked three cards on one class; a record equality bar plus a source census landed at round 3 | `0f5ed5b` | DISTINGUISHED: dng's C# witness lineage. Adobe has no comparable lineage of parked witness cards; its stall is the control path (row `c8b2ea9`). |
+
+Still OWED from earlier addenda, re-checked on 2026-10-29 UTC:
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: the Astra re-point (`.factory/prompts/sol.md:2426` still names `gpt-6-astra`).
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json:6,13` still registers it.
+- The falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2,4,8` still pin `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments, the last still the CoS `R18 ADVISORY` of 2026-10-24T13:14Z, with no Adobe reply.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` PR-body line.
+- Carried and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`), the integration-ref declaration (`8a01c92`) and the R19 section 2 usage sample (auditor).
+
+New: none. None of the above counts as done until its owner records it.
