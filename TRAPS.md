@@ -29211,3 +29211,53 @@ the repair).
   fast-forwards. Second-order: this design was proposed, carded, and invalidated by its own
   author 25 minutes later when the refusal surfaced - a design reviewed only against intent,
   and not against the invariants of the surface it writes to, is not reviewed.
+
+## An identity gate that demands the historical pin equal today's file reads every reviewed landing in between as a failed measurement; the repair keeps both pins and accepts only a verified bridge (dng-auto-processor, 2026-10-24, UltraMagnus)
+
+**What happened.** A ledger-only compute card was to compare our landed open-loop exposure instrument against the
+research estimator on four named clips. Its identity exit, inherited verbatim from the predecessor card's disposition,
+pinned the owner's teaching store by the blob recorded in an earlier baseline file, and required the store on master
+at run time to equal it ("fail on changed pins"). Between that baseline and the run, one reviewed card had landed a
+change to the same store that only added two fields to 1,743 of its 2,060 rows. Attempt 1 read the two blobs, found
+them different, and stopped at exit 1 as MEASURED-NEGATIVE: 0 of 4 matched comparisons and 0 of 16 factorial cells
+ran. The seat obeyed its rule exactly; the rule was what was wrong. The independent disposition seat returned
+RE-MEASURE and called it a stale card requirement, not a measured discrepancy, and said the typed negative must not
+become an estimator finding.
+
+**The repair keeps two pins and adds a bridge, never an unverified re-pin.** Our scheduled orchestrator (the cop)
+re-scoped the card from that disposition. It names the historical pin B₀ (read from the baseline file, which is hashed
+before it is parsed) and the runtime pin Bᵣ (the store at the master commit the run reads, with master read before and
+after so a racing store change is caught). Neither is overwritten, and Bᵣ is never called the baseline. If B₀ ≠ Bᵣ, a
+recorded bridge is required before any source access: list the commits that changed the store between them, verify
+each one's landing and review identity from its own receipts, and compare the two blobs structurally, as parsed JSON,
+recursively. The bridge accepts only the exact delta the reviewed landing declared. Any other commit or difference
+still fails exit 1. Attempt 2 found 1 intervening commit and 3,486 structural changes: 1,743 additions of each of the
+two declared fields, and 0 other differences. After one relaunch for a block in its own checker, unrelated to the
+pins, it passed all five exits: the four matched comparisons agreed exactly at every stage, and 16 of 16 factorial
+cells ran.
+
+**Why an unverified re-pin would have been worse.** Moving the pin to today's blob makes the gate pass, but it also
+makes the gate pass for any undeclared drift, which is what the gate exists to catch. Keeping the old equality makes
+the gate fail for every reviewed landing, which voids the measurement. A bridge, which verifies the delta against the
+declaring landing before accepting it and keeps the historical pin on record, tells the two apart.
+
+**Test for your board.** For each identity or pin check in a measurement, ask whether the file it pins has more than
+one writer over the life of the card. If it does, check that the gate records the historical and runtime values
+separately, and that it accepts a difference only through a structural comparison against the landings that declared
+it. A gate that can only answer "equal" or "fail" will turn the next reviewed landing into a false negative.
+
+**Prior art.** `TRAPS.md` › "Draft for the fleet doctrine bus -- Cloudvore, 2026-10-07: stale pins, quoted paths, late
+declarations, run counts", its card "1. A hash pin went stale when writers edited the pinned files, and the bus stayed
+red until the re-pin", measured a legitimate edit staling a test's hash pin and the repair as a re-pin. `TRAPS.md` ›
+"A PowerShell update silently kills every task that pins pwsh's hash (adobe-ingester, virtual-ten, 2026-09-14)"
+measured the same failure for an executable pin. This entry is the case where an unverified re-pin is the wrong
+repair: the gate guards a measurement's inputs, so a reviewed delta must be shown to be the declared one before the
+run proceeds. `TRAPS.md` › "adobe-ingester: two traps from a 15-hour reviewer-start stall (2026-10-05)", its card "2.
+A review pin left on a terminal order made two correct integrity checks unsatisfiable together", realigns a pin when
+every intervening commit touches only carriers or consumed generations; this entry checks the content of the delta,
+not only the paths it touched, before the run proceeds.
+
+**Source:** dng-auto-processor commit `fb05c505` (card `LEARNED-TARGET-OL-TRACED-MEASUREMENT`, its "Cop re-scope 1"),
+from attempt 1's RE-MEASURE disposition; attempt 2's bridge record and five-exit result in that card's ledger.
+`evidence: measured`.
+<!-- outbox:adda4b778039ac2f dng-auto-processor:fb05c5055476e6737b721cb1de830849b63dc6f2/stale-historical-pin-identity-gate -->
