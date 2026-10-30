@@ -1713,3 +1713,33 @@ Still OWED from earlier addenda, re-checked on 2026-10-29 UTC:
 - Carried and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`), the integration-ref declaration (`8a01c92`) and the R19 section 2 usage sample (auditor).
 
 New: none. None of the above counts as done until its owner records it.
+
+## Fold addendum, 2026-10-30 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `0f5ed5b..3cc5fb7` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `0f5ed5b`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 3 dng-auto-processor commits; heartbeats, CoS feedback
+and Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-10-30 UTC against Adobe
+HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `91aa17a`. Every `git grep` ran over
+tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| dng-auto-processor trap: a parity gate whose two arms ran different settings measured the settings, not the port; match the arms and re-run the gate unchanged | `8336d29` | DISTINGUISHED: Adobe runs no live parity or tolerance gate between two arms. Its only tracked parity gate is the Q-036 successor checker's semantic parity (rev7 vs rev8 first rejection, `.factory/state.yaml:5416,5470,5482`), which is banked with `successor_proposal_authorized: false`. Not traced: whether its local repair probe and the rev7 arm differed in more than the module (fixture, tree, input versions). If that gate is reopened, the entry's test (list each arm's inputs; check they differ only in the module) applies before any attribution. |
+| dng-auto-processor receipt: a mutation survivor's prescribed killer passed over a product defect in an output it did not read; an approach review split the card to a one-line product fix | `bd82a3e` | DISTINGUISHED: Adobe runs no mutation-testing pass with survivors. The 4 `Mutation` hits in `spikes/adobe-session/AdobeSessionSpike.Tests/SessionBoundaryTests.cs` on `origin/main` (`:1800,1964,2200,2493`) are test names about content and digest mutation, not mutants. The lesson (run the separating input on unmutated code and read every output it produces) binds to no local incident. |
+| dng-auto-processor trap correction: a call on a pre-approved tool list can still wait, on a hosted subagent too; keep a liveness check and a bounded relaunch whatever the list says | `8a654aa` | DISTINGUISHED, with the bound partly held: Adobe's Claude reviewer lanes run `claude --print --permission-mode dontAsk --tools Read,Glob,Grep,Write,Edit` (`.factory/tools/Invoke-FactoryClaudeLane.ps1:2468-2471`), so they have no `Bash` and no `Agent`, which rules out both measured shapes. The scheduled task carries `-ExecutionTimeLimit 45 min -MultipleInstances IgnoreNew` (`.factory/tools/Install-FactoryClaudeTasks.ps1:514`), a wall bound, not a liveness read. Not traced: the auditor's own headless runs (this fold, AuditorWake), which do use `Bash` and hosted subagents and have no last-tool-call liveness read. |
+
+Still OWED from earlier addenda, re-checked on 2026-10-30 UTC:
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: the Astra re-point (`.factory/prompts/sol.md:2426` still names `gpt-6-astra`).
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json:6,13` still registers it.
+- The falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2,4,8` still pin `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments, the last still the CoS `R18 ADVISORY` of 2026-10-24T13:14Z, with no Adobe reply.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` PR-body line.
+- Carried and not re-measured here: auditor-wake transcript liveness (`91ac131`), the kernel-pool trace (`a184e62`), the HUB repeat entries (Sol, `9363cee`), the integration-ref declaration (`8a01c92`) and the R19 section 2 usage sample (auditor).
+
+New, measured in this fold (a local defect, not a bus ruling): `.factory/tools/Test-ProductThroughput.ps1:204-206` walks
+`git log --first-parent ... HEAD`, and HEAD is the factory branch. Product now lands on `origin/main` (PRs #11 to #14,
+newest `91aa17a` at 2026-10-30T04:16:45Z), so Adobe's escalation of 2026-10-30T15:47Z reports
+`days_since_last_product_commit=28.1` while the real age is under a day. Owner: Sol (`.factory/tools`). None of the above
+counts as done until its owner records it.
