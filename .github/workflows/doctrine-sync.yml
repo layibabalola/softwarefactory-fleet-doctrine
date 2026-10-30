@@ -15,6 +15,7 @@ on:
       - 'tools/traps-index*.mjs'
       - 'tools/tool-census*'
       - 'tools/factory/**'
+      - 'tools/machine/**'
       - 'hooks/**'
       - 'metrics/tool-census-baseline.json'
       - 'metrics/tool-census-rulings.json'
@@ -88,6 +89,7 @@ on:
       - 'tools/traps-index*.mjs'
       - 'tools/tool-census*'
       - 'tools/factory/**'
+      - 'tools/machine/**'
       - 'hooks/**'
       - 'metrics/tool-census-baseline.json'
       - 'metrics/tool-census-rulings.json'
@@ -190,6 +192,9 @@ jobs:
           python3 tools/factory/fleet-scorecard.tests.py
           python3 tools/factory/model-posture.tests.py
           python3 hooks/hooks.tests.py
+      - name: Machine tools (fleet-defender - verdicts, policy merge, manifest round-trip, dry-run apply, alert)
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/machine/fleet-defender/Test-FleetDefenderRoots.ps1
       - name: Shared-tool census - every view this runner can see (the 'bus' view always; fleet views UNMEASURED)
         # tools/tool-census.mjs rule 7: the baseline holds one count per root set. The 'bus' view counts
         # copies on this repository alone, so a hosted runner measures it and exit 1 refuses a duplicate
