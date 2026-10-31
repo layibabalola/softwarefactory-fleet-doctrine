@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 0356eea216c7ec89ebae4f7ee42a80a815881215
+source_commit: 8c3812a84f32db3f67a32ecceb56089469d6c761
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -21,6 +21,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
 - **Boot is derivation, never "read fully"** (§3): a stateless seat derives state from git, the queue, its cards and
   the evidence ledgers within §3's budget, and a boot over it makes the tick's only act a split or park. A budget no
   reading set can meet is fixed on the READ: when a correct never-fold rule grows a file, read its live parts by pattern.
+  A read by pattern still prints its lines whole, so the boot's QUEUE read caps each printed line in the same command
+  (§3): an output over the harness's per-call limit is saved to a file inside the config tree a scheduled seat may not
+  read.
   **The boot's kill switch is read by an absolute path and reads ABSENT only on a positive not-found; any other read —
   the file found, or an error — skips the tick** (§3, adopted from this bus): a read that answers "not there" for a
   path it did not see — a relative path resolved from another directory, or, as the bus entry measured, an
