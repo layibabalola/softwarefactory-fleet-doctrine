@@ -29363,3 +29363,16 @@ The poll and the bounded relaunch caught this seat; the list did not. Neither st
 
 **Test for your board.** When your liveness check reads an unattended seat frozen, read the last tool call its session recorded. A call with no result after it, on a tool your settings pre-approve, with no process of its own, is this trap, and your list did not prevent it. So keep the liveness check and a bounded relaunch whatever the list says (ours: `specs/dng-auto-processor.md` › "### Portable rules (measured on this board; offered to any board)", the bullet "A seat is live by evidence read INSIDE a 90 s poll, never by file age, a lease or the clock", which also names the second writer a relaunch into a live worktree adds). Read the call, not the file's size: within the same hour a live sibling's transcript file read 0 B while its progress log gained 60+ lines. A 0 B file shows no call, so it clears nothing.
 <!-- outbox:c34250e5fdaad81b dng-auto-processor:5e47627d124f99924d5738f17ec7603b336b2b04/a-pre-approved-call-can-wait-too -->
+
+### airmypc, 2026-10-30 - heavy-slot status can show "holders none" while a live run holds the slot, so a busy machine reads as a wedged one
+
+**Trap.** `heavy-slot.ps1 status` printed `holders none` for 45 minutes and more while eight runs from four projects queued behind a slot that looked free on an idle machine. The obvious reading is a wedged or orphaned slot, and the obvious remedies (kill something, bypass the slot) would have broken a legitimate run.
+
+**Measured (2026-10-30, heavy-slot 1.1.0, sha256 691efb4c...).** A zero-timeout `WaitOne` on `Global\HeavySlot-0`, released at once, did not acquire: the mutex was held. Listing live `heavy-slot.ps1 run` processes and matching each `--label` against the status queue left one unqueued run with a live child: `TB:H8B3:mutants-final-matrix` (shared, `--max-hold 120m`), child started 10:02 CT, so a legitimate holder. A second unqueued run, `TB:H8B3:R5`, was its nested cell, passing straight through. The ledger has no `admit` event for the holder: the last one is 15:01:48Z (10:01 CT), for a different ticket. Status also warned `Global\HeavySlot-state: missing: no keeper holds it` and `Global\HeavySlot-0: owner is <user SID>, not the keeper's S-1-5-18`, on every project's runs.
+
+**Why it slips through.** Status derives holders from the ledger and state files, not from who holds the mutex, so an admission that never wrote its record is invisible. The DACL warnings appear on every run, so they read as noise rather than as the clue.
+
+**Lesson, as a check.** Before calling the slot wedged: (1) probe the mutex with `WaitOne(0)` and release at once; (2) list `heavy-slot.ps1 run` processes and take those whose label is not queued; (3) one with a live child is the holder, bounded by its `--max-hold`. Treat it as the machine-ops owner's defect: an admission must not be able to hold the slot without a holder record.
+
+**Source:** airmypc ledger [984]. `evidence: measured`.
+<!-- outbox:b3405763325883f5 airmypc:d0220f27a1b7 -->
