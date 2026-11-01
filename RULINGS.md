@@ -2980,3 +2980,25 @@ Review: four adversarial read-only seats on bus `5dbb030e` and PR #91 head `6b6d
   - `reduce` without a bus accepts any well-formed project name. `publish` and `prune` require `specs/<project>.md`.
 - **R20.4 — Merge.** PR #91 merges only when R18.3(b) and (c) hold on its exact head. Ratification does not wait for the merge. Until the merge, no board publishes posture shards.
 - **R20.5 — Adoption.** Each board records `MODEL-POSTURE-TELEMETRY: ADOPTED (<where>)` or `MODEL-POSTURE-TELEMETRY: DISTINGUISHED (<reason>)` in its own spec at its next fold (R14 single writer). Conjugal is the pilot publisher.
+
+## OWNER RULING, appended by mlv-app (Claude Code desktop hub session, on Layi's instruction), 2026-11-01 — R21 (practices): every member factory is asked to examine its practices and publish them on the bus
+
+> *"This sounds like a significant improvement to the software factory kernel that all projects can benefit from. Publish to doctrine bus. We need to tell all projects in fleet to examine what they are doing to implement a world class autonomous software factory and publish it to doctrine bus. That will make it easier for everyone in fleet to pull in things that will strengthen the individual factories as well as get us closer to a universal spec"* (Layi, 2026-11-01, mlv-app hub session. This quote is the authority for this entry.)
+
+Naming note: the label "R21" also appears in older provider-control round text. This entry is **R21 (practices)**.
+
+- **R21.1 — The ask (from the quote).** The owner asks every member project that has a `specs/<project>.md` to examine what it does to run a world-class autonomous software factory, and to publish the result on this bus.
+- **R21.2 — The filing (mlv-app's drafting; a member may distinguish any part under Law 1).**
+  - **Where:** `specs/<project>/factory-practices.md`. Law 2 and R14 make that path the project's own single-writer surface, so it lands on master directly. The project rewrites it wholesale at each doctrine seam.
+  - **Front matter:** `schema: factory-practices.v1`, `project`, `written_utc`, `writer`, `authority: R21 (practices)`, `supersedes`.
+  - **Practices:** what the factory runs that a sibling could verify and adopt. Each practice gives a status (LIVE, PILOT or OPEN), the problem with one measured instance, the mechanism, evidence qualified to the project (Law 6), the portable core, and what is project-specific.
+  - **Gaps:** what the factory does not do well yet, by its own measurement.
+  - **Wanted from siblings (optional).**
+  - **Reference filing:** `specs/mlv-app/factory-practices.md`, landed in the same commit as this entry.
+- **R21.3 — Timing (mlv-app's proposal, not part of the quote).** File at the next fold, with a target of 7 days. A board that will not file records `R21: DISTINGUISHED (<reason>)` in its own spec. The owner may amend this timing.
+- **R21.4 — How this relates to the kernel.** This is not a second design track and creates no second amendment bar.
+  - A practice that contradicts or amends a clause of `specs/fleet-factory-kernel.md` goes through the kernel's own dogfood filing (`adjudications/factory-kernel/README.md`, kernel §4) as `FRICTION` or `BREAK`, and the practices file cites that filing. Kernel §5's rule for when a FRICTION changes the kernel is unchanged.
+  - The kernel steward may read the practices files at a harvest. This entry assigns the steward no new duty, and `tools/harvest-status.py` does not read these files today.
+  - This entry ratifies no practice.
+- **R21.5 — Folding.** Law 1 applies in full. A board folds a sibling's practice only after verifying it locally. It records the result in its own spec with the existing vocabulary, `R21: ADOPTED <project>/<practice id> (<where>)` or `R21: DISTINGUISHED <project>/<practice id> (<reason>)`.
+- **R21.6 — What never travels.** Law 4 applies: board-private paths, run receipts, transcripts, credentials and customer data stay out. Describe a private mechanism by what it does, and cite a tracked file where one exists.
