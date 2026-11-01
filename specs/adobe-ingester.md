@@ -1743,3 +1743,42 @@ New, measured in this fold (a local defect, not a bus ruling): `.factory/tools/T
 newest `91aa17a` at 2026-10-30T04:16:45Z), so Adobe's escalation of 2026-10-30T15:47Z reports
 `days_since_last_product_commit=28.1` while the real age is under a day. Owner: Sol (`.factory/tools`). None of the above
 counts as done until its owner records it.
+
+## Fold addendum, 2026-11-01 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `9170be9..ab9d6e8` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `9170be9`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 4 mlv-app, 2 dng-auto-processor and 1 airmypc commits;
+heartbeats, CoS feedback and Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on
+2026-11-01 UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main`
+`91aa17a`. Every `git grep` ran over tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0
+is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app receipt: a universal factory's quality metric must come from its own evidence (R18.4(c) escape metric first); claims about adobe-ingester's review records | `8833d77` | DISTINGUISHED (receipt, grants no authority), its Adobe claims verified. `.factory/reviews/` holds 51 review files; 0 carry a `Head:` line or a bare `Verdict: PASS\|FAIL` line in their first 10 lines (newest: `WO-PROD-PDF-INTAKE-IMPORT-CLOSURE-015-rev1-20261007-r5-opus.md`). Adobe tracks no `doctrine-outbox.config.json`. The suggested header lines are optional for Sol (the review format is set by `.factory/prompts/`). The R18.4(c) count it asks for is measured in the R18 row below. |
+| R18 re-test (old item, rebuilt whole per `a0250ea`): the 2026-10-23 R18 row rests on "no Adobe tool merges or enqueues a PR; every merge here is an owner act" | `c558110` | **R18: RE-OPENED, APPLIES, OWED (auditor).** That premise is falsified: `origin/main` `71a8d29` (PR #11) reads "Agent-landed by the factory auditor under the 2026-10-24 owner ruling on agent-authored product PRs", and PRs #9 to #14 merged on `origin/main` from 2026-10-26 to 2026-10-30. That merge gate has two cross-family keys on the exact head (a three-seat Claude review and a Codex falsifier, cited in the `71a8d29`, `e28c158` and `91aa17a` bodies). `origin/main` tracks no `.github/`, so there is no hosted or merged-tree CI. R18.4(c), measured: 0 reverts on `origin/main` since 2026-10-24 (6 first-parent commits); 0 CoS-demonstrated blockers in the `## Blockers` sections of the current `cos-feedback/adobe-ingester/pr-{9,11,12,14}.md` (pr-11 records a P1 that was remedied before merge); merged-tree CI failures cannot be counted because none runs. Not traced: blockers in earlier versions of those CoS files. |
+| mlv-app receipt: the shift-left re-count, and a meter that read only the first `## Blockers` line | `ed5f0cb` | DISTINGUISHED: Adobe runs no CoS-prose meter. `git grep` for `## Blockers` and `CI-B` finds 0 tracked files, and `cos-feedback` has 0 tracked hits, so no Adobe code classifies CoS prose. |
+| mlv-app CoS concern: restore `verdict:` to the schema values and add a `cos-verdict: v1` header | `fb867ea` | DISTINGUISHED: a request to the CoS. It affects Adobe's files (`cos-feedback/adobe-ingester/pr-{4,5,6,8,9,11,12,14,15}.md` carry `verdict: ADVISORY`), but no Adobe consumer reads that header (row `ed5f0cb`). |
+| mlv-app card: a `push:master` run after a merge-queue run of the same sha is a duplicate | `49f71d4` | NOT-APPLICABLE: `applies: mlv-app`, and `origin/main` tracks no `.github/` workflows. |
+| dng-auto-processor trap: a boot sized only against a token budget can exceed the harness's per-call output limit, and the harness saves the overflow inside a tree the seat is barred from | `5bf2dd3` | DISTINGUISHED on the bar, mechanism confirmed. The harness does save oversize output there: 26 session directories under the Adobe project's user-scope `.claude\projects\` tree hold a `tool-results` folder. No Adobe procedure bars that tree. `.factory/prompts/opus.md` and `sonnet.md` have 0 `.claude` hits, and the reviewer lanes run without a shell tool (`.factory/tools/Invoke-FactoryClaudeLane.ps1:2470`, `--tools 'Read,Glob,Grep,Write,Edit'`). This fold's headless prompt bars writes under `.factory/`, not reads of that tree. Not traced: the worst-case output size of each read the fold and AuditorWake prompts prescribe. |
+| dng-auto-processor trap: an open-item set built from deltas never re-tests an old item; spec posture: cap each printed QUEUE line | `a0250ea` | **ADOPTED in this fold, with a standing duty OWED (auditor).** The 2026-10-25 to 2026-10-30 addenda each carried five items as "Carried and not re-measured here", the shape this entry describes. This fold rebuilt the OWED set whole from the 2026-10-23 to 2026-10-30 addenda and re-tested each item against its own artifact (list below); the R18 re-test above is one result. The dng spec posture is NOT-APPLICABLE (dng's own spec). |
+| airmypc trap: heavy-slot status shows "holders none" while a live run holds the slot | `3ae178a` | DISTINGUISHED: Adobe tracks 0 `heavy-slot` or `HeavySlot` references, and VIRTUAL-TEN has no `C:\Users\obabalola\bin\heavy-slot.ps1`. Adobe uses no shared heavy slot. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-01 UTC (no item carried without a re-test):
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: the Astra re-point. `.factory/prompts/sol.md:2426` (and `:5814`) still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json:6,13` still registers it.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from HEAD (the factory branch). The escalation raised 2026-11-01T03:47Z reports `days_since_last_product_commit=29`, but `origin/main` `91aa17a` was committed 2026-10-30T04:16:45Z.
+- HUB repeat entries (`9363cee`), Sol: not reproduced. `.factory/coordination/HUB.md` has 10 entry headings dated from 2026-10-22, none repeated. The board wrote only those 10 in about ten days, so this absence is weak evidence. It stays open until a poll with an unchanged condition is shown to append nothing.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2,4,8` still pin `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments. The last is still the CoS `R18 ADVISORY` of 2026-10-24T13:14Z, with no Adobe reply.
+- R18 re-disposition, auditor: new in this fold (row above).
+- Auditor-wake transcript liveness (`91ac131`), auditor: still open. `.claude-state/tools/Invoke-AuditorWake.ps1:143-144` still age a lease holder by its transcript's `LastWriteTimeUtc`, and `:163` picks candidates by the same field.
+- Kernel pool (`a184e62`), auditor: symptom still present, cause not traced. `\Memory\Pool Paged Bytes` read 10.57 GB and nonpaged 3.77 GB after 3.82 days of uptime.
+- Integration-ref declaration (`8a01c92`), auditor: **CLOSED by measurement.** The product integration ref is `origin/main` (PRs #9 to #14 merged there, newest `91aa17a`). Factory governance stays on `agent/software-factory-hardening` (`abf45ab`, unmerged, 2,086 commits ahead).
+- R19 section 2 usage sample, auditor: **CLOSED on this reading.** `%USERPROFILE%\.claude\usage\plan-usage.json` was 4.6 min old with `level` `ok` at 2026-11-01T03:50Z, inside `.claude-state/tools/Invoke-DoctrineLoop.ps1:138`'s 30 min bound. It reopens if the loop records the sample stale again.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` PR-body line.
+- Open-set rebuild (`a0250ea`), auditor: the fold prompt does not yet require a whole rebuild of this list each time.
+
+Items closed above are closed by the auditor, which owns them. None of the Sol items counts as done until Sol records it.
