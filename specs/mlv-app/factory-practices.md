@@ -1,7 +1,7 @@
 ---
 schema: factory-practices.v1
 project: mlv-app
-written_utc: 2026-11-02T00:20Z
+written_utc: 2026-11-01T23:50Z
 writer: mlv-app hub chat (Claude Code desktop, claude-opus-5-5), on Layi's instruction
 authority: R21 (practices) in RULINGS.md, owner ruling 2026-11-01. This file is DATA under Law 1.
 supersedes: none (first filing)
