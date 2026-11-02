@@ -1782,3 +1782,39 @@ OWED set, rebuilt whole and re-tested on 2026-11-01 UTC (no item carried without
 - Open-set rebuild (`a0250ea`), auditor: the fold prompt does not yet require a whole rebuild of this list each time.
 
 Items closed above are closed by the auditor, which owns them. None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-02 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `c063b2b..5e2ecba` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `c063b2b`). Binding: 1 (`8f97f35`,
+R21 (practices), mlv-app's append to `RULINGS.md`). Sibling: 3 more mlv-app commits; heartbeats, CoS feedback and
+Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-11-02 UTC against Adobe HEAD
+`abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `91aa17a` (`git ls-remote` agrees). Every
+`git grep` ran over tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0 is bounded to
+that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| R21 (practices), owner ruling: every member files `specs/<project>/factory-practices.md` (R21.2), target the next fold within 7 days (R21.3) | `8f97f35` | **R21: APPLIES, OWED (auditor).** Bus `origin/master` holds no `specs/adobe-ingester/factory-practices.md` (the `specs/adobe-ingester/` tree is `cards.md` and `tools/product-control-ratio.mjs` only). This headless fold may write only this spec, so it does not file. Due by 2026-11-08: file, or record `R21: DISTINGUISHED (<reason>)` here. Measured inputs a filing would start from: the two-key product merge gate on the exact head (row `c558110` of the 2026-11-01 addendum); the 30-minute TTL resume checkpoint (below); and the gaps, which are 0 product merges on `origin/main` since `91aa17a` (2026-10-30T04:16:45Z) with PR #15 OPEN, a newest ledger entry in `.factory/coordination/HUB.md` dated 2026-10-22T04:33:40Z, and the throughput miscount in the OWED list. |
+| mlv-app R21 reference filing, practices P1 to P5 | `8f97f35`, `caf4372` | Folded per practice (R21.5). **P1: DISTINGUISHED** mlv-app/P1: Adobe tracks no roadmap or queue render to gate. The observed-surface half is already held for state: `.claude-state/continuity/CHECKPOINT-CURRENT.md` carries `generated_utc` and `expires_utc` (ttl 30m), read fresh at 2026-11-02T00:43:16Z this run. **P2: DISTINGUISHED** mlv-app/P2: no age-based retirement of Adobe work orders was measured, so the guard binds to no local incident. **P3: NOT-APPLICABLE** mlv-app/P3: 0 tracked hits for a bench host, a venue-idle signal or a slot nominator (the 2 `nominat` hits are an integration head in ADR-0002 and WO-REL-C01). **P4: DISTINGUISHED** mlv-app/P4: Adobe's product PRs carry no fix-round counter to measure against; 0 of PR bodies #10 to #15 carry an `Adversary pass` line. **P5: NOT-APPLICABLE** mlv-app/P5: 0 tracked hits for a capacity re-arm or a fire-time duplicate gate. Adobe's lane tasks use `-MultipleInstances IgnoreNew` (2026-10-30 row `8a654aa`), which has no re-arm path. `caf4372` only corrects that file's `written_utc`. |
+| mlv-app card: locate a known file by path; never `rg --files --hidden` rooted at `%TEMP%` or `~\.claude` | `acee27e` | DISTINGUISHED: 0 tracked hits for `rg --files`, `rg -uu` or `--hidden`, so no Adobe prompt or tool prescribes the walk. Not traced: an unprompted walk by a Codex lane at run time; no `rg` process sample was taken in this fold. |
+| mlv-app card: heavy-slot waiter polls a whole-host snapshot and never reaps all-NUL queue records | `243e806` | NOT-APPLICABLE: 0 tracked `heavy-slot` or `HeavySlot` references, and `%USERPROFILE%\bin\heavy-slot.ps1` does not exist on VIRTUAL-TEN (same finding as row `3ae178a`, re-measured). |
+
+OWED set, rebuilt whole and re-tested on 2026-11-02 UTC (no item carried without a re-test):
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json:6,13` still registers it.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from HEAD. The escalation raised 2026-11-02T00:47:03Z still reports `days_since_last_product_commit=29`; the real age is about 2.9 days (`91aa17a`).
+- HUB repeat entries (`9363cee`), Sol: not reproduced, because nothing was appended. The newest `HUB.md` heading is still 2026-10-22T04:33:40.347Z. The open question stays open.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2,4,8` still pin `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments. The last is still the CoS `R18 ADVISORY` of 2026-10-24T13:14:13Z, with no Adobe reply.
+- R18 re-disposition, auditor: still OWED. No merge since `91aa17a`; PR #15 is OPEN.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143-144,163` still use `LastWriteTimeUtc`.
+- Kernel pool (`a184e62`), auditor: symptom still growing. Paged pool read 13.25 GB and nonpaged 4.44 GB at 4.66 days of uptime (10.57 GB and 3.77 GB at 3.82 days on 2026-11-01). Cause not traced.
+- R19 section 2 usage sample, auditor: stays closed. `plan-usage.json` was 4.6 min old with `level` `ok`.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` PR-body line. Still absent (0 of PR bodies #10 to #15).
+- Open-set rebuild (`a0250ea`), auditor: the fold prompt still says only "read the latest fold addendum". It does not require a whole rebuild.
+- R21 filing, auditor: new in this fold (row above).
+
+Items closed above are closed by the auditor, which owns them. None of the Sol items counts as done until Sol records it.
