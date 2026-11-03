@@ -1818,3 +1818,46 @@ OWED set, rebuilt whole and re-tested on 2026-11-02 UTC (no item carried without
 - R21 filing, auditor: new in this fold (row above).
 
 Items closed above are closed by the auditor, which owns them. None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-03 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `9b8ff0f..0374dcd` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `9b8ff0f`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 1 mlv-app commit and 1 airmypc commit; heartbeats, CoS
+feedback, metrics and Adobe's own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-11-03
+UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `bb6c2fa` (PR #15,
+merged 2026-11-02T05:47:33Z). Every `git grep` ran over tracked files only, outside `.factory/evidence` and
+`.factory/coordination`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app card: a vendored bridge test that mocks `subprocess.run` but not the native fast path depends on the host's process table; pin `native_process_entry` to None | `9bcd256` | NOT-APPLICABLE: `applies: mlv-app`. Adobe tracks 0 files naming `native_process_entry`, `win_process` or `_wrapper_process_entry`. The 9 tracked `agent-bridge` hits are prose references to that project (`FACTORY.md`, `.factory/BOOTSTRAP.md`, ADR-0002/0003/0005/0006, the two recurring-runner prompts, `WO-REL-C01`), not vendored code. |
+| airmypc R21 filing 1, P1: cheap refusals run before the long gate | `9c11749` | **R21: DISTINGUISHED airmypc/P1** (no long local gate to order checks ahead of). `origin/main` tracks no `.githooks/` or `.github/`; the product gate is a manual `dotnet test spikes/adobe-session/AdobeSessionSpike.Tests` (PR #15 body: 338 passed, "The repo has no CI workflow"). The factory branch's `.githooks/pre-commit` (`core.hooksPath` is `.githooks`) runs only `Test-FactoryGovernance.ps1` and `Test-FactoryCandidateIntegrity.ps1`; its cost was not measured here. |
+| airmypc P2: a mirrored or generated copy that a build reads needs a byte-level parity check | `9c11749` | **R21: APPLIES airmypc/P2 (portable core), OWED (auditor, product PR).** Measured local instance: `SessionBoundaryTests.cs:376` `RealTwoProcessWinnerAndLoserGateRegression` starts both workers with `dotnet test --no-build --no-restore --configuration Release` (`:521-526`) whatever configuration the outer run uses, and nothing checks that the Release binaries were built from the tested HEAD. PR #15's body records the manual workaround: "The Release build was refreshed so the two-process gate test runs against HEAD." A stale Release build makes this regression test old code without any signal. The airmypc overlay mechanism itself is project-specific (Adobe tracks 0 `templates/scaffolding` or `ScaffoldSourceParity` hits). |
+| airmypc P3: one item, one worktree, one independent key, red on base then green | `9c11749` | **R21: DISTINGUISHED airmypc/P3, mostly already held.** Held: one item per product PR with cross-family keys on the head before merge (PR #15 body, "Review gates": a three-agent adversarial swarm plus a pinned Codex 0.160.1 falsifier, five rounds, round 5 PASS). Not held: 0 of PR bodies #10 to #16 record a red-on-base (or fails-on-base) line, so whether each new test was red on base is not recorded. Optional candidate (auditor), listed below; no ruling binds it. |
+| airmypc P4: hunt leads verified by reading first; dry hunts recorded | `9c11749` | **R21: DISTINGUISHED airmypc/P4**: Adobe runs no defect-hunt loop (0 tracked hits for `dry hunt` or `Hunt `). Its product work is driven by owner-approved items, not hunts. |
+| airmypc P5: a method-level test census stops CI from silently dropping tests | `9c11749` | **R21: DISTINGUISHED airmypc/P5**: no hosted run exists to drop tests (`origin/main` tracks no `.github/`); each PR body reports the local count (PR #15: 338 passed, 0 failed). Not traced: whether the reported count is monotone across PRs #9 to #16. |
+| airmypc P6: documents have size budgets and the ledger rolls itself | `9c11749` | **R21: DISTINGUISHED airmypc/P6, partly already held, gap measured.** Held for the resume entry: `~/.claude/hooks/Test-ResumeContract.ps1:34` sets `$MaxLines = 200`, and `.claude-state/RESUME.md` is 155 lines. Not held for the ledger: `.factory/coordination/HUB.md` is 14,967,060 bytes and 40,172 lines with no roll or ratchet, and `.factory/prompts/sol.md` is 924,859 bytes. Any budget there is a `.factory/` policy change for Sol; listed below as an optional candidate. |
+| airmypc P7: every prose rule maps to a check, and the map is ratcheted | `9c11749` | **R21: DISTINGUISHED airmypc/P7**: 0 tracked hits for `rule-coverage` or `RuleCoverage`; Adobe keeps no rule-to-check map, so its coverage is unmeasured. No local incident binds it in this fold. |
+| airmypc gaps and "Wanted from siblings" | `9c11749` | DISTINGUISHED: requests to siblings, granting no authority. Adobe answers none of them in this fold; its own R21 filing is OWED (below). |
+
+OWED set, rebuilt whole and re-tested on 2026-11-03 UTC (no item carried without a re-test):
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and `.claude/settings.json:6,13` still registers it.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from HEAD. It is now worse: the escalation raised 2026-11-03T15:47:02Z reports `measurement exit 1; days_since_last_product_commit=` (empty), while `origin/main` `bb6c2fa` was committed 2026-11-02T05:47:32Z. Cause of the exit 1 not traced.
+- HUB repeat entries (`9363cee`), Sol: not reproduced, because nothing was appended. The newest `HUB.md` heading is still 2026-10-22T04:33:40.347Z (10 headings since 2026-10-22). The open question stays open.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2,4,8` still pin `0.160.1`.
+- R18.2, auditor: PR #3 is OPEN with 8 comments. The last is still the CoS `R18 ADVISORY` of 2026-10-24T13:14:13Z, with no Adobe reply.
+- R18 re-disposition, auditor: still OWED. Re-counted for R18.4(c): PR #15 merged as `bb6c2fa` under the same two keys; 0 reverts in 7 first-parent commits on `origin/main` since 2026-10-24; `cos-feedback/adobe-ingester/pr-15.md` `## Blockers` reads "None demonstrated"; merged-tree CI failures still cannot be counted because none runs.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143-144,163` still age and pick by `LastWriteTimeUtc`.
+- Kernel pool (`a184e62`), auditor: symptom fell. Paged pool read 9.26 GB and nonpaged 3.71 GB at 6.29 days of uptime (13.25 GB and 4.44 GB at 4.66 days on 2026-11-02), so growth is not monotone. Cause not traced; stays open as a watch.
+- R19 section 2 usage sample, auditor: stays closed. `plan-usage.json` was 0.6 min old with `level` `ok`.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`bb6c2fa`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` PR-body line. Still absent (0 of PR bodies #10 to #16).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the latest fold addendum". It does not require a whole rebuild.
+- R21 filing, auditor: still OWED, due by 2026-11-08. Bus `specs/adobe-ingester/` still holds only `cards.md` and `tools/product-control-ratio.mjs`. This fold adds one measured input: the airmypc/P2 finding above.
+- airmypc/P2 Release-worker staleness, auditor (product PR): new in this fold (row above).
+- Candidates, optional, no ruling binds them: a red-on-base line in product PR bodies (airmypc/P3, auditor); a roll or size ratchet for `HUB.md` and `sol.md` (airmypc/P6, Sol).
+
+Items closed above are closed by the auditor, which owns them. None of the Sol items counts as done until Sol records it.
