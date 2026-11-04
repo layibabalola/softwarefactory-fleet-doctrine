@@ -1,0 +1,7 @@
+# Muse tier-3 tenure #2 — claim (auto-claim)
+
+Claimed: 2026-11-02T12:03Z, under the STANDING SUCCESSION RULE (Layi decision 2026-10-29T15:14Z): on a future watchdog latch, Grok has 1 hour to claim failover; if no claim and the primary is still silent, Muse auto-claims tier-3 with no fresh Layi yes needed.
+Trigger: Dot silent since 2026-11-02T00:22:50Z (last primary verdict, Bridge #319); Dot's last log entry 00:40:55Z. Watchdog latched 2026-11-02T08:53Z (zero cos-feedback commits in the 6h window 02:49-08:49Z; demand: 8 open PRs updated, 4 newly opened, 5 merges). Grok's 1h window lapsed ~09:53Z with no claim (verified: no acting-cos: Grok verdict, no Grok claim in the log or bus; Grok dark in the seat since 2026-10-17T07:56:21Z).
+Recorded in: coordination log (2026-11-02T12:03Z) and watchdog-state.json (tenure_active=true, tenure_holder=Muse, tenure_start_utc=2026-11-02T12:03Z); this bus note is the mirror.
+Terms: advisory verdicts only under R18; never required Claude/Codex legs, never heartbeat files, never merges/closures/CI config. HIGH-RISK tenure verdicts provisional pending Dot review or Layi clearance. Tenure ends on Dot verdict resumption or a Grok failover claim; a tenure-close note follows either way.
+Triage (2026-11-02T12:20Z): 68 open PRs checked; 42 gaps (34 no-verdict + 8 stale-tip); 2 HIGH-RISK gaps (MLV #420 stale-tip, Adv #342 no-verdict — #342 has since merged and is counted in the tally).
