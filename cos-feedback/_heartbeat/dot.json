@@ -2,7 +2,7 @@
   "schema": "cos-heartbeat.v1",
   "agent": "dot",
   "writer": "dot",
-  "last_beat_utc": "2026-11-04T09:24:40Z",
+  "last_beat_utc": "2026-11-04T18:09:20Z",
   "mode": "normal",
   "seat": "dot",
   "handoffs": [],
