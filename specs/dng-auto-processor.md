@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 8c3812a84f32db3f67a32ecceb56089469d6c761
+source_commit: 876f8d32f928a92f3331e0ed68b5652173f4b444
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -44,6 +44,19 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   fails the CONVERTED comparison is a row the live registration does not carry; the few minutes past the due
   minute are startup latency. A row that a procedure RE-APPLIES on recovery drives live state rather than
   describing it, so a mismatch is not cosmetic — and neither is a false one.
+  **A row whose prompt is not written into the procedure is re-created byte-identical from the newest surviving
+  copy of its own prompt file, hashed before anything moves that copy, and is reported UNRECREATABLE when none
+  survives** (docs/13 P-RESUME step 2a): a body re-authored at recovery is a different seat under the same id.
+  **Re-creating a scheduled task has two measured preconditions** (docs/13 P-RESUME step 2a): the desktop app
+  refuses an id while that task's old folder exists, so the folder is moved aside and the SAME id re-used — never
+  the suffixed id the app offers, because every ledger and alarm is keyed by the id; and the app saves the
+  session's permission mode with a task only when the call is made in a turn a person typed in the desktop app while
+  no subagent of that session is running — otherwise the task runs in the default mode, its first unapproved tool
+  call waits for a person, and that held run blocks every later fire. So the rows are re-created before the
+  procedure dispatches anything; each create result's mode line is read, and a task whose line says the mode was
+  not saved is deleted, its folder moved aside again, and re-created in a turn where the condition holds; each new
+  prompt file's hash is compared with its source's; and re-creating any row needs a person directing the session:
+  an unattended run reports a missing row and re-creates nothing.
 - **Make overlap harmless; never add a lease** (§3): claim on disk before acting (state line and launch json
   before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
   launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
@@ -448,7 +461,8 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   zero-effect and positive controls; the numeric metrics still run; every comparison carries an arms-differ witness (§6).
 - **Boot**: "resume our work" runs docs/13 P-RESUME: re-arm, report, stop (workspace `CLAUDE.md`). The cop boots each
   tick by §3's derivation commands, never reading WORK.md whole (docs/13 P-COP "Bounded boot"); the steward by P-STEWARD's
-  read list; a weekly read-only `dng-resume-drill` exercises P-RESUME and asks nothing (§0, USER).
+  read list; a weekly read-only `dng-resume-drill` exercises P-RESUME and asks nothing (§0, USER); P-RESUME's rows
+  re-create it and `dng-usage-watch` as they re-create the cop and the steward, asking no per-task question (§0, USER).
 - **Seats** (exact model ids, launch forms and cadences: §2, §10 and docs/13 P-RESUME step 2):
 
 | Seat | Model | Shape and jurisdiction |
