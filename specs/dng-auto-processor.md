@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 876f8d32f928a92f3331e0ed68b5652173f4b444
+source_commit: 4dc7329446b3c673ae5abcb4ebf318cc762997e1
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -468,7 +468,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
 | Seat | Model | Shape and jurisdiction |
 |---|---|---|
 | Traffic cop `dng-traffic-cop` | Opus; an exhausted Opus defers the tick, never swaps | stateless scheduled tick, fresh session per fire: collect, land, dispatch, record; proceeds under stated assumptions (§2, §3; docs/13 P-COP) |
-| Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included; P-STEWARD is edited by no seat, only by the USER or a session acting on the USER's direct words, §10 "Net rules", §7a) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec and this board's kernel filing; a receipt every run (§7a; docs/13 P-STEWARD) |
+| Design steward `dng-design-steward` | Opus, every six hours | acts only on OWNER-DEFECT tokens and PARKED cards a cop wrote, plus the doctrine loop; may edit docs/12, docs/13 (P-COP included; P-STEWARD is edited by no seat, only by the USER or a session acting on the USER's direct words, §10 "Net rules", §7a) and docs/14; disposes of a park as ONE dimensioned batch pass or as the ruling the park names; closes a token only by appending a CLOSED line; never dispatches, launches keys, lands or opens ordinary cards; writes this spec, this board's kernel filing and its practices filing (docs/13 P-STEWARD 7f, a USER unfreeze in §0); a receipt every run (§7a; docs/13 P-STEWARD) |
 | USER-directed orchestrator | Opus at high effort (USER, §0, superseding an earlier medium) | launches each seat it drives as a CLI process (`codex exec`, `claude -p`) whose launch json, written first, carries `phase`, `"route": "cli"` and, once it starts, its `pid` with that process's own creation time; not an unfreeze: adds no lane, gate, tool or scheduled task, changes no cop seat, key tier or landing rule, edits no governing doc (§0; §2 launch route) |
 | Executor | Sonnet or Sol under the weave; Luna only for a fixed task with prewritten failing checks; complex diagnostics Sol, or Sonnet while Codex is dark; a retry (attempt 2 or later of an implementation card) the top-tier model of the card's own family at high effort, Fable for a Claude-family card and the Sol tier for a Codex-family card (fleet R19.1, §2 "The Codex T3 seat"), and Sonnet for a Claude-family retry while Codex is dark (USER, §0) | bounded brief, at most 4 files, dies at return; a Codex author runs §10's author route and a Sonnet committer commits (§2, §10; docs/13 C-COMMIT) |
 | Approach review | opposite family: Sol for a Claude author, Opus for a Codex author; for a Codex author Fable instead of Opus when the card touches a guard, hook, CI, the ratifier, the acceptance surface or a data-loss path, or when its deliverable is a test, fixture, receipt, scorer or harness (the test/scorer clause USER, §0, the guard clause §2's own design; for a Claude author the Sol tier either way, fleet R19.1) | one round before any product byte; refuses on ambiguity (§2; docs/13 B-APPROACH) |
@@ -501,12 +501,15 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   state changes with their dispositions, governing-doc commits, the alarms its daily lines name — and gives every
   item exactly one line: PUBLISH, ON-BUS (the bus path and entry heading), NOT-EXPORTABLE (one reason) or CARRIED
   (the event that releases it). Nothing is selected, and a PUBLISH is never downgraded for size, taste or time. Two
-  read-only Opus lanes — evidence fidelity; law, format, overlap and public safety — ratify every entry, this spec
-  and the kernel filing before any push; the fidelity lane runs every falsifier or check a draft prints, once on an
+  read-only Opus lanes — evidence fidelity; law, format, overlap and public safety — ratify every entry, this spec,
+  the kernel filing and the practices filing before any push; the fidelity lane runs every falsifier or check a draft prints, once on an
   input where it should fire and once where it should not, and no entry travels on validation alone. Each entry's
-  stamped bytes are saved beside the receipt and every retry re-uses them, never a re-draft. A push of this spec
-  that the bus's own pin of it turns red is never held for the re-pin, which is the bus's to write and never this
-  board's: the receipt says so in one line addressed to the bus's owner, naming the row the bus must re-pin.
+  stamped bytes are saved beside the receipt and every retry re-uses them, never a re-draft. The practices filing
+  is rewritten wholesale, never appended, when a census item changes a practice or gap it lists and with each
+  rewrite of this spec (§0, USER). A push of this spec is never held for the bus's own pin of it, whose re-pin is
+  the bus's to write and never this board's: the steward derives that pin's state by running the bus's own ledger
+  check before its commit and on it, and writes one line to the bus's owner only when its own commit is what
+  changed the result (§0, USER).
 - **Fleet RULINGS R15, the mid-session doctrine re-check (owner ruling): ADOPT, with two gaps OWED** — the R15.5 record
   (fleet RULINGS R15; this board's workspace session hooks). Events: a `SessionStart` hook (startup, resume, clear and
   compaction) shows the `RULINGS.md` changes since the older of the session's last-shown bus tip and the board's fold

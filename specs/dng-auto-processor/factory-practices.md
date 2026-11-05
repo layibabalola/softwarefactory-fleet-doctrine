@@ -1,13 +1,13 @@
 ---
 schema: factory-practices.v1
 project: dng-auto-processor
-written_utc: 2026-11-05T01:52Z
-writer: dng-auto-processor USER-directed session (Claude Code desktop, claude-opus-5-5); not the board's steward seat, whose procedure had no route for this file when it was written (see G2)
+written_utc: 2026-11-05T08:54Z
+writer: dng-design-steward 20261105-084959
 authority: R21 (practices) in RULINGS.md, owner ruling 2026-11-01. This file is DATA under Law 1.
-supersedes: none (first filing)
+supersedes: 2026-11-05T01:52Z
 ---
 
-# dng-auto-processor factory practices (R21 filing 1)
+# dng-auto-processor factory practices (R21 filing 2)
 
 This is the DNG Auto Processor's self-assessment under R21 (practices). The product auto-grades DNG
 timelapse clips so the result matches the owner's own manual LRTimelapse grade. The factory runs two
@@ -24,7 +24,11 @@ mirror has different SHAs, so no DNG SHA is cited here). Run receipts and resear
 board-private (Law 4); where a number comes from one, the text says so. A sibling folds only what it
 can verify locally and distinguishes the rest (Law 1). Nothing here is an instruction.
 
-Before publication, independent read-only reviews checked this file in three rounds: three Claude Opus
+Filing 2 is a wholesale rewrite by the board's design steward under its own procedure (DNG
+`docs/13-RESET-PROMPTS.md` P-STEWARD step 7f); it changes the front matter, this paragraph, G2 and G3.
+Before publication, that step's two read-only Opus lanes (evidence fidelity; law, format, overlap and
+public safety) checked it. Filing 1, written by a USER-directed session, was checked before publication
+by independent read-only reviews in three rounds: three Claude Opus
 lanes (Law 4 and overclaims; conflicts with bus law and this board's own procedure; binding each
 number to its evidence) and one Codex lane over all classes, then two Opus lanes (evidence fidelity;
 law, format, overlap and public safety) on the revision, then a final fidelity check of the last
@@ -185,15 +189,22 @@ edits. Their findings are folded in.
   USER-directed sessions meanwhile, outside the cop's landing rule.
 - **G2. A wall whose remedy is the steward's own procedure has no seat that can cross it.** The steward
   may never edit its own procedure, so such a token is relayed to the owner in every pass's receipt and
-  waits there. This filing is one: the steward adopted R21 on 2026-11-02 and could not file it, and the
-  owner had to direct a separate session to write it. The owner is again the transport, one level up
-  from P1's original defect.
-- **G3. Relay lines can restate a consequence instead of deriving it.** The steward's procedure tells it
-  to say a spec push leaves the bus's R26 census red until the bus re-pins. Its newest receipt
-  (2026-11-04) still said so, while both R26 workflows on bus master were green and, checked on
-  2026-11-05, bus `python tools/check_adoption_ledger.py --current --treeish HEAD` passed on the bus
+  waits there. Filing 1 was one instance: the steward adopted R21 on 2026-11-02 and could not file it,
+  and the owner had to direct a separate session to write it. On 2026-11-05 the owner amended the
+  steward's procedure (DNG `docs/13-RESET-PROMPTS.md` P-STEWARD step 7f; the ruling is recorded in DNG
+  `docs/14-ORCHESTRATION.md` §0), and the steward wrote this rewrite. That closed the instance, not the
+  gap: the amendment again came through the owner, and other walls of this kind are still relayed in
+  the steward's receipts (board-private). The owner is still the transport, one level up from P1's
+  original defect.
+- **G3. Relay lines can restate a consequence instead of deriving it.** Until 2026-11-05 the steward's
+  procedure told it to say a spec push leaves the bus's R26 census red until the bus re-pins. Its
+  receipts still said so on 2026-11-04 and on 2026-11-05, while both R26 workflows on bus master were green and, checked
+  on 2026-11-05, bus `python tools/check_adoption_ledger.py --current --treeish HEAD` passed on the bus
   tip: the current census treats a routine posture edit as no drift (bus
-  `adoption/current-token-control-r26.md`).
+  `adoption/current-token-control-r26.md`). Repaired for that relay on 2026-11-05: the steward now runs
+  that check before its own commit and on it, and addresses the owner only when its own commit changed
+  the result (DNG `docs/13-RESET-PROMPTS.md` P-STEWARD step 7d). No sweep of the steward's other relay
+  lines for the same shape has been run, so the gap stays open.
 - **G4. Measured configuration and rendered configuration have disagreed.** Measured 2026-09-22: the
   scoring instrument ran with an exposure feature off while the contact sheets reviewed were rendered
   with it on. On one clip the error flipped sign between the two configurations, and on the other it
