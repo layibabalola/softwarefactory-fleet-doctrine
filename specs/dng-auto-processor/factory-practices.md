@@ -1,13 +1,13 @@
 ---
 schema: factory-practices.v1
 project: dng-auto-processor
-written_utc: 2026-11-05T08:54Z
-writer: dng-design-steward 20261105-084959
+written_utc: 2026-11-05T15:05Z
+writer: dng-design-steward 20261105-145002
 authority: R21 (practices) in RULINGS.md, owner ruling 2026-11-01. This file is DATA under Law 1.
-supersedes: 2026-11-05T01:52Z
+supersedes: 2026-11-05T08:54Z
 ---
 
-# dng-auto-processor factory practices (R21 filing 2)
+# dng-auto-processor factory practices (R21 filing 3)
 
 This is the DNG Auto Processor's self-assessment under R21 (practices). The product auto-grades DNG
 timelapse clips so the result matches the owner's own manual LRTimelapse grade. The factory runs two
@@ -24,9 +24,10 @@ mirror has different SHAs, so no DNG SHA is cited here). Run receipts and resear
 board-private (Law 4); where a number comes from one, the text says so. A sibling folds only what it
 can verify locally and distinguishes the rest (Law 1). Nothing here is an instruction.
 
-Filing 2 is a wholesale rewrite by the board's design steward under its own procedure (DNG
-`docs/13-RESET-PROMPTS.md` P-STEWARD step 7f); it changes the front matter, this paragraph, G2 and G3.
-Before publication, that step's two read-only Opus lanes (evidence fidelity; law, format, overlap and
+Filings 2 and 3 are wholesale rewrites by the board's design steward under its own procedure (DNG
+`docs/13-RESET-PROMPTS.md` P-STEWARD step 7f). Filing 2 changed G2 and G3; filing 3 changes the
+front matter, this paragraph and P4. Before publication of each, that step's two read-only Opus lanes
+(evidence fidelity; law, format, overlap and
 public safety) checked it. Filing 1, written by a USER-directed session, was checked before publication
 by independent read-only reviews in three rounds: three Claude Opus
 lanes (Law 4 and overclaims; conflicts with bus law and this board's own procedure; binding each
@@ -113,20 +114,29 @@ edits. Their findings are folded in.
 
 ## P4. Run every parser and control on all the real inputs before freezing or spending
 
-- **Status:** PILOT (two measured instances, 2026-10-25 and 2026-10-31).
+- **Status:** PILOT (three measured instances, 2026-10-25, 2026-10-31 and 2026-11-05).
 - **Problem:** on 2026-10-31 a done-test driver passed a full synthetic dry run, end to end. Review then
   found its XMP parser refused 128 of 128 real owner sidecars, because masks and
   Look blocks repeat keys the synthetic files never repeat; and its strict completeness check failed 5
   of 5 sampled real renders. All of it would have fired after about six hours of Adobe rendering. On
   2026-10-25 a pre-registration passed three review rounds with known-answer thresholds that correct
-  code could not meet (1.077 against a bound of 1.05).
+  code could not meet (1.077 against a bound of 1.05). On 2026-11-05 a factory card bound white-balance
+  acceptance thresholds (curve 620 K, ridge 720 K) derived from a measurement on one population (1,394
+  rows, 17 projects) to the larger population the card itself asked to create (2,004 rows, 20
+  projects). The subject failed at 709.1 K and 862.6 K; scored on the old 1,394 rows the same fit gave
+  592.1 K and 709.1 K, so the excess lay entirely in rows the threshold's measurement never scored,
+  among them labels at the Temperature slider's ceiling whose status (the owner's grade or a slider
+  limit) is still open.
 - **Mechanism:** before a freeze, run every known-answer control and must-fail mutant once on
   non-official seeds (feasibility). Before a bulk run, run every parser and gate read-only on the full
   real roster, plus one real sample of each expensive arm. A refusal there is a code defect, not a clip
-  failure.
-- **Evidence:** board-private research records for both instances.
+  failure. Measure a threshold on the population its gate will score, before the threshold is written.
+- **Evidence:** board-private research records for the first two instances; the third is a
+  board-private factory card ledger and its independent disposition, which recomputed the measured
+  numbers above.
 - **Portable core:** a synthetic dry run proves the plumbing, not the parsers. A threshold set without
-  measuring attainable behaviour is a guess the gate will falsify after the freeze.
+  measuring attainable behaviour, or measured on a population other than the one the gate scores, is a
+  guess the gate will falsify after the freeze.
 - **Project-specific:** XMP shapes, Adobe render cost.
 
 ## P5. Diff the full parameter set before tuning a subset
