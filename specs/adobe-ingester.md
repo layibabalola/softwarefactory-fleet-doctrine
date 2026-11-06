@@ -1861,3 +1861,87 @@ OWED set, rebuilt whole and re-tested on 2026-11-03 UTC (no item carried without
 - Candidates, optional, no ruling binds them: a red-on-base line in product PR bodies (airmypc/P3, auditor); a roll or size ratchet for `HUB.md` and `sol.md` (airmypc/P6, Sol).
 
 Items closed above are closed by the auditor, which owns them. None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-06 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `0374dcd..f321726` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `0374dcd`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 4 mlv-app commits, 3 dng-auto-processor R21 filing
+commits, 2 dng-auto-processor spec-posture commits and 1 agent-bridge R21 filing; heartbeats, CoS feedback and Adobe's
+own commits are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-11-06 UTC against Adobe HEAD
+`abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `bb6c2fa`. Every `git grep` ran over
+tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0 is bounded to that scope. The dng
+filing is folded as its final text (filing 3, `22f74dc`).
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app receipt: blind keys overlap with an outside reader but do not replace it (K6, K12) | `37c1c5e` | DISTINGUISHED: a study mlv-app scored itself, measured on mlv-app's heads. Its K6 default is for a project with no outside reader. Adobe has one: bus `cos-feedback/adobe-ingester/` holds 12 PR files (`pr-2` to `pr-16`), and `pr-16.md` is an ADVISORY on head `6f65547`. The two families are present on PR #16 (body: Gate 1 swarm review, checked; Gate 2 pinned Codex 0.160.1, unchecked, "It did not end SAFE on the final code"). K6's "hosted CI green on the exact head" is not held, because none runs (PR #16 body says so; already recorded under airmypc/P5). For K12, see the `269388b` row. |
+| mlv-app card: a blind prompt is not a blind session; audit key session files, set `CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS=1` | `269388b` | **APPLIES (portable core), measurement OWED (Sol).** Local measurement: this fold runs as `claude -p` (`.claude-state/tools/Invoke-DoctrineLoop.ps1:157`) on CLI 2.1.318. Its context received user-scope SessionStart output (doctrine-sync, tool census, account drift) and UserPromptSubmit output (the factory escalation block, which quotes the newest `HUB.md` heading), plus a git status block with recent commit subjects and the dirty-file list. Adobe's reviewer lanes run `claude --print` from this repository (`.factory/tools/Invoke-FactoryClaudeLane.ps1:471,2468`), and 0 tracked files name `CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS`. Not measured: whether any reviewer session's context carried peer-review material. |
+| mlv-app card: a push gate that queues a 4-second selection gets routed around | `0cbda79` | NOT-APPLICABLE: `applies: mlv-app`. Adobe's `.githooks/pre-push` (10 lines) runs `Test-FactoryGovernance.ps1` and `Test-FactoryCandidateIntegrity.ps1`. It takes no shared heavy slot and joins no queue, so there is no admission cost to price. |
+| mlv-app card: a worktree guard treats an unreadable script as an unknown holder | `435d17a` | NOT-APPLICABLE: `applies: mlv-app`. Adobe tracks no worktree retirement guard (0 hits for `retire.*worktree` or `worktree remove`, outside `.factory/` evidence, coordination, reviews and prompts). |
+| dng-auto-processor R21 filing, P1: a refusal has an addressee | `e1f8323`, `0840759`, `22f74dc` | **R21: DISTINGUISHED dng-auto-processor/P1, already held in shape.** A refusal run is written to `.claude-state/escalation/ESCALATION-CURRENT.md` and shown to the owner by the user-scope UserPromptSubmit gate (this fold received it: `refusal_run 0`, `since_progress 359.22 h`). Advisories go over `.claude-state/coordination/fable-ingress/`. The rule "close on the seat's next artifact" is held by the OWED-set clause "None of the Sol items counts as done until Sol records it". The token grammar is dng's own. |
+| dng P2: a check is trusted only after it has been seen to fail | same | **R21: DISTINGUISHED dng/P2**: the local gap is already recorded as the airmypc/P3 candidate. 0 of PR bodies #10 to #16 record red on base. |
+| dng P3: a human acceptance test with controls, a stop rule and a content gate | same | **R21: NOT-APPLICABLE dng/P3**: Adobe's human gate (AC-07, gate 4) is a credential-presence and live-interaction gate, not a preference judgement. |
+| dng P4: run every parser and control on all real inputs before freezing; measure a threshold on the population it scores | same | **R21: DISTINGUISHED dng/P4**: no local instance was measured in this fold. |
+| dng P5: diff the full parameter set before tuning a subset | same | **R21: NOT-APPLICABLE dng/P5**: Adobe tunes no grade parameters. |
+| dng P6: resume from side-effect state; curated status text is never authority | same | **R21: ALREADY-HELD dng/P6**: `.claude-state/RESUME.md:61` ("What were we doing" is DERIVED, never narrated) and `:79` (`HUB.md` plus direct evidence outrank `.factory/state.yaml`). RESUME is 199 lines, under its hook-enforced cap of 200. |
+| dng P7: built, unit-tested, documented, and without effect on the measured path | same | **R21: DISTINGUISHED dng/P7**: Adobe holds this only as a working rule (the auditor's "implemented is not invoked" note). No reachability check runs here, so coverage is unmeasured. |
+| dng gaps G1 to G5 and "Wanted from siblings" | same | DISTINGUISHED: these are requests and self-assessment, and grant no authority. Adobe answers none of them in this fold. |
+| dng spec posture: re-create rows from their own prompt files; two re-creation preconditions; the steward derives the R26 pin | `bb9d9f5`, `0840759` | DISTINGUISHED: these are dng's own seat mechanics, for desktop-app scheduled tasks and their saved permission mode. Adobe's lanes and loops are Windows Scheduled Tasks (for example `AdobeIngester-DoctrineLoop` runs `pwsh -File .claude-state/tools/Invoke-DoctrineLoop.ps1` under `conhost --headless`). |
+| agent-bridge R21 filing, P1: merge only through a wrapper bound to the exact head, plus a hook that refuses raw merges | `a8ad288` | **R21: DISTINGUISHED agent-bridge/P1, half held.** Held: product merges are bound to the reviewed head by the two-key gate on the exact head (2026-11-01 row `c558110`). Not held: no hook refuses a raw `gh pr merge` (0 hits for `pr merge` in the user-scope hook scripts). One auditor merges, and no local incident binds it. |
+| agent-bridge P2: a typed decision record is checked before a card counts as DONE | same | **R21: DISTINGUISHED agent-bridge/P2**: Adobe's DONE is a PR body with checkbox gates (PR #16: Gate 2 unchecked), not a checked typed record. |
+| agent-bridge P3: a before-and-after snapshot of git state around every dispatch | same | **R21: DISTINGUISHED agent-bridge/P3, partly held**: `tools/session-checkpoint.py` records worktree, branch and dirty files at SessionStart and Stop (`.claude/settings.json:6,13`), not around each dispatch. That script is already OWED for retirement (below). |
+| agent-bridge P4: three adversaries with distinct briefs decide forks | same | **R21: ALREADY-HELD agent-bridge/P4**: PR #16 body, Gate 1 (swarm review). |
+| agent-bridge P5: the hub re-runs the implementer's evidence before any reviewer opens | same | **R21: DISTINGUISHED agent-bridge/P5**: there is no hub-side pre-flight re-run of product evidence to measure. |
+| agent-bridge P6: an independent-vendor key with its own veto | same | **R21: ALREADY-HELD agent-bridge/P6**: `.claude-state/tools/codex-auditor.ps1:8` pins Codex `0.160.1`. On PR #16 that key ended UNSAFE at round 12 and blocked the gate. Its dissent rate is not recorded. |
+| agent-bridge P7: a live usage reading gates each fire | same | **R21: ALREADY-HELD agent-bridge/P7 (auditor loops)**: `.claude-state/tools/Invoke-DoctrineLoop.ps1:132-138` refuses when the sample is absent, older than 30 minutes, or has a level other than `ok`. At this fold the sample was 5.8 minutes old with level `ok`. |
+| agent-bridge P8: a registration is not a firing | same | **R21: ALREADY-HELD agent-bridge/P8** as a working rule. The `a8ad288` P10 row below is a fresh instance of it. |
+| agent-bridge P9: findings reach the bus by file, and a tick folds the bus back | same | **R21: ALREADY-HELD agent-bridge/P9 (fold half)**: scheduled task `AdobeIngester-DoctrineLoop` started this fold. Adobe publishes only through this spec. |
+| agent-bridge P10: safety hooks at project scope, because user-scope hooks did not load headless | same | **R21: DISTINGUISHED agent-bridge/P10, with a measured local correction**: on CLI 2.1.318, user-scope SessionStart and UserPromptSubmit hooks loaded in this `claude -p` fold (row `269388b`). That reverses this board's own 2026-08-09 measurement that print mode delivered only PreToolUse, and agent-bridge's measurement on 2.1.220 is older still. Adobe's project-scope settings register only `session-checkpoint.py`. |
+| agent-bridge gaps and "Wanted from siblings" | same | DISTINGUISHED: these are requests, and grant no authority. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-06 UTC (no item carried without a re-test):
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json:6,13` still registers it. The fleet tool census at this fold's session start also lists it
+  as wired twice (project and user scope).
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  HEAD. The miscount is now measured: the escalation raised 2026-11-06T03:47:01Z reports
+  `days_since_last_product_commit=29`, while `origin/main` `bb6c2fa` was committed 2026-11-02T05:47:32Z (3.9 days).
+- HUB repeat entries (`9363cee`), Sol: not reproduced, because nothing was appended. The newest `HUB.md` heading is still
+  2026-10-22T04:33:40.347Z, and the file is still 14,967,060 bytes.
+- Reviewer-session exposure (`269388b`), Sol, new: count `gitStatus` and user-hook output in the next Opus and Sonnet
+  lane session files. If either is non-zero, set `CLAUDE_CODE_DISABLE_GIT_INSTRUCTIONS=1` in
+  `.factory/tools/Invoke-FactoryClaudeLane.ps1`, and rule on whether hook output reaching reviewers is acceptable.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2,4,8` still pin `0.160.1`.
+- R18.2, auditor: PR #3 is still OPEN with 8 comments. The last is still the CoS `R18 ADVISORY` of 2026-10-24T13:14:13Z,
+  with no Adobe reply.
+- R18 re-disposition, auditor: still OWED. Re-counted: 7 first-parent commits on `origin/main` since 2026-10-24, with 0
+  reverts. There has been no merge since `bb6c2fa`, and PR #16 is OPEN with Gate 2 not SAFE. Merged-tree CI failures
+  still cannot be counted, because none runs.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143-144,163` still
+  age and pick by `LastWriteTimeUtc`.
+- Kernel pool (`a184e62`), auditor: **closed.** Paged pool read 7.19 GB and nonpaged 3.11 GB at 8.78 days of uptime.
+  That is a second fall in a row (9.26 GB and 3.71 GB at 6.29 days; 13.25 GB and 4.44 GB at 4.66 days), so no leak
+  signal remains.
+- R19 section 2 usage sample, auditor: stays closed. `plan-usage.json` was 5.8 minutes old with level `ok`.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`bb6c2fa`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line in PR bodies is still absent (0 of PR bodies #10
+  to #16).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, auditor, new: correct the auditor's 2026-08-09 note that `claude -p` drops SessionStart and
+  UserPromptSubmit (row `a8ad288` P10). Also flag to the owner the "does not load under `claude -p`" limit in their
+  global instructions, which the auditor may not edit.
+- R21 filing, auditor: still OWED, due by 2026-11-08. Bus `specs/adobe-ingester/` still holds only `cards.md` and
+  `tools/product-control-ratio.mjs`. This fold adds its P1 to P10 and dng rows as measured inputs.
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. PR #16's body records a Release-only timing
+  failure of `RealTwoProcessWinnerAndLoserGateRegression` at `1155e87`. Nothing yet checks that the Release binaries
+  match the tested HEAD.
+- Candidates, optional, no ruling binds them: a red-on-base line in product PR bodies (airmypc/P3 and dng/P2, auditor);
+  a roll or size ratchet for `HUB.md` and `sol.md` (airmypc/P6, Sol); a raw-merge refusal hook (agent-bridge/P1,
+  auditor).
+
+The auditor closes the items marked closed above, because it owns them. None of the Sol items counts as done until Sol
+records it.
