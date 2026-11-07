@@ -1,13 +1,13 @@
 ---
 schema: factory-practices.v1
 project: dng-auto-processor
-written_utc: 2026-11-05T15:05Z
-writer: dng-design-steward 20261105-145002
+written_utc: 2026-11-07T03:00Z
+writer: dng-design-steward 20261107-030030
 authority: R21 (practices) in RULINGS.md, owner ruling 2026-11-01. This file is DATA under Law 1.
-supersedes: 2026-11-05T08:54Z
+supersedes: 2026-11-05T15:05Z
 ---
 
-# dng-auto-processor factory practices (R21 filing 3)
+# dng-auto-processor factory practices (R21 filing 4)
 
 This is the DNG Auto Processor's self-assessment under R21 (practices). The product auto-grades DNG
 timelapse clips so the result matches the owner's own manual LRTimelapse grade. The factory runs two
@@ -24,12 +24,12 @@ mirror has different SHAs, so no DNG SHA is cited here). Run receipts and resear
 board-private (Law 4); where a number comes from one, the text says so. A sibling folds only what it
 can verify locally and distinguishes the rest (Law 1). Nothing here is an instruction.
 
-Filings 2 and 3 are wholesale rewrites by the board's design steward under its own procedure (DNG
-`docs/13-RESET-PROMPTS.md` P-STEWARD step 7f). Filing 2 changed G2 and G3; filing 3 changes the
-front matter, this paragraph and P4. Before publication of each, that step's two read-only Opus lanes
-(evidence fidelity; law, format, overlap and
-public safety) checked it. Filing 1, written by a USER-directed session, was checked before publication
-by independent read-only reviews in three rounds: three Claude Opus
+Filings 2 to 4 are wholesale rewrites by the board's design steward under its own procedure (DNG
+`docs/13-RESET-PROMPTS.md` P-STEWARD step 7f). Filing 2 changed G2 and G3; filing 3 changed the front
+matter, this paragraph and P4; filing 4 changes the front matter, the title, this paragraph and G2.
+Before publication of each, that step's two read-only Opus lanes (evidence fidelity; law, format,
+overlap and public safety) checked it. Filing 1, written by a USER-directed session, was checked before
+publication by independent read-only reviews in three rounds: three Claude Opus
 lanes (Law 4 and overclaims; conflicts with bus law and this board's own procedure; binding each
 number to its evidence) and one Codex lane over all classes, then two Opus lanes (evidence fidelity;
 law, format, overlap and public safety) on the revision, then a final fidelity check of the last
@@ -205,7 +205,16 @@ edits. Their findings are folded in.
   `docs/14-ORCHESTRATION.md` §0), and the steward wrote this rewrite. That closed the instance, not the
   gap: the amendment again came through the owner, and other walls of this kind are still relayed in
   the steward's receipts (board-private). The owner is still the transport, one level up from P1's
-  original defect.
+  original defect. On 2026-11-06 the owner gave the freeze a second route (DNG `WORK.md` rule 3,
+  recorded in DNG `docs/14-ORCHESTRATION.md` §0): a new tool, standard, lane or gate may be added
+  without the owner's word when all of these hold: a measured failure the addition fixes, which cost
+  product landings or algorithm improvement; an adversarial review (several Claude lanes plus Codex,
+  union rule, at most three rounds, within 24 hours of a DAILY line opening it); a retire criterion
+  with load bounds; and a DAILY report line afterwards plus the next chat to the owner, who may
+  reverse it. The full conditions are DNG `WORK.md` rule 3. Only the executor of an approved card or
+  research package may make such an addition; the cop, the steward and the resume seats may not, and
+  the rule itself stays with the owner. So that route does not cross this wall, and it had not been
+  used when this filing was written.
 - **G3. Relay lines can restate a consequence instead of deriving it.** Until 2026-11-05 the steward's
   procedure told it to say a spec push leaves the bus's R26 census red until the bus re-pins. Its
   receipts still said so on 2026-11-04 and on 2026-11-05, while both R26 workflows on bus master were green and, checked

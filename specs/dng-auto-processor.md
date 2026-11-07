@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 4dc7329446b3c673ae5abcb4ebf318cc762997e1
+source_commit: a0ad96d9086166524f35dfeb457f5e26efa1ab12
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -477,9 +477,20 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
 | Fable / Sol (T3) | taking turns by card; Astra is seated nowhere: fleet R19.1 §1.3 lets a board add an Astra diversity seat and requires none, so Astra is never a default, never a gate and never the only Codex seat a step waits for (§2 "The Codex T3 seat") | experiment dispositions, `needs: fable` design cards and T3 approach reviews; and, by the USER's ruling in §0, the retry author, key 1 for a Codex author (Fable), the blind done-test judge (Fable, launched only by the USER-directed orchestrator on the CLI route) and USER-directed decision-swarm lanes; never a key-2 tier, never scheduled, never the cop (§2) |
 | Status | Haiku, cross-checked by a read-only Haiku swarm | reads, and writes only its own run receipt and report (§8); `dng-status-digest` where the USER added it, otherwise chat on "status"; pushes only on exception (§2, §8) |
 
-- **The factory is frozen** (WORK.md rule 3): no new tool, standard, lane, gate or scheduled task without the
-  USER's word "unfreeze", and each unfreeze §0 records authorises only its literal scope. No chips, lanes,
-  leases, hubs, heartbeats or chronicles (docs/13 channel rule; WORK.md rule 2; §5).
+- **The factory is frozen against self-growth** (WORK.md rule 3; §0): a new tool, standard, lane, gate or scheduled
+  task is added only on the USER's word "unfreeze", each unfreeze §0 records authorising only its literal scope, or,
+  never for a scheduled task, by an AUTONOMOUS UNFREEZE (USER, §0) when all of these hold: a measured failure the
+  addition fixes, with its evidence, that cost product landings or algorithm improvement; an adversarial review
+  (several Claude lanes plus Codex, union rule, at most three rounds) adjudicated as the fleet kernel's amendment
+  rules adjudicate; a stated retire criterion and load bounds; and a post-facto DAILY `UNFREEZE-REPORT <slug>` line
+  and the next chat to the USER, who may reverse it. Its review opens only with a DAILY `UNFREEZE-REVIEW <slug>
+  opened` line written before its first lane, and no such line means no authority; it runs 24 h and three rounds from
+  that line, beside the work: it never holds a product card, a landing or an algorithm run, and an addition that fails
+  the box or the rounds is dropped, not escalated, and re-filed only on new measured evidence; an addition that
+  removes or replaces a mechanism is preferred. Only the executor of an approved card or research package makes the
+  addition, never the cop, the steward or a resume seat, whose Never-lists stand; spend, credentials or accounts, a
+  scheduled task and rule 3 itself stay the USER's word. No chips, lanes, leases, hubs, heartbeats or chronicles
+  (docs/13 channel rule; WORK.md rule 2; §5).
 - **A product commit is one touching §4's PRODUCT closed set**, the only definition (§4; WORK.md rule 1).
 - **Standing USER rulings, each scoped literally** (§0): a hosted seat whose phase commits a card's work — its
   implementing author or its committer — commits that work to the card's own `item/<card>` branch without a live
@@ -547,11 +558,11 @@ R18: DISTINGUISHED (this board has no CoS merge gate to remove: no governing doc
 
 ## Fleet RULINGS R19 (R19.2: each board records its disposition in its own spec; beside the posture, not part of it)
 
-MODEL-POSTURE-2026-10-22: DISTINGUISHED (R19.1 section 2's capacity routing only: §2's rows fix each seat by the author's family, by turn or by name, and keep key 2 Anthropic, and a per-dispatch quota derivation that moves seats would be a new standing duty, which waits for the USER's word "unfreeze" (docs/14 §0, WORK.md rule 3); §2's failover already moves work to the live family when one is dark. Sections 1, 3 and 4 are adopted at docs/14 §2 "The Codex T3 seat is the Sol tier": every seat docs/14 gave Astra, the uses the USER's 2026-09-19 ruling named included, is the Sol tier at the same effort; Astra is seated nowhere, so it is never a default, never a gate and never the only Codex seat a step waits for; a Sol-tier model that wrote a lineage's product bytes, or served as its instrument, is barred from that lineage's disposition, challenge and successor design as a top-tier writer is, and so is an Astra model that did; a disposition is written by Opus where a top-tier writer of each family is barred or where no top-tier seat the bar leaves is live; where a top-tier writer of each family is barred, a challenge degrades by one tier and a successor design's author falls through by §2 posture (5) to Sonnet at its last rung; a retry author keeps its family. Section 3's count reads each card ledger's key launch records)
+MODEL-POSTURE-2026-10-22: DISTINGUISHED (R19.1 section 2's capacity routing only: §2's rows fix each seat by the author's family, by turn or by name, and keep key 2 Anthropic, and a per-dispatch quota derivation that moves seats would be a new standing duty, which waits for an unfreeze under WORK.md rule 3 (docs/14 §0); §2's failover already moves work to the live family when one is dark. Sections 1, 3 and 4 are adopted at docs/14 §2 "The Codex T3 seat is the Sol tier": every seat docs/14 gave Astra, the uses the USER's 2026-09-19 ruling named included, is the Sol tier at the same effort; Astra is seated nowhere, so it is never a default, never a gate and never the only Codex seat a step waits for; a Sol-tier model that wrote a lineage's product bytes, or served as its instrument, is barred from that lineage's disposition, challenge and successor design as a top-tier writer is, and so is an Astra model that did; a disposition is written by Opus where a top-tier writer of each family is barred or where no top-tier seat the bar leaves is live; where a top-tier writer of each family is barred, a challenge degrades by one tier and a successor design's author falls through by §2 posture (5) to Sonnet at its last rung; a retry author keeps its family. Section 3's count reads each card ledger's key launch records)
 
 ## Fleet RULINGS R20 (R20.5: each board records its disposition in its own spec; beside the posture, not part of it)
 
-MODEL-POSTURE-TELEMETRY: DISTINGUISHED (publishing posture shards would give this board a new publisher and a recurring duty, and a new standing duty here waits for the USER's word "unfreeze" (docs/14 §0, WORK.md rule 3), which the doctrine loop cannot supply — docs/13 P-STEWARD step 7 "adds no tool, gate, lane, standard or scheduled task"; the plane is diagnostic and gates nothing; until it exists here, section 3 of R19.1's candidate counts from each board's own key receipts, which here are each card ledger's launch and key records)
+MODEL-POSTURE-TELEMETRY: DISTINGUISHED (publishing posture shards would give this board a new publisher and a recurring duty, and a new standing duty here waits for an unfreeze under WORK.md rule 3 (docs/14 §0), which the doctrine loop cannot supply — docs/13 P-STEWARD step 7 "adds no tool, gate, lane, standard or scheduled task"; the plane is diagnostic and gates nothing; until it exists here, section 3 of R19.1's candidate counts from each board's own key receipts, which here are each card ledger's launch and key records)
 
 ## Dispositions of fleet doctrine (docs/14 §9 verbatim; § = a docs/14 section; re-derive it there, never here)
 
