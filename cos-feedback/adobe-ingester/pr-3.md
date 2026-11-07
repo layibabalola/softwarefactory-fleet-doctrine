@@ -3,6 +3,41 @@ project: adobe-ingester
 repo: layibabalola/adobe-document-cloud-ingester
 pr: 3
 head: d42ac83b77ffb3c016cbe0000c338efe93c01f87
+base: 9cb4d95f4ae411d4d0d314541f03d1b674b28ade
+reviewed_utc: 2026-11-07T20:45:47Z
+evidence_updated_utc: 2026-11-07T20:45:47Z
+event: terminal-ci-and-producer-disposition-reconciliation
+verdict: ADVISORY
+posture: ADVISORY under R18; non-gating
+reviewer: primary dot
+claim: cb8795cd-9103-4494-960c-5e8a2baf3a4f
+delivery_uuid: b63132be-6a02-44db-86ff-2997f674a49b
+
+# layibabalola/adobe-document-cloud-ingester #3 / d42ac83b77ffb3c016cbe0000c338efe93c01f87 / ADVISORY
+
+Blockers: The scanner source remains unchanged and unmerged under its existing non-landing disposition. No scanner repair, canonical R17 adoption or consumer-copy permission follows from this process update.
+
+Improvements: [Follow-through 6712693506](https://github.com/layibabalola/adobe-document-cloud-ingester/pull/3#issuecomment-6712693506), posted 20:35:21Z, supplies the first concrete application of the earlier topology/quality plan: [product PR #18](https://github.com/layibabalola/adobe-document-cloud-ingester/pull/18), head af57f9e7b4c0bc53a657bd265f8d638ea8df067b.
+
+Its current public body visibly has six role rows plus a separate CI row, separating model labels from CLI version, requested/unknown values from claimed observations, and same-session test design from independent work. This verifies adoption of the transparency format, not authenticated provider identity, execution or independent-review satisfaction. One binding remains imprecise: the combined design/pre-merge reviewer row names the base, while prose claims pre-merge review on the head.
+
+The factory attributes #18 to #17's live exit-27 failure lacking a refusal reason. The body explicitly lists four end-to-end-covered refusal cases, seven unreached branches, the synthetic-only size-cap renderer input, and no direct stderr-write test. Five revert checks are claimed to fail 1/1, with local Debug/Release 449/449. Dot's earlier source review remains separate; these local execution results and receipt contents are not newly verified.
+
+The respondent explicitly says public evidence links still point to local logs, hosted CI is not configured, and escape/repeat-failure counts are not measured. Those are unresolved evidence/measurement duties, not silently completed commitments. This diagnostic failure is not proof of a deployed escape.
+
+The proposed scanner recheck remains November 13 or a doctrine #87 merge. That is an attributed plan, not a new scheduler or approval to land. #18's owner live check and Adobe STOP/privacy/reserved-human requirements remain.
+
+Nits: No duplicate process broadcast, unchanged-code review or execution. Primary dot, R18 ADVISORY/non-gating; existing independent review, CI, demonstrated-defect and human requirements remain.
+
+---
+
+## Preserved prior advisory history
+
+schema: cos-feedback.v1
+project: adobe-ingester
+repo: layibabalola/adobe-document-cloud-ingester
+pr: 3
+head: d42ac83b77ffb3c016cbe0000c338efe93c01f87
 evidence_updated_utc: 2026-11-07T04:45:33Z
 event: late-scanner-disposition-and-prospective-topology-plan
 claim: 4abf9f61-4c09-4557-ad8e-957e2da83ce4
