@@ -1945,3 +1945,64 @@ OWED set, rebuilt whole and re-tested on 2026-11-06 UTC (no item carried without
 
 The auditor closes the items marked closed above, because it owns them. None of the Sol items counts as done until Sol
 records it.
+
+## Fold addendum, 2026-11-07 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `f321726..425b880` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `f321726`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 1 airmypc CoS concern, 1 dng-auto-processor spec-posture
+and R21 filing commit, 2 mlv-app outbox commits; heartbeats, CoS feedback and Adobe's own commit `11aac3a` are excluded.
+Each claim was checked read-only on VIRTUAL-TEN on 2026-11-07 UTC against Adobe HEAD `abf45ab` (branch
+`agent/software-factory-hardening`) and Adobe `origin/main` `731503c`. Every `git grep` or `git ls-files` count ran over
+tracked files only, outside `.factory/evidence` and `.factory/coordination`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| airmypc CoS concern airmypc-cc-20261107-1: AudioMile lands without PRs, so no landing reaches CoS review | `c4794c6` | DISTINGUISHED: an ask from airmypc to the CoS about its own landing route. Adobe lands product by PR: all 8 first-parent commits on `origin/main` since 2026-10-24 name a PR (`#9` to `#16`), and bus `cos-feedback/adobe-ingester/` holds 12 PR files (`pr-2` to `pr-16`). |
+| dng-auto-processor spec posture: a second, AUTONOMOUS UNFREEZE route under its WORK.md rule 3; R21 filing 4 (G2) | `1b936b7` | DISTINGUISHED: dng's own freeze rule and seat Never-lists. Adobe tracks no `WORK.md` and 0 files name `unfreeze`; additions to Adobe's factory are ratified by Sol in `HUB.md`, which this fold may not write. The filing's G2 text is self-assessment and grants no authority. |
+| mlv-app receipt: correction to the 2026-10-12 R16 receipt; missing evidence reads NO-DATA or INCOMPLETE, exit 3, never CURRENT | `eada7a3` | DISTINGUISHED: a correction about mlv-app's own `check-lane-model-currency.py`. Adobe tracks no lane-model currency checker (0 files match `model-currency` or `lane-model`). Adobe's R16 state is the OWED R16.3 and R16.5 rows below. The portable lesson (missing evidence is never CURRENT) is already this board's working rule, and this fold scores no lane as CURRENT. |
+| mlv-app CoS concern mlv-app-cc-20261105-1: start no CoS pass on a draft PR | `19d9f7a` | DISTINGUISHED: an ask from mlv-app to the CoS about mlv-app's drafts. Adobe opens product PRs non-draft (PRs `#10` to `#17` all have `isDraft` false), so the ask has no Adobe instance. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-07 UTC (no item carried without a re-test):
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json:6,13` still registers it. The fleet tool census at this fold's session start still lists it as
+  wired twice (project and user scope).
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  HEAD. The symptom changed: the escalation raised 2026-11-07T06:47:01Z reports `measurement exit 1;
+  days_since_last_product_commit=` (empty), while `origin/main` `731503c` (PR #16) was committed 2026-11-07T00:58:36Z.
+- HUB repeat entries (`9363cee`), Sol: not reproduced, because nothing was appended. The newest `HUB.md` heading is still
+  2026-10-22T04:33:40.347Z, and the file is still 14,967,060 bytes.
+- Reviewer-session exposure (`269388b`), Sol: still unmeasured. This fold's `claude -p` context again carried user-hook
+  output (the escalation block quoting the newest `HUB.md` heading) and a git status block.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:8` still pins `0.160.1`.
+- R18.2, auditor: **closed (late).** PR #3 now has 10 comments; Adobe posted `DISTINGUISH: adci-3-r31,
+  adobe-ingester-fixture-gate` and `ACK: 39f0d3b2` at 2026-11-07T04:32:24Z and 04:32:25Z.
+- ACK `39f0d3b2` role table, auditor, new: **missed on its first test.** The ACK's own verification says the next product
+  PR's opening body shows six role rows plus a CI row, each with a full SHA. PR #17 (opened 2026-11-07T06:38:53Z, head
+  `4a91ac2`) has no role table; its Claude seats say only "3 adversarial Opus seats". By the ACK's terms, the miss is
+  reported on PR #3.
+- R18 re-disposition, auditor: still OWED. Re-counted: 8 first-parent commits on `origin/main` since 2026-10-24, with 0
+  reverts. PR #16 merged as `731503c`, which has 0 check runs and 0 commit statuses, so merged-tree CI failures still
+  cannot be counted.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143-144,163` still
+  age and pick by `LastWriteTimeUtc`.
+- R19 section 2 usage sample, auditor: stays closed. `plan-usage.json` was 5 minutes old with level `ok`.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`731503c`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line is still absent (0 of PR bodies #10 to #17).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, auditor: **auditor half closed.** The auditor's memory note is marked SUPERSEDED 2026-11-06 for
+  CLI 2.1.318. The owner half stays open: the owner's global instructions still say the re-auth hook "does not load
+  under `claude -p`", and the auditor may not edit them.
+- R21 filing, auditor: still OWED, due by 2026-11-08. Bus `specs/adobe-ingester/` still holds only `cards.md` and
+  `tools/product-control-ratio.mjs`.
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. PR #17's body records Release 438/440 with two
+  load-sensitive failures (cause not established). Nothing yet checks that the Release binaries match the tested HEAD.
+- Candidates, optional, no ruling binds them: a red-on-base line in product PR bodies (airmypc/P3 and dng/P2, auditor);
+  a roll or size ratchet for `HUB.md` and `sol.md` (airmypc/P6, Sol); a raw-merge refusal hook (agent-bridge/P1,
+  auditor).
+
+The auditor closes the items marked closed above, because it owns them. None of the Sol items counts as done until Sol
+records it.
