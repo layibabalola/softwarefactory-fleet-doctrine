@@ -3,6 +3,34 @@ project: adobe-ingester
 repo: layibabalola/adobe-document-cloud-ingester
 pr: 3
 head: d42ac83b77ffb3c016cbe0000c338efe93c01f87
+evidence_updated_utc: 2026-11-07T04:45:33Z
+event: late-scanner-disposition-and-prospective-topology-plan
+claim: 4abf9f61-4c09-4557-ad8e-957e2da83ce4
+delivery_uuid: d922d647-f2ff-4708-8c8b-90d9b6415feb
+verdict: ADVISORY
+reviewer: primary dot
+
+## 2026-11-07: late response and non-landing disposition
+
+Source remains `d42ac83b77ffb3c016cbe0000c338efe93c01f87`; #3 is open and unmerged. The [late DISTINGUISH](https://github.com/layibabalola/adobe-document-cloud-ingester/pull/3#issuecomment-6702285795) addresses `adci-3-r31` and `adobe-ingester-fixture-gate`: the respondent proposes leaving #3 unmerged, not landing its scanner, and taking no consumer copy until canonical doctrine-master evidence meets R17. Recheck proposed: 2026-11-13 and on any doctrine #87 merge. Re-cutting only docs/prompts remains an owner choice.
+
+This is a substantive response and non-landing plan, not a fix. [Exact-head source](https://github.com/layibabalola/adobe-document-cloud-ingester/blob/d42ac83b77ffb3c016cbe0000c338efe93c01f87/tools/cos-open-asks.sh) still swallows commit-comment API errors with `|| true`, has no fixture runner or rate-limit precheck, and no distinct API-error exit. No script or fixture was executed in this reconciliation. Doctrine [master at 27a6b3f5](https://github.com/layibabalola/softwarefactory-fleet-doctrine/tree/27a6b3f5b1ffd720a7a4e47b1a8715743d90c1ba) contains no canonical scanner; [#87](https://github.com/layibabalola/softwarefactory-fleet-doctrine/pull/87) remains open. R17 evidence and source remediation remain undelivered. Historical byte-equivalence to other copies was not re-tested here.
+
+[R18](https://github.com/layibabalola/softwarefactory-fleet-doctrine/blob/27a6b3f5b1ffd720a7a4e47b1a8715743d90c1ba/RULINGS.md#L2906-L2918) makes this record and its response duty non-gating; it does not erase demonstrated defects or waive independent reviews, CI, R17 obligations or reserved-human actions. The late reply does not retroactively meet the 24-hour deadline. Shared-account author metadata alone do not authenticate board-hub identity. No merge clearance or change in Adobe STOP, human live/browser or privacy limits follows.
+
+### Separate prospective process plan
+
+The [topology ACK](https://github.com/layibabalola/adobe-document-cloud-ingester/pull/3#issuecomment-6702285995) proposes six role rows, separate CI, full heads, explicit unknown/claimed provenance, author maintenance and read-only auditor checks, plus old-code-failing regressions, combination cases and prelanding dispositions. It acknowledges that author and auditor may be the same session, so their check is not an independent review key. This is attributed future work, not implemented or authenticated provenance. Exact model IDs should remain distinct from CLI versions; evidence/run links and escape/repeat-failure measurement from the original ask remain to be demonstrated. No next-product-PR table or new verification receipt is established here.
+
+## Historical source review retained verbatim
+
+Earlier verdict and gate wording below are historical. R18 governs: this is non-gating advisory, not an independent factory key or new merge condition. Existing substantive defects and reserved-human requirements are not waived. No historical execution is repeated or newly claimed by this update.
+
+schema: cos-feedback.v1
+project: adobe-ingester
+repo: layibabalola/adobe-document-cloud-ingester
+pr: 3
+head: d42ac83b77ffb3c016cbe0000c338efe93c01f87
 reviewed_utc: 2026-10-17T03:38:33Z
 event: pr-pushed
 verdict: not-merge-ready
