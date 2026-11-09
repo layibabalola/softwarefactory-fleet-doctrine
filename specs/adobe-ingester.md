@@ -2006,3 +2006,62 @@ OWED set, rebuilt whole and re-tested on 2026-11-07 UTC (no item carried without
 
 The auditor closes the items marked closed above, because it owns them. None of the Sol items counts as done until Sol
 records it.
+
+## Fold addendum, 2026-11-09 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `425b880..0e69e3d` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `425b880`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 1 mlv-app outbox commit to `RECEIPTS.md`; heartbeats,
+CoS feedback and Adobe's own commit `84b4f6a` are excluded. Each claim was checked read-only on VIRTUAL-TEN on
+2026-11-09 UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main`
+`772bc4b`. Every `git grep` count is bounded to the named ref and to tracked files, outside `.factory/evidence` and
+`.factory/coordination`, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app receipt, Kernel K4: a codex lane that exits 0 without a real answer is `ended-incomplete`, not `complete` | `e548fbe` | DISTINGUISHED: the receipt changes mlv-app's own `Get-LaneWorkEvidence` and `Invoke-Lane.ps1`; Adobe tracks neither (0 hits for `Get-LaneWorkEvidence`, `workCompleted` or `ended-incomplete`). Adobe's codex lane wrappers judge a run by state motion, not by its answer: exit 0 books `SUCCEEDED` with outcome `STATE_MOTION` or `NO_STATE_MOTION` (HUB, `state.yaml` or HEAD changed), and a no-motion run keeps its transcript. So an empty answer that moves nothing is already visible as `NO_STATE_MOTION`, though still under status `SUCCEEDED`. The auditor's pinned falsifier wrapper passes the codex exit code through and does not check the answer; the falsifier rows of product PRs #22 and #25 cite read verdicts (`r1 UNSAFE, r2 UNSAFE, r3 SAFE`), not exit codes. Optional candidate below. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-09 UTC (no item carried without a re-test):
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json:6,13` still registers it. The fleet tool census at this fold's session start still lists it as
+  wired twice (project and user scope).
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  HEAD. The symptom is now a wrong number: the escalation raised 2026-11-09T03:47:01Z reports
+  `days_since_last_product_commit=29.1`, while `origin/main` `772bc4b` (PR #25) was committed 2026-11-08T13:30:43Z, and
+  17 first-parent product commits landed on `origin/main` since 2026-10-24.
+- HUB repeat entries (`9363cee`), Sol: not reproduced, because nothing was appended. The newest `HUB.md` heading is still
+  2026-10-22T04:33:40.347Z; the working file is 14,967,060 bytes (14,947,411 at HEAD).
+- Reviewer-session exposure (`269388b`), Sol: still unmeasured. This fold's `claude -p` context again carried user-hook
+  output (the escalation block quoting the newest `HUB.md` heading) and a git status block.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:8` still pins `0.160.1`.
+- ACK `39f0d3b2` role table, auditor: **closed.** Every product PR body from #18 to #25 carries a role table (provider,
+  model or `unknown`/requested, the full head SHA each role saw); the #22 and #25 bodies were read whole and each has a
+  separate CI row reading "none configured". The rows vary with the roles a PR used (4 to 6 rows with a full SHA). PR #3 carries ACK `d922d647` and ACK `b63132be` on
+  the follow-through.
+- R18 re-disposition, auditor: still OWED. Re-counted: 17 first-parent commits on `origin/main` since 2026-10-24, with 0
+  reverts. `772bc4b` has 0 check runs and 0 commit statuses, and the PR #22 and #25 CI rows say no hosted CI is configured, so
+  merged-tree CI failures still cannot be counted.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143-144,163` still
+  age and pick by `LastWriteTimeUtc`.
+- R19 section 2 usage sample, auditor: stays closed. `plan-usage.json` was 5 minutes old, status `allowed_warning`,
+  seven-day 75%.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`772bc4b`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line is still absent (0 of PR bodies #18 to #25).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, owner half: still open. The owner's global instructions still say the re-auth hook "does not
+  load under `claude -p`"; the auditor may not edit them.
+- R21 filing, auditor: **OVERDUE.** R21.3 targets 7 days from 2026-11-01. Bus `specs/adobe-ingester/` still holds only
+  `cards.md` and `tools/product-control-ratio.mjs`; there is no `factory-practices.md`, and no `R21: DISTINGUISHED`
+  line in this spec. A headless fold publishes only dispositions here, so the filing stays with the auditor.
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. PR bodies record Release runs (PR #22: Release
+  453/453 at its head SHA), but 0 tracked files on `origin/main` check that the Release binaries match the tested HEAD.
+- Candidates, optional, no ruling binds them: a red-on-base line in product PR bodies (airmypc/P3 and dng/P2, auditor;
+  0 of #18 to #25); a roll or size ratchet for `HUB.md` and `sol.md` (airmypc/P6, Sol); a raw-merge refusal hook
+  (agent-bridge/P1, auditor); a non-empty-verdict check on the auditor's falsifier answers (mlv-app K4 `e548fbe`,
+  auditor).
+
+The auditor closes the items marked closed above, because it owns them. None of the Sol items counts as done until Sol
+records it.
