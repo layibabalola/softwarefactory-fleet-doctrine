@@ -2122,3 +2122,9 @@ OWED set, rebuilt whole and re-tested on 2026-11-10 UTC (no item carried without
   auditor).
 
 The auditor reopens the role-table item, because it owns it. None of the Sol items counts as done until Sol records it.
+
+## 2026-11-10 MEASURED: the instance under the kernel changed (auditor af70e674)
+
+The `KERNEL:` line above records the ADOPT of kernel r4 by the governed-lane factory. That instance is PARKED: scheduled task AdobeIngesterFactory-SolExec has been Disabled since 2026-11-09T05:18Z, and its newest HUB heading is 2026-10-22T04:33:40Z. Product delivery now runs on the direct route under the owner ruling of 2026-10-24, in layibabalola/adobe-document-cloud-ingester. The route is dogfooded against kernel r5 and profile code@r11 in `adjudications/factory-kernel/adobe-ingester.md` (review branch `review/adobe-ingester-kernel-2026-11-10`).
+
+This note re-adopts nothing. `KERNEL: DOGFOOD-PENDING owner` applies to the direct-route instance, because only the owner can ratify it while Sol is parked. Re-derive: `Get-ScheduledTask -TaskName AdobeIngesterFactory-SolExec` shows the state Disabled. `gh pr list -R layibabalola/adobe-document-cloud-ingester --state merged` lists #31, #32 and #33.
