@@ -57,6 +57,27 @@ class Refused(SystemExit):
         super().__init__(2)
 
 
+def project_key(name):
+    """Match case-only aliases, without changing the labels printed as evidence."""
+    return name.lower()
+
+
+def unique_project_labels(names, source):
+    """A roster or current filing set must not contain competing case aliases.
+
+    Unlike historical ledger rows, two current filings can name different subjects or
+    statuses. Refuse that ambiguity instead of letting input order hide an open filing.
+    """
+    labels = {}
+    for name in names:
+        key = project_key(name)
+        if key in labels and labels[key] != name:
+            raise Refused("case-colliding project labels in {}: {!r}, {!r}"
+                          .format(source, labels[key], name))
+        labels[key] = name
+    return labels
+
+
 def roster():
     """Projects from the kernel's §6 fleet mapping.
 
@@ -89,7 +110,7 @@ def roster():
         # An empty mapping must refuse, never report a clean fleet: "nobody is due" and "the
         # roster failed to parse" would otherwise be indistinguishable.
         raise Refused("§6 mapping parsed to zero projects; refusing to report a clean fleet")
-    return sorted(set(names))
+    return sorted(unique_project_labels(names, "roster").values())
 
 
 def filings(subject="factory-kernel"):
@@ -103,6 +124,7 @@ def filings(subject="factory-kernel"):
             out[m.group(1)] = m.group(2)
     if not out and "filings=" not in p.stdout:
         raise Refused("harvest-status.py produced no filing rows")
+    unique_project_labels(out, "filings")
     return out
 
 
@@ -122,6 +144,7 @@ def e2e_and_totals():
     totals = dict.fromkeys(names, 0)
     rowed, unparsed, ambiguous = set(), [], []
     per_project = {}
+    labels = {}
     for r in ledger_rows():
         c = [x.strip() for x in r.split("|")]
         try:
@@ -130,18 +153,21 @@ def e2e_and_totals():
         except (ValueError, IndexError):
             unparsed.append(c[3] if len(c) > 3 else r[:40])
             continue
-        rowed.add(c[3])
+        # Historical rows may vary only in case (AdversarialLLM / adversarialllm).
+        # Keep the first recorded label, but reduce their standing counts together.
+        project = labels.setdefault(project_key(c[3]), c[3])
+        rowed.add(project)
         cell = c[7] if len(c) > 7 else ""
         m = E2E_COUNT_RE.search(cell)
         if m:
             n = int(m.group(1))
             # A project's closed count is the MAX across its rows, never the sum: successive
             # harvests restate the same standing total, so summing double-counts one closure.
-            per_project[c[3]] = max(per_project.get(c[3], 0), n)
+            per_project[project] = max(per_project.get(project, 0), n)
         elif E2E_MENTION_RE.search(cell):
-            ambiguous.append("{}: {!r}".format(c[3], cell[:80]))
+            ambiguous.append("{}: {!r}".format(project, cell[:80]))
         else:
-            per_project.setdefault(c[3], 0)
+            per_project.setdefault(project, 0)
     closed_projects = sorted(k for k, v in per_project.items() if v > 0)
     return {"closed_end_to_end": sum(per_project.values()),
             "closed_projects": closed_projects,
@@ -164,7 +190,8 @@ def criterion_1_met(led):
     An ambiguous ledger blocks: a criterion cannot be certified from cells the instrument admits it
     could not read.
     """
-    return len(led["closed_projects"]) >= 5 and not led["ambiguous_subject_cells"]
+    return (len({project_key(p) for p in led["closed_projects"]}) >= 5
+            and not led["ambiguous_subject_cells"])
 
 
 def main():
@@ -177,11 +204,13 @@ def main():
     filed = filings(a.subject)
     led = e2e_and_totals()
 
-    never_filed = [m for m in members if m not in filed]
+    filing_keys = unique_project_labels(filed, "filings")
+    ledger_keys = {project_key(p) for p in led["projects_in_ledger"]}
+    never_filed = [m for m in members if project_key(m) not in filing_keys]
     open_filings = {k: v for k, v in filed.items() if v in ("STALE", "UNHARVESTED")}
     # A filing that exists but has no ledger row is invisible to criterion 1 -- the steward's own
     # filing is the worked example, which is why this is reported separately from "open".
-    filed_but_unrowed = [k for k in filed if k not in led["projects_in_ledger"]]
+    filed_but_unrowed = [k for k in filed if project_key(k) not in ledger_keys]
 
     result = {"subject": a.subject, "roster": members,
               "closed_end_to_end": led["closed_end_to_end"],
