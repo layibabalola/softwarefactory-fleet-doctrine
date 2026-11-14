@@ -2179,3 +2179,63 @@ OWED set, rebuilt whole and re-tested on 2026-11-12 UTC (no item carried without
   auditor).
 
 None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-14 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `be4262d..a3d76b0` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `be4262d`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 2 mlv-app outbox commits to `specs/mlv-app/cards.md`;
+heartbeats, metrics, Tier-3 claims, CoS feedback and Adobe's own commits are excluded. Each claim was checked read-only
+on VIRTUAL-TEN on 2026-11-14 UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe
+`origin/main` `91d5dd5`. Every `git ls-files` or `git grep` count is bounded to tracked files at the named ref, so a 0
+is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app card: worktree guard must order a ParentProcessId chain by creation sequence, never by pid alone | `e31d980` | DISTINGUISH: `applies:` names mlv-app only, and Adobe has no worktree-retirement holder census. The nearest Adobe text already holds the order for its own ancestor exclusion: `.factory/prompts/sol.md:6115` (HEAD) requires each ancestry edge to carry PID plus CreationDate from one enumeration, the parent no later than the child, and makes any inconsistent link indeterminate (fail closed), stating that "a numeric ParentProcessId match alone never establishes ancestry". Adobe's two pid-only walks, `.factory/tools/Install-FactoryReviewerCapacityRecovery.ps1:598-616` and `.factory/tools/Invoke-FactoryReviewerCapacityRecovery.ps1:1262-1266,1553-1554`, build a DESCENDANT closure for a zero-survivor check after `Stop-ScheduledTask`; a recycled pid can only add a process to that set, so the failure is a spurious refusal after the 30 s wait, never a dropped live holder. `origin/main` has 0 `ParentProcessId` hits. |
+| mlv-app card: one config-driven `doctrine_outbox.py` in the bus, pinned per project (fused-field-key revision) | `ee3a30a` | NOT-APPLICABLE: `applies:` names mlv-app, airmypc, agent-bridge and conjugal. Adobe tracks no `doctrine_outbox`, `doctrine-outbox`, `pin-runner` or `factory-pins` at HEAD or `origin/main` (`git ls-files`, 0), as in the earlier addenda for this card family. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-14 UTC (no item carried without a re-test):
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json:6,13` still registers it. This fold's session-start tool census still lists it as wired twice.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  HEAD. The escalation raised 2026-11-14T00:47:00Z reports `measurement exit 1; days_since_last_product_commit=29.1`,
+  while `origin/main` `91d5dd5` (PR #36) was committed 2026-11-13T18:17:48Z and 28 first-parent product commits landed
+  on `origin/main` since 2026-10-24.
+- HUB repeat entries (`9363cee`), Sol: not reproduced, because nothing was appended. The newest `HUB.md` heading is still
+  2026-10-22T04:33:40.347Z; the working file is still 14,967,060 bytes.
+- Reviewer-session exposure (`269388b`), Sol: still unmeasured. This fold's `claude -p` context again carried user-hook
+  output (the escalation block quoting the newest `HUB.md` heading) and a git status block.
+- Pid-only descendant closure (`e31d980`, candidate, optional, no ruling binds it), Sol: the two recovery tools named in
+  the table above could pair each pid with its CreationDate, as `sol.md:6115` already requires, so that a recycled pid
+  cannot hold a zero-survivor check open until it throws.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2` still pins codex-cli `0.160.1`.
+- ACK `39f0d3b2` role table, auditor: **partly restored, still open.** PR #36's body carries the role table (author,
+  three seats, falsifier, next-item fork) with provider, model and verdict, and the full 40-hex head on the Evidence
+  line. Its per-role `Head(s)` cells are still short SHAs (`52a03ef`, `1c6aa18`, `1fb3cd9`), and it has no CI row; it
+  states in prose that there is no hosted CI.
+- R18 re-disposition, auditor: still OWED. Re-counted: 28 first-parent commits on `origin/main` since 2026-10-24, with 0
+  reverts. `91d5dd5` has 0 check runs and 0 commit statuses, so merged-tree CI failures still cannot be counted.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143-144,163` still
+  age and pick by `LastWriteTimeUtc` (also at `:178,183,201`).
+- R19 section 2 usage sample, auditor: stays closed. `~/.claude/usage/plan-usage.json` was 4 minutes old, status
+  `allowed`, level `ok`, seven-day 21%.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`91d5dd5`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line is still absent (0 of PR bodies #33 to #36).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, owner half: still open. The owner's global instructions still say the re-auth hook "does not
+  load under `claude -p`"; the auditor may not edit them.
+- R21 filing, auditor: **OVERDUE.** R21.3's 7-day target from 2026-11-01 has passed. Bus `specs/adobe-ingester/` still
+  holds only `cards.md` and `tools/product-control-ratio.mjs`; there is no `factory-practices.md`.
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. PR #36's body records Release 478/478 with a
+  TRX hash, but `2229d44..91d5dd5` changed only `PurgeRetryTests.cs`, `AcquireOneFlow.cs` and the spike README; 0
+  tracked files on `origin/main` check that the Release binaries match the tested HEAD.
+- Candidates, optional, no ruling binds them: a red-on-base line in product PR bodies (airmypc/P3 and dng/P2, auditor;
+  0 of #33 to #36); a roll or size ratchet for `HUB.md` and `sol.md` (airmypc/P6, Sol); a raw-merge refusal hook
+  (agent-bridge/P1, auditor); a non-empty-verdict check on the auditor's falsifier answers (mlv-app K4 `e548fbe`,
+  auditor).
+
+None of the Sol items counts as done until Sol records it.
