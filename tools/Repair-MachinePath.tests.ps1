@@ -312,7 +312,19 @@ $sqS = Get-ScopeStats $sqA $sqRaw (Join-ExpandedPath $sqA)
 Ok ($sqS.unbalanced_quotes -eq 1 -and (Get-PathFindings -User $sqS -Machine $clean -TotalChars 500 -WhereGit PASS -Runners @()) -contains 'user-unbalanced-quote:1') 'quote: two stray quotes that balance are malformed, a finding'
 Ok (-not (Test-MalformedQuote '"C:\Program Files\Git\cmd"') -and -not (Test-MalformedQuote 'C:\Windows') -and (Test-MalformedQuote 'C:\a"b"')) 'quote: a fully wrapped entry is well formed; a partial wrap is malformed'
 # Claude 2 / third key 2: the git probe uses cmd's own search, which honours a quoted entry.
-Ok ($src -match "/d /c 'git --version'" -and $src -notmatch "'where git'") 'probe: git is found by cmd.exe''s own search, not where.exe'
+Ok ($src -match "/d /c 'git --version <NUL'" -and $src -notmatch "'where git'") 'probe: git is found by cmd.exe''s own search, not where.exe'
+Ok ($src -match "NoDefaultCurrentDirectoryInExePath = '1'") 'probe: cmd never searches the current directory, so a planted git.bat cannot pass it'
+# Round-11 keys (both Claude keys, blocking): a quoted twin never makes a plain copy removable.
+$qd = Get-PathAnalysis -Raw '"C:\Windows";C:\Windows' -Scope User -Exists $fsExists
+Ok ($qd[1].Class -eq 'duplicate-var' -and -not $qd[1].Removable -and (Get-RepairedPath $qd) -eq '"C:\Windows";C:\Windows') 'duplicate: a plain entry after its quoted twin is reported, never removed (same scope)'
+$qd2 = Get-PathAnalysis -Raw 'C:\Windows;"C:\Windows"' -Scope User -Exists $fsExists
+Ok ($qd2[1].Class -eq 'duplicate-var' -and @($qd2 | Where-Object Removable).Count -eq 0) 'duplicate: a quoted entry after its plain twin is reported, never removed'
+Ok ($src -match [regex]::Escape("-and -not `$_.Raw.Contains('""')") -and $src -match [regex]::Escape("(`$_.Raw -match '%' -or `$_.Raw.Contains('""'))")) 'duplicate: quoted Machine entries go to the indirect set, never the plain cross-duplicate set'
+$qx = Get-PathAnalysis -Raw 'C:\Program Files\Git\cmd' -Scope User -Exists $fsExists -OtherScopeVarKeys @('c:\program files\git\cmd')
+Ok ($qx[0].Class -eq 'duplicate-var' -and -not $qx[0].Removable) 'duplicate: a plain User entry whose only Machine twin is quoted is kept (cross scope)'
+# Round-11 notes: runner .path length is untrimmed, like the registry total.
+Ok ((Get-RunnerPathAction ('C:\Windows\System32' + (' ' * 5000))) -eq 'rewrite:over-limit') 'runner: whitespace padding past the limit counts as over the limit'
+Ok ((Get-RunnerPathAction '   ') -eq 'rewrite:empty') 'runner: a whitespace-only .path is still empty'
 # Third key 1: a 32-bit process on 64-bit Windows is UNEVALUABLE, never a verdict.
 Ok ($src -match 'Is64BitOperatingSystem -and -not \[Environment\]::Is64BitProcess\) \{[^}]*exit 2') 'bitness: a 32-bit pwsh on 64-bit Windows exits 2 (UNEVALUABLE)'
 

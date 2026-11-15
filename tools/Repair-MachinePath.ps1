@@ -134,6 +134,10 @@ function Get-PathAnalysis {
         $expanded = [string](& $Expand $seg)
         $trimmed = $expanded.Trim().Trim('"').Trim()
         $key = if ($trimmed) { Get-PathKey $trimmed } else { '' }
+        # An entry written with a %VAR% or with quotes is "indirect": Windows' own search (SearchPathW,
+        # where.exe, PowerShell) may not resolve it the way cmd.exe does, so it never stands as the
+        # surviving copy that makes a plain twin removable.
+        $indirect = ($seg -match '%') -or $seg.Contains('"')
         $class = 'ok'
         # A %VAR% that expands to nothing in THIS process is not an empty entry: the variable may be
         # set for every other session. Only a segment that is empty as written is 'empty'.
@@ -157,15 +161,16 @@ function Get-PathAnalysis {
                 elseif ($seg -match '%') { $class = 'dead-var' }
                 else { $class = 'dead' }
             }
-            # A duplicate verdict also rests on expansion. Only a LITERAL entry repeating a LITERAL
-            # entry is removable; anything involving a %VAR% on either side is reported, not removed.
-            elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = $(if ($seg -match '%') { 'duplicate-var' } else { 'cross-duplicate' }) }
+            # A duplicate verdict also rests on expansion and quoting. Only a plain LITERAL entry
+            # repeating a plain LITERAL entry is removable; a %VAR% or quoted entry on either side is
+            # reported, not removed.
+            elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = $(if ($indirect) { 'duplicate-var' } else { 'cross-duplicate' }) }
             elseif ($Scope -eq 'User' -and $otherVar.Contains($key)) { $class = 'duplicate-var' }
-            elseif ($seen.Contains($key)) { $class = $(if ($seg -match '%') { 'duplicate-var' } else { 'duplicate' }) }
+            elseif ($seen.Contains($key)) { $class = $(if ($indirect) { 'duplicate-var' } else { 'duplicate' }) }
             elseif ($seenVar.Contains($key)) { $class = 'duplicate-var' }
         }
         if ($key -and $class -in @('ok', 'unc', 'unresolved', 'multi', 'relative', 'drive-absent', 'unreadable', 'pending', 'dead-var')) {
-            if ($seg -match '%') { [void]$seenVar.Add($key) } else { [void]$seen.Add($key) }
+            if ($indirect) { [void]$seenVar.Add($key) } else { [void]$seen.Add($key) }
         }
         $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead', 'duplicate', 'cross-duplicate') } else { $class -eq 'dead' }
         if ($seg -match '%') { $removable = $false }   # backstop: an entry written with a %VAR% is never removed, whatever its class
@@ -360,7 +365,7 @@ function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a miss
     if ($null -eq $PathText) { return 'rewrite:missing' }
     $t = $PathText.Trim()
     if ($t.Length -eq 0) { return 'rewrite:empty' }
-    if ($t.Length -gt $MaxChars) { return 'rewrite:over-limit' }
+    if ($PathText.Length -gt $MaxChars) { return 'rewrite:over-limit' }   # untrimmed: padding counts
     $removed = [System.Collections.Generic.HashSet[string]]::new([string[]]@($RemovedKeys), [StringComparer]::Ordinal)
     # Same quote-aware split as the PATH itself. A quoted or unbalanced segment is never matched:
     # its fragments are not entries, so they can never make a healthy .path look stale.
@@ -527,8 +532,9 @@ function Measure-Machine {
     $mRaw = Read-RawPath 'Machine'
     $uRaw = Read-RawPath 'User'
     $mA = Get-PathAnalysis -Raw $mRaw.Value -Scope Machine -Exists $existsReal -Expand $expandReal -PendingKeys $pendingReal
-    $mKeys = @($mA | Where-Object { $_.Key -and $_.Raw -notmatch '%' } | ForEach-Object Key)
-    $mVarKeys = @($mA | Where-Object { $_.Key -and $_.Raw -match '%' } | ForEach-Object Key)
+    # Plain literal Machine entries only; %VAR% and quoted ones are indirect (see Get-PathAnalysis).
+    $mKeys = @($mA | Where-Object { $_.Key -and $_.Raw -notmatch '%' -and -not $_.Raw.Contains('"') } | ForEach-Object Key)
+    $mVarKeys = @($mA | Where-Object { $_.Key -and ($_.Raw -match '%' -or $_.Raw.Contains('"')) } | ForEach-Object Key)
     $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys -OtherScopeVarKeys $mVarKeys -PendingKeys $pendingReal
     $mJoined = Join-ExpandedPath $mA
     $uJoined = Join-ExpandedPath $uA
@@ -544,14 +550,18 @@ function Measure-Machine {
 # because the failure this guards against is what a fresh service or child inherits.
 function Invoke-WhereGitProbe([string]$FreshPath) {
     $saved = $env:Path
+    $savedNoCwd = $env:NoDefaultCurrentDirectoryInExePath
     try {
         $env:Path = $FreshPath
+        # Without this, cmd.exe searches the current directory before PATH: a git.bat in the folder
+        # the owner ran from would pass the probe (and run).
+        $env:NoDefaultCurrentDirectoryInExePath = '1'
         $cmd = Join-Path $env:SystemRoot 'System32\cmd.exe'
         # cmd.exe's own command search, not where.exe: where.exe skips a quoted PATH entry that
         # cmd.exe (and so every cmd child) honours.
-        & $cmd /d /c 'git --version' *> $null
+        & $cmd /d /c 'git --version <NUL' *> $null
         if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'FAIL' }
-    } catch { 'FAIL' } finally { $env:Path = $saved }
+    } catch { 'FAIL' } finally { $env:Path = $saved; $env:NoDefaultCurrentDirectoryInExePath = $savedNoCwd }
 }
 
 function Get-RunnerRows([string]$Root) {
@@ -563,7 +573,11 @@ function Get-RunnerRows([string]$Root) {
         $pathFile = Join-Path $d.FullName '.path'
         $envFile = Join-Path $d.FullName '.env'
         $pathChars = $null; $envLines = $null; $envText = $null
-        if (Test-Path -LiteralPath $pathFile) { $pathChars = ([string](Get-Content -LiteralPath $pathFile -Raw)).Trim().Length }
+        if (Test-Path -LiteralPath $pathFile) {
+            # Untrimmed, like the registry total: whitespace padding is length the runner really gets.
+            $pathText = [string](Get-Content -LiteralPath $pathFile -Raw)
+            $pathChars = if ($pathText.Trim().Length -eq 0) { 0 } else { $pathText.Length }
+        }
         if (Test-Path -LiteralPath $envFile) {
             $envText = [string](Get-Content -LiteralPath $envFile -Raw)
             $envLines = @(($envText -split "`r?`n") | Where-Object { $_.Trim() }).Count
