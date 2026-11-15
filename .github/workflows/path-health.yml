@@ -1,0 +1,51 @@
+name: Path health tools
+
+# Behavioural tests for tools/Repair-MachinePath.ps1 and tools/Get-FleetPathHealthStatus.ps1.
+# The tests use injected PATH strings and never read or write a real PATH, so a PR runs one
+# ubuntu-latest job (CI-COST-CONTROL.md rule 1) and master runs Windows and Linux (rule 2).
+# path-health/*.json acks are data and do not trigger this workflow.
+
+on:
+  pull_request:
+    paths:
+      - "tools/Repair-MachinePath*.ps1"
+      - "tools/Get-FleetPathHealthStatus.ps1"
+      - "tools/PathHealthRecord.ps1"
+      - ".github/workflows/path-health.yml"
+  push:
+    branches: [master]
+    paths:
+      - "tools/Repair-MachinePath*.ps1"
+      - "tools/Get-FleetPathHealthStatus.ps1"
+      - "tools/PathHealthRecord.ps1"
+      - ".github/workflows/path-health.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: path-health-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest"]' || '["windows-latest","ubuntu-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Run path-health behavioural tests
+        shell: pwsh
+        run: pwsh -NoProfile -File tools/Repair-MachinePath.tests.ps1
+      - name: Reader parses every published ack (exit 2 = unevaluable fails; 0/1 are fleet state, not CI state)
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File tools/Get-FleetPathHealthStatus.ps1
+          if ($LASTEXITCODE -eq 2) { exit 2 }
+          exit 0

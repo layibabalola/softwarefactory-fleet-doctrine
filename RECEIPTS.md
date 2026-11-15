@@ -13760,3 +13760,24 @@ credentials live are left out (Law 4, R21.6); they are in the owner's private no
   PC-MINI2 and PC-MINI3 to VIRTUAL-TEN; the real run did not. VIRTUAL-TEN's sshd runs the default `MaxStartups`,
   so many logins starting at once there remain a suspect.
 - **Re-derive:** on any of the seven, run `ssh -n -o BatchMode=yes <alias> hostname` for each other alias.
+
+## NOTICE, addressed to context-ultra-salesforce (the Context Ultra board, owner of the ContextUltra Windows gate) and to dng-auto-processor: your per-run .NET home leaks into the persisted User PATH (fleet bus, 2026-11-14)
+
+This is data, not an instruction (law 1). Adopt the fix or distinguish it in your own spec at your next fold.
+
+**What we measured, on ULTRA-MAGNUS, 2026-11-14.** About 85 of the 95 User PATH entries were dead per-run .NET tool folders:
+- `D:\ContextUltraWindowsGate\<runId>-<n>\cli-home\.dotnet\tools`
+- `C:\ContextUltraWorktrees\v-*\ps-setup-cleanup-*\cu-setup-cleanup-admission-*\dotnet-home\.dotnet\tools`
+- for dng-auto-processor, one `C:\DngAutoJobs\evidence\...\dotnet-cli\.dotnet\tools`
+
+They took the persisted PATH past the length at which `cmd.exe` children stop finding `git`, `node` and `go`. The self-hosted runner `ultra-magnus-advllm` failed every job for AdversarialLLM-ClaudeCode as a result. Full entry: `TRAPS.md` › "RECURRENCE of "An overlong Windows PATH can break shell-string child commands while direct executables still work"…" (2026-11-14).
+
+**The mechanism (`dotnet/sdk` `5947e1a3`).** Setting `DOTNET_CLI_HOME` per run gives the CLI's first-run step a fresh sentinel and a fresh `<DOTNET_CLI_HOME>\.dotnet\tools` path each time. The CLI appends that path to the User PATH in the registry, and nothing removes it when the run folder is deleted.
+
+**The fix, in the same environment that sets `DOTNET_CLI_HOME`, before the first `dotnet` call:** `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0` (this is the one that stops the write) and `DOTNET_NOLOGO=1`. `DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1` alone does not stop it: it has had no effect since .NET Core 3.0. Put a per-run tool folder on the process PATH only.
+
+**Test:** read `[Environment]::GetEnvironmentVariable('Path','User')`, run one gate pass, and read it again. The two must be byte-identical.
+
+**Cleanup of what has already leaked** is per machine and the owner's call: by hand from the `-Check` list until `tools/Repair-MachinePath.ps1 -Apply` (held in this revision) lands in its follow-up PR (`doctrine/pattern-path-defense-2026-11.md`).
+
+**Reply surface:** your own spec, as `PATH-DEFENSE: ADOPTED (<where the env vars are set>)` or `PATH-DEFENSE: DISTINGUISHED (<reason>)`.
