@@ -34,7 +34,10 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             the content changed or the published record is older than -RefreshHours (law 3).
             The record is published whatever the verdict: an UNHEALTHY ack is still an ack.
             -NoPush rehearses: commits, then undoes its own commit (exit 5, never an ack). A successful publish (or a confirmed
-            unchanged one) exits 10 when HEALTHY and 11 when UNHEALTHY; a failed publish exits 4
+            unchanged one) exits 10 when HEALTHY and 11 when UNHEALTHY; a failed publish exits 4,
+            and nothing is published after a failed -Apply (exit stays 2). The ack commit is always
+            built on origin's tip (a checkout behind origin is fast-forwarded; a rejected push is
+            rebuilt once, never text-merged); a failed publish
             and takes its own ack commit back off the checkout. It refuses a detached HEAD, a
             branch other than master (unless -AllowBranch), a non-empty index, and any push whose
             single commit touches anything but the ack file.
@@ -717,53 +720,65 @@ function Publish-Ack($state) {
     if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
     # Before the commit exists, a failure unstages the ack and puts the file back to HEAD's copy (or
     # removes it), so no failed run leaves a staged or stray ack that blocks or fools the next one.
+    # When the index is locked, reset/checkout fail too; HEAD's copy is then written directly.
     $unstage = {
         & git -C $BusRoot reset -q -- $rel *> $null
         & git -C $BusRoot cat-file -e "HEAD:$rel" *> $null
-        if ($LASTEXITCODE -eq 0) { & git -C $BusRoot checkout -q HEAD -- $rel *> $null }
-        else { Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue }
+        if ($LASTEXITCODE -eq 0) {
+            & git -C $BusRoot checkout -q HEAD -- $rel *> $null
+            if ($LASTEXITCODE -ne 0) {
+                $h = (& git -C $BusRoot show "HEAD:$rel" 2>$null) -join "`n"
+                if ($LASTEXITCODE -eq 0) { [IO.File]::WriteAllText($target, $h + "`n", [Text.UTF8Encoding]::new($false)) }
+            }
+        } else { Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue }
     }
-    [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
-    [IO.File]::WriteAllText($target, ($record | ConvertTo-Json -Depth 6) + "`n", [Text.UTF8Encoding]::new($false))
-    & git -C $BusRoot add -- $rel *> $null
-    if ($LASTEXITCODE -ne 0) { $x = $LASTEXITCODE; & $unstage; Say "PUBLISH FAILED: git add $rel failed (exit $x)"; return 4 }
-    $staged = @(& git -C $BusRoot diff --cached --name-only)
-    # Nothing staged means HEAD already holds these bytes while origin does not (an unpushed earlier
-    # commit): not an ack.
-    if ($staged.Count -eq 0) { Say "PUBLISH FAILED: HEAD already holds this $rel but origin/$branch does not (an earlier unpushed commit?); rerun the one-line command"; return 4 }
-    if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
-        & $unstage
-        Say "PUBLISH FAILED: staging area held other files ($($staged -join ', ')); refusing to commit."; return 4
+    # A checkout strictly BEHIND origin is fast-forwarded first (a board's own master that has not
+    # pulled). Ahead or diverged is left alone: the push guard refuses it.
+    $syncToOrigin = {
+        & git -C $BusRoot merge-base --is-ancestor HEAD "refs/remotes/origin/$branch" *> $null
+        if ($LASTEXITCODE -ne 0) { return $true }
+        & git -C $BusRoot merge -q --ff-only "refs/remotes/origin/$branch" *> $null
+        return ($LASTEXITCODE -eq 0)
     }
-    & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
-    if ($LASTEXITCODE -ne 0) { & $unstage; Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?); ack unstaged'; return 4 }
-    $ackBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)).Trim()   # the exact blob this run committed
-    # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit), so a rerun
-    # starts clean. After a successful pull --rebase the branch has moved to origin's tip; that
-    # fast-forward is kept (it holds only reviewed master commits).
-    $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine -Branch $branch -BlobOid $ackBlob }
-    if ($NoPush) {
-        # A rehearsal proves the commit works, then takes it back: a kept rehearsal commit would make
-        # every later -Publish on this checkout fail as "2 commits ahead".
-        Say "REHEARSAL (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason)) committed, not pushed ($(& $undo))"; return 5
-    }
-    $onlyAck = { Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel }
-    $why = & $onlyAck
-    if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
-    & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
-    if ($LASTEXITCODE -ne 0) {
-        & git -C $BusRoot pull -q --rebase origin $branch *> $null
-        if ($LASTEXITCODE -ne 0) {
-            & git -C $BusRoot rebase --abort *> $null
-            Say "PUBLISH FAILED: push rejected and rebase failed (rebase aborted; $(& $undo))"; return 4
+    $json = ($record | ConvertTo-Json -Depth 6) + "`n"
+    # The ack commit is always BUILT on origin's tip from the record's own bytes. A rejected push is
+    # never resolved by a text merge of the JSON (a rebase can merge two records into one the reader
+    # rejects): our commit is undone, the checkout fast-forwarded, and the commit rebuilt, once.
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        if (-not (& $syncToOrigin)) { Say "PUBLISH FAILED: cannot fast-forward $BusRoot to origin/$branch (local changes in the way?)"; return 4 }
+        [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
+        [IO.File]::WriteAllText($target, $json, [Text.UTF8Encoding]::new($false))
+        & git -C $BusRoot add -- $rel *> $null
+        if ($LASTEXITCODE -ne 0) { $x = $LASTEXITCODE; & $unstage; Say "PUBLISH FAILED: git add $rel failed (exit $x)"; return 4 }
+        $staged = @(& git -C $BusRoot diff --cached --name-only)
+        # Nothing staged means HEAD already holds these bytes while origin does not (an unpushed
+        # earlier commit): not an ack.
+        if ($staged.Count -eq 0) { Say "PUBLISH FAILED: HEAD already holds this $rel but origin/$branch does not (an earlier unpushed commit?); rerun the one-line command"; return 4 }
+        if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
+            & $unstage
+            Say "PUBLISH FAILED: staging area held other files ($($staged -join ', ')); refusing to commit."; return 4
         }
-        $why = & $onlyAck
-        if ($why) { Say "PUBLISH FAILED after rebase: $why ($(& $undo))"; return 4 }
+        & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
+        if ($LASTEXITCODE -ne 0) { & $unstage; Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?); ack unstaged'; return 4 }
+        $ackBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)).Trim()   # the exact blob this run committed
+        # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit).
+        $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine -Branch $branch -BlobOid $ackBlob }
+        if ($NoPush) {
+            # A rehearsal proves the commit works, then takes it back: a kept rehearsal commit would
+            # make every later -Publish on this checkout fail as "2 commits ahead".
+            Say "REHEARSAL (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason)) committed, not pushed ($(& $undo))"; return 5
+        }
+        $why = Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel
+        if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
         & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
-        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: push rejected twice ($(& $undo))"; return 4 }
+        if ($LASTEXITCODE -eq 0) { Say "ACK PUBLISHED: $rel verdict=$($record.verdict) ($($need.Reason))"; return 0 }
+        $u = & $undo
+        if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED: push rejected ($u)"; return 4 }
+        if ($attempt -eq 2) { Say "PUBLISH FAILED: push rejected twice ($u)"; return 4 }
+        & git -C $BusRoot fetch -q origin $branch *> $null
+        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: push rejected and origin/$branch cannot be fetched ($u)"; return 4 }
     }
-    Say "ACK PUBLISHED: $rel verdict=$($record.verdict) ($($need.Reason))"
-    return 0
+    return 4
 }
 
 try {

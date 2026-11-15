@@ -78,7 +78,7 @@ reference says it "is no longer supported in .NET Core 3.0 and later" and points
 |---|---|---|
 | `-Check` | Read-only. Reports User and Machine PATH length and segment count, plus dead, duplicate and empty entries. Runs `cmd.exe /d /c where git` with the PATH a new process would get. Reports each runner under `C:\actions-runners\*`: its `.path` length, and whether `.env` exists and sets a non-empty `LANG`. Exit 0 HEALTHY, 1 UNHEALTHY, 2 UNEVALUABLE. UNHEALTHY means any of these: the total is over 4,096 characters; either scope has an absolute entry whose folder is definitely gone; the cmd probe failed; or a runner's `.path` or `.env` is missing, empty or wrong. Duplicates alone are reported but are not a finding. The `where git` probe is a smoke test, not a reproduction of the failure: `where.exe` reads PATH itself and may pass on a PATH that breaks other `cmd.exe` lookups. The length limit is the real guard. | No |
 | `-Apply` | Backs up both scopes (raw value and registry kind) under `%LOCALAPPDATA%\FleetPathRepair\<utc>\` before any write. Removes dead, empty and duplicate User PATH entries, including User entries that repeat a Machine entry. Removes **dead** Machine PATH entries only when elevated. It keeps the raw `%VAR%` text and the order of what remains. **It never removes** any of these: an entry whose folder exists; a folder it cannot inspect (access denied); a UNC entry; an entry written with a `%VAR%`, whether judged dead or duplicate (it was expanded with this process's environment, which a harness may have overridden), including one that expands to several folders; a relative entry; an entry on a drive that is not mounted; or the not-yet-created `%USERPROFILE%\.dotnet\tools` and `%APPDATA%\npm`. Installers write those last two before the folder exists, and their own sentinels never re-add them. It rewrites a runner's `.path` only when the service account has the same SID as the current user (`.\name` is the local account), and only when `.path` is missing, empty, over the limit, or still holds a dead entry it just removed. A hand-ordered `.path` is kept. It restarts that runner's service only when elevated and `gh api` reports `busy: false`; otherwise it skips the restart and says why. One residual race is accepted: a job picked up between that read and the restart is interrupted. It writes `receipt.json` even when a later step fails. Exit is the post-repair check verdict, or 2 if any write failed. | Only for Machine PATH entries and runner restarts |
-| `-Publish` | Adds the ack (section 5) to either mode. It publishes only from a `master` checkout. It refuses a detached HEAD, an index that already holds staged files, and any push that would carry a commit other than the ack (for example local, unpushed commits on a board's own checkout). | No |
+| `-Publish` | Adds the ack (section 5) to either mode; after a failed `-Apply` (exit 2) it publishes nothing. It publishes only from a `master` checkout. It refuses a detached HEAD, an index that already holds staged files, and any push that would carry a commit other than the ack (for example local, unpushed commits on a board's own checkout). | No |
 
 `-Apply` is each machine's owner's call. No session runs it on a machine without the owner asking.
 
@@ -92,7 +92,7 @@ is the adoption step. **The bus never installs it.** Two shapes that fit:
   it exits non-zero. Keep it quiet on HEALTHY, and give it a time cap: the check takes a few seconds.
 - **Scheduled task**, daily: the same command with `-Publish` added, so the machine's ack stays fresh.
   With `-Publish` the exit codes change: **10** is acked HEALTHY (quiet), **11** is acked UNHEALTHY
-  (alert: repair due), and anything else (1, 2, 4) means no ack was published (alert). Do not
+  (alert: repair due), and anything else (1, 2, 4, or 5 if `-NoPush` slipped in) means no ack was published (alert). Do not
   alert on "non-zero" here: a successful ack is never 0.
   Launch it through a hidden-window shim, not a bare `pwsh.exe` under an Interactive principal
   (see the 2026-08-30 TRAPS entry on console windows).
@@ -120,7 +120,8 @@ branch. It runs the read-only check and publishes `path-health/<MACHINE>.json` t
 holds counts, verdict and ordinal runner labels only: no paths, no user names, no runner folder
 names (law 4). It pushes only when the content changed or the record is over 24 hours old (law 3).
 
-The last line it prints is one of three:
+The last line it prints is `ACK DONE (exit 10)`, `ACK DONE (exit 11)`, or a line starting `BLOCKED:`
+(pwsh missing, `git clone` or `git sparse-checkout` failed, or the tool exit code):
 - `ACK DONE (exit 10)`: acked, HEALTHY. The clone is deleted.
 - `ACK DONE (exit 11)`: acked, UNHEALTHY. The clone is deleted. The repair is `-Apply`,
   separately. An UNHEALTHY ack is still an ack: it tells the fleet the machine looked.

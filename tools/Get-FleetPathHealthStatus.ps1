@@ -50,6 +50,10 @@ function Get-ReceiptDecisions([string]$ReceiptsText) {
     return $map
 }
 
+# Any terminating error, including a missing validator file, is UNEVALUABLE (2): never exit 1, which
+# is this reader's code for fleet state.
+trap { Write-Output "UNEVALUABLE: $($_.Exception.Message)"; exit 2 }
+
 # Test-AckRecord: the ack validator, shared with the publisher.
 . (Join-Path $PSScriptRoot 'PathHealthRecord.ps1')
 
