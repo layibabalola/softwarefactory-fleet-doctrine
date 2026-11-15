@@ -287,6 +287,35 @@ Ok ($uqS.unbalanced_quotes -eq 1 -and (Get-PathFindings -User $uqS -Machine $cle
 $sn = Get-PathAnalysis -Raw 'C:\Windows\Sysnative' -Scope Machine -Exists { param($p) $p -eq 'C:\' }
 Ok ($sn[0].Class -eq 'unreadable' -and -not $sn[0].Removable) 'machine: C:\Windows\Sysnative is never dead or removed'
 
+# Round-10 keys. Codex 1 / Claude 1: whitespace padding is measured, never trimmed away.
+$wsRaw = 'C:\Windows' + (' ' * 9000)
+$wsA = Get-PathAnalysis -Raw $wsRaw -Scope User -Exists $fsExists
+$wsS = Get-ScopeStats $wsA $wsRaw (Join-ExpandedPath $wsA)
+Ok ($wsS.chars -eq 9010 -and (Get-PathFindings -User $wsS -Machine $clean -TotalChars $wsS.chars -WhereGit PASS -Runners @()) -contains 'total-over-4096:9010') 'length: 9,000 trailing spaces are measured (9,010 chars), so the ack is never HEALTHY'
+$ws2Raw = 'C:\Windows;' + (' ' * 9000) + ';C:\Windows\System32'
+$ws2A = Get-PathAnalysis -Raw $ws2Raw -Scope User -Exists $fsExists
+Ok ((Join-ExpandedPath $ws2A).Length -eq 9031) 'length: a whitespace-only segment is measured at its full length'
+# Codex 2: any quoted entry, balanced or not, is never removed (dead or duplicate).
+$bq = Get-PathAnalysis -Raw '"C:\Gone";C:\Windows;"C:\Windows"' -Scope User -Exists $fsExists
+Ok ($bq[0].Class -eq 'dead' -and -not $bq[0].Removable -and -not $bq[2].Removable) 'quote: a balanced quoted dead or duplicate entry is reported, never removed (User)'
+$bqm = Get-PathAnalysis -Raw '"C:\Gone"' -Scope Machine -Exists $fsExists
+Ok ($bqm[0].Class -eq 'dead' -and -not $bqm[0].Removable) 'quote: a balanced quoted dead entry is never removed (Machine)'
+# Codex 3: pending-folder protection covers the Machine PATH too.
+$pm = Get-PathAnalysis -Raw 'C:\Users\v\.dotnet\tools;C:\Users\v\AppData\Roaming\npm' -Scope Machine -Exists $fsExists -PendingKeys @('c:\users\v\.dotnet\tools', 'c:\users\v\appdata\roaming\npm')
+Ok ($pm[0].Class -eq 'pending' -and $pm[1].Class -eq 'pending' -and @($pm | Where-Object Removable).Count -eq 0) 'pending: not-yet-created folders are kept in the Machine PATH too'
+$src = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Repair-MachinePath.ps1') -Raw
+Ok ($src -match '-Scope Machine -Exists \$existsReal -Expand \$expandReal -PendingKeys \$pendingReal') 'pending: Measure-Machine passes the pending set to the Machine analysis'
+# Third key 3: two stray quotes that balance each other are still malformed: a finding, never HEALTHY.
+$sqRaw = 'C:\Windows;C:\x";C:\Gone1;C:\Gone2"'
+$sqA = Get-PathAnalysis -Raw $sqRaw -Scope User -Exists $fsExists
+$sqS = Get-ScopeStats $sqA $sqRaw (Join-ExpandedPath $sqA)
+Ok ($sqS.unbalanced_quotes -eq 1 -and (Get-PathFindings -User $sqS -Machine $clean -TotalChars 500 -WhereGit PASS -Runners @()) -contains 'user-unbalanced-quote:1') 'quote: two stray quotes that balance are malformed, a finding'
+Ok (-not (Test-MalformedQuote '"C:\Program Files\Git\cmd"') -and -not (Test-MalformedQuote 'C:\Windows') -and (Test-MalformedQuote 'C:\a"b"')) 'quote: a fully wrapped entry is well formed; a partial wrap is malformed'
+# Claude 2 / third key 2: the git probe uses cmd's own search, which honours a quoted entry.
+Ok ($src -match "/d /c 'git --version'" -and $src -notmatch "'where git'") 'probe: git is found by cmd.exe''s own search, not where.exe'
+# Third key 1: a 32-bit process on 64-bit Windows is UNEVALUABLE, never a verdict.
+Ok ($src -match 'Is64BitOperatingSystem -and -not \[Environment\]::Is64BitProcess\) \{[^}]*exit 2') 'bitness: a 32-bit pwsh on 64-bit Windows exits 2 (UNEVALUABLE)'
+
 # --- 9. round-3 key findings: pending set, exit codes, publish push guard ---------------------------
 $ps = Get-PendingKeySet @($expand, { param($t) $t.Replace('%USERPROFILE%', 'D:\Profiles\u').Replace('%APPDATA%', 'D:\Profiles\u\AppData\Roaming') })
 Ok ($ps -is [string[]] -and @($ps | Where-Object { $_ -isnot [string] -or $_ -match ' ' }).Count -eq 0) 'pending: the union is a flat string array, never an array of arrays'

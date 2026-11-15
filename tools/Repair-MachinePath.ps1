@@ -14,7 +14,7 @@ node and go while pwsh and bash still find them. See doctrine/pattern-path-defen
 Modes (exactly one of -Check or -Apply; -Publish may ride on either):
 
   -Check    READ-ONLY. Reports User and Machine PATH length, segment count, dead, duplicate and
-            empty entries, a `cmd.exe /d /c where git` probe run with the PATH a new process would
+            empty entries, a `cmd.exe /d /c git --version` probe run with the PATH a new process would
             get, and every self-hosted runner under -RunnerRoot (its .path length, its .env).
             Exit 0 HEALTHY, 1 UNHEALTHY, 2 UNEVALUABLE.
 
@@ -169,14 +169,21 @@ function Get-PathAnalysis {
         }
         $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead', 'duplicate', 'cross-duplicate') } else { $class -eq 'dead' }
         if ($seg -match '%') { $removable = $false }   # backstop: an entry written with a %VAR% is never removed, whatever its class
-        if ((([regex]::Matches($seg, '"')).Count % 2) -ne 0) { $removable = $false }   # an unbalanced quote: never this tool's verdict
+        if ($seg.Contains('"')) { $removable = $false }   # any quoted entry, balanced or not: reported, never removed
         $rows.Add([pscustomobject]@{
-            Index = $i; Raw = $seg; Expanded = $trimmed; Written = $expanded.Trim(); Key = $key; Class = $class; Removable = $removable
+            # Written keeps every character a new process receives (quotes and whitespace padding
+            # included): it is what is measured and what a runner .path is rewritten from.
+            Index = $i; Raw = $seg; Expanded = $trimmed; Written = $expanded; Key = $key; Class = $class; Removable = $removable
             DotnetTools = ($trimmed -match '\\\.dotnet\\tools$')
         })
         $i++
     }
     return ,$rows.ToArray()
+}
+
+function Test-MalformedQuote([string]$Seg) {
+    if (-not $Seg.Contains('"')) { return $false }
+    return ($Seg -notmatch '^\s*"[^"]*"\s*$')
 }
 
 function Get-RepairedPath([object[]]$Analysis) {
@@ -196,7 +203,9 @@ function Get-ScopeStats([object[]]$Analysis, [string]$Raw, [string]$ExpandedJoin
         pending           = @($a | Where-Object Class -eq 'pending').Count
         dead_dotnet_tools = @($a | Where-Object { $_.Class -eq 'dead' -and $_.DotnetTools }).Count
         removable         = @($a | Where-Object Removable).Count
-        unbalanced_quotes = @($a | Where-Object { (([regex]::Matches([string]$_.Raw, '"')).Count % 2) -ne 0 }).Count
+        # Malformed quoting: an odd quote count, or quotes that do not wrap the whole entry (two stray
+        # quotes can balance each other and fold dead entries into one unjudgeable segment).
+        unbalanced_quotes = @($a | Where-Object { Test-MalformedQuote ([string]$_.Raw) }).Count
     }
 }
 
@@ -457,6 +466,11 @@ if (-not $IsWindows -and $PSVersionTable.PSEdition -eq 'Core') {
     Say 'UNEVALUABLE: this tool reads the Windows registry PATH; run it on Windows.'
     exit 2
 }
+if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
+    # WOW64 redirects System32 for a 32-bit process, so 64-bit-only folders would look dead.
+    Say 'UNEVALUABLE: run from a 64-bit pwsh; a 32-bit process sees a redirected System32.'
+    exit 2
+}
 if ([int]$Check.IsPresent + [int]$Apply.IsPresent -ne 1) {
     Say 'PRECONDITION: pass exactly one of -Check or -Apply (optionally with -Publish).'
     exit 2
@@ -512,7 +526,7 @@ $pendingReal = Get-PendingKeySet @(
 function Measure-Machine {
     $mRaw = Read-RawPath 'Machine'
     $uRaw = Read-RawPath 'User'
-    $mA = Get-PathAnalysis -Raw $mRaw.Value -Scope Machine -Exists $existsReal -Expand $expandReal
+    $mA = Get-PathAnalysis -Raw $mRaw.Value -Scope Machine -Exists $existsReal -Expand $expandReal -PendingKeys $pendingReal
     $mKeys = @($mA | Where-Object { $_.Key -and $_.Raw -notmatch '%' } | ForEach-Object Key)
     $mVarKeys = @($mA | Where-Object { $_.Key -and $_.Raw -match '%' } | ForEach-Object Key)
     $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys -OtherScopeVarKeys $mVarKeys -PendingKeys $pendingReal
@@ -533,7 +547,9 @@ function Invoke-WhereGitProbe([string]$FreshPath) {
     try {
         $env:Path = $FreshPath
         $cmd = Join-Path $env:SystemRoot 'System32\cmd.exe'
-        & $cmd /d /c 'where git' *> $null
+        # cmd.exe's own command search, not where.exe: where.exe skips a quoted PATH entry that
+        # cmd.exe (and so every cmd child) honours.
+        & $cmd /d /c 'git --version' *> $null
         if ($LASTEXITCODE -eq 0) { 'PASS' } else { 'FAIL' }
     } catch { 'FAIL' } finally { $env:Path = $saved }
 }
@@ -579,7 +595,7 @@ function Get-ToolCommit([string]$Root) {
 function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$findings, [int]$total) {
     Say ("User PATH    : {0,6} chars  {1,3} segments  dead {2}  duplicate {3}  empty {4}  (dead .dotnet\tools: {5})" -f $m.UserStats.chars, $m.UserStats.segments, $m.UserStats.dead, $m.UserStats.duplicates, $m.UserStats.empty, $m.UserStats.dead_dotnet_tools)
     Say ("Machine PATH : {0,6} chars  {1,3} segments  dead {2}  duplicate {3}" -f $m.MachineStats.chars, $m.MachineStats.segments, $m.MachineStats.dead, $m.MachineStats.duplicates)
-    Say ("Total (new process): {0} chars (limit {1}); cmd /d /c where git: {2}" -f $total, $MaxTotalChars, $whereGit)
+    Say ("Total (new process): {0} chars (limit {1}); cmd /d /c git --version: {2}" -f $total, $MaxTotalChars, $whereGit)
     foreach ($r in @($runners)) {
         Say ("Runner {0} (published as {1}): .path {2}; .env {3}{4}" -f $r.name, $r.label, $(if ($null -eq $r.path_chars) { 'MISSING' } else { "$($r.path_chars) chars" }), $(if ($null -eq $r.env_lines) { 'MISSING' } else { "$($r.env_lines) lines" }), $(if ($r.env_lines -and -not $r.env_has_lang) { ' (no LANG)' } else { '' }))
     }
