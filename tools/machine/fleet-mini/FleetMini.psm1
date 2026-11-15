@@ -14,10 +14,17 @@ function Get-RegValue([string]$Path, [string]$Name) {
 }
 
 function Get-PowerAcSeconds([string]$Sub, [string]$Setting) {
-    # The two "...Power Setting Index: 0x..." lines are AC then DC; match the hex, not the (localized) label.
-    $hex = @(powercfg /q SCHEME_CURRENT $Sub $Setting 2>$null | ForEach-Object { if ($_ -match ':\s*(0x[0-9a-fA-F]{8})\s*$') { $Matches[1] } })
-    if ($LASTEXITCODE -or $hex.Count -lt 2) { throw "powercfg could not read $Sub/$Setting (exit $LASTEXITCODE)" }
-    return [Convert]::ToInt32($hex[-2], 16)
+    $lines = @(powercfg /q SCHEME_CURRENT $Sub $Setting 2>$null)
+    if ($LASTEXITCODE) { throw "powercfg could not read $Sub/$Setting (exit $LASTEXITCODE)" }
+    return ConvertFrom-PowerCfgQuery $lines
+}
+
+function ConvertFrom-PowerCfgQuery([string[]]$Lines) {
+    # One setting prints five hex values in order: minimum, maximum, increment, AC index, DC index. Match the hex, not
+    # the (localized) labels, and require all five so a missing line can never shift AC onto the maximum.
+    $hex = @($Lines | ForEach-Object { if ($_ -match ':\s*(0x[0-9a-fA-F]{8})\s*$') { $Matches[1] } })
+    if ($hex.Count -ne 5) { throw "expected 5 hex values from powercfg /q, got $($hex.Count)" }
+    return [int][Convert]::ToUInt32($hex[3], 16)
 }
 
 function Assert-Native([string]$What) {
@@ -67,10 +74,16 @@ function Set-FleetMiniMouseKeysHere {
     return "mousepresent=$($script:MouseKeysType::GetSystemMetrics(19))"
 }
 
-function Get-ConsoleSessionId {
+function Get-ConsoleUser {
+    # Who is signed in at the console, from `query user`: @{ User; Session } or $null.
     $line = (query user 2>$null) | Where-Object { $_ -match '\bconsole\b' } | Select-Object -First 1
-    if ($line -and $line -match '\bconsole\s+(\d+)\s') { return [int]$Matches[1] }
+    if ($line -and $line -match '^\s*>?(\S+)\s+console\s+(\d+)\s') { return @{ User = $Matches[1]; Session = [int]$Matches[2] } }
     return $null
+}
+
+function Get-FleetMiniTaskArgument([string]$Shell, [string]$Script) {
+    # conhost --headless "<shell>" ... -File "<script>": both paths quoted, so spaces and apostrophes survive.
+    return "--headless `"$Shell`" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$Script`""
 }
 
 function Set-FleetMiniMouseKeys {
@@ -79,8 +92,12 @@ function Set-FleetMiniMouseKeys {
     # The stored value is per account (HKCU); the live state belongs to whoever is at the console. When this runs in
     # session 0 with nobody at the console, only the stored value changes, and the result says so.
     $here = (Get-Process -Id $PID).SessionId
-    $console = Get-ConsoleSessionId
+    $cu = Get-ConsoleUser
+    $console = if ($cu) { $cu.Session } else { $null }
     if ($console -eq $here) { return Set-FleetMiniMouseKeysHere }
+    if ($cu -and $cu.User -ne $env:USERNAME) {
+        throw "the console is signed in as '$($cu.User)', not '$env:USERNAME': Mouse Keys is per account, so run this as '$($cu.User)'"
+    }
     if ($null -eq $console) {
         $r = Set-FleetMiniMouseKeysHere
         if ($here -eq 0) { return "STORED ONLY (no console session found; live state unchanged until the next sign-in): $r" }
@@ -103,7 +120,7 @@ Move-Item -LiteralPath (Join-Path $PSScriptRoot 'result.tmp') -Destination (Join
         $ps = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
         $conhost = Join-Path $env:WINDIR 'System32\conhost.exe'
         $name = 'FleetMini-OneShot-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
-        $action = New-ScheduledTaskAction -Execute $conhost -Argument "--headless `"$ps`" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$dir\run.ps1`""
+        $action = New-ScheduledTaskAction -Execute $conhost -Argument (Get-FleetMiniTaskArgument $ps "$dir\run.ps1")
         $principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive -RunLevel Limited
         Register-ScheduledTask -TaskName $name -Action $action -Principal $principal -Force | Out-Null
         try {
@@ -213,7 +230,8 @@ function Get-FleetMiniItems {
         # python: Windows ships a WindowsApps "python.exe" alias that only opens the Store, so being on PATH proves
         # nothing; ask it for a version instead.
         $get = if ($name -eq 'python') {
-            { $o = "$(& python -V 2>&1)"; if ($LASTEXITCODE -eq 0 -and $o -match 'Python 3') { $true } else { $false } }
+            { if (-not (Get-Command python -ErrorAction SilentlyContinue)) { return $false }
+              $o = "$(& python -V 2>&1)"; if ($LASTEXITCODE -eq 0 -and $o -match 'Python 3') { $true } else { $false } }
         } else { [scriptblock]::Create("[bool](Get-Command '$name' -ErrorAction SilentlyContinue)") }
         $items += New-FleetMiniItem "tool-$name" 'owner' "$name on PATH" 'Every lane and fleet script assumes the same toolchain on every mini.' `
             $get { param($v) $v -eq $true } $null $tools[$t]
@@ -244,15 +262,18 @@ function Invoke-FleetMiniCheck {
 }
 
 function Invoke-FleetMiniApply {
-    # Applies DRIFT items of class user (always) and admin (only when elevated). Never touches class owner.
+    # Applies DRIFT items of class user always; class admin only with -OwnerConfirmed AND elevation; never class owner.
+    # -OwnerConfirmed is set only by Initialize-FleetMini.ps1 after the owner types this machine's name at an
+    # interactive prompt, so an elevated agent session (an admin ssh key login) cannot apply machine settings.
     # Returns one receipt row per item it acted on or skipped, with the value before and after.
-    [CmdletBinding()] param([switch]$Apply, [string[]]$Only)
+    [CmdletBinding()] param([switch]$Apply, [string[]]$Only, [switch]$OwnerConfirmed)
     $elevated = Test-FleetMiniElevated
     foreach ($row in Invoke-FleetMiniCheck -Only $Only) {
         if ($row.Status -ne 'DRIFT' -or $row.Class -eq 'owner') { continue }
         $item = Get-FleetMiniItems | Where-Object Id -eq $row.Id
         $r = [ordered]@{ Id = $row.Id; Class = $row.Class; Before = $row.Current; Action = $null; After = $null }
-        if ($row.Class -eq 'admin' -and -not $elevated) { $r.Action = 'SKIPPED-NEEDS-ELEVATION' }
+        if ($row.Class -eq 'admin' -and -not $OwnerConfirmed) { $r.Action = 'SKIPPED-NEEDS-OWNER' }
+        elseif ($row.Class -eq 'admin' -and -not $elevated) { $r.Action = 'SKIPPED-NEEDS-ELEVATION' }
         elseif (-not $Apply) { $r.Action = 'WOULD-SET' }
         else {
             try { $r.Action = "SET: $(& $item.Fix)" } catch { $r.Action = "FAILED: $_" }
@@ -262,4 +283,4 @@ function Invoke-FleetMiniApply {
     }
 }
 
-Export-ModuleMember -Function Get-FleetMiniItems, Invoke-FleetMiniCheck, Invoke-FleetMiniApply, Test-FleetMiniElevated, Set-FleetMiniMouseKeysHere, Set-FleetMiniMouseKeys
+Export-ModuleMember -Function Get-FleetMiniItems, Invoke-FleetMiniCheck, Invoke-FleetMiniApply, Test-FleetMiniElevated, Set-FleetMiniMouseKeysHere, Set-FleetMiniMouseKeys, ConvertFrom-PowerCfgQuery, Get-FleetMiniTaskArgument

@@ -28,8 +28,10 @@ pwsh -NoProfile -File <bus>\tools\machine\fleet-mini\Initialize-FleetMini.ps1
 pwsh -NoProfile -File <bus>\tools\machine\fleet-mini\Initialize-FleetMini.ps1 -Apply
 ```
 
-An ssh key login of an admin account is already elevated, so the owner can also run `-Apply` from
-another fleet machine with `ssh <alias> pwsh -NoProfile -File ...`. Per-user items still land in the
+Machine (`admin`) settings apply only after the owner types the machine's name at an interactive prompt;
+with no interactive input (any agent, any scheduled run) they are skipped. An ssh key login of an admin
+account is already elevated, so the owner can also run `-Apply` from another fleet machine with
+`ssh -t <alias> pwsh -NoProfile -File ...` (`-t` gives the prompt). Per-user items still land in the
 person signed in at the console: Mouse Keys is set through a one-shot Interactive task in the console
 session (deleted at once), because a `SystemParametersInfo` call from the ssh session would change the
 wrong session. If no one is signed in at the console, only the stored value changes and the receipt
@@ -61,7 +63,8 @@ Num lock is on" ticked (measured). `MKF_REPLACENUMBERS` (0x80) is clear in it, a
 meaning of that bit reads the other way round.
 
 **Classes.** `user` is applied for the signed-in account without elevation. `admin` is applied only
-from an elevated shell, which is the owner's. `owner` is never applied: it covers security settings,
+from an elevated shell after the owner's typed confirmation (code-enforced, so an elevated agent ssh
+session cannot apply it). `owner` is never applied: it covers security settings,
 credentials, installs and accounts, and the script prints the exact step instead. Agents may run the
 read-only check and the dry run; they do not run `-Apply` elevated.
 

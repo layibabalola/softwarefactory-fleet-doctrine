@@ -42,7 +42,22 @@ Assert ((& $ep.Ok 'ps7=RemoteSigned ps51=RemoteSigned') -and -not (& $ep.Ok 'ps7
 $py = $items | Where-Object Id -eq 'tool-python'
 Assert ("$($py.Get)" -match '-V') 'tool-python asks for a version (Store alias does not count)'
 $gen = "$((Get-Command Set-FleetMiniMouseKeys).ScriptBlock)"
-Assert ($gen -match 'PSScriptRoot' -and $gen -match '-File `"') 'one-shot run.ps1 embeds no paths and the task quotes its -File path'
+Assert ($gen -match 'PSScriptRoot') 'one-shot run.ps1 embeds no paths'
+# G2: the task argument built from a spaced, apostrophed path keeps each path as one quoted token
+$arg = Get-FleetMiniTaskArgument 'C:\Win dows\power shell.exe' "D:\Scratch Area\O'Brien Q\fleet-mini-x\run.ps1"
+$tokens = [Management.Automation.PSParser]::Tokenize($arg, [ref]$null) | Where-Object Type -eq 'String' | ForEach-Object Content
+Assert (($tokens -contains 'C:\Win dows\power shell.exe') -and ($tokens -contains "D:\Scratch Area\O'Brien Q\fleet-mini-x\run.ps1")) 'task argument quotes a spaced, apostrophed shell and script path'
+# G6: powercfg parse takes the AC value and refuses a short read
+$pc = @('Power Setting GUID: x', '    Minimum Possible Setting: 0x00000000', '    Maximum Possible Setting: 0xffffffff',
+        '    Possible Settings increment: 0x00000001', '    Current AC Power Setting Index: 0x00000708', '    Current DC Power Setting Index: 0x00000384')
+Assert ((ConvertFrom-PowerCfgQuery $pc) -eq 1800) 'powercfg parse reads the AC index (0x708 = 1800)'
+$threw = $false; try { ConvertFrom-PowerCfgQuery $pc[0..4] | Out-Null } catch { $threw = $true }
+Assert $threw 'powercfg parse refuses output with the DC line missing'
+# G5: python absent from PATH reads as DRIFT (false), never UNKNOWN
+$savedPath = $env:PATH
+try { $env:PATH = ''; $pyv = & $py.Get; Assert ($pyv -eq $false) 'tool-python with no python on PATH reads false (DRIFT)' }
+catch { Assert $false "tool-python with no python on PATH threw: $_" }
+finally { $env:PATH = $savedPath }
 
 # 5. apply logic, on fake items inside the module scope (nothing real is touched)
 $probe = Join-Path ([IO.Path]::GetTempPath()) ('fleet-mini-test-' + [Guid]::NewGuid().ToString('N'))
@@ -77,12 +92,16 @@ try {
     Remove-Item -Recurse -Force $probe -ErrorAction SilentlyContinue
 }
 
-# 6. admin items are skipped, not attempted, when not elevated
-if (-not (Test-FleetMiniElevated)) {
-    & $mod { $script:RealItems = ${function:Get-FleetMiniItems}; Set-Item function:Get-FleetMiniItems { @(New-FleetMiniItem 'fake-admin' 'admin' 't' 'w' { 'bad' } { param($v) $false } { throw 'must not run' } '') } }
-    try { Assert ((@(Invoke-FleetMiniApply -Apply))[0].Action -eq 'SKIPPED-NEEDS-ELEVATION') 'admin item skipped when not elevated' }
-    finally { & $mod { Set-Item function:Get-FleetMiniItems $script:RealItems } }
-} else { 'skip admin-not-elevated case (this shell is elevated)' }
+# 6. admin items need the owner gate (G1), then elevation; never attempted otherwise
+& $mod { $script:RealItems = ${function:Get-FleetMiniItems}; Set-Item function:Get-FleetMiniItems { @(New-FleetMiniItem 'fake-admin' 'admin' 't' 'w' { 'bad' } { param($v) $false } { throw 'must not run' } '') } }
+try {
+    Assert ((@(Invoke-FleetMiniApply -Apply))[0].Action -eq 'SKIPPED-NEEDS-OWNER') 'admin item skipped without the owner gate, even with -Apply'
+    if (-not (Test-FleetMiniElevated)) {
+        Assert ((@(Invoke-FleetMiniApply -Apply -OwnerConfirmed))[0].Action -eq 'SKIPPED-NEEDS-ELEVATION') 'admin item skipped when not elevated'
+    } else { 'skip admin-not-elevated case (this shell is elevated)' }
+} finally { & $mod { Set-Item function:Get-FleetMiniItems $script:RealItems } }
+$init = Get-Content (Join-Path $here 'Initialize-FleetMini.ps1') -Raw
+Assert ($init -match 'Read-Host' -and $init -match 'IsInputRedirected' -and $init -match '-OwnerConfirmed:\$ownerConfirmed') 'Initialize gates machine settings on a typed, interactive owner confirmation'
 
 # 7. law 4: the shipped files name no user, host, address or account
 $patterns = @('[A-Za-z]:\\Users\\[A-Za-z]', '(?<![~\d.])\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', '[\w.+-]+@[\w-]+\.[\w.]+', ('PC-' + 'MINI'), ('VIRTUAL' + '-TEN'), ('ultra' + '-magnus'))
