@@ -79,6 +79,14 @@ foreach ($ws in @([char]0x00A0, [char]0x2007, [char]0x202F, [char]0x3000, ' ')) 
     }
 }
 Ok ((Get-PathAnalysis -Raw 'C:\Gone\Plain' -Scope User -Exists $fsExists)[0].Removable) 'padding: an unpadded dead entry is still removable'
+# Round-14 Codex (blocking): a segment made only of whitespace is a valid relative folder name to
+# Windows and is never probed, so it is never removed. Only a literally empty segment is.
+foreach ($ws in @([char]0x00A0, [char]0x2007, [char]0x202F, [char]0x3000, ' ', "`t")) {
+    $wo = Get-PathAnalysis -Raw ("$ws;C:\Windows") -Scope User -Exists $fsExists
+    Ok (-not $wo[0].Removable -and (Get-RepairedPath $wo) -eq "$ws;C:\Windows") ("padding: a whitespace-only segment U+{0:X4} is never removed" -f [int][char]$ws)
+}
+$le = Get-PathAnalysis -Raw 'C:\Windows;;C:\Windows\System32' -Scope User -Exists $fsExists
+Ok ($le[1].Class -eq 'empty' -and $le[1].Removable -and (Get-RepairedPath $le) -eq 'C:\Windows;C:\Windows\System32') 'empty: a literally empty segment is still removed'
 $pc = Get-PathAnalysis -Raw 'C:\Windows' -Scope User -Exists $fsExists -OtherScopeKeys @('c:\windows')
 Ok ($pc[0].Class -eq 'cross-duplicate' -and -not $pc[0].Removable) 'duplicate: a User copy of a Machine entry is never removed (cross scope)'
 $again = Get-PathAnalysis -Raw $repaired -Scope User -Exists $fsExists -Expand $expand -OtherScopeKeys $mKeys

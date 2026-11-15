@@ -182,7 +182,9 @@ function Get-PathAnalysis {
         # Existence was probed on the trimmed spelling. When trimming changed it (ASCII or Unicode
         # whitespace such as U+00A0 / U+3000, which Windows keeps in folder names), the folder that
         # really exists may be the padded one: never remove on a verdict about a different spelling.
-        if ($trimmed -and $expanded -cne $expanded.Trim()) { $removable = $false }
+        # That includes a whitespace-only segment (e.g. one U+3000): a valid relative folder name to
+        # Windows, never probed here. Only a literally empty segment is 'empty' enough to remove.
+        if ($expanded -cne $expanded.Trim()) { $removable = $false }
         $rows.Add([pscustomobject]@{
             # Written keeps every character a new process receives (quotes and whitespace padding
             # included): it is what is measured and what a runner .path is rewritten from.
@@ -705,7 +707,7 @@ function Invoke-Apply {
             param($q)
             try { ([Security.Principal.NTAccount]::new($q)).Translate([Security.Principal.SecurityIdentifier]).Value } catch { $null }
         }
-        # Only DEAD entries make a runner .path stale: a removed duplicate's folder still exists.
+        # Only DEAD entries make a runner .path stale (duplicates are never removed).
         $removedKeys = Get-StaleRunnerKeys (@($(if ($userWritten) { $uRemove })) + @($(if ($machineWritten) { $mRemove })))
         foreach ($r in $before.Runners) {
             # One runner's failure is recorded and the next runner still runs; the receipt is
