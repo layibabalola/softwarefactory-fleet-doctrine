@@ -126,7 +126,9 @@ $f = Get-PathFindings -User $st -Machine $mStats -TotalChars 10579 -WhereGit FAI
 Ok ($f -contains 'total-over-4096:10579') 'findings: total over threshold'
 Ok ($f -contains 'user-dead:85' -and $f -contains 'machine-dead:1') 'findings: dead counts per scope'
 Ok ($f -contains 'cmd-where-git-failed') 'findings: failed cmd probe'
-Ok ($f -contains 'runner-path-missing:runner-1' -and $f -contains 'runner-env-no-lang:runner-1') 'findings: runner .path missing and .env without LANG'
+Ok (-not @($f | Where-Object { $_ -like 'runner-*' })) 'findings: an absent runner .path and a .env without LANG are not findings (both optional)'
+$n0 = Get-PathNotes @(@{ label = 'runner-1'; path_chars = $null; env_lines = 1; env_has_lang = $false })
+Ok ($n0 -contains 'runner-path-absent:runner-1' -and $n0 -contains 'runner-env-no-lang:runner-1') 'notes: an absent .path and a .env without LANG are published as notes'
 $clean = @{ chars = 400; raw_chars = 400; segments = 10; dead = 0; duplicates = 2; empty = 0; unverifiable = 0; dead_dotnet_tools = 0; removable = 2 }
 $f2 = Get-PathFindings -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Runners @(@{ name = 'r'; label = 'runner-1'; path_chars = 801; env_lines = 2; env_has_lang = $true })
 Ok ($f2.Count -eq 0) 'findings: duplicates alone do not make a machine unhealthy'
@@ -248,7 +250,7 @@ Ok (-not (Test-SameServiceAccount 'CORP\ghost' 'S-1-5-21-1-1001' 'BOX1' $res)) '
 Ok (-not (Test-SameServiceAccount '' 'S-1-5-21-1-1001' 'BOX1' $res)) 'account: empty StartName fails closed'
 
 # runner .path: rewrite only when it is broken or still holds a removed entry
-Ok ((Get-RunnerPathAction $null @()) -eq 'rewrite:missing') 'runner: missing .path is rewritten'
+Ok ((Get-RunnerPathAction $null @('d:\gate\1\.dotnet\tools')) -eq 'keep') 'runner: a missing .path is never created (it would freeze the runner PATH)'
 Ok ((Get-RunnerPathAction ('x' * 5000) @()) -eq 'rewrite:over-limit') 'runner: over-limit .path is rewritten'
 Ok ((Get-RunnerPathAction 'C:\Git\bin;D:\Gate\1\.dotnet\tools' @('d:\gate\1\.dotnet\tools')) -eq 'rewrite:holds-removed-entry') 'runner: .path holding a removed entry is rewritten'
 Ok ((Get-RunnerPathAction 'C:\Program Files\Git\bin;C:\Windows\System32' @('d:\gate\1\.dotnet\tools')) -eq 'keep') 'runner: a healthy hand-ordered .path is kept'
@@ -279,7 +281,8 @@ Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '2026-11-14T23', '2099-11-14
 Ok (Throws { Test-AckRecord -Raw $goodRaw -FileMachine 'VIRTUAL-TEN' -NowUtc $now.AddHours(-1) }) 'reader: a stamp in the future is UNEVALUABLE'
 Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '"findings":\s*\[\s*\]', '"findings": ["user-dead:1"]') -FileMachine 'VIRTUAL-TEN' }) 'reader: HEALTHY with findings is UNEVALUABLE'
 $fe = Get-PathFindings -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Runners @(@{ label = 'runner-1'; path_chars = 0; env_lines = 1; env_has_lang = (Test-EnvHasLang 'LANG=') })
-Ok ($fe -contains 'runner-path-empty:runner-1' -and $fe -contains 'runner-env-no-lang:runner-1') 'runner: empty .path and LANG= with no value are findings'
+Ok ($fe -contains 'runner-path-empty:runner-1' -and $fe.Count -eq 1) 'runner: an existing but empty .path is a finding; LANG= with no value is not'
+Ok ((Get-PathNotes @(@{ label = 'runner-1'; path_chars = 0; env_lines = 1; env_has_lang = (Test-EnvHasLang 'LANG=') })) -contains 'runner-env-no-lang:runner-1') 'runner: LANG= with no value is a note'
 
 # Round-8 Codex finding 1 (blocking): a %VAR% that expands to nothing here is never "empty", never removed.
 $emptyVar = { param($t) $t.Replace('%FLEET_REVIEW_TOOLS%', '').Replace('%WS_VAR%', '   ') }
@@ -376,6 +379,42 @@ Ok ((Get-FinalExitCode 1 $true 4) -eq 4 -and (Get-FinalExitCode 0 $true 5) -eq 5
 Ok ((Get-FinalExitCode 2 $true 0) -eq 2) 'exit: a failed -Apply stays 2 even when the ack published'
 Ok ((Get-FinalExitCode 1 $false) -eq 1 -and (Get-FinalExitCode 0 $false) -eq 0) 'exit: -Check without -Publish keeps 0/1'
 
+# --- 10. follow-up to PR #96: runner .path / .env are optional (the ULTRA-MAGNUS false positive) ---
+# The ULTRA-MAGNUS ack of 2026-11-15 (b57455f6): PATH healthy (1,470 chars, no dead, git PASS),
+# runner-1 with a healthy .path, runners 2-7 with neither file except runner-6's LANG-less .env.
+$umRunners = @(@{ label = 'runner-1'; path_chars = 1440; path_dead = 0; path_git = 'PASS'; env_lines = 2; env_has_lang = $true }) +
+    @(2..7 | ForEach-Object { @{ label = "runner-$_"; path_chars = $null; path_dead = $null; path_git = 'SKIPPED'; env_lines = $(if ($_ -eq 6) { 2 } else { $null }); env_has_lang = $false } })
+$umU = @{ chars = 475; segments = 11; dead = 0; duplicates = 2; empty = 0; unbalanced_quotes = 0; dead_dotnet_tools = 0 }
+$umM = @{ chars = 994; segments = 31; dead = 0; duplicates = 10; empty = 0; unbalanced_quotes = 0; dead_dotnet_tools = 0 }
+$umF = Get-PathFindings -User $umU -Machine $umM -TotalChars 1470 -WhereGit PASS -Runners $umRunners
+Ok ($umF.Count -eq 0) 'ultra-magnus 2026-11-15: absent runner .path/.env make no finding, so a healthy PATH acks HEALTHY'
+$umRec = New-AckRecord -MachineName 'ULTRA-MAGNUS' -NowUtc $now -ToolCommit ('e' * 40) -User $umU -Machine $umM -TotalChars 1470 -WhereGit PASS -Runners $umRunners -Findings $umF
+Ok ($umRec.verdict -eq 'HEALTHY' -and @($umRec.notes | Where-Object { $_ -like 'runner-path-absent:*' }).Count -eq 6 -and @($umRec.notes | Where-Object { $_ -like 'runner-env-absent:*' }).Count -eq 5 -and $umRec.notes -contains 'runner-env-no-lang:runner-6') 'ultra-magnus 2026-11-15: the absent files are published as notes (6 .path, 5 .env, 1 no-LANG)'
+Ok ($umRec.notes -is [array] -and @($umRec.notes | Where-Object { $_ -isnot [string] }).Count -eq 0) 'ack: notes is a flat string array'
+$umRaw = $umRec | ConvertTo-Json -Depth 6
+Ok (-not (Throws { Test-AckRecord -Raw $umRaw -FileMachine 'ULTRA-MAGNUS' -NowUtc $now })) 'ack: a HEALTHY record with notes validates (notes never contradict the verdict)'
+Ok ($umRec.runners[0].path_git -eq 'PASS' -and $umRec.runners[0].path_dead -eq 0 -and $umRec.runners[1].path_git -eq 'SKIPPED' -and $null -eq $umRec.runners[1].path_dead) 'ack: runner rows carry path_dead and path_git'
+Ok ((New-AckRecord -MachineName 'X' -NowUtc $now -ToolCommit 'x' -User $umU -Machine $umM -TotalChars 1 -WhereGit PASS -Runners @(@{ label = 'runner-1'; path_chars = 10 })).runners[0].path_git -eq 'SKIPPED') 'ack: a row with no probe result publishes path_git SKIPPED'
+Ok ((Test-AckPublishNeeded -PreviousRaw (Get-Content -Raw (Join-Path (Split-Path -Parent $PSScriptRoot) 'path-health/ULTRA-MAGNUS.json')) -Record $umRec -NowUtc $now.AddHours(1)).Publish) 'publish: the old UNHEALTHY ULTRA-MAGNUS ack is replaced, never "unchanged"'
+# A .path that EXISTS is still judged: over the limit, dead entries, a failed git probe, empty.
+$rf = Get-PathFindings -User $umU -Machine $umM -TotalChars 1470 -WhereGit PASS -Runners @(
+    @{ label = 'runner-1'; path_chars = 5000; path_dead = 0; path_git = 'PASS'; env_lines = $null; env_has_lang = $false }
+    @{ label = 'runner-2'; path_chars = 900; path_dead = 3; path_git = 'PASS'; env_lines = 1; env_has_lang = $true }
+    @{ label = 'runner-3'; path_chars = 900; path_dead = 0; path_git = 'FAIL'; env_lines = 1; env_has_lang = $true }
+    @{ label = 'runner-4'; path_chars = 0; path_dead = $null; path_git = 'SKIPPED'; env_lines = 1; env_has_lang = $true }
+    @{ label = 'runner-5'; path_chars = $null; path_dead = $null; path_git = 'FAIL'; env_lines = $null; env_has_lang = $false })
+Ok ($rf -contains 'runner-path-over-4096:runner-1:5000') 'runner: an existing .path over the limit is a finding'
+Ok ($rf -contains 'runner-path-dead:runner-2:3') 'runner: an existing .path with dead entries is a finding'
+Ok ($rf -contains 'runner-path-git-failed:runner-3') 'runner: an existing .path that fails the git probe is a finding'
+Ok ($rf -contains 'runner-path-empty:runner-4') 'runner: an existing empty .path is a finding'
+Ok ($rf.Count -eq 4 -and -not @($rf | Where-Object { $_ -like '*runner-5*' })) 'runner: an absent .path is never judged, whatever else its row says'
+Ok ((Get-RunnerPathDeadCount "C:\Windows;C:\Gone\one;C:\Gone\two`r`n" $fsExists) -eq 2) 'runner .path: dead entries are counted (line ending ignored)'
+Ok ((Get-RunnerPathDeadCount 'C:\Users\v\.dotnet\tools;%X%\gone;\\srv\s;C:\Windows\System32\Gone;Q:\x' $fsExists @('c:\users\v\.dotnet\tools')) -eq 0) 'runner .path: pending, %VAR%, UNC, System32 and unmounted entries are never dead'
+Ok ((Get-RunnerPathDeadCount '' $fsExists) -eq 0 -and (Get-RunnerPathDeadCount $null $fsExists) -eq 0) 'runner .path: empty text has no dead entries'
+Ok ($src -match 'Get-RunnerPathDeadCount \$pathText \$existsReal \$pendingReal' -and $src -match 'Invoke-WhereGitProbe \$pathText') 'runner .path: the real check counts dead entries and probes git with the .path text'
+# Fail-safe item 4: the header sentence about a failed publish reads as one sentence.
+Ok ($src -notmatch 'a failed publish\s*\r?\n\s*and takes' -and $src -match 'A failed publish takes\s+its own ack commit back') 'header: the failed-publish sentence is no longer garbled'
+
 # Publish push guard and undo, on a throwaway repository with a throwaway bare origin.
 if (Get-Command git -ErrorAction SilentlyContinue) {
     $tmp = Join-Path ([IO.Path]::GetTempPath()) ('path-ack-test-' + [guid]::NewGuid().ToString('N'))
@@ -436,6 +475,77 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '(\d\d:\d\d:\d\d)Z', '$1z') -FileMachine 'VIRTUAL-TEN' }) 'reader: a lower-case z stamp is UNEVALUABLE'
         Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '(\d\d:\d\d:\d\d)Z', '$1Z\n') -FileMachine 'VIRTUAL-TEN' }) 'reader: a stamp with a trailing newline is UNEVALUABLE'
         Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '\d{4}-\d\d-\d\dT', '2026-02-31T') -FileMachine 'VIRTUAL-TEN' }) 'reader: an impossible date is UNEVALUABLE'
+
+        # --- 11. follow-up to PR #96: the four fail-safe items ------------------------------------
+        # (1) Under a locked index the ack is restored byte for byte (CRLF kept), never line-joined.
+        $lk = Join-Path $tmp 'locked'
+        & $g init -q $lk
+        & $g -C $lk config core.autocrlf false
+        [void](New-Item -ItemType Directory -Force -Path (Join-Path $lk 'path-health'))
+        $crlf = [Text.Encoding]::UTF8.GetBytes("{`r`n  ""v"": 1`r`n}")   # CRLF, no final newline
+        [IO.File]::WriteAllBytes((Join-Path $lk $ackRel), $crlf)
+        & $g -C $lk add $ackRel; & $g -C $lk commit -q -m base
+        Set-Content -LiteralPath (Join-Path $lk $ackRel) -Value '{"v":2}'
+        $lock = Join-Path $lk '.git/index.lock'
+        [IO.File]::WriteAllText($lock, '')
+        try { $how = Restore-AckFile $lk $ackRel } finally { Remove-Item -LiteralPath $lock -Force }
+        $back = [IO.File]::ReadAllBytes((Join-Path $lk $ackRel))
+        Ok ($how -eq 'written' -and [Convert]::ToBase64String($back) -eq [Convert]::ToBase64String($crlf)) 'restore: under a locked index the ack is rewritten with HEAD''s exact bytes (CRLF, no added newline)'
+        Ok ((Restore-AckFile $lk $ackRel) -eq 'checked-out') 'restore: with the index free, checkout restores it'
+
+        # A real bus-shaped origin for Publish-AckRecord: master, a second publisher's clone, identity set.
+        $po = Join-Path $tmp 'pub-origin.git'; $pw = Join-Path $tmp 'pub-wc'; $pw2 = Join-Path $tmp 'pub-wc2'
+        & $g init -q --bare $po
+        & $g init -q $pw
+        Set-Content -LiteralPath (Join-Path $pw 'README.md') -Value 'bus'
+        & $g -C $pw add README.md; & $g -C $pw commit -q -m base
+        & $g -C $pw remote add origin $po; & $g -C $pw push -q origin 'HEAD:refs/heads/master'
+        & $g -C $pw branch -q --set-upstream-to=origin/master
+        & $g clone -q -b master $po $pw2
+        foreach ($w in @($pw, $pw2)) { & $g -C $w config user.name t; & $g -C $w config user.email t@example.invalid }
+        $pnow = (Get-Date).ToUniversalTime()
+        $pubRec = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Findings @()
+        $pubJson = (($pubRec | ConvertTo-Json -Depth 6) -replace "`r`n", "`n") + "`n"
+        $pushTwin = {
+            param($n)
+            if ($n -ne 1) { return }
+            & $g -C $pw2 pull -q --ff-only
+            [void](New-Item -ItemType Directory -Force -Path (Join-Path $pw2 'path-health'))
+            [IO.File]::WriteAllText((Join-Path $pw2 $ackRel), $pubJson)
+            & $g -C $pw2 add $ackRel; & $g -C $pw2 commit -q -m 'path-health: TESTBOX HEALTHY (first-publication)'; & $g -C $pw2 push -q origin master
+        }
+        # (2) A rejected push re-reads origin first: the record another run just pushed is "unchanged".
+        $rc2 = Publish-AckRecord -BusRoot $pw -Record $pubRec -NowUtc $pnow -BeforePush $pushTwin 6> $null
+        $acksOnOrigin = @(& git -C $pw log --format=%s refs/remotes/origin/master -- $ackRel)
+        Ok ($rc2 -eq 0 -and $acksOnOrigin.Count -eq 1) 'retry: after a rejected push, origin is re-read and an identical record already there is unchanged (exit 0, one ack commit)'
+        Ok (-not ([string](& git -C $pw status --porcelain))) 'retry: the checkout is left clean after the re-read'
+        # A rejected push for a different reason (another file landed) is rebuilt on the new tip and published.
+        $otherRel = 'path-health/OTHERBOX.json'
+        $pushOther = {
+            param($n)
+            if ($n -ne 1) { return }
+            & $g -C $pw2 pull -q --ff-only
+            Set-Content -LiteralPath (Join-Path $pw2 $otherRel) -Value '{}'
+            & $g -C $pw2 add $otherRel; & $g -C $pw2 commit -q -m 'path-health: OTHERBOX'; & $g -C $pw2 push -q origin master
+        }
+        $pubRec2 = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 802 -WhereGit PASS -Findings @()
+        $rc3 = Publish-AckRecord -BusRoot $pw -Record $pubRec2 -NowUtc $pnow -BeforePush $pushOther 6> $null
+        & git -C $pw fetch -q origin
+        & git -C $pw cat-file -e "refs/remotes/origin/master:$otherRel" 2>$null; $otherThere = ($LASTEXITCODE -eq 0)
+        Ok ($rc3 -eq 0 -and ((& git -C $pw show "refs/remotes/origin/master:$ackRel") -join "`n") -match '"total_chars": 802' -and $otherThere) 'retry: a push rejected because origin moved is rebuilt on the new tip and published'
+        $blobBytes = Get-GitStdoutBytes $pw @('cat-file', 'blob', "refs/remotes/origin/master:$ackRel")
+        Ok ($null -ne $blobBytes -and [Array]::IndexOf([byte[]]$blobBytes, [byte]13) -lt 0) 'publish: the ack blob is LF only, whatever the platform'
+        # (3) -NoPush never fast-forwards a checkout that is behind origin.
+        & $g -C $pw2 pull -q --ff-only
+        Set-Content -LiteralPath (Join-Path $pw2 'later.md') -Value 'later'
+        & $g -C $pw2 add later.md; & $g -C $pw2 commit -q -m later; & $g -C $pw2 push -q origin master
+        $headBefore = ([string](& git -C $pw rev-parse HEAD)).Trim()
+        $pubRec3 = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 803 -WhereGit PASS -Findings @()
+        $rc4 = Publish-AckRecord -BusRoot $pw -Record $pubRec3 -NowUtc $pnow -NoPush 6> $null
+        Ok ($rc4 -eq 5 -and ([string](& git -C $pw rev-parse HEAD)).Trim() -eq $headBefore) 'rehearsal: -NoPush leaves a checkout that is behind origin where it was (exit 5)'
+        Ok (-not (Test-Path -LiteralPath (Join-Path $pw 'later.md')) -and -not ([string](& git -C $pw status --porcelain))) 'rehearsal: nothing from origin is merged and no ack is left behind'
+        $rc5 = Publish-AckRecord -BusRoot $pw -Record $pubRec3 -NowUtc $pnow 6> $null
+        Ok ($rc5 -eq 0 -and (Test-Path -LiteralPath (Join-Path $pw 'later.md'))) 'publish: a real publish still fast-forwards a checkout that is behind'
     } finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }
 } else { Ok $false 'git is required for the publish push-guard tests' }
 

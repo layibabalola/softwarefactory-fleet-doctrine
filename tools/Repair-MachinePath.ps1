@@ -15,7 +15,11 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
 
   -Check    READ-ONLY. Reports User and Machine PATH length, segment count, dead, duplicate and
             empty entries, a `cmd.exe /d /c git --version` probe run with the PATH a new process would
-            get, and every self-hosted runner under -RunnerRoot (its .path length, its .env).
+            get, and every self-hosted runner under -RunnerRoot. A runner's .path and .env are
+            OPTIONAL: without .path the runner uses its service's environment, so a missing one is
+            a note, never a finding (a .env without LANG is a note too). A .path that EXISTS is
+            what the runner's jobs get as PATH, frozen until it is rewritten, so it is judged: empty,
+            over the limit, holding a dead entry, or failing the git probe is a finding.
             Exit 0 HEALTHY, 1 UNHEALTHY, 2 UNEVALUABLE.
 
   -Apply    HELD in this revision: exits 2 before reading or writing anything (it ships in a
@@ -25,9 +29,11 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             It touches the Machine PATH only when elevated, and only to remove dead entries.
             It never removes an entry whose folder exists, a UNC entry, an entry with an
             unexpanded %VAR%, or an entry on a drive that is not mounted. It then rewrites a
-            runner's .path from the repaired PATH only when that .path is missing, empty, over
+            runner's .path from the repaired PATH only when that .path exists and is empty, over
             the limit, or still lists a dead entry this repair removed (a hand-ordered .path is
-            kept), and only when the runner service runs as the current user. It restarts that service only when it is idle (GitHub `busy` = false,
+            kept, and a missing one is never created: creating it would freeze the runner's PATH),
+            and only when the runner service runs as the current user. It restarts that service
+            only when it is idle (GitHub `busy` = false,
             read with `gh api`) and the shell is elevated; otherwise it skips the restart and says
             why. Writes a receipt and the backups under %LOCALAPPDATA%\FleetPathRepair\<utc>\.
             Exit is the post-repair -Check verdict, or 2 if a write failed.
@@ -36,14 +42,16 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             user names), commits that one file and pushes it to master. It pushes only when
             the content changed or the published record is older than -RefreshHours (law 3).
             The record is published whatever the verdict: an UNHEALTHY ack is still an ack.
-            -NoPush rehearses: commits, then undoes its own commit (exit 5, never an ack). A successful publish (or a confirmed
+            -NoPush rehearses: it commits on the checkout as it stands (never fast-forwarding it),
+            then undoes its own commit (exit 5, never an ack). A successful publish (or a confirmed
             unchanged one) exits 10 when HEALTHY and 11 when UNHEALTHY; a failed publish exits 4,
             and nothing is published after a failed -Apply (exit stays 2). The ack commit is always
-            built on origin's tip (a checkout behind origin is fast-forwarded; a rejected push is
-            rebuilt once, never text-merged); a failed publish
-            and takes its own ack commit back off the checkout. It refuses a detached HEAD, a
-            branch other than master (unless -AllowBranch), a non-empty index, and any push whose
-            single commit touches anything but the ack file.
+            built on origin's tip: a checkout behind origin is fast-forwarded first. A rejected push
+            is never text-merged: the run undoes its commit, re-reads origin, and rebuilds the
+            commit once, unless origin now already holds the same record. A failed publish takes
+            its own ack commit back off the checkout and restores the ack file byte for byte. It
+            refuses a detached HEAD, a branch other than master (unless -AllowBranch), a non-empty
+            index, and any push whose single commit touches anything but the ack file.
 
 Tests dot-source this file with -Library and call the pure functions with injected PATH strings
 and an injected folder-exists predicate. Nothing in the test path reads or writes the real
@@ -236,10 +244,33 @@ function Join-ExpandedPath([object[]]$Analysis) {
     return (@($Analysis | ForEach-Object { [string]$_.Written }) -join ';')
 }
 
+# A runner row may be a hashtable (tests) or a pscustomobject (Get-RunnerRows); a field it lacks is $null.
+function Get-RowValue($Row, [string]$Name) {
+    if ($Row -is [System.Collections.IDictionary]) { return $Row[$Name] }
+    $p = $Row.PSObject.Properties[$Name]
+    if ($p) { return $p.Value }
+    return $null
+}
+
+# Dead entries in a runner's .path: the same analysis as the registry PATH (Machine rules: only an
+# absolute literal entry whose folder is definitely gone counts; %VAR%, UNC, unreadable, System32
+# and pending folders never do). .path holds expanded text, so nothing is expanded here.
+function Get-RunnerPathDeadCount([AllowNull()][AllowEmptyString()][string]$Text, [scriptblock]$Exists, [string[]]$PendingKeys = @()) {
+    if (-not $Text -or -not $Text.Trim()) { return 0 }
+    $a = Get-PathAnalysis -Raw $Text.TrimEnd("`r", "`n") -Scope Machine -Exists $Exists -PendingKeys $PendingKeys
+    return @($a | Where-Object Class -eq 'dead').Count
+}
+
 <#
 Turn measurements into findings. A finding is a short token; the verdict is HEALTHY only when
-there are none. Runner rows: @{ name; path_chars (int or $null); env_lines (int or $null);
-env_has_lang (bool) }.
+there are none. Runner rows: @{ label; path_chars (int, or $null when .path is absent); path_dead
+(int or $null); path_git ('PASS' / 'FAIL' / 'SKIPPED'); env_lines (int or $null); env_has_lang }.
+
+Runner .path and .env are OPTIONAL on Windows (measured on ULTRA-MAGNUS 2026-11-15: agent-bridge's
+Windows CI green with neither file). Without .path the runner takes PATH from its service's
+environment, so an absent .path is a note (Get-PathNotes), never a finding. A .path that exists IS
+the jobs' PATH, frozen until rewritten, so it is judged like the registry PATH: empty, over the
+limit, a dead entry, or a failed git probe run with it is a finding.
 #>
 function Get-PathFindings {
     param(
@@ -260,13 +291,28 @@ function Get-PathFindings {
     if ($Machine.Contains('unbalanced_quotes') -and $Machine.unbalanced_quotes -gt 0) { $f.Add("machine-unbalanced-quote:$($Machine.unbalanced_quotes)") }
     if ($WhereGit -eq 'FAIL') { $f.Add('cmd-where-git-failed') }
     foreach ($r in @($Runners)) {
-        if ($null -eq $r.path_chars) { $f.Add("runner-path-missing:$($r.label)") }
-        elseif ($r.path_chars -eq 0) { $f.Add("runner-path-empty:$($r.label)") }
-        elseif ($r.path_chars -gt $MaxTotalChars) { $f.Add("runner-path-over-${MaxTotalChars}:$($r.label):$($r.path_chars)") }
-        if ($null -eq $r.env_lines) { $f.Add("runner-env-missing:$($r.label)") }
-        elseif (-not $r.env_has_lang) { $f.Add("runner-env-no-lang:$($r.label)") }
+        $label = Get-RowValue $r 'label'
+        $pc = Get-RowValue $r 'path_chars'
+        if ($null -eq $pc) { continue }   # absent .path: optional, a note only
+        if ($pc -eq 0) { $f.Add("runner-path-empty:$label") }
+        elseif ($pc -gt $MaxTotalChars) { $f.Add("runner-path-over-${MaxTotalChars}:${label}:$pc") }
+        $pd = Get-RowValue $r 'path_dead'
+        if ($null -ne $pd -and $pd -gt 0) { $f.Add("runner-path-dead:${label}:$pd") }
+        if ((Get-RowValue $r 'path_git') -eq 'FAIL') { $f.Add("runner-path-git-failed:$label") }
     }
     return ,$f.ToArray()
+}
+
+# Informational tokens: published with the ack, never part of the verdict.
+function Get-PathNotes([object[]]$Runners = @()) {
+    $n = [System.Collections.Generic.List[string]]::new()
+    foreach ($r in @($Runners)) {
+        $label = Get-RowValue $r 'label'
+        if ($null -eq (Get-RowValue $r 'path_chars')) { $n.Add("runner-path-absent:$label") }
+        if ($null -eq (Get-RowValue $r 'env_lines')) { $n.Add("runner-env-absent:$label") }
+        elseif (-not (Get-RowValue $r 'env_has_lang')) { $n.Add("runner-env-no-lang:$label") }
+    }
+    return ,$n.ToArray()
 }
 
 function New-AckRecord {
@@ -276,8 +322,13 @@ function New-AckRecord {
         [int]$TotalChars, [string]$WhereGit, [object[]]$Runners = @(), [string[]]$Findings = @()
     )
     if ($MachineName -notmatch '^[A-Za-z0-9][A-Za-z0-9-]{0,62}$') { throw "machine name '$MachineName' is not a bus-safe token" }
+    $notes = Get-PathNotes $Runners   # assigned, not @(...): @() would wrap the ,@() result once more
     $runnerRows = @(foreach ($r in @($Runners)) {
-        [ordered]@{ label = [string]$r.label; path_chars = $r.path_chars; env_lines = $r.env_lines; env_has_lang = [bool]$r.env_has_lang }
+        $git = Get-RowValue $r 'path_git'
+        [ordered]@{
+            label = [string](Get-RowValue $r 'label'); path_chars = (Get-RowValue $r 'path_chars'); path_dead = (Get-RowValue $r 'path_dead')
+            path_git = $(if ($git) { [string]$git } else { 'SKIPPED' }); env_lines = (Get-RowValue $r 'env_lines'); env_has_lang = [bool](Get-RowValue $r 'env_has_lang')
+        }
     })
     [ordered]@{
         schema        = $script:AckSchema
@@ -286,6 +337,7 @@ function New-AckRecord {
         tool_commit   = $ToolCommit
         verdict       = if (@($Findings).Count -eq 0) { 'HEALTHY' } else { 'UNHEALTHY' }
         findings      = @($Findings)
+        notes         = @($notes)   # informational, never the verdict
         total_chars   = $TotalChars
         user          = [ordered]@{ chars = $User.chars; segments = $User.segments; dead = $User.dead; duplicates = $User.duplicates; empty = $User.empty; dead_dotnet_tools = $User.dead_dotnet_tools }
         machine_scope = [ordered]@{ chars = $Machine.chars; segments = $Machine.segments; dead = $Machine.dead; duplicates = $Machine.duplicates; dead_dotnet_tools = $Machine.dead_dotnet_tools }
@@ -373,12 +425,14 @@ function Test-SameServiceAccount([AllowNull()][string]$StartName, [string]$MySid
 }
 
 <#
-Rewrite a runner's .path only when it is missing, over the limit, or still carries an entry this
-repair removed. Otherwise leave it: a hand-ordered .path (Git Bash ahead of WSL) is not ours to flatten.
+Rewrite a runner's .path only when it exists and is empty, over the limit, or still carries an entry
+this repair removed. Otherwise leave it: a hand-ordered .path (Git Bash ahead of WSL) is not ours to
+flatten, and a MISSING .path is never created: the runner then follows its service environment,
+while a written .path freezes the jobs' PATH until someone rewrites it.
 #>
 function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a missing file ($null) into ''
     [string[]]$RemovedKeys = @(), [int]$MaxChars = 4096) {
-    if ($null -eq $PathText) { return 'rewrite:missing' }
+    if ($null -eq $PathText) { return 'keep' }
     $t = $PathText.Trim()
     if ($t.Length -eq 0) { return 'rewrite:empty' }
     if ($PathText.Length -gt $MaxChars) { return 'rewrite:over-limit' }   # untrimmed: padding counts
@@ -468,15 +522,144 @@ function Undo-AckCommit([string]$BusRoot, [string]$Rel, [string]$Machine, [strin
     return 'ack commit left in place (HEAD is not the ack commit)'
 }
 
+# Messages go straight to stdout: Write-Output inside a function that also returns a value would
+# become part of that value.
+function Say([string]$m) { [Console]::Out.WriteLine($m) }
+
+# A git command's stdout as exact bytes, or $null on a non-zero exit. PowerShell's native-command
+# capture splits output into lines and drops each line's CR, so `(git show ...) -join "`n"` cannot
+# reproduce a file byte for byte.
+function Get-GitStdoutBytes([string]$BusRoot, [string[]]$GitArgs) {
+    $exe = (Get-Command git -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+    $psi = [System.Diagnostics.ProcessStartInfo]::new($exe)
+    foreach ($a in @('-C', $BusRoot) + @($GitArgs)) { $psi.ArgumentList.Add($a) }
+    $psi.UseShellExecute = $false; $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true
+    $p = [System.Diagnostics.Process]::Start($psi)
+    try {
+        $err = $p.StandardError.ReadToEndAsync()
+        $ms = [System.IO.MemoryStream]::new()
+        $p.StandardOutput.BaseStream.CopyTo($ms)
+        $p.WaitForExit()
+        [void]$err.Result
+        if ($p.ExitCode -ne 0) { return $null }
+        return ,$ms.ToArray()
+    } finally { $p.Dispose() }
+}
+
+# Before an ack commit exists, put the ack file back as HEAD has it (or remove it when HEAD has
+# none) and unstage it, so no failed run leaves a staged or stray ack that blocks or fools the next.
+# When the index is locked, reset and checkout fail; the file is then written from
+# `git cat-file --filters`, which gives exactly the bytes checkout would write (eol and
+# autocrlf conversion included), never a line-joined re-encoding.
+function Restore-AckFile([string]$BusRoot, [string]$Rel) {
+    $target = Join-Path $BusRoot $Rel
+    & git -C $BusRoot reset -q -- $Rel *> $null
+    & git -C $BusRoot cat-file -e "HEAD:$Rel" *> $null
+    if ($LASTEXITCODE -ne 0) { Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue; return 'removed' }
+    & git -C $BusRoot checkout -q HEAD -- $Rel *> $null
+    if ($LASTEXITCODE -eq 0) { return 'checked-out' }
+    $bytes = Get-GitStdoutBytes $BusRoot @('cat-file', '--filters', "HEAD:$Rel")
+    if ($null -eq $bytes) { return 'not-restored' }
+    [System.IO.File]::WriteAllBytes($target, [byte[]]$bytes)
+    return 'written'
+}
+
+<#
+Publish one ack record to <BusRoot>/path-health/<MACHINE>.json on origin. Returns 0 (published, or
+origin already holds this record), 4 (failed; nothing of ours left behind) or 5 (-NoPush rehearsal).
+-BeforePush is a test seam only: it runs just before each push, with the attempt number.
+#>
+function Publish-AckRecord {
+    param(
+        [Parameter(Mandatory)][string]$BusRoot,
+        [Parameter(Mandatory)][System.Collections.IDictionary]$Record,
+        [Parameter(Mandatory)][datetime]$NowUtc,
+        [int]$RefreshHours = 24,
+        [switch]$NoPush,
+        [switch]$AllowBranch,
+        [scriptblock]$BeforePush = $null
+    )
+    if (-not (Test-Path -LiteralPath (Join-Path $BusRoot '.git'))) { Say "PUBLISH FAILED: $BusRoot is not a git checkout of the bus"; return 4 }
+    $rel = "path-health/$($Record.machine).json"
+    $target = Join-Path $BusRoot $rel
+    # The ack only counts on master: the reader runs there. A board's own checkout on a feature
+    # branch would publish where nobody reads it, and detached HEAD cannot be pushed by name.
+    # Checked BEFORE "unchanged", so a branch copy can never report an ack master has not seen.
+    $branch = "$(& git -C $BusRoot symbolic-ref -q --short HEAD 2>$null)".Trim()
+    if (-not $branch) { Say "PUBLISH FAILED: $BusRoot is on a detached HEAD; publish from a master checkout (the one-line command clones one)"; return 4 }
+    if ($branch -ne 'master' -and -not $AllowBranch) { Say "PUBLISH FAILED: $BusRoot is on branch '$branch', not master; the reader would never see this ack. Use the one-line command, or pass -AllowBranch deliberately."; return 4 }
+    $already = @(& git -C $BusRoot diff --cached --name-only)
+    if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
+    # LF only, whatever the platform: the bytes of an ack never depend on the publisher's OS.
+    $json = (($Record | ConvertTo-Json -Depth 6) -replace "`r`n", "`n") + "`n"
+    # The ack commit is always BUILT on origin's tip from the record's own bytes. A rejected push is
+    # never resolved by a text merge of the JSON (a rebase can merge two records into one the reader
+    # rejects): our commit is undone, and the next attempt RE-READS origin before deciding anything,
+    # so a record another run already pushed is "unchanged", never a second commit.
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        # "Unchanged" is a claim about the bus, so the previous record is read from origin, never from
+        # this working tree (an earlier failed run may have left a file here).
+        $remote = Get-RemoteAckRaw -BusRoot $BusRoot -Branch $branch -Rel $rel
+        if (-not $remote.Ok) { Say "PUBLISH FAILED: cannot read origin/$branch to compare the ack$(if ($attempt -gt 1) { ' after a rejected push' })"; return 4 }
+        $need = Test-AckPublishNeeded -PreviousRaw $remote.Raw -Record $Record -NowUtc $NowUtc -RefreshHours $RefreshHours
+        if (-not $need.Publish) {
+            if ($NoPush) { Say "REHEARSAL (-NoPush): $rel ($($need.Reason)) as published on origin/$branch; nothing written."; return 5 }   # a rehearsal is never an ack
+            $how = if ($attempt -gt 1) { 'another run published it while this push was rejected' } else { 'not pushing a cadence commit' }
+            Say "ACK UNCHANGED: $rel ($($need.Reason)) as published on origin/$branch; $how."; return 0
+        }
+        if ($NoPush) {
+            # A rehearsal never moves the checkout: it commits on HEAD as it stands and takes the
+            # commit back. Only a real publish fast-forwards a checkout that is behind origin.
+            & git -C $BusRoot merge-base --is-ancestor "refs/remotes/origin/$branch" HEAD *> $null
+            if ($LASTEXITCODE -ne 0) { Say "REHEARSAL (-NoPush): $BusRoot is behind or apart from origin/$branch; left as it is (a real publish fast-forwards a checkout that is only behind)." }
+        } else {
+            # A checkout strictly BEHIND origin is fast-forwarded first (a board's own master that has
+            # not pulled). Ahead or diverged is left alone: the push guard refuses it.
+            & git -C $BusRoot merge-base --is-ancestor HEAD "refs/remotes/origin/$branch" *> $null
+            $ffOk = ($LASTEXITCODE -ne 0)
+            if (-not $ffOk) { & git -C $BusRoot merge -q --ff-only "refs/remotes/origin/$branch" *> $null; $ffOk = ($LASTEXITCODE -eq 0) }
+            if (-not $ffOk) { Say "PUBLISH FAILED: cannot fast-forward $BusRoot to origin/$branch (local changes in the way?)"; return 4 }
+        }
+        [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
+        [System.IO.File]::WriteAllText($target, $json, [System.Text.UTF8Encoding]::new($false))
+        & git -C $BusRoot add -- $rel *> $null
+        if ($LASTEXITCODE -ne 0) { $x = $LASTEXITCODE; [void](Restore-AckFile $BusRoot $rel); Say "PUBLISH FAILED: git add $rel failed (exit $x)"; return 4 }
+        $staged = @(& git -C $BusRoot diff --cached --name-only)
+        # Nothing staged means HEAD already holds these bytes while origin does not (an unpushed
+        # earlier commit): not an ack.
+        if ($staged.Count -eq 0) { Say "PUBLISH FAILED: HEAD already holds this $rel but origin/$branch does not (an earlier unpushed commit?); rerun the one-line command"; return 4 }
+        if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
+            [void](Restore-AckFile $BusRoot $rel)
+            Say "PUBLISH FAILED: staging area held other files ($($staged -join ', ')); refusing to commit."; return 4
+        }
+        & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($Record.machine) $($Record.verdict) ($($need.Reason))" *> $null
+        if ($LASTEXITCODE -ne 0) { [void](Restore-AckFile $BusRoot $rel); Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?); ack unstaged'; return 4 }
+        $ackBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)".Trim()   # the exact blob this run committed
+        # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit).
+        $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $Record.machine -Branch $branch -BlobOid $ackBlob }
+        if ($NoPush) {
+            # A rehearsal proves the commit works, then takes it back: a kept rehearsal commit would
+            # make every later -Publish on this checkout fail as "2 commits ahead".
+            Say "REHEARSAL (-NoPush): $rel verdict=$($Record.verdict) ($($need.Reason)) committed, not pushed ($(& $undo))"; return 5
+        }
+        $why = Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel
+        if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
+        if ($BeforePush) { & $BeforePush $attempt }
+        & git -C $BusRoot push -q --no-follow-tags origin "HEAD:refs/heads/$branch" *> $null
+        if ($LASTEXITCODE -eq 0) { Say "ACK PUBLISHED: $rel verdict=$($Record.verdict) ($($need.Reason))"; return 0 }
+        $u = & $undo
+        if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED: push rejected ($u)"; return 4 }
+        if ($attempt -eq 2) { Say "PUBLISH FAILED: push rejected twice ($u)"; return 4 }
+        # The next attempt fetches origin again (Get-RemoteAckRaw) before it decides anything.
+    }
+    return 4
+}
+
 if ($Library) { return }
 
 # Any terminating error outside the main try (a bad -BusRoot, a failed type load) is UNEVALUABLE,
 # never a bare pwsh exit 1 that a caller could read as a verdict.
 trap { [Console]::Out.WriteLine("UNEVALUABLE: $($_.Exception.Message)"); exit 2 }
-
-# Messages go straight to stdout: Write-Output inside a function that also returns a value would
-# become part of that value.
-function Say([string]$m) { [Console]::Out.WriteLine($m) }
 
 # ------------------------------------------------------------------------------------------------
 # Environment access. Everything below touches the real machine and is never called by tests.
@@ -594,11 +777,16 @@ function Get-RunnerRows([string]$Root) {
         $n++
         $pathFile = Join-Path $d.FullName '.path'
         $envFile = Join-Path $d.FullName '.env'
-        $pathChars = $null; $envLines = $null; $envText = $null
+        $pathChars = $null; $pathDead = $null; $pathGit = 'SKIPPED'; $envLines = $null; $envText = $null
         if (Test-Path -LiteralPath $pathFile) {
             # Untrimmed, like the registry total: whitespace padding is length the runner really gets.
             $pathText = [string](Get-Content -LiteralPath $pathFile -Raw)
             $pathChars = if ($pathText.Trim().Length -eq 0) { 0 } else { $pathText.Length }
+            if ($pathChars -gt 0) {
+                # A .path that exists is the jobs' PATH: judge its entries and probe git with it.
+                $pathDead = Get-RunnerPathDeadCount $pathText $existsReal $pendingReal
+                $pathGit = Invoke-WhereGitProbe $pathText.TrimEnd("`r", "`n")
+            }
         }
         if (Test-Path -LiteralPath $envFile) {
             $envText = [string](Get-Content -LiteralPath $envFile -Raw)
@@ -611,7 +799,8 @@ function Get-RunnerRows([string]$Root) {
         try { $runnerJson = (Get-Content -LiteralPath (Join-Path $d.FullName '.runner') -Raw).TrimStart([char]0xFEFF) | ConvertFrom-Json } catch { }
         [pscustomobject]@{
             # `label` is what travels: a runner folder may be named after an account (law 4).
-            name = $d.Name; label = "runner-$n"; path_chars = $pathChars; env_lines = $envLines; env_has_lang = (Test-EnvHasLang $envText)
+            name = $d.Name; label = "runner-$n"; path_chars = $pathChars; path_dead = $pathDead; path_git = $pathGit
+            env_lines = $envLines; env_has_lang = (Test-EnvHasLang $envText)
             Dir = $d.FullName; Service = $svcName
             Url = if ($runnerJson -and $runnerJson.PSObject.Properties['gitHubUrl']) { [string]$runnerJson.gitHubUrl } else { $null }
             Agent = if ($runnerJson -and $runnerJson.PSObject.Properties['agentName']) { [string]$runnerJson.agentName } else { $null }
@@ -633,7 +822,9 @@ function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$find
     Say ("Machine PATH : {0,6} chars  {1,3} segments  dead {2}  duplicate {3}" -f $m.MachineStats.chars, $m.MachineStats.segments, $m.MachineStats.dead, $m.MachineStats.duplicates)
     Say ("Total (new process): {0} chars (limit {1}); cmd /d /c git --version: {2}" -f $total, $MaxTotalChars, $whereGit)
     foreach ($r in @($runners)) {
-        Say ("Runner {0} (published as {1}): .path {2}; .env {3}{4}" -f $r.name, $r.label, $(if ($null -eq $r.path_chars) { 'MISSING' } else { "$($r.path_chars) chars" }), $(if ($null -eq $r.env_lines) { 'MISSING' } else { "$($r.env_lines) lines" }), $(if ($r.env_lines -and -not $r.env_has_lang) { ' (no LANG)' } else { '' }))
+        $pathDesc = if ($null -eq $r.path_chars) { 'absent (optional: jobs get the service environment)' } else { "$($r.path_chars) chars, dead $(if ($null -eq $r.path_dead) { '-' } else { $r.path_dead }), git $($r.path_git)" }
+        $envDesc = if ($null -eq $r.env_lines) { 'absent (optional)' } else { "$($r.env_lines) lines$(if (-not $r.env_has_lang) { ', no LANG (note only)' })" }
+        Say ("Runner {0} (published as {1}): .path {2}; .env {3}" -f $r.name, $r.label, $pathDesc, $envDesc)
     }
     if (@($runners).Count -eq 0) { Say "Runners: none under $RunnerRoot" }
     $show = @($m.UserAnalysis | Where-Object { $_.Class -ne 'ok' }) + @($m.MachineAnalysis | Where-Object { $_.Class -ne 'ok' } | ForEach-Object { $_ | Add-Member -NotePropertyName ScopeTag -NotePropertyValue 'Machine' -PassThru -Force })
@@ -736,13 +927,13 @@ function Invoke-Apply {
                 $pathFile = Join-Path $r.Dir '.path'
                 $pathText = if (Test-Path -LiteralPath $pathFile) { [string](Get-Content -LiteralPath $pathFile -Raw) } else { $null }
                 $pathAction = Get-RunnerPathAction $pathText $removedKeys $MaxTotalChars
-                if ($pathAction -eq 'keep') { $actions.Add("runner $($r.name): .path kept (present, within limit, no removed entry)") }
+                if ($pathAction -eq 'keep') { $actions.Add("runner $($r.name): .path kept ($(if ($null -eq $pathText) { 'absent: never created, it would freeze the PATH' } else { 'within limit, no removed entry' }))") }
                 else {
                     if ($null -ne $pathText) { Copy-Item -LiteralPath $pathFile -Destination (Join-Path $dir "runner-$($r.name).path.backup") }
                     [IO.File]::WriteAllText($pathFile, $after.FreshPath, [Text.UTF8Encoding]::new($false))
                     $actions.Add("runner $($r.name): .path rewritten, $($pathAction -replace '^rewrite:', '') ($($after.FreshPath.Length) chars)")
                 }
-                if ($null -eq $r.env_lines -or -not $r.env_has_lang) { $actions.Add("runner $($r.name): .env missing or without LANG - not edited; see SELF-HOSTED-WINDOWS-RUNNER.md host prerequisites") }
+                if ($null -eq $r.env_lines -or -not $r.env_has_lang) { $actions.Add("runner $($r.name): .env absent or without LANG - optional, not edited") }
                 if ($pathAction -eq 'keep') { continue }   # nothing changed for this runner: no restart owed
                 $decision = Get-RestartDecision $elevated $(if ($elevated) { Get-RunnerBusy $r } else { 'not read' })
                 if ($decision -eq 'restart') {
@@ -777,91 +968,11 @@ function Invoke-Apply {
 }
 
 function Publish-Ack($state) {
-    if (-not (Test-Path -LiteralPath (Join-Path $BusRoot '.git'))) { Say "PUBLISH FAILED: $BusRoot is not a git checkout of the bus"; return 4 }
     $now = (Get-Date).ToUniversalTime()
     $record = New-AckRecord -MachineName $env:COMPUTERNAME -NowUtc $now -ToolCommit (Get-ToolCommit $PSScriptRoot) `
         -User $state.M.UserStats -Machine $state.M.MachineStats -TotalChars $state.Total -WhereGit $state.WhereGit `
         -Runners $state.Runners -Findings $state.Findings
-    $rel = "path-health/$($record.machine).json"
-    $target = Join-Path $BusRoot $rel
-    # The ack only counts on master: the reader runs there. A board's own checkout on a feature
-    # branch would publish where nobody reads it, and detached HEAD cannot be pushed by name.
-    # Checked BEFORE "unchanged", so a branch copy can never report an ack master has not seen.
-    $branch = "$(& git -C $BusRoot symbolic-ref -q --short HEAD 2>$null)".Trim()
-    if (-not $branch) { Say "PUBLISH FAILED: $BusRoot is on a detached HEAD; publish from a master checkout (the one-line command clones one)"; return 4 }
-    if ($branch -ne 'master' -and -not $AllowBranch) { Say "PUBLISH FAILED: $BusRoot is on branch '$branch', not master; the reader would never see this ack. Use the one-line command, or pass -AllowBranch deliberately."; return 4 }
-    # "Unchanged" is a claim about the bus, so the previous record is read from origin, never from
-    # this working tree (an earlier failed run may have left a file here).
-    $remote = Get-RemoteAckRaw -BusRoot $BusRoot -Branch $branch -Rel $rel
-    if (-not $remote.Ok) { Say "PUBLISH FAILED: cannot read origin/$branch to compare the ack"; return 4 }
-    $need = Test-AckPublishNeeded -PreviousRaw $remote.Raw -Record $record -NowUtc $now -RefreshHours $RefreshHours
-    if (-not $need.Publish) {
-        if ($NoPush) { Say "REHEARSAL (-NoPush): $rel ($($need.Reason)) as published on origin/$branch; nothing written."; return 5 }   # a rehearsal is never an ack
-        Say "ACK UNCHANGED: $rel ($($need.Reason)) as published on origin/$branch; not pushing a cadence commit."; return 0
-    }
-    $already = @(& git -C $BusRoot diff --cached --name-only)
-    if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
-    # Before the commit exists, a failure unstages the ack and puts the file back to HEAD's copy (or
-    # removes it), so no failed run leaves a staged or stray ack that blocks or fools the next one.
-    # When the index is locked, reset/checkout fail too; HEAD's copy is then written directly.
-    $unstage = {
-        & git -C $BusRoot reset -q -- $rel *> $null
-        & git -C $BusRoot cat-file -e "HEAD:$rel" *> $null
-        if ($LASTEXITCODE -eq 0) {
-            & git -C $BusRoot checkout -q HEAD -- $rel *> $null
-            if ($LASTEXITCODE -ne 0) {
-                $h = (& git -C $BusRoot show "HEAD:$rel" 2>$null) -join "`n"
-                if ($LASTEXITCODE -eq 0) { [IO.File]::WriteAllText($target, $h + "`n", [Text.UTF8Encoding]::new($false)) }
-            }
-        } else { Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue }
-    }
-    # A checkout strictly BEHIND origin is fast-forwarded first (a board's own master that has not
-    # pulled). Ahead or diverged is left alone: the push guard refuses it.
-    $syncToOrigin = {
-        & git -C $BusRoot merge-base --is-ancestor HEAD "refs/remotes/origin/$branch" *> $null
-        if ($LASTEXITCODE -ne 0) { return $true }
-        & git -C $BusRoot merge -q --ff-only "refs/remotes/origin/$branch" *> $null
-        return ($LASTEXITCODE -eq 0)
-    }
-    $json = ($record | ConvertTo-Json -Depth 6) + "`n"
-    # The ack commit is always BUILT on origin's tip from the record's own bytes. A rejected push is
-    # never resolved by a text merge of the JSON (a rebase can merge two records into one the reader
-    # rejects): our commit is undone, the checkout fast-forwarded, and the commit rebuilt, once.
-    for ($attempt = 1; $attempt -le 2; $attempt++) {
-        if (-not (& $syncToOrigin)) { Say "PUBLISH FAILED: cannot fast-forward $BusRoot to origin/$branch (local changes in the way?)"; return 4 }
-        [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
-        [IO.File]::WriteAllText($target, $json, [Text.UTF8Encoding]::new($false))
-        & git -C $BusRoot add -- $rel *> $null
-        if ($LASTEXITCODE -ne 0) { $x = $LASTEXITCODE; & $unstage; Say "PUBLISH FAILED: git add $rel failed (exit $x)"; return 4 }
-        $staged = @(& git -C $BusRoot diff --cached --name-only)
-        # Nothing staged means HEAD already holds these bytes while origin does not (an unpushed
-        # earlier commit): not an ack.
-        if ($staged.Count -eq 0) { Say "PUBLISH FAILED: HEAD already holds this $rel but origin/$branch does not (an earlier unpushed commit?); rerun the one-line command"; return 4 }
-        if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
-            & $unstage
-            Say "PUBLISH FAILED: staging area held other files ($($staged -join ', ')); refusing to commit."; return 4
-        }
-        & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
-        if ($LASTEXITCODE -ne 0) { & $unstage; Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?); ack unstaged'; return 4 }
-        $ackBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)".Trim()   # the exact blob this run committed
-        # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit).
-        $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine -Branch $branch -BlobOid $ackBlob }
-        if ($NoPush) {
-            # A rehearsal proves the commit works, then takes it back: a kept rehearsal commit would
-            # make every later -Publish on this checkout fail as "2 commits ahead".
-            Say "REHEARSAL (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason)) committed, not pushed ($(& $undo))"; return 5
-        }
-        $why = Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel
-        if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
-        & git -C $BusRoot push -q --no-follow-tags origin "HEAD:refs/heads/$branch" *> $null
-        if ($LASTEXITCODE -eq 0) { Say "ACK PUBLISHED: $rel verdict=$($record.verdict) ($($need.Reason))"; return 0 }
-        $u = & $undo
-        if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED: push rejected ($u)"; return 4 }
-        if ($attempt -eq 2) { Say "PUBLISH FAILED: push rejected twice ($u)"; return 4 }
-        & git -C $BusRoot fetch -q origin $branch *> $null
-        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: push rejected and origin/$branch cannot be fetched ($u)"; return 4 }
-    }
-    return 4
+    return (Publish-AckRecord -BusRoot $BusRoot -Record $record -NowUtc $now -RefreshHours $RefreshHours -NoPush:$NoPush -AllowBranch:$AllowBranch)
 }
 
 try {
