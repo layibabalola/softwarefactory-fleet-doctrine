@@ -601,15 +601,16 @@ function Restore-AckFile([string]$BusRoot, [string]$Rel) {
     if ($LASTEXITCODE -eq 0) { return 'checked-out' }
     $bytes = Get-GitStdoutBytes $BusRoot @('cat-file', '--filters', "HEAD:$Rel")
     if ($null -eq $bytes) { return 'not-restored' }
-    [System.IO.File]::WriteAllBytes($target, [byte[]]$bytes)
+    # A file another process holds open throws here: report it, never let it escape as exit 2.
+    try { [System.IO.File]::WriteAllBytes($target, [byte[]]$bytes) } catch { return 'not-restored' }
     return 'written'
 }
 
 <#
 Publish one ack record to <BusRoot>/path-health/<MACHINE>.json on origin. Returns 0 (published, or
-origin already holds this record), 4 (failed; nothing of ours left behind) or 5 (-NoPush rehearsal).
+origin already holds this record), 4 (failed; anything it could not take back is named in its message) or 5 (-NoPush rehearsal).
 -TestHook is a test seam only: it is called as (stage, attempt) at 'before-push' and
-'before-rehearsal-undo' and 'before-add', so tests can race the publisher at exactly those points.
+'before-rehearsal-undo', 'before-add' and 'after-commit', so tests can race the publisher at exactly those points.
 Exit 4 means the publish failed; the message names anything it could not take back.
 #>
 function Publish-AckRecord {
@@ -687,14 +688,18 @@ function Publish-AckRecord {
             $state = if ($left -contains $rel) { "ack file $r but still STAGED (index locked?): run 'git -C <bus> reset -q -- $rel'" } else { "ack $r and unstaged" }
             Say "PUBLISH FAILED: commit failed (is git user.name/user.email set, or the index locked?); $state"; return 4
         }
-        $ackBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)".Trim()   # the exact blob this run committed
-        $ackCommit = "$(& git -C $BusRoot rev-parse -q --verify HEAD 2>$null)".Trim()   # the exact commit this run made: the only thing ever pushed
+        # ONE read of HEAD: the commit this run made. Its blob is resolved from that commit id, never
+        # from HEAD again, so a process that amends HEAD in between cannot pair our verified bytes with
+        # a different commit. $ackCommit is the only thing ever pushed.
+        $ackCommit = "$(& git -C $BusRoot rev-parse -q --verify 'HEAD^{commit}' 2>$null)".Trim()
+        $ackBlob = if ($ackCommit) { "$(& git -C $BusRoot rev-parse -q --verify "${ackCommit}:$rel" 2>$null)".Trim() } else { '' }
+        if ($TestHook) { & $TestHook 'after-commit' $attempt }
         # The commit must hold THIS run's record, byte for byte: another writer may have replaced the
         # file between the write and `git add`, and the filename-only push guard would not see it.
         $committed = if ($ackBlob) { Get-GitStdoutBytes $BusRoot @('cat-file', 'blob', $ackBlob) } else { $null }
         if ($null -eq $committed -or [Convert]::ToBase64String([byte[]]$committed) -cne [Convert]::ToBase64String([System.Text.UTF8Encoding]::new($false).GetBytes($json))) {
             $u = Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $Record.machine -Branch $branch -BlobOid $ackBlob
-            Say "PUBLISH FAILED: the committed $rel is not this run's record (another writer changed the file?); nothing pushed ($u)"; return 4
+            Say "PUBLISH FAILED: the committed $rel is not this run's record (another writer changed the file?); nothing pushed; the file on disk was reset to HEAD's copy, discarding the other writer's version ($u)"; return 4
         }
         # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit).
         $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $Record.machine -Branch $branch -BlobOid $ackBlob }
@@ -913,7 +918,7 @@ function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$find
     Say ("Machine PATH : {0,6} chars  {1,3} segments  dead {2}  duplicate {3}" -f $m.MachineStats.chars, $m.MachineStats.segments, $m.MachineStats.dead, $m.MachineStats.duplicates)
     Say ("Total (new process): {0} chars (limit {1}); cmd /d /c git --version: {2}" -f $total, $MaxTotalChars, $whereGit)
     foreach ($r in @($runners)) {
-        $pathDesc = if ($null -eq $r.path_chars) { "absent (optional: jobs get the service environment, account: $($r.service_account), git with Machine PATH: $($r.path_git))" } else { "$($r.path_chars) chars, dead $(if ($null -eq $r.path_dead) { '-' } else { $r.path_dead }), git $($r.path_git)" }
+        $pathDesc = if ($null -eq $r.path_chars) { "absent (optional: jobs get the service environment, account: $($r.service_account), $(if ($r.service_account -eq 'service-identity') { "git with Machine PATH: $($r.path_git)" } elseif ($r.service_account -eq 'same') { 'git: the probe above applies' } else { 'git not probed: another or unknown account' }))" } else { "$($r.path_chars) chars, dead $(if ($null -eq $r.path_dead) { '-' } else { $r.path_dead }), git $($r.path_git)" }
         $envDesc = if ($null -eq $r.env_lines) { 'absent (optional)' } else { "$($r.env_lines) lines$(if (-not $r.env_has_lang) { ', no LANG (note only)' })" }
         Say ("Runner {0} (published as {1}): .path {2}; .env {3}" -f $r.name, $r.label, $pathDesc, $envDesc)
     }

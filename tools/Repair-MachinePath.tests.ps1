@@ -593,6 +593,31 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         $rcW = Publish-AckRecord -BusRoot $pw -Record $pubRecW -NowUtc $pnow -TestHook $swap 6> $null
         & git -C $pw fetch -q origin
         Ok ($rcW -eq 4 -and ([string](& git -C $pw rev-parse refs/remotes/origin/master)).Trim() -eq $originBefore -and ([string](& git -C $pw rev-list --count 'refs/remotes/origin/master..HEAD')).Trim() -eq '0' -and -not ([string](& git -C $pw status --porcelain))) 'publish: a record swapped in before `git add` is never pushed (exit 4, our commit undone, tree clean)'
+        # Codex round-3 blocking: another process amends HEAD right after our commit. Only OUR commit,
+        # whose bytes were verified, may reach origin; the amended one never does.
+        $amend = {
+            param($stage, $n)
+            if ($stage -ne 'after-commit') { return }
+            [IO.File]::WriteAllText((Join-Path $pw $ackRel), "{`"amended`": true}`n")
+            & $g -C $pw add $ackRel; & $g -C $pw commit -q --amend -m 'path-health: TESTBOX HEALTHY (amended)'
+        }
+        $pubRecA = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 781 -WhereGit PASS -Findings @()
+        $rcA = Publish-AckRecord -BusRoot $pw -Record $pubRecA -NowUtc $pnow -TestHook $amend 6> $null
+        & git -C $pw fetch -q origin
+        $onOrigin = (& git -C $pw show "refs/remotes/origin/master:$ackRel") -join "`n"
+        Ok ($rcA -eq 0 -and $onOrigin -match '"total_chars": 781' -and $onOrigin -notmatch 'amended') 'push: an amend of HEAD after our commit never reaches origin; our verified commit does'
+        & $g -C $pw reset -q --hard origin/master
+        Ok ($src -match [regex]::Escape('rev-parse -q --verify "${ackCommit}:$rel"') -and $src -notmatch [regex]::Escape('rev-parse -q --verify "HEAD:$rel" 2>$null)".Trim()   # the exact blob')) 'push: the verified blob is resolved from the pushed commit id, never from a second read of HEAD'
+        # Codex round-3 note: a tracked ack that cannot be rewritten during undo is reported, not exit 2.
+        if ($IsWindows) {
+            $pubRecB = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 782 -WhereGit PASS -Findings @()
+            $holdB = $null
+            $lockTracked = { param($stage, $n) if ($stage -eq 'before-rehearsal-undo') { $script:holdB = [IO.File]::Open((Join-Path $pw $ackRel), 'Open', 'Read', 'None') } }
+            try { $rcB = Publish-AckRecord -BusRoot $pw -Record $pubRecB -NowUtc $pnow -NoPush -TestHook $lockTracked 6> $null }
+            finally { if ($script:holdB) { $script:holdB.Dispose(); $script:holdB = $null } }
+            Ok ($rcB -eq 4) 'rehearsal: a tracked ack held open during undo is exit 4 (reported), never an escaped exception'
+            & $g -C $pw reset -q --hard origin/master
+        }
         # Commit failure (a failing pre-commit hook): exit 4 and the ack is not left staged.
         $hooks = Join-Path $tmp 'hooks'; [void](New-Item -ItemType Directory -Force -Path $hooks)
         [IO.File]::WriteAllText((Join-Path $hooks 'pre-commit'), "#!/bin/sh`nexit 1`n")
