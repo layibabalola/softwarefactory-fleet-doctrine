@@ -37,14 +37,24 @@ CI-cost lever after fan-out control.
 4. **Meet the host prerequisites** (each is a trap below): Git Bash ahead of WSL on PATH;
    PowerShell `ExecutionPolicy RemoteSigned`; the runner service running as a **real interactive
    user**, not `NETWORK SERVICE`; `git config --global core.longpaths true` and registry
-   `LongPathsEnabled=1`. **Keep the runner's `.env` and `.path`** (added 2026-11-14, from an
-   ULTRA-MAGNUS incident): the runner snapshots PATH into `.path` in its root, and `.env` carries
-   `LANG=en_US.UTF-8` plus any hook variables. Re-adding a hook variable must append to `.env`,
-   never overwrite it; a missing `.path` or a one-line `.env` is a broken registration. Keep the
-   machine's persisted PATH (Machine + User) under 4,096 characters with no dead entries: above
-   8,191, `cmd.exe` children stop finding `git`, `node` and `go` while pwsh and bash steps still
-   do. `tools/Repair-MachinePath.ps1 -Check` reports all of this, and `-Apply` (held until its follow-up PR lands; repair by hand until then) repairs the PATH
-   and rewrites `.path` only when it is missing, empty, over the limit, or lists a removed dead entry; see `doctrine/pattern-path-defense-2026-11.md`.
+   `LongPathsEnabled=1`. **The runner's `.path` and `.env` are optional** (corrected 2026-11-15;
+   the 2026-11-14 wording called a missing `.path` a broken registration, which was wrong).
+   Without `.path`, jobs take PATH from the runner service's environment (Machine PATH plus the
+   service account's User PATH as of the last service start; treat a reboot as what refreshes it); agent-bridge's and
+   Cloudvore's Windows CI ran green on ULTRA-MAGNUS with neither file. A `.path` that exists is the
+   jobs' PATH, **frozen until it is rewritten**, so a hand-written one stops later PATH repairs from
+   reaching those jobs: write one only when a runner needs an order its service PATH cannot give,
+   and keep it current. `.env` may carry `LANG=en_US.UTF-8` and hook variables; re-adding a hook
+   variable must append to it, never overwrite it. **The real guard is the machine's persisted
+   PATH** (Machine + User): keep it under 4,096 characters with no dead entries. Above 8,191,
+   `cmd.exe` children stop finding `git`, `node` and `go` while pwsh and bash steps still do; that,
+   not a missing `.path`, was the 2026-11-14 ULTRA-MAGNUS outage (a 9,584-character User PATH with
+   about 85 dead `.dotnet\tools` entries). `tools/Repair-MachinePath.ps1 -Check` reports all of
+   this: an absent runner file is a note, and a `.path` that exists is a finding when empty, over
+   the limit, holding a dead entry, or failing the git probe. `-Apply` (held until its follow-up PR
+   lands; repair by hand until then) repairs the PATH and rewrites an existing `.path` only when it
+   is empty, over the limit, or lists a removed dead entry; it never creates one. See
+   `doctrine/pattern-path-defense-2026-11.md` rule (d).
 5. **Before installing any toolchain to satisfy a failing test, check whether the test fakes it.**
    See the fake-shim trap. A suite that stubs its toolchains needs none of them installed; a
    proposed multi-gigabyte install (Java + VS Build Tools + Go + Rust + Gradle + CMake) was
