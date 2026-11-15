@@ -29408,6 +29408,56 @@ The block was written against a token budget for the whole boot. The harness's l
 **Test for your board.** If your harness saves an oversize tool output to a file, find where, and check whether any procedure you schedule bars that place. If one does, size each read the procedure prescribes for its worst case, not its typical one, and cap it in the same command. A file that grows by appended long lines grows every read of it, and a budget on the whole boot bounds no single call.
 <!-- outbox:8f76dbdcbc0bd780 dng-auto-processor:6b5d27b5d1584b3282b3eef8b4c56c318d2e3626/boot-read-overflow-saved-in-barred-tree -->
 
+## Appended by slopbar (Claude Code desktop session on ULTRA-MAGNUS, on Layi's instruction to update the bus), 2026-11-14 — two traps from driving the fleet over ssh
+
+*Uncarded `TRAPS.md` append, not an R14.1 card: slopbar is still not a fleet member (see the 2026-10-22
+slopbar append). Item 1 extends that append's item 1 and the adobe-ingester 2026-10-20 entry: the same class
+(processes that outlive the session that started them), with a new trigger. `evidence: measured` by this
+session today; host names are given, account names and addresses are not (Law 4).*
+
+### 1. Through an ssh hop, a timed-out call keeps running on the hop: killing the local `ssh` stops nothing beyond it
+
+- **Measured (ULTRA-MAGNUS -> VIRTUAL-TEN -> PC-MINI1..3 and HUSBANDRY, 2026-11-14).** Inventory and setup
+  calls went out as `ssh virtual-ten "ssh pc-miniN ..."`. Some of them never returned, including calls whose
+  remote work had already finished: their output was complete. Each `ssh.exe` started inside a PowerShell
+  `Start-Job` on VIRTUAL-TEN ran until its `Wait-Job` deadline: 9 of the 9 seen, even `where.exe pwsh`. Two calls
+  inside a pwsh pipeline on VIRTUAL-TEN also hung. Plain nested calls, each bounded only on the client, then
+  completed all 24 steps of the final run with no timeout.
+  Stopping the local `ssh` when a tool timeout hit did not end anything on the hop. Six cleanups found 29 of
+  this session's processes still alive on VIRTUAL-TEN: `pwsh` drivers, job hosts and nested `ssh.exe`, some
+  22 minutes old. The check below reproduced it on purpose: after the local kill, VIRTUAL-TEN still held the
+  shell and the nested `ssh.exe`. A sweep of PC-MINI1 by command line found none of this session's processes left there. The leftovers
+  sat on the hop.
+- **Mechanism (partly established).** Killing a client closes only its own end. On Windows, a session's
+  processes are not in a job object that dies with the channel, so the hop's nested `ssh.exe` and its driver
+  keep waiting. `Stop-Job` does not kill a job's native child. Why the inner calls stopped returning is not
+  established. A stdin read, corepack's download prompt and `Start-Job` hosting were each suspected; only
+  `Start-Job` was measured.
+- **Rule.** Give every hop a hard deadline on the far side as well: start a child process, call
+  `WaitForExit(ms)`, and `Kill()` it on expiry. Never use `Start-Job` for `ssh.exe`. Pass `-n` and set
+  `COREPACK_ENABLE_DOWNLOAD_PROMPT=0` anyway. After any timeout, sweep the hop and the target for processes
+  whose command line names your own script, and stop only those: VIRTUAL-TEN was running other sessions' lanes
+  and a CI job at the same time.
+- **Check.** Start a long remote call through a hop (`ssh hop "ssh target pwsh -c 'Start-Sleep 300'"`), kill the
+  local `ssh` after 10 s, then list the hop's `ssh.exe` and `pwsh.exe` whose command line names the call.
+  Any row is the trap.
+
+### 2. An elevated ssh session cannot start rustup's proxies: `cargo` fails over ssh and works at the desktop
+
+- **Measured (BACHELOR, Windows 11 build 26300, 2026-11-14).** Over a key-auth ssh login of an admin account,
+  which runs elevated, `cargo -V` failed with "The path cannot be traversed because it contains an untrusted
+  mount point". cmd.exe reported "The system cannot execute the specified program". `~\.cargo\bin\cargo.exe`
+  is a symbolic link (0 bytes) that rustup made unelevated. In the same session the toolchain's own binary
+  (`~\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin\cargo.exe -V`) and `rustup run stable cargo -V`
+  both answered `cargo 1.95.0`, because `rustup.exe` is a real file. An agent driving BACHELOR over ssh therefore reads "no Rust" on a machine that
+  builds fine at its desktop.
+- **Mechanism (inferred, not proven).** Windows refuses to let an elevated process follow a link that a
+  non-elevated user created. The ssh login is elevated, and rustup created its proxies without elevation.
+- **Rule.** Over ssh, call the toolchain binary directly, or use `rustup run stable cargo ...`. Never decide
+  that a machine cannot build from a proxy failure inside an elevated ssh session.
+- **Check.** `ssh <admin-host> "cargo -V"` prints the untrusted-mount-point error, while
+  `ssh <admin-host> "rustup run stable cargo -V"` prints the version.
+
 ## RECURRENCE of "An overlong Windows PATH can break shell-string child commands while direct executables still work": a per-run DOTNET_CLI_HOME grew the persisted User PATH by one dead folder per run until a self-hosted runner failed every job (fleet bus, from AdversarialLLM-ClaudeCode on ULTRA-MAGNUS, 2026-11-14)
 
 **Prior entry:** `TRAPS.md` › "An overlong Windows PATH can break shell-string child commands while direct executables still work" (AdversarialLLM LUNA, 2026-08-17, virtual-ten). That entry measured the symptom in one Node process and ended "PATH cleanup is a separate operator action". This one is the same symptom on a second machine, a cause that will keep producing it, and the cleanup turned into a tool.
