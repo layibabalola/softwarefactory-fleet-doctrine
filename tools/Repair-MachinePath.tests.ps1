@@ -54,7 +54,7 @@ Ok ($cls[1] -eq 'ok') 'user: live .dotnet\tools is ok'
 Ok ($cls[2] -eq 'dead' -and $uA[2].DotnetTools) 'user: dead per-run .dotnet\tools is dead and flagged dotnet'
 Ok ($cls[3] -eq 'empty') 'user: empty segment'
 Ok ($cls[4] -eq 'duplicate-var' -and -not $uA[4].Removable) 'user: a literal repeat of an earlier %VAR% entry is reported, not removed'
-Ok ($cls[5] -eq 'cross-duplicate') 'user: repeats a Machine entry'
+Ok ($cls[5] -eq 'cross-duplicate' -and -not $uA[5].Removable) 'user: repeats a Machine entry, reported, never removed'
 Ok ($cls[6] -eq 'unc') 'user: UNC entry is unverifiable'
 Ok ($cls[7] -eq 'unresolved') 'user: unexpanded %VAR% is unverifiable'
 Ok ($cls[8] -eq 'drive-absent') 'user: entry on an unmounted drive is unverifiable'
@@ -63,7 +63,15 @@ Ok (-not ($uA | Where-Object { $_.Class -in @('ok', 'unc', 'unresolved', 'drive-
 
 # --- 2. repair ------------------------------------------------------------------------------------
 $repaired = Get-RepairedPath $uA
-Ok ($repaired -eq (@('%USERPROFILE%\AppData\Roaming\npm', 'C:\Users\u\.dotnet\tools', 'c:\users\u\appdata\roaming\npm\', '\\fileserver\share\bin', '%NOT_DEFINED_VAR%\bin', 'Q:\removable\bin', 'C:\Go\bin') -join ';')) 'repair: keeps order and raw %VAR% text, drops dead/empty/duplicate/cross-duplicate'
+Ok ($repaired -eq (@('%USERPROFILE%\AppData\Roaming\npm', 'C:\Users\u\.dotnet\tools', 'c:\users\u\appdata\roaming\npm\', 'C:\Program Files\Git\cmd', '\\fileserver\share\bin', '%NOT_DEFINED_VAR%\bin', 'Q:\removable\bin', 'C:\Go\bin') -join ';')) 'repair: keeps order and raw %VAR% text, drops only dead/empty (duplicates kept)'
+# Round-12 keys (both Claude keys, blocking): a whitespace-padded twin. Duplicates are never removed,
+# so no padding, quoting or expansion can make -Apply pick the wrong survivor.
+foreach ($pr in @('C:\Windows ;C:\Windows', ' C:\Windows;C:\Windows', "C:\Windows;`tC:\Windows", 'C:\Windows;C:\Windows')) {
+    $pa = Get-PathAnalysis -Raw $pr -Scope User -Exists $fsExists
+    Ok (@($pa | Where-Object Removable).Count -eq 0 -and (Get-RepairedPath $pa) -eq $pr) "duplicate: never removed, whatever the padding ($($pr.Replace("`t", '<tab>')))"
+}
+$pc = Get-PathAnalysis -Raw 'C:\Windows' -Scope User -Exists $fsExists -OtherScopeKeys @('c:\windows')
+Ok ($pc[0].Class -eq 'cross-duplicate' -and -not $pc[0].Removable) 'duplicate: a User copy of a Machine entry is never removed (cross scope)'
 $again = Get-PathAnalysis -Raw $repaired -Scope User -Exists $fsExists -Expand $expand -OtherScopeKeys $mKeys
 Ok (@($again | Where-Object Removable).Count -eq 0) 'repair: idempotent (second pass removes nothing)'
 Ok ((Get-RepairedPath $mA) -eq '%SystemRoot%\system32;%SystemRoot%;C:\Program Files\Git\cmd') 'repair: machine loses only its dead entry'
@@ -82,7 +90,7 @@ Ok ($st.segments -eq 95) 'ultra-magnus fixture: 95 segments'
 Ok ($st.dead -eq 85 -and $st.dead_dotnet_tools -eq 85) 'ultra-magnus fixture: 85 dead, all .dotnet\tools'
 Ok ($st.duplicates -eq 5) 'ultra-magnus fixture: 5 duplicates'
 $umFixed = Get-RepairedPath $umA
-Ok ((Split-PathList $umFixed).Count -eq 5 -and $umFixed -eq ($live -join ';')) 'ultra-magnus fixture: repair leaves exactly the live entries in order'
+Ok ((Split-PathList $umFixed).Count -eq 10 -and $umFixed -eq ((@($live) + $dups) -join ';')) 'ultra-magnus fixture: repair leaves the live entries and their (reported) duplicates, in order'
 Ok ($um.Length -gt 4096 -and $umFixed.Length -lt 4096) 'ultra-magnus fixture: repair takes it under the threshold'
 
 # --- 4. findings and verdict ----------------------------------------------------------------------

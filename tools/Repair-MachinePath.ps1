@@ -18,7 +18,8 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             get, and every self-hosted runner under -RunnerRoot (its .path length, its .env).
             Exit 0 HEALTHY, 1 UNHEALTHY, 2 UNEVALUABLE.
 
-  -Apply    Backs up first, then removes dead, empty and duplicate entries from the User PATH.
+  -Apply    Backs up first, then removes dead and empty entries from the User PATH (duplicates
+            are reported, never removed).
             It touches the Machine PATH only when elevated, and only to remove dead entries.
             It never removes an entry whose folder exists, a UNC entry, an entry with an
             unexpanded %VAR%, or an entry on a drive that is not mounted. It then rewrites a
@@ -172,7 +173,10 @@ function Get-PathAnalysis {
         if ($key -and $class -in @('ok', 'unc', 'unresolved', 'multi', 'relative', 'drive-absent', 'unreadable', 'pending', 'dead-var')) {
             if ($indirect) { [void]$seenVar.Add($key) } else { [void]$seen.Add($key) }
         }
-        $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead', 'duplicate', 'cross-duplicate') } else { $class -eq 'dead' }
+        # Duplicates are reported, never removed: which copy a program resolves depends on quoting,
+        # whitespace padding and expansion (cmd, SearchPathW, where.exe and PowerShell disagree), and
+        # picking the wrong survivor removes the copy that works. Only a dead or empty entry goes.
+        $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead') } else { $class -eq 'dead' }
         if ($seg -match '%') { $removable = $false }   # backstop: an entry written with a %VAR% is never removed, whatever its class
         if ($seg.Contains('"')) { $removable = $false }   # any quoted entry, balanced or not: reported, never removed
         $rows.Add([pscustomobject]@{
