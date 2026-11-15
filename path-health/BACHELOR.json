@@ -1,0 +1,29 @@
+{
+  "schema": "fleet-path-health.v1",
+  "machine": "BACHELOR",
+  "published_utc": "2026-11-15T07:13:43Z",
+  "tool_commit": "000d7a8ade87983b4f6ef91a62a2e7650bb82a20",
+  "verdict": "UNHEALTHY",
+  "findings": [
+    "user-dead:1",
+    "machine-dead:2"
+  ],
+  "total_chars": 1721,
+  "user": {
+    "chars": 724,
+    "segments": 17,
+    "dead": 1,
+    "duplicates": 0,
+    "empty": 0,
+    "dead_dotnet_tools": 0
+  },
+  "machine_scope": {
+    "chars": 996,
+    "segments": 29,
+    "dead": 2,
+    "duplicates": 5,
+    "dead_dotnet_tools": 0
+  },
+  "cmd_where_git": "PASS",
+  "runners": []
+}
