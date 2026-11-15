@@ -23,6 +23,10 @@ MATRIX_EXEMPT = {
     # One ubuntu job after the drift-carrying workflows complete on master; it
     # opens/closes the drift tracking issue and is an alarm, not evidence.
     "bus-drift-alarm.yml",
+    # PowerShell-only (tools/Repair-MachinePath.ps1), no Python axis: a PR runs
+    # one ubuntu-latest job; master and dispatch run windows-latest and
+    # ubuntu-latest. Path-scoped, cancel-in-progress.
+    "path-health.yml",
 }
 
 MATRIX_RE = re.compile(

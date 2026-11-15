@@ -54,7 +54,7 @@ pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Check
 .EXAMPLE
 pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Check -Publish -BusRoot <bus clone>
 .EXAMPLE
-pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Apply      # owner's call, per machine
+pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Apply      # HELD in this revision (exits 2); owner's call, per machine
 #>
 [CmdletBinding()]
 param(
@@ -641,7 +641,7 @@ function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$find
         Say 'Entries that are not ok (this machine only; never published):'
         foreach ($e in ($show | Select-Object -First 40)) {
             $tag = if ($e.PSObject.Properties['ScopeTag']) { 'Machine' } else { 'User' }
-            Say ("  {0,-7} {1,-15} {2}{3}" -f $tag, $e.Class, $e.Raw, $(if ($e.Removable) { '  [removable]' } else { '' }))
+            Say ("  {0,-7} {1,-15} {2}{3}" -f $tag, $e.Class, $e.Raw, $(if ($e.Removable) { '  [safe to remove by hand]' } else { '' }))
         }
         if ($show.Count -gt 40) { Say "  ... and $($show.Count - 40) more" }
     }
