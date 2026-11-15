@@ -1,0 +1,82 @@
+{
+  "schema": "fleet-path-health.v1",
+  "machine": "ULTRA-MAGNUS",
+  "published_utc": "2026-11-15T07:12:50Z",
+  "tool_commit": "b57455f639bf240fa2d49e1d2b4b1236ec9f2c7c",
+  "verdict": "UNHEALTHY",
+  "findings": [
+    "runner-path-missing:runner-2",
+    "runner-env-missing:runner-2",
+    "runner-path-missing:runner-3",
+    "runner-env-missing:runner-3",
+    "runner-path-missing:runner-4",
+    "runner-env-missing:runner-4",
+    "runner-path-missing:runner-5",
+    "runner-env-missing:runner-5",
+    "runner-path-missing:runner-6",
+    "runner-env-no-lang:runner-6",
+    "runner-path-missing:runner-7",
+    "runner-env-missing:runner-7"
+  ],
+  "total_chars": 1470,
+  "user": {
+    "chars": 475,
+    "segments": 11,
+    "dead": 0,
+    "duplicates": 2,
+    "empty": 0,
+    "dead_dotnet_tools": 0
+  },
+  "machine_scope": {
+    "chars": 994,
+    "segments": 31,
+    "dead": 0,
+    "duplicates": 10,
+    "dead_dotnet_tools": 0
+  },
+  "cmd_where_git": "PASS",
+  "runners": [
+    {
+      "label": "runner-1",
+      "path_chars": 1440,
+      "env_lines": 2,
+      "env_has_lang": true
+    },
+    {
+      "label": "runner-2",
+      "path_chars": null,
+      "env_lines": null,
+      "env_has_lang": false
+    },
+    {
+      "label": "runner-3",
+      "path_chars": null,
+      "env_lines": null,
+      "env_has_lang": false
+    },
+    {
+      "label": "runner-4",
+      "path_chars": null,
+      "env_lines": null,
+      "env_has_lang": false
+    },
+    {
+      "label": "runner-5",
+      "path_chars": null,
+      "env_lines": null,
+      "env_has_lang": false
+    },
+    {
+      "label": "runner-6",
+      "path_chars": null,
+      "env_lines": 2,
+      "env_has_lang": false
+    },
+    {
+      "label": "runner-7",
+      "path_chars": null,
+      "env_lines": null,
+      "env_has_lang": false
+    }
+  ]
+}
