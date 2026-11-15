@@ -248,6 +248,25 @@ Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '"findings":\s*\[\s*\]', '"f
 $fe = Get-PathFindings -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Runners @(@{ label = 'runner-1'; path_chars = 0; env_lines = 1; env_has_lang = (Test-EnvHasLang 'LANG=') })
 Ok ($fe -contains 'runner-path-empty:runner-1' -and $fe -contains 'runner-env-no-lang:runner-1') 'runner: empty .path and LANG= with no value are findings'
 
+# Round-8 Codex finding 1 (blocking): a %VAR% that expands to nothing here is never "empty", never removed.
+$emptyVar = { param($t) $t.Replace('%FLEET_REVIEW_TOOLS%', '').Replace('%WS_VAR%', '   ') }
+$ev = Get-PathAnalysis -Raw '%FLEET_REVIEW_TOOLS%;C:\Windows;%WS_VAR%;;C:\Gone\abs' -Scope User -Exists $fsExists -Expand $emptyVar
+Ok ($ev[0].Class -eq 'unresolved' -and -not $ev[0].Removable -and $ev[2].Class -eq 'unresolved' -and -not $ev[2].Removable) 'hazard: a %VAR% expanding to empty or whitespace is unresolved, never removed'
+Ok ((Get-RepairedPath $ev) -eq '%FLEET_REVIEW_TOOLS%;C:\Windows;%WS_VAR%') 'hazard: repair keeps empty-expanding %VAR% entries and drops only the literal empty and dead entries'
+$evm = Get-PathAnalysis -Raw '%FLEET_REVIEW_TOOLS%;C:\Gone\m' -Scope Machine -Exists $fsExists -Expand $emptyVar
+Ok (-not $evm[0].Removable -and $evm[1].Removable) 'hazard: Machine scope also never removes an empty-expanding %VAR% entry'
+$bk = Get-PathAnalysis -Raw '%NOPE%\gone' -Scope User -Exists { param($p) $p -match '^[A-Za-z]:\\$' } -Expand { param($t) $t.Replace('%NOPE%', 'C:\x') }
+Ok ($bk.Count -eq 1 -and $bk[0].Class -eq 'dead-var' -and -not $bk[0].Removable) 'hazard: backstop: no entry written with a %VAR% is ever removable'
+
+# Round-8 Claude finding 2: a quoted entry containing ';' is one entry, never split into a "dead" fragment.
+[void]$fs.Add('C:\a;b')
+$qa = Get-PathAnalysis -Raw 'C:\Windows;"C:\a;b";C:\Gone\q' -Scope User -Exists $fsExists
+Ok ($qa.Count -eq 3 -and $qa[1].Raw -eq '"C:\a;b"' -and $qa[1].Class -ne 'dead' -and -not $qa[1].Removable) 'split: a quoted entry with a semicolon stays one entry and is kept'
+Ok ((Get-RepairedPath $qa) -eq 'C:\Windows;"C:\a;b"') 'split: repair keeps the quoted entry exactly as written'
+$ub = Get-PathAnalysis -Raw 'C:\Windows;"C:\Gone;x' -Scope User -Exists $fsExists
+Ok (@($ub | Where-Object Removable).Count -eq 0) 'split: an unbalanced quote is never removed'
+Ok ((Split-PathList 'a;;b').Count -eq 3 -and (Split-PathList 'a;"b;c";d')[1] -eq '"b;c"') 'split: empty segments survive and quotes group'
+
 # --- 9. round-3 key findings: pending set, exit codes, publish push guard ---------------------------
 $ps = Get-PendingKeySet @($expand, { param($t) $t.Replace('%USERPROFILE%', 'D:\Profiles\u').Replace('%APPDATA%', 'D:\Profiles\u\AppData\Roaming') })
 Ok ($ps -is [string[]] -and @($ps | Where-Object { $_ -isnot [string] -or $_ -match ' ' }).Count -eq 0) 'pending: the union is a flat string array, never an array of arrays'

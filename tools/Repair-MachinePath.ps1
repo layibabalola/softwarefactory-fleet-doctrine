@@ -82,7 +82,19 @@ $script:AckSchema = 'fleet-path-health.v1'
 
 function Split-PathList([AllowNull()][AllowEmptyString()][string]$Raw) {
     if ($null -eq $Raw -or $Raw -eq '') { return ,@() }
-    return ,@($Raw -split ';')
+    # Split on semicolons OUTSIDE double quotes: Windows reads `"C:\a;b"` as one entry, and a plain
+    # split would make a dead-looking fragment of a live folder. Quotes stay in the segment (the
+    # analysis trims them), so the repaired PATH keeps the entry exactly as written.
+    $out = [System.Collections.Generic.List[string]]::new()
+    $sb = [System.Text.StringBuilder]::new()
+    $inQuote = $false
+    foreach ($ch in $Raw.ToCharArray()) {
+        if ($ch -eq '"') { $inQuote = -not $inQuote; [void]$sb.Append($ch) }
+        elseif ($ch -eq ';' -and -not $inQuote) { $out.Add($sb.ToString()); [void]$sb.Clear() }
+        else { [void]$sb.Append($ch) }
+    }
+    $out.Add($sb.ToString())
+    return ,@($out.ToArray())
 }
 
 function Get-PathKey([string]$Expanded) {
@@ -123,7 +135,10 @@ function Get-PathAnalysis {
         $trimmed = $expanded.Trim().Trim('"').Trim()
         $key = if ($trimmed) { Get-PathKey $trimmed } else { '' }
         $class = 'ok'
-        if (-not $trimmed) { $class = 'empty' }
+        # A %VAR% that expands to nothing in THIS process is not an empty entry: the variable may be
+        # set for every other session. Only a segment that is empty as written is 'empty'.
+        if (-not $trimmed -and $seg -match '%') { $class = 'unresolved' }
+        elseif (-not $trimmed) { $class = 'empty' }
         elseif ($trimmed.StartsWith('\\')) { $class = 'unc' }
         elseif ($trimmed -match '%[^%;]+%') { $class = 'unresolved' }
         elseif ($trimmed.Contains(';')) { $class = 'multi' }   # a %VAR% that expands to several folders: never one folder's verdict
@@ -152,6 +167,8 @@ function Get-PathAnalysis {
             if ($seg -match '%') { [void]$seenVar.Add($key) } else { [void]$seen.Add($key) }
         }
         $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead', 'duplicate', 'cross-duplicate') } else { $class -eq 'dead' }
+        if ($seg -match '%') { $removable = $false }   # backstop: an entry written with a %VAR% is never removed, whatever its class
+        if ((([regex]::Matches($seg, '"')).Count % 2) -ne 0) { $removable = $false }   # an unbalanced quote: never this tool's verdict
         $rows.Add([pscustomobject]@{
             Index = $i; Raw = $seg; Expanded = $trimmed; Key = $key; Class = $class; Removable = $removable
             DotnetTools = ($trimmed -match '\\\.dotnet\\tools$')
@@ -364,7 +381,7 @@ function Get-FinalExitCode([int]$CheckCode, [bool]$Published, [int]$PublishCode 
 function Get-AckPushBlocker([string]$BusRoot, [string]$Branch, [string]$Rel) {
     & git -C $BusRoot fetch -q origin $Branch *> $null
     if ($LASTEXITCODE -ne 0) { return "cannot fetch origin/$Branch" }
-    $ahead = ([string](& git -C $BusRoot rev-list --count "refs/remotes/origin/${Branch}..HEAD" 2>$null)).Trim()
+    $ahead = "$(& git -C $BusRoot rev-list --count "refs/remotes/origin/${Branch}..HEAD" 2>$null)".Trim()
     if ($ahead -ne '1') { return "HEAD is $ahead commits ahead of origin/$Branch, not 1" }
     $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r HEAD 2>$null)
     if ($files.Count -ne 1 -or $files[0] -ne $Rel) { return "HEAD commit touches $($files -join ', '), not exactly $Rel" }
@@ -392,10 +409,10 @@ function Get-RemoteAckRaw([string]$BusRoot, [string]$Branch, [string]$Rel) {
 # exactly the ack file, and its copy of that file is the exact blob this run wrote ($BlobOid).
 function Undo-AckCommit([string]$BusRoot, [string]$Rel, [string]$Machine, [string]$Branch, [string]$BlobOid) {
     $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r HEAD 2>$null)
-    $subj = ([string](& git -C $BusRoot log -1 --format=%s HEAD 2>$null)).Trim()
+    $subj = "$(& git -C $BusRoot log -1 --format=%s HEAD 2>$null)".Trim()
     & git -C $BusRoot merge-base --is-ancestor HEAD "refs/remotes/origin/$Branch" *> $null
     $onOrigin = ($LASTEXITCODE -eq 0)
-    $headBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$Rel" 2>$null)).Trim()
+    $headBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$Rel" 2>$null)".Trim()
     if (-not $onOrigin -and $BlobOid -and $headBlob -eq $BlobOid -and $files.Count -eq 1 -and $files[0] -eq $Rel -and $subj.StartsWith("path-health: $Machine ")) {
         & git -C $BusRoot reset -q --mixed HEAD~1 *> $null
         if ($LASTEXITCODE -eq 0) {
@@ -696,7 +713,7 @@ function Invoke-Apply {
 function Publish-Ack($state) {
     if (-not (Test-Path -LiteralPath (Join-Path $BusRoot '.git'))) { Say "PUBLISH FAILED: $BusRoot is not a git checkout of the bus"; return 4 }
     $now = (Get-Date).ToUniversalTime()
-    $record = New-AckRecord -MachineName $env:COMPUTERNAME -NowUtc $now -ToolCommit (Get-ToolCommit $BusRoot) `
+    $record = New-AckRecord -MachineName $env:COMPUTERNAME -NowUtc $now -ToolCommit (Get-ToolCommit $PSScriptRoot) `
         -User $state.M.UserStats -Machine $state.M.MachineStats -TotalChars $state.Total -WhereGit $state.WhereGit `
         -Runners $state.Runners -Findings $state.Findings
     $rel = "path-health/$($record.machine).json"
@@ -704,7 +721,7 @@ function Publish-Ack($state) {
     # The ack only counts on master: the reader runs there. A board's own checkout on a feature
     # branch would publish where nobody reads it, and detached HEAD cannot be pushed by name.
     # Checked BEFORE "unchanged", so a branch copy can never report an ack master has not seen.
-    $branch = ([string](& git -C $BusRoot symbolic-ref -q --short HEAD 2>$null)).Trim()
+    $branch = "$(& git -C $BusRoot symbolic-ref -q --short HEAD 2>$null)".Trim()
     if (-not $branch) { Say "PUBLISH FAILED: $BusRoot is on a detached HEAD; publish from a master checkout (the one-line command clones one)"; return 4 }
     if ($branch -ne 'master' -and -not $AllowBranch) { Say "PUBLISH FAILED: $BusRoot is on branch '$branch', not master; the reader would never see this ack. Use the one-line command, or pass -AllowBranch deliberately."; return 4 }
     # "Unchanged" is a claim about the bus, so the previous record is read from origin, never from
@@ -760,7 +777,7 @@ function Publish-Ack($state) {
         }
         & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
         if ($LASTEXITCODE -ne 0) { & $unstage; Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?); ack unstaged'; return 4 }
-        $ackBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)).Trim()   # the exact blob this run committed
+        $ackBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)".Trim()   # the exact blob this run committed
         # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit).
         $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine -Branch $branch -BlobOid $ackBlob }
         if ($NoPush) {
@@ -789,7 +806,7 @@ try {
     } else {
         $state = Get-CurrentState
         if ($Json) {
-            New-AckRecord -MachineName $env:COMPUTERNAME -NowUtc (Get-Date).ToUniversalTime() -ToolCommit (Get-ToolCommit $BusRoot) -User $state.M.UserStats -Machine $state.M.MachineStats -TotalChars $state.Total -WhereGit $state.WhereGit -Runners $state.Runners -Findings $state.Findings | ConvertTo-Json -Depth 6 | ForEach-Object { Say $_ }
+            New-AckRecord -MachineName $env:COMPUTERNAME -NowUtc (Get-Date).ToUniversalTime() -ToolCommit (Get-ToolCommit $PSScriptRoot) -User $state.M.UserStats -Machine $state.M.MachineStats -TotalChars $state.Total -WhereGit $state.WhereGit -Runners $state.Runners -Findings $state.Findings | ConvertTo-Json -Depth 6 | ForEach-Object { Say $_ }
         } else {
             Write-Report $state.M $state.WhereGit $state.Runners $state.Findings $state.Total
             if ($state.Findings.Count) { Say 'Repair (owner''s call): pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Apply   (Administrator only if Machine PATH has dead entries or a runner must restart)' }
