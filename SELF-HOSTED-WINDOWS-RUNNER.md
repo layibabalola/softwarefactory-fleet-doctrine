@@ -44,7 +44,7 @@ CI-cost lever after fan-out control.
    machine's persisted PATH (Machine + User) under 4,096 characters with no dead entries: above
    8,191, `cmd.exe` children stop finding `git`, `node` and `go` while pwsh and bash steps still
    do. `tools/Repair-MachinePath.ps1 -Check` reports all of this, and `-Apply` repairs the PATH
-   and rewrites `.path` only when it is missing, over the limit, or lists a removed dead entry; see `doctrine/pattern-path-defense-2026-11.md`.
+   and rewrites `.path` only when it is missing, empty, over the limit, or lists a removed dead entry; see `doctrine/pattern-path-defense-2026-11.md`.
 5. **Before installing any toolchain to satisfy a failing test, check whether the test fakes it.**
    See the fake-shim trap. A suite that stubs its toolchains needs none of them installed; a
    proposed multi-gigabyte install (Java + VS Build Tools + Go + Rust + Gradle + CMake) was

@@ -363,14 +363,33 @@ function Get-AckPushBlocker([string]$BusRoot, [string]$Branch, [string]$Rel) {
     return $null
 }
 
-# Take our own ack commit back off the checkout (the file stays in the working tree), so a failed
-# publish leaves a board's master as it was. Only a HEAD that is exactly our one-file ack is undone.
+# The ack as origin holds it: @{ Ok; Raw } (Raw $null when origin has none). The previous record is
+# always read from the REMOTE, never the working tree: a file left on disk by an earlier failed run
+# would otherwise make "unchanged" true while nothing is on the bus.
+function Get-RemoteAckRaw([string]$BusRoot, [string]$Branch, [string]$Rel) {
+    & git -C $BusRoot fetch -q origin $Branch *> $null
+    if ($LASTEXITCODE -ne 0) { return @{ Ok = $false; Raw = $null } }
+    & git -C $BusRoot cat-file -e "refs/remotes/origin/${Branch}:$Rel" *> $null
+    if ($LASTEXITCODE -ne 0) { return @{ Ok = $true; Raw = $null } }
+    $raw = (& git -C $BusRoot show "refs/remotes/origin/${Branch}:$Rel" 2>$null) -join "`n"
+    if ($LASTEXITCODE -ne 0) { return @{ Ok = $false; Raw = $null } }
+    return @{ Ok = $true; Raw = $raw }
+}
+
+# Take our own ack commit back off the checkout AND restore the ack file to the new HEAD's copy
+# (or remove it if HEAD has none), so a failed publish leaves no ack on disk for a rerun to mistake
+# for a published one. Only a HEAD that is exactly our one-file ack commit is undone.
 function Undo-AckCommit([string]$BusRoot, [string]$Rel, [string]$Machine) {
     $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r HEAD 2>$null)
     $subj = ([string](& git -C $BusRoot log -1 --format=%s HEAD 2>$null)).Trim()
     if ($files.Count -eq 1 -and $files[0] -eq $Rel -and $subj.StartsWith("path-health: $Machine ")) {
         & git -C $BusRoot reset -q --mixed HEAD~1 *> $null
-        if ($LASTEXITCODE -eq 0) { return 'ack commit undone locally' }
+        if ($LASTEXITCODE -eq 0) {
+            & git -C $BusRoot cat-file -e "HEAD:$Rel" *> $null
+            if ($LASTEXITCODE -eq 0) { & git -C $BusRoot checkout -q HEAD -- $Rel *> $null }
+            else { Remove-Item -LiteralPath (Join-Path $BusRoot $Rel) -Force -ErrorAction SilentlyContinue }
+            return 'ack commit undone locally'
+        }
     }
     return 'ack commit left in place (HEAD is not the ack commit)'
 }
@@ -668,23 +687,18 @@ function Publish-Ack($state) {
         -Runners $state.Runners -Findings $state.Findings
     $rel = "path-health/$($record.machine).json"
     $target = Join-Path $BusRoot $rel
-    $prev = if (Test-Path -LiteralPath $target) { Get-Content -LiteralPath $target -Raw } else { $null }
     # The ack only counts on master: the reader runs there. A board's own checkout on a feature
     # branch would publish where nobody reads it, and detached HEAD cannot be pushed by name.
     # Checked BEFORE "unchanged", so a branch copy can never report an ack master has not seen.
     $branch = ([string](& git -C $BusRoot symbolic-ref -q --short HEAD 2>$null)).Trim()
     if (-not $branch) { Say "PUBLISH FAILED: $BusRoot is on a detached HEAD; publish from a master checkout (the one-line command clones one)"; return 4 }
     if ($branch -ne 'master' -and -not $AllowBranch) { Say "PUBLISH FAILED: $BusRoot is on branch '$branch', not master; the reader would never see this ack. Use the one-line command, or pass -AllowBranch deliberately."; return 4 }
-    $need = Test-AckPublishNeeded -PreviousRaw $prev -Record $record -NowUtc $now -RefreshHours $RefreshHours
-    if (-not $need.Publish) {
-        # "Unchanged" is a claim about the bus, not about this checkout: a previous run may have
-        # committed the ack and failed to push. Confirm the remote holds these exact bytes.
-        & git -C $BusRoot fetch -q origin $branch *> $null
-        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: cannot fetch origin/$branch to confirm the unchanged ack is published"; return 4 }
-        & git -C $BusRoot diff --quiet "refs/remotes/origin/$branch" -- $rel *> $null
-        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: $rel matches this checkout but not origin/$branch (an earlier push failed?); push it, or rerun the one-line command"; return 4 }
-        Say "ACK UNCHANGED: $rel ($($need.Reason)), identical on origin/$branch; not pushing a cadence commit."; return 0
-    }
+    # "Unchanged" is a claim about the bus, so the previous record is read from origin, never from
+    # this working tree (an earlier failed run may have left a file here).
+    $remote = Get-RemoteAckRaw -BusRoot $BusRoot -Branch $branch -Rel $rel
+    if (-not $remote.Ok) { Say "PUBLISH FAILED: cannot read origin/$branch to compare the ack"; return 4 }
+    $need = Test-AckPublishNeeded -PreviousRaw $remote.Raw -Record $record -NowUtc $now -RefreshHours $RefreshHours
+    if (-not $need.Publish) { Say "ACK UNCHANGED: $rel ($($need.Reason)) as published on origin/$branch; not pushing a cadence commit."; return 0 }
     $already = @(& git -C $BusRoot diff --cached --name-only)
     if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
     [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
@@ -692,7 +706,9 @@ function Publish-Ack($state) {
     & git -C $BusRoot add -- $rel *> $null
     if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: git add $rel failed (exit $LASTEXITCODE)"; return 4 }
     $staged = @(& git -C $BusRoot diff --cached --name-only)
-    if ($staged.Count -eq 0) { Say "ACK UNCHANGED: $rel bytes identical"; return 0 }
+    # Nothing staged means HEAD already holds these bytes while origin does not (an unpushed earlier
+    # commit): not an ack.
+    if ($staged.Count -eq 0) { Say "PUBLISH FAILED: HEAD already holds this $rel but origin/$branch does not (an earlier unpushed commit?); rerun the one-line command"; return 4 }
     if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
         & git -C $BusRoot reset -q -- $rel *> $null
         Say "PUBLISH FAILED: staging area held other files ($($staged -join ', ')); refusing to commit."; return 4
@@ -700,8 +716,9 @@ function Publish-Ack($state) {
     & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
     if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?)'; return 4 }
     if ($NoPush) { Say "ACK COMMITTED, NOT PUSHED (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason))"; return 5 }   # a rehearsal is not an ack
-    # Any failure after the commit undoes our own ack commit (Undo-AckCommit), so a board's master is
-    # left as it was and a rerun starts clean.
+    # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit), so a rerun
+    # starts clean. After a successful pull --rebase the branch has moved to origin's tip; that
+    # fast-forward is kept (it holds only reviewed master commits).
     $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine }
     $onlyAck = { Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel }
     $why = & $onlyAck

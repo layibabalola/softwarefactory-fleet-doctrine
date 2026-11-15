@@ -91,6 +91,9 @@ is the adoption step. **The bus never installs it.** Two shapes that fit:
   `pwsh -NoProfile -File <bus>\tools\Repair-MachinePath.ps1 -Check` and prints its output only when
   it exits non-zero. Keep it quiet on HEALTHY, and give it a time cap: the check takes a few seconds.
 - **Scheduled task**, daily: the same command with `-Publish` added, so the machine's ack stays fresh.
+  With `-Publish` the exit codes change: **10** is acked HEALTHY (quiet), **11** is acked UNHEALTHY
+  (alert: repair due), and anything else (1, 2, 4) means no ack was published (alert). Do not
+  alert on "non-zero" here: a successful ack is never 0.
   Launch it through a hidden-window shim, not a bare `pwsh.exe` under an Interactive principal
   (see the 2026-08-30 TRAPS entry on console windows).
 
@@ -109,7 +112,7 @@ Administrator, only git with push access to the bus, and it takes a few seconds.
 PowerShell 7 or Windows PowerShell (PowerShell 7, `pwsh`, must be installed: the tool needs it):
 
 ```powershell
-$d=Join-Path $env:TEMP "fleet-path-ack-$PID"; if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { "BLOCKED: PowerShell 7 (pwsh) is not installed" } else { git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; if ($LASTEXITCODE) { "BLOCKED: git clone exit $LASTEXITCODE" } else { git -C $d sparse-checkout set tools path-health; $rc=$null; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; $rc=$LASTEXITCODE; if ($rc -in 10,11) { Remove-Item -Recurse -Force $d; "ACK DONE (exit $rc)" } else { "BLOCKED: exit $rc - clone kept at $d" } } }
+$d=Join-Path $env:TEMP ("fleet-path-ack-" + [guid]::NewGuid().ToString("N").Substring(0,8)); if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { "BLOCKED: PowerShell 7 (pwsh) is not installed" } else { git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; if ($LASTEXITCODE) { "BLOCKED: git clone exit $LASTEXITCODE" } else { git -C $d sparse-checkout set tools path-health; $rc=$null; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; $rc=$LASTEXITCODE; if ($rc -in 10,11) { Remove-Item -Recurse -Force $d; "ACK DONE (exit $rc)" } else { "BLOCKED: exit $rc - clone kept at $d" } } }
 ```
 
 It clones master fresh into a temporary folder, so it never touches a board's own bus checkout or
@@ -122,8 +125,9 @@ The last line it prints is one of three:
 - `ACK DONE (exit 11)`: acked, UNHEALTHY. The clone is deleted. The repair is `-Apply`,
   separately. An UNHEALTHY ack is still an ack: it tells the fleet the machine looked.
 - `BLOCKED: exit <n>`: the check could not evaluate (2), the publish failed (4), or pwsh itself
-  failed (1, a parse or parameter error: a success is never 0 or 1 here). The clone is kept,
-  and with it any ack committed but not pushed. Record it as a BLOCKED line (below).
+  failed (1, a parse or parameter error: a success is never 0 or 1 here). The clone is kept for
+  diagnosis (a failed publish leaves no ack commit in it). Each run uses a new folder, so a retry
+  never collides with a kept clone. Record it as a BLOCKED line (below).
 
 Parsed with zero errors in Windows PowerShell 5.1 and PowerShell 7.6.
 

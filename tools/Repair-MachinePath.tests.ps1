@@ -271,8 +271,27 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         Ok ((Get-AckPushBlocker $wc 'master' $ackRel) -like 'HEAD is 2 commits ahead*') 'push guard: local unreviewed commits under the ack block the push'
         $prior = ([string](& git -C $wc rev-parse HEAD~1)).Trim()
         Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX') -eq 'ack commit undone locally') 'undo: our own one-file ack commit is taken back'
-        Ok (([string](& git -C $wc rev-parse HEAD)).Trim() -eq $prior -and (Test-Path -LiteralPath (Join-Path $wc $ackRel))) 'undo: HEAD returns to the prior commit and the ack file stays on disk'
+        Ok (([string](& git -C $wc rev-parse HEAD)).Trim() -eq $prior -and -not (Test-Path -LiteralPath (Join-Path $wc $ackRel))) 'undo: HEAD returns to the prior commit and an ack file new to HEAD is removed (no untracked leftover)'
         Ok ((Get-AckPushBlocker $wc 'nosuchbranch' $ackRel) -like 'cannot fetch*') 'push guard: an unfetchable branch blocks the push'
+        # Round-4 finding 1: the previous record comes from origin, never the working tree.
+        Set-Content -LiteralPath (Join-Path $wc $ackRel) -Value '{"left":"by a failed run"}'
+        $r = Get-RemoteAckRaw $wc 'master' $ackRel
+        Ok ($r.Ok -and $null -eq $r.Raw) 'remote ack: a file left on disk is not "published" when origin has none'
+        Ok ((Test-AckPublishNeeded -PreviousRaw $r.Raw -Record ([ordered]@{ schema = 'x' }) -NowUtc $now -RefreshHours 24).Publish) 'remote ack: no origin copy means publish (first-publication)'
+        Remove-Item -LiteralPath (Join-Path $wc $ackRel) -Force
+        & $g -C $wc reset -q --hard origin/master
+        [void](New-Item -ItemType Directory -Force -Path (Join-Path $wc 'path-health'))
+        Set-Content -LiteralPath (Join-Path $wc $ackRel) -Value '{"v":1}'
+        & $g -C $wc add $ackRel; & $g -C $wc commit -q -m $ackMsg; & $g -C $wc push -q origin 'HEAD:refs/heads/master'
+        $r = Get-RemoteAckRaw $wc 'master' $ackRel
+        Ok ($r.Ok -and $r.Raw -match '"v":1') 'remote ack: the origin copy is read when present'
+        Set-Content -LiteralPath (Join-Path $wc $ackRel) -Value '{"v":2}'
+        & $g -C $wc add $ackRel; & $g -C $wc commit -q -m $ackMsg
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX') -eq 'ack commit undone locally' -and (Get-Content -Raw (Join-Path $wc $ackRel)) -match '"v":1') 'undo: an ack file HEAD already had is restored to the HEAD copy'
+        Ok ((Get-RemoteAckRaw $wc 'nosuchbranch' $ackRel).Ok -eq $false) 'remote ack: an unfetchable branch is not readable'
+        Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '(\d\d:\d\d:\d\d)Z', '$1z') -FileMachine 'VIRTUAL-TEN' }) 'reader: a lower-case z stamp is UNEVALUABLE'
+        Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '(\d\d:\d\d:\d\d)Z', '$1Z\n') -FileMachine 'VIRTUAL-TEN' }) 'reader: a stamp with a trailing newline is UNEVALUABLE'
+        Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '\d{4}-\d\d-\d\dT', '2026-02-31T') -FileMachine 'VIRTUAL-TEN' }) 'reader: an impossible date is UNEVALUABLE'
     } finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }
 } else { Ok $false 'git is required for the publish push-guard tests' }
 

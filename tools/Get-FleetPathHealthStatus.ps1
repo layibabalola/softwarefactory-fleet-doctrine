@@ -75,8 +75,9 @@ function Test-AckRecord([string]$Raw, [string]$FileMachine, [Nullable[datetime]]
         $verdict = & $str 'verdict'
         if ($verdict -cnotin @('HEALTHY', 'UNHEALTHY')) { throw "${id}: verdict is not HEALTHY or UNHEALTHY" }
         $stamp = & $str 'published_utc'
-        if ($stamp -notmatch '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$') { throw "${id}: published_utc is not a yyyy-MM-ddTHH:mm:ssZ UTC stamp" }
-        $utc = [datetime]::ParseExact($stamp, "yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]'AdjustToUniversal,AssumeUniversal')
+        # Case-sensitive, anchored with \z: `$` would accept a trailing newline, -notmatch a lower-case z.
+        if ($stamp -cnotmatch '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\z') { throw "${id}: published_utc is not a yyyy-MM-ddTHH:mm:ssZ UTC stamp" }
+        $utc = try { [datetime]::ParseExact($stamp, "yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]'AdjustToUniversal,AssumeUniversal') } catch { throw "${id}: published_utc is not a valid date" }
         if ($null -ne $NowUtc -and $utc -gt ([datetime]$NowUtc).AddMinutes(10)) { throw "${id}: published_utc is in the future" }
         $fe = [System.Text.Json.JsonElement]::new()
         if (-not $root.TryGetProperty('findings', [ref]$fe) -or $fe.ValueKind -ne [System.Text.Json.JsonValueKind]::Array) { throw "${id}: findings is not an array" }

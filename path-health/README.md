@@ -11,7 +11,7 @@ the record of its PATH health. **The artifact IS the ack** (same contract as
 | **Push rule** | on content change, or when the record is over 24 h old (law 3) |
 | **What travels** | counts, verdict, finding tokens, ordinal runner labels (`runner-1`, …), tool commit. No paths, no user names, no runner folder names (a folder may be named after an account), no PATH entry text (law 4). |
 | **Runner labels** | ordinals over the sorted runner folder names, so adding or removing a runner renumbers the others and publishes once as `changed`. Accepted: the alternative carries the names. |
-| **Validation** | the reader requires top-level `schema` = `fleet-path-health.v1`, `machine` equal to the file name, `verdict` HEALTHY/UNHEALTHY, a UTC `Z` `published_utc` no later than now + 10 min, and a verdict consistent with its findings (HEALTHY iff none). Anything else is UNEVALUABLE (exit 2), never a pass. |
+| **Validation** | the reader requires top-level `schema` = `fleet-path-health.v1`, `machine` equal to the file name, `verdict` HEALTHY/UNHEALTHY, a `published_utc` of exactly `yyyy-MM-ddTHH:mm:ssZ` no later than now + 10 min, `findings` as an array of strings, and a verdict consistent with its findings (HEALTHY iff none). Anything else is UNEVALUABLE (exit 2), never a pass. |
 | **CI** | `.github/workflows/path-health.yml` runs when the tools change, not on each ack push: an ack is checked by the reader that reads it. |
 | **Not expressible here** | DISTINGUISH and BLOCKED: one line each in `RECEIPTS.md`, as `PATH-HEALTH: DISTINGUISH <MACHINE> - <reason>` or `PATH-HEALTH: BLOCKED <MACHINE> - exit <code>: <message>` |
 
