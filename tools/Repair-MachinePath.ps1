@@ -21,9 +21,10 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
   -Apply    Backs up first, then removes dead, empty and duplicate entries from the User PATH.
             It touches the Machine PATH only when elevated, and only to remove dead entries.
             It never removes an entry whose folder exists, a UNC entry, an entry with an
-            unexpanded %VAR%, or an entry on a drive that is not mounted. It then rewrites each
-            runner's .path from the repaired PATH (only when the runner service runs as the
-            current user) and restarts that service only when it is idle (GitHub `busy` = false,
+            unexpanded %VAR%, or an entry on a drive that is not mounted. It then rewrites a
+            runner's .path from the repaired PATH only when that .path is missing, empty, over
+            the limit, or still lists a dead entry this repair removed (a hand-ordered .path is
+            kept), and only when the runner service runs as the current user. It restarts that service only when it is idle (GitHub `busy` = false,
             read with `gh api`) and the shell is elevated; otherwise it skips the restart and says
             why. Writes a receipt and the backups under %LOCALAPPDATA%\FleetPathRepair\<utc>\.
             Exit is the post-repair -Check verdict, or 2 if a write failed.
@@ -32,8 +33,11 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             user names), commits that one file and pushes it to master. It pushes only when
             the content changed or the published record is older than -RefreshHours (law 3).
             The record is published whatever the verdict: an UNHEALTHY ack is still an ack.
-            -NoPush commits locally and stops (rehearsal). A failed publish exits 4. It refuses a
-            detached HEAD, a branch other than master (unless -AllowBranch), or a non-empty index.
+            -NoPush commits locally and stops (rehearsal; exit 5, never an ack). A successful publish (or a confirmed
+            unchanged one) exits 10 when HEALTHY and 11 when UNHEALTHY; a failed publish exits 4
+            and takes its own ack commit back off the checkout. It refuses a detached HEAD, a
+            branch other than master (unless -AllowBranch), a non-empty index, and any push whose
+            single commit touches anything but the ack file.
 
 Tests dot-source this file with -Library and call the pure functions with injected PATH strings
 and an injected folder-exists predicate. Nothing in the test path reads or writes the real
@@ -95,10 +99,14 @@ function Get-PathAnalysis {
         [Parameter(Mandatory)][scriptblock]$Exists,
         [scriptblock]$Expand = { param($t) $t },
         [string[]]$OtherScopeKeys = @(),
-        [string[]]$PendingKeys = @()
+        [string[]]$PendingKeys = @(),
+        [string[]]$OtherScopeVarKeys = @()   # Machine keys that came from %VAR% entries
     )
     $other = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($k in $OtherScopeKeys) { [void]$other.Add($k) }
+    $otherVar = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($k in $OtherScopeVarKeys) { [void]$otherVar.Add($k) }
+    $seenVar = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     $pending = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($k in $PendingKeys) { [void]$pending.Add($k) }
     $seen = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
@@ -127,11 +135,16 @@ function Get-PathAnalysis {
                 elseif ($seg -match '%') { $class = 'dead-var' }
                 else { $class = 'dead' }
             }
-            # A duplicate verdict also rests on expansion, so a %VAR% duplicate is reported, not removed.
+            # A duplicate verdict also rests on expansion. Only a LITERAL entry repeating a LITERAL
+            # entry is removable; anything involving a %VAR% on either side is reported, not removed.
             elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = $(if ($seg -match '%') { 'duplicate-var' } else { 'cross-duplicate' }) }
+            elseif ($Scope -eq 'User' -and $otherVar.Contains($key)) { $class = 'duplicate-var' }
             elseif ($seen.Contains($key)) { $class = $(if ($seg -match '%') { 'duplicate-var' } else { 'duplicate' }) }
+            elseif ($seenVar.Contains($key)) { $class = 'duplicate-var' }
         }
-        if ($key -and $class -in @('ok', 'unc', 'unresolved', 'multi', 'relative', 'drive-absent', 'unreadable', 'pending', 'dead-var')) { [void]$seen.Add($key) }
+        if ($key -and $class -in @('ok', 'unc', 'unresolved', 'multi', 'relative', 'drive-absent', 'unreadable', 'pending', 'dead-var')) {
+            if ($seg -match '%') { [void]$seenVar.Add($key) } else { [void]$seen.Add($key) }
+        }
         $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead', 'duplicate', 'cross-duplicate') } else { $class -eq 'dead' }
         $rows.Add([pscustomobject]@{
             Index = $i; Raw = $seg; Expanded = $trimmed; Key = $key; Class = $class; Removable = $removable
@@ -263,6 +276,18 @@ function Get-PendingKeys([scriptblock]$Expand) {
     return ,@(@('%USERPROFILE%\.dotnet\tools', '%APPDATA%\npm') | ForEach-Object { Get-PathKey ([string](& $Expand $_)) })
 }
 
+# Union of the pending keys under several expanders, FLAT: one string per key. Concatenating two
+# `,@(...)` results with + builds an array of arrays, and binding that to [string[]] joins each
+# inner array into one space-separated string that matches no key.
+function Get-PendingKeySet([scriptblock[]]$Expanders) {
+    $set = [System.Collections.Generic.List[string]]::new()
+    foreach ($e in @($Expanders)) {
+        $keys = Get-PendingKeys $e   # assigned, not @(...): @() would wrap the ,@() result once more
+        foreach ($k in $keys) { if ($k -is [string] -and $k -and -not $set.Contains($k)) { $set.Add($k) } }
+    }
+    return ,([string[]]$set.ToArray())
+}
+
 # Qualify a service StartName for SID resolution. `.\name` is a LOCAL account (COMPUTER\name), never
 # a domain account of the same short name. Service-only identities (LocalSystem, NT AUTHORITY\...)
 # and empty names return $null: no user PATH of ours belongs to them.
@@ -313,7 +338,48 @@ function Get-RestartDecision([bool]$Elevated, $Busy) {
     return "skip:busy-unknown ($Busy)"
 }
 
+
+# Final exit code. A successful publish gets its OWN codes (10 acked HEALTHY, 11 acked UNHEALTHY),
+# because pwsh -File exits 1 on a parse or parameter-binding error too: "exit 1" alone cannot prove
+# an ack was published. A failed publish (4) shows even on an UNHEALTHY machine.
+function Get-FinalExitCode([int]$CheckCode, [bool]$Published, [int]$PublishCode = 0) {
+    if (-not $Published) { return $CheckCode }
+    if ($PublishCode -ne 0) { return $PublishCode }
+    if ($CheckCode -in 0, 1) { return 10 + $CheckCode }
+    return $CheckCode
+}
+
+# Git-only helpers for the publish step. They run git against -BusRoot alone, so tests drive them
+# on a throwaway repository with a throwaway bare origin.
+# Why the ack push must not happen, or $null. The push must carry the ack commit and nothing else:
+# a board's own master checkout may hold local, unreviewed commits.
+function Get-AckPushBlocker([string]$BusRoot, [string]$Branch, [string]$Rel) {
+    & git -C $BusRoot fetch -q origin $Branch *> $null
+    if ($LASTEXITCODE -ne 0) { return "cannot fetch origin/$Branch" }
+    $ahead = ([string](& git -C $BusRoot rev-list --count "refs/remotes/origin/${Branch}..HEAD" 2>$null)).Trim()
+    if ($ahead -ne '1') { return "HEAD is $ahead commits ahead of origin/$Branch, not 1" }
+    $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r HEAD 2>$null)
+    if ($files.Count -ne 1 -or $files[0] -ne $Rel) { return "HEAD commit touches $($files -join ', '), not exactly $Rel" }
+    return $null
+}
+
+# Take our own ack commit back off the checkout (the file stays in the working tree), so a failed
+# publish leaves a board's master as it was. Only a HEAD that is exactly our one-file ack is undone.
+function Undo-AckCommit([string]$BusRoot, [string]$Rel, [string]$Machine) {
+    $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r HEAD 2>$null)
+    $subj = ([string](& git -C $BusRoot log -1 --format=%s HEAD 2>$null)).Trim()
+    if ($files.Count -eq 1 -and $files[0] -eq $Rel -and $subj.StartsWith("path-health: $Machine ")) {
+        & git -C $BusRoot reset -q --mixed HEAD~1 *> $null
+        if ($LASTEXITCODE -eq 0) { return 'ack commit undone locally' }
+    }
+    return 'ack commit left in place (HEAD is not the ack commit)'
+}
+
 if ($Library) { return }
+
+# Any terminating error outside the main try (a bad -BusRoot, a failed type load) is UNEVALUABLE,
+# never a bare pwsh exit 1 that a caller could read as a verdict.
+trap { [Console]::Out.WriteLine("UNEVALUABLE: $($_.Exception.Message)"); exit 2 }
 
 # Messages go straight to stdout: Write-Output inside a function that also returns a value would
 # become part of that value.
@@ -374,17 +440,18 @@ $existsReal = {
 $expandReal = { param($t) [Environment]::ExpandEnvironmentVariables($t) }
 # Pending folders are named from the user's token (GetFolderPath), not from $env:USERPROFILE /
 # $env:APPDATA, which a harness may have overridden. Both spellings count.
-$pendingReal = @(
-    @(Get-PendingKeys $expandReal) +
-    @(Get-PendingKeys { param($t) $t.Replace('%USERPROFILE%', [Environment]::GetFolderPath('UserProfile')).Replace('%APPDATA%', [Environment]::GetFolderPath('ApplicationData')) })
+$pendingReal = Get-PendingKeySet @(
+    $expandReal,
+    { param($t) $t.Replace('%USERPROFILE%', [Environment]::GetFolderPath('UserProfile')).Replace('%APPDATA%', [Environment]::GetFolderPath('ApplicationData')) }
 )
 
 function Measure-Machine {
     $mRaw = Read-RawPath 'Machine'
     $uRaw = Read-RawPath 'User'
     $mA = Get-PathAnalysis -Raw $mRaw.Value -Scope Machine -Exists $existsReal -Expand $expandReal
-    $mKeys = @($mA | Where-Object Key | ForEach-Object Key)
-    $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys -PendingKeys $pendingReal
+    $mKeys = @($mA | Where-Object { $_.Key -and $_.Raw -notmatch '%' } | ForEach-Object Key)
+    $mVarKeys = @($mA | Where-Object { $_.Key -and $_.Raw -match '%' } | ForEach-Object Key)
+    $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys -OtherScopeVarKeys $mVarKeys -PendingKeys $pendingReal
     $mJoined = Join-ExpandedPath $mA
     $uJoined = Join-ExpandedPath $uA
     $fresh = (@($mJoined, $uJoined) | Where-Object { $_ }) -join ';'
@@ -609,12 +676,21 @@ function Publish-Ack($state) {
     if (-not $branch) { Say "PUBLISH FAILED: $BusRoot is on a detached HEAD; publish from a master checkout (the one-line command clones one)"; return 4 }
     if ($branch -ne 'master' -and -not $AllowBranch) { Say "PUBLISH FAILED: $BusRoot is on branch '$branch', not master; the reader would never see this ack. Use the one-line command, or pass -AllowBranch deliberately."; return 4 }
     $need = Test-AckPublishNeeded -PreviousRaw $prev -Record $record -NowUtc $now -RefreshHours $RefreshHours
-    if (-not $need.Publish) { Say "ACK UNCHANGED: $rel ($($need.Reason)); not pushing a cadence commit."; return 0 }
+    if (-not $need.Publish) {
+        # "Unchanged" is a claim about the bus, not about this checkout: a previous run may have
+        # committed the ack and failed to push. Confirm the remote holds these exact bytes.
+        & git -C $BusRoot fetch -q origin $branch *> $null
+        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: cannot fetch origin/$branch to confirm the unchanged ack is published"; return 4 }
+        & git -C $BusRoot diff --quiet "refs/remotes/origin/$branch" -- $rel *> $null
+        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: $rel matches this checkout but not origin/$branch (an earlier push failed?); push it, or rerun the one-line command"; return 4 }
+        Say "ACK UNCHANGED: $rel ($($need.Reason)), identical on origin/$branch; not pushing a cadence commit."; return 0
+    }
     $already = @(& git -C $BusRoot diff --cached --name-only)
     if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
     [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
     [IO.File]::WriteAllText($target, ($record | ConvertTo-Json -Depth 6) + "`n", [Text.UTF8Encoding]::new($false))
     & git -C $BusRoot add -- $rel *> $null
+    if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: git add $rel failed (exit $LASTEXITCODE)"; return 4 }
     $staged = @(& git -C $BusRoot diff --cached --name-only)
     if ($staged.Count -eq 0) { Say "ACK UNCHANGED: $rel bytes identical"; return 0 }
     if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
@@ -623,26 +699,24 @@ function Publish-Ack($state) {
     }
     & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
     if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?)'; return 4 }
-    if ($NoPush) { Say "ACK COMMITTED, NOT PUSHED (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason))"; return 0 }
-    # The push must carry the ack commit and nothing else: a board's own master checkout may hold
-    # local, unreviewed commits, and pushing HEAD would publish them too.
-    $onlyAck = {
-        & git -C $BusRoot fetch -q origin $branch *> $null
-        if ($LASTEXITCODE -ne 0) { return "cannot fetch origin/$branch" }
-        $ahead = ([string](& git -C $BusRoot rev-list --count "refs/remotes/origin/${branch}..HEAD" 2>$null)).Trim()
-        if ($ahead -ne '1') { return "HEAD is $ahead commits ahead of origin/$branch, not 1" }
-        return $null
-    }
+    if ($NoPush) { Say "ACK COMMITTED, NOT PUSHED (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason))"; return 5 }   # a rehearsal is not an ack
+    # Any failure after the commit undoes our own ack commit (Undo-AckCommit), so a board's master is
+    # left as it was and a rerun starts clean.
+    $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine }
+    $onlyAck = { Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel }
     $why = & $onlyAck
-    if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack (ack committed locally)"; return 4 }
+    if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
     & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
     if ($LASTEXITCODE -ne 0) {
         & git -C $BusRoot pull -q --rebase origin $branch *> $null
-        if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: push rejected and rebase failed; ack committed locally only'; return 4 }
+        if ($LASTEXITCODE -ne 0) {
+            & git -C $BusRoot rebase --abort *> $null
+            Say "PUBLISH FAILED: push rejected and rebase failed (rebase aborted; $(& $undo))"; return 4
+        }
         $why = & $onlyAck
-        if ($why) { Say "PUBLISH FAILED after rebase: $why; ack committed locally only"; return 4 }
+        if ($why) { Say "PUBLISH FAILED after rebase: $why ($(& $undo))"; return 4 }
         & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
-        if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: push rejected twice; ack committed locally only'; return 4 }
+        if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: push rejected twice ($(& $undo))"; return 4 }
     }
     Say "ACK PUBLISHED: $rel verdict=$($record.verdict) ($($need.Reason))"
     return 0
@@ -663,10 +737,7 @@ try {
         }
         $code = if ($state.Findings.Count) { 1 } else { 0 }
     }
-    if ($Publish) {
-        $p = Publish-Ack $state
-        if ($p -ne 0) { $code = $p }   # a failed ack must show, even on an UNHEALTHY machine
-    }
+    if ($Publish) { $code = Get-FinalExitCode -CheckCode $code -Published $true -PublishCode (Publish-Ack $state) }
     exit $code
 } catch {
     Say "UNEVALUABLE: $($_.Exception.Message)"

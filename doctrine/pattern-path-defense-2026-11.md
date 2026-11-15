@@ -46,7 +46,7 @@ and the entry stays behind as a dead folder. ULTRA-MAGNUS had about 85 of them
 (`D:\ContextUltraWindowsGate\<runId>-<n>\cli-home\.dotnet\tools`,
 `C:\ContextUltraWorktrees\v-*\…\dotnet-home\.dotnet\tools`, and one under `C:\DngAutoJobs\evidence\`).
 VIRTUAL-TEN had one, from a different project
-(`…\IndependentReview-WorkbenchPhase2-20261010\scratch\dotnet-home\.dotnet\tools`), measured by the
+(a per-run `…\scratch\dotnet-home\.dotnet\tools` folder), measured by the
 first `-Check` on 2026-11-14. The pattern is fleet-wide, not one gate's bug.
 
 `DOTNET_SKIP_FIRST_TIME_EXPERIENCE` does **not** stop this. Microsoft's environment-variable
@@ -109,7 +109,7 @@ Administrator, only git with push access to the bus, and it takes a few seconds.
 PowerShell 7 or Windows PowerShell (PowerShell 7, `pwsh`, must be installed: the tool needs it):
 
 ```powershell
-$d=Join-Path $env:TEMP "fleet-path-ack-$PID"; if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { "BLOCKED: PowerShell 7 (pwsh) is not installed" } else { git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; if ($LASTEXITCODE) { "BLOCKED: git clone exit $LASTEXITCODE" } else { git -C $d sparse-checkout set tools path-health; $rc=$null; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; $rc=$LASTEXITCODE; if ($rc -in 0,1) { Remove-Item -Recurse -Force $d; "ACK DONE (check exit $rc)" } else { "BLOCKED: exit $rc - clone kept at $d" } } }
+$d=Join-Path $env:TEMP "fleet-path-ack-$PID"; if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { "BLOCKED: PowerShell 7 (pwsh) is not installed" } else { git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; if ($LASTEXITCODE) { "BLOCKED: git clone exit $LASTEXITCODE" } else { git -C $d sparse-checkout set tools path-health; $rc=$null; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; $rc=$LASTEXITCODE; if ($rc -in 10,11) { Remove-Item -Recurse -Force $d; "ACK DONE (exit $rc)" } else { "BLOCKED: exit $rc - clone kept at $d" } } }
 ```
 
 It clones master fresh into a temporary folder, so it never touches a board's own bus checkout or
@@ -118,10 +118,11 @@ holds counts, verdict and ordinal runner labels only: no paths, no user names, n
 names (law 4). It pushes only when the content changed or the record is over 24 hours old (law 3).
 
 The last line it prints is one of three:
-- `ACK DONE (check exit 0)`: HEALTHY. The clone is deleted.
-- `ACK DONE (check exit 1)`: UNHEALTHY, but acked. The clone is deleted. The repair is `-Apply`,
+- `ACK DONE (exit 10)`: acked, HEALTHY. The clone is deleted.
+- `ACK DONE (exit 11)`: acked, UNHEALTHY. The clone is deleted. The repair is `-Apply`,
   separately. An UNHEALTHY ack is still an ack: it tells the fleet the machine looked.
-- `BLOCKED: exit <n>`: the check could not evaluate (2) or the publish failed (4). The clone is kept,
+- `BLOCKED: exit <n>`: the check could not evaluate (2), the publish failed (4), or pwsh itself
+  failed (1, a parse or parameter error: a success is never 0 or 1 here). The clone is kept,
   and with it any ack committed but not pushed. Record it as a BLOCKED line (below).
 
 Parsed with zero errors in Windows PowerShell 5.1 and PowerShell 7.6.

@@ -53,7 +53,7 @@ Ok ($cls[0] -eq 'ok') 'user: %USERPROFILE% entry that exists is ok'
 Ok ($cls[1] -eq 'ok') 'user: live .dotnet\tools is ok'
 Ok ($cls[2] -eq 'dead' -and $uA[2].DotnetTools) 'user: dead per-run .dotnet\tools is dead and flagged dotnet'
 Ok ($cls[3] -eq 'empty') 'user: empty segment'
-Ok ($cls[4] -eq 'duplicate') 'user: case/trailing-slash duplicate of an earlier entry'
+Ok ($cls[4] -eq 'duplicate-var' -and -not $uA[4].Removable) 'user: a literal repeat of an earlier %VAR% entry is reported, not removed'
 Ok ($cls[5] -eq 'cross-duplicate') 'user: repeats a Machine entry'
 Ok ($cls[6] -eq 'unc') 'user: UNC entry is unverifiable'
 Ok ($cls[7] -eq 'unresolved') 'user: unexpanded %VAR% is unverifiable'
@@ -63,7 +63,7 @@ Ok (-not ($uA | Where-Object { $_.Class -in @('ok', 'unc', 'unresolved', 'drive-
 
 # --- 2. repair ------------------------------------------------------------------------------------
 $repaired = Get-RepairedPath $uA
-Ok ($repaired -eq (@('%USERPROFILE%\AppData\Roaming\npm', 'C:\Users\u\.dotnet\tools', '\\fileserver\share\bin', '%NOT_DEFINED_VAR%\bin', 'Q:\removable\bin', 'C:\Go\bin') -join ';')) 'repair: keeps order and raw %VAR% text, drops dead/empty/duplicate/cross-duplicate'
+Ok ($repaired -eq (@('%USERPROFILE%\AppData\Roaming\npm', 'C:\Users\u\.dotnet\tools', 'c:\users\u\appdata\roaming\npm\', '\\fileserver\share\bin', '%NOT_DEFINED_VAR%\bin', 'Q:\removable\bin', 'C:\Go\bin') -join ';')) 'repair: keeps order and raw %VAR% text, drops dead/empty/duplicate/cross-duplicate'
 $again = Get-PathAnalysis -Raw $repaired -Scope User -Exists $fsExists -Expand $expand -OtherScopeKeys $mKeys
 Ok (@($again | Where-Object Removable).Count -eq 0) 'repair: idempotent (second pass removes nothing)'
 Ok ((Get-RepairedPath $mA) -eq '%SystemRoot%\system32;%SystemRoot%;C:\Program Files\Git\cmd') 'repair: machine loses only its dead entry'
@@ -213,13 +213,68 @@ $varDup2 = Get-PathAnalysis -Raw 'C:\Go\bin;%GO%\bin' -Scope User -Exists $fsExi
 Ok ($varDup2[1].Class -eq 'duplicate-var' -and -not $varDup2[1].Removable) 'hazard: a %VAR% duplicate is reported, never removed'
 $varCross = Get-PathAnalysis -Raw '%GO%\bin' -Scope User -Exists $fsExists -Expand { param($t) $t.Replace('%GO%', 'C:\Go') } -OtherScopeKeys @('c:\go\bin')
 Ok ($varCross[0].Class -eq 'duplicate-var' -and -not $varCross[0].Removable) 'hazard: a %VAR% repeat of a Machine entry is reported, never removed'
+$litAfterVar = Get-PathAnalysis -Raw '%H%\bin;C:\Go\bin' -Scope User -Exists $fsExists -Expand { param($t) $t.Replace('%H%', 'C:\Go') }
+Ok ($litAfterVar[1].Class -eq 'duplicate-var' -and -not $litAfterVar[1].Removable) 'hazard: a literal entry repeating an earlier %VAR% entry is reported, never removed'
+$litVsMachineVar = Get-PathAnalysis -Raw 'C:\Go\bin' -Scope User -Exists $fsExists -OtherScopeVarKeys @('c:\go\bin')
+Ok ($litVsMachineVar[0].Class -eq 'duplicate-var' -and -not $litVsMachineVar[0].Removable) 'hazard: a literal User entry repeating a Machine %VAR% entry is reported, never removed'
 $rel = Get-PathAnalysis -Raw 'node_modules\.bin;.\tools;C:' -Scope User -Exists { param($p) $false }
 Ok (@($rel | Where-Object { $_.Class -eq 'relative' -and -not $_.Removable }).Count -eq 3) 'hazard: relative entries are never judged or removed'
 Ok (Throws { Test-AckRecord -Raw "[$goodRaw]" -FileMachine 'VIRTUAL-TEN' }) 'reader: a top-level array is UNEVALUABLE'
+Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '"verdict":\s*"HEALTHY"', '"verdict": ["HEALTHY"]') -FileMachine 'VIRTUAL-TEN' }) 'reader: an array-valued verdict is UNEVALUABLE'
+Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '"schema":\s*"fleet-path-health.v1"', '"schema": ["fleet-path-health.v1"]') -FileMachine 'VIRTUAL-TEN' }) 'reader: an array-valued schema is UNEVALUABLE'
+Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '(\d\d:\d\d:\d\d)Z', '$1+02:00') -FileMachine 'VIRTUAL-TEN' }) 'reader: an offset stamp that is not Z is UNEVALUABLE'
+Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '2026-11-14T23', '2099-11-14T23') -FileMachine 'VIRTUAL-TEN' -NowUtc $now }) 'reader: a 2099 stamp is UNEVALUABLE, never forever-fresh'
 Ok (Throws { Test-AckRecord -Raw $goodRaw -FileMachine 'VIRTUAL-TEN' -NowUtc $now.AddHours(-1) }) 'reader: a stamp in the future is UNEVALUABLE'
 Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '"findings":\s*\[\s*\]', '"findings": ["user-dead:1"]') -FileMachine 'VIRTUAL-TEN' }) 'reader: HEALTHY with findings is UNEVALUABLE'
 $fe = Get-PathFindings -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Runners @(@{ label = 'runner-1'; path_chars = 0; env_lines = 1; env_has_lang = (Test-EnvHasLang 'LANG=') })
 Ok ($fe -contains 'runner-path-empty:runner-1' -and $fe -contains 'runner-env-no-lang:runner-1') 'runner: empty .path and LANG= with no value are findings'
+
+# --- 9. round-3 key findings: pending set, exit codes, publish push guard ---------------------------
+$ps = Get-PendingKeySet @($expand, { param($t) $t.Replace('%USERPROFILE%', 'D:\Profiles\u').Replace('%APPDATA%', 'D:\Profiles\u\AppData\Roaming') })
+Ok ($ps -is [string[]] -and @($ps | Where-Object { $_ -isnot [string] -or $_ -match ' ' }).Count -eq 0) 'pending: the union is a flat string array, never an array of arrays'
+Ok ($ps -contains 'c:\users\u\.dotnet\tools' -and $ps -contains 'd:\profiles\u\.dotnet\tools' -and $ps -contains 'd:\profiles\u\appdata\roaming\npm') 'pending: keys from every expander are present, one per element'
+$pz = Get-PathAnalysis -Raw 'D:\Profiles\u\.dotnet\tools' -Scope User -Exists { param($p) $p -eq 'D:\' } -PendingKeys $ps
+Ok ($pz[0].Class -eq 'pending' -and -not $pz[0].Removable) 'pending: a token-path dotnet tools folder from the second expander is kept'
+Ok ((Get-FinalExitCode 0 $true 0) -eq 10 -and (Get-FinalExitCode 1 $true 0) -eq 11) 'exit: a published ack is 10 HEALTHY / 11 UNHEALTHY, never 0 or 1'
+Ok ((Get-FinalExitCode 1 $true 4) -eq 4 -and (Get-FinalExitCode 0 $true 5) -eq 5) 'exit: a failed or rehearsal publish shows its own code'
+Ok ((Get-FinalExitCode 2 $true 0) -eq 2) 'exit: a failed -Apply stays 2 even when the ack published'
+Ok ((Get-FinalExitCode 1 $false) -eq 1 -and (Get-FinalExitCode 0 $false) -eq 0) 'exit: -Check without -Publish keeps 0/1'
+
+# Publish push guard and undo, on a throwaway repository with a throwaway bare origin.
+if (Get-Command git -ErrorAction SilentlyContinue) {
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) ('path-ack-test-' + [guid]::NewGuid().ToString('N'))
+    $origin = Join-Path $tmp 'origin.git'; $wc = Join-Path $tmp 'wc'
+    $g = { & git -c user.name=t -c user.email=t@example.invalid -c commit.gpgsign=false -c init.defaultBranch=master @args *> $null }
+    $ackRel = 'path-health/TESTBOX.json'
+    $ackMsg = 'path-health: TESTBOX UNHEALTHY (first-publication)'
+    try {
+        [void](New-Item -ItemType Directory -Force -Path $tmp)
+        & $g init -q --bare $origin
+        & $g init -q $wc
+        Set-Content -LiteralPath (Join-Path $wc 'README.md') -Value 'bus'
+        & $g -C $wc add README.md; & $g -C $wc commit -q -m base
+        & $g -C $wc remote add origin $origin; & $g -C $wc push -q origin 'HEAD:refs/heads/master'
+        [void](New-Item -ItemType Directory -Force -Path (Join-Path $wc 'path-health'))
+        Set-Content -LiteralPath (Join-Path $wc $ackRel) -Value '{}'
+        & $g -C $wc add $ackRel; & $g -C $wc commit -q -m $ackMsg
+        Ok ($null -eq (Get-AckPushBlocker $wc 'master' $ackRel)) 'push guard: exactly one ack-only commit ahead may push'
+        Set-Content -LiteralPath (Join-Path $wc 'README.md') -Value 'bus+local'
+        & $g -C $wc add README.md; & $g -C $wc commit -q --amend -m $ackMsg
+        Ok ((Get-AckPushBlocker $wc 'master' $ackRel) -like 'HEAD commit touches*') 'push guard: an ack commit that also touches another file is refused'
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX') -like 'ack commit left in place*') 'undo: a HEAD that is not exactly our ack is never reset'
+        & $g -C $wc reset -q --hard origin/master
+        Set-Content -LiteralPath (Join-Path $wc 'other.md') -Value 'unreviewed'
+        & $g -C $wc add other.md; & $g -C $wc commit -q -m 'local unreviewed work'
+        [void](New-Item -ItemType Directory -Force -Path (Join-Path $wc 'path-health'))
+        Set-Content -LiteralPath (Join-Path $wc $ackRel) -Value '{}'
+        & $g -C $wc add $ackRel; & $g -C $wc commit -q -m $ackMsg
+        Ok ((Get-AckPushBlocker $wc 'master' $ackRel) -like 'HEAD is 2 commits ahead*') 'push guard: local unreviewed commits under the ack block the push'
+        $prior = ([string](& git -C $wc rev-parse HEAD~1)).Trim()
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX') -eq 'ack commit undone locally') 'undo: our own one-file ack commit is taken back'
+        Ok (([string](& git -C $wc rev-parse HEAD)).Trim() -eq $prior -and (Test-Path -LiteralPath (Join-Path $wc $ackRel))) 'undo: HEAD returns to the prior commit and the ack file stays on disk'
+        Ok ((Get-AckPushBlocker $wc 'nosuchbranch' $ackRel) -like 'cannot fetch*') 'push guard: an unfetchable branch blocks the push'
+    } finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }
+} else { Ok $false 'git is required for the publish push-guard tests' }
 
 if ($IsWindows) { Ok ([Environment]::GetEnvironmentVariable('Path', 'User') -eq $realUserBefore) 'guard: real User PATH unchanged by the tests' }
 

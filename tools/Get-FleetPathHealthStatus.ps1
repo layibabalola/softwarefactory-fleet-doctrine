@@ -55,24 +55,39 @@ Validate one ack at its TOP level: schema, machine equal to the file name, verdi
 Anything else throws, so a malformed or misfiled ack is UNEVALUABLE, never a pass.
 #>
 function Test-AckRecord([string]$Raw, [string]$FileMachine, [Nullable[datetime]]$NowUtc = $null) {
-    # ConvertFrom-Json unwraps a one-element array, so the text itself must open an object.
-    if (-not ([string]$Raw).TrimStart([char]0xFEFF).TrimStart().StartsWith('{')) { throw "path-health/$FileMachine.json is not a JSON object" }
-    $o = $Raw | ConvertFrom-Json -ErrorAction Stop
-    if ($o -isnot [pscustomobject]) { throw "path-health/$FileMachine.json is not a JSON object" }
-    $p = $o.PSObject.Properties
-    if (-not $p['schema'] -or $o.schema -ne 'fleet-path-health.v1') { throw "path-health/$FileMachine.json: schema is not fleet-path-health.v1" }
-    if (-not $p['machine'] -or ([string]$o.machine).ToUpperInvariant() -ne $FileMachine.ToUpperInvariant()) { throw "path-health/$FileMachine.json: machine field does not match the file name" }
-    if (-not $p['verdict'] -or $o.verdict -notin @('HEALTHY', 'UNHEALTHY')) { throw "path-health/$FileMachine.json: verdict is not HEALTHY or UNHEALTHY" }
-    if (-not $p['published_utc']) { throw "path-health/$FileMachine.json: no top-level published_utc" }
-    # ConvertFrom-Json may already have turned the stamp into a [datetime]; a string must carry Z.
-    $v = $o.published_utc
-    $utc = if ($v -is [datetime]) { if ($v.Kind -eq [DateTimeKind]::Unspecified) { throw "path-health/$FileMachine.json: published_utc has no zone" }; $v.ToUniversalTime() }
-           elseif ([string]$v -match 'Z$') { [datetimeoffset]::Parse([string]$v, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime }
-           else { throw "path-health/$FileMachine.json: published_utc is not a UTC Z stamp" }
-    if ($null -ne $NowUtc -and $utc -gt ([datetime]$NowUtc).AddMinutes(10)) { throw "path-health/$FileMachine.json: published_utc is in the future" }
-    $findings = @(if ($p["findings"]) { $o.findings | ForEach-Object { [string]$_ } })   # @() : an if-expression unrolls an empty array to $null
-    if (($o.verdict -eq 'HEALTHY') -ne ($findings.Count -eq 0)) { throw "path-health/$FileMachine.json: verdict $($o.verdict) contradicts its $($findings.Count) findings" }
-    return [pscustomobject]@{ PublishedUtc = $utc; Verdict = [string]$o.verdict; Findings = $findings }
+    # System.Text.Json keeps JSON types and raw strings. ConvertFrom-Json would unwrap a
+    # one-element root array and turn a stamp with any offset into a [datetime], so it cannot tell
+    # "2026-11-14T23:00:00Z" from "2026-11-14T23:00:00+02:00" or a scalar from an array.
+    $id = "path-health/$FileMachine.json"
+    try { $doc = [System.Text.Json.JsonDocument]::Parse([string]$Raw) } catch { throw "${id}: not valid JSON" }
+    try {
+        $root = $doc.RootElement
+        if ($root.ValueKind -ne [System.Text.Json.JsonValueKind]::Object) { throw "${id}: root is not a JSON object" }
+        $str = {
+            param($name)
+            $el = [System.Text.Json.JsonElement]::new()
+            if (-not $root.TryGetProperty($name, [ref]$el)) { throw "${id}: no top-level $name" }
+            if ($el.ValueKind -ne [System.Text.Json.JsonValueKind]::String) { throw "${id}: $name is not a string" }
+            $el.GetString()
+        }
+        if ((& $str 'schema') -cne 'fleet-path-health.v1') { throw "${id}: schema is not fleet-path-health.v1" }
+        if ((& $str 'machine').ToUpperInvariant() -ne $FileMachine.ToUpperInvariant()) { throw "${id}: machine field does not match the file name" }
+        $verdict = & $str 'verdict'
+        if ($verdict -cnotin @('HEALTHY', 'UNHEALTHY')) { throw "${id}: verdict is not HEALTHY or UNHEALTHY" }
+        $stamp = & $str 'published_utc'
+        if ($stamp -notmatch '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$') { throw "${id}: published_utc is not a yyyy-MM-ddTHH:mm:ssZ UTC stamp" }
+        $utc = [datetime]::ParseExact($stamp, "yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]'AdjustToUniversal,AssumeUniversal')
+        if ($null -ne $NowUtc -and $utc -gt ([datetime]$NowUtc).AddMinutes(10)) { throw "${id}: published_utc is in the future" }
+        $fe = [System.Text.Json.JsonElement]::new()
+        if (-not $root.TryGetProperty('findings', [ref]$fe) -or $fe.ValueKind -ne [System.Text.Json.JsonValueKind]::Array) { throw "${id}: findings is not an array" }
+        $findings = [System.Collections.Generic.List[string]]::new()
+        foreach ($x in $fe.EnumerateArray()) {
+            if ($x.ValueKind -ne [System.Text.Json.JsonValueKind]::String) { throw "${id}: a finding is not a string" }
+            $findings.Add($x.GetString())
+        }
+        if (($verdict -eq 'HEALTHY') -ne ($findings.Count -eq 0)) { throw "${id}: verdict $verdict contradicts its $($findings.Count) findings" }
+        return [pscustomobject]@{ PublishedUtc = $utc; Verdict = $verdict; Findings = $findings.ToArray() }
+    } finally { $doc.Dispose() }
 }
 
 <#
