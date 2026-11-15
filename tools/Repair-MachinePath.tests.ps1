@@ -70,6 +70,15 @@ foreach ($pr in @('C:\Windows ;C:\Windows', ' C:\Windows;C:\Windows', "C:\Window
     $pa = Get-PathAnalysis -Raw $pr -Scope User -Exists $fsExists
     Ok (@($pa | Where-Object Removable).Count -eq 0 -and (Get-RepairedPath $pa) -eq $pr) "duplicate: never removed, whatever the padding ($($pr.Replace("`t", '<tab>')))"
 }
+# Round-13 Codex (blocking): existence is probed on the trimmed spelling, so a live folder whose name
+# ends in Unicode whitespace looked dead when its unpadded twin is absent. Padded entries are never removed.
+foreach ($ws in @([char]0x00A0, [char]0x2007, [char]0x202F, [char]0x3000, ' ')) {
+    foreach ($sc in @('User', 'Machine')) {
+        $wa = Get-PathAnalysis -Raw ('C:\FleetTools' + $ws) -Scope $sc -Exists $fsExists
+        Ok (-not $wa[0].Removable -and (Get-RepairedPath $wa) -eq ('C:\FleetTools' + $ws)) ("padding: a dead-looking entry padded with U+{0:X4} is never removed ({1})" -f [int]$ws, $sc)
+    }
+}
+Ok ((Get-PathAnalysis -Raw 'C:\Gone\Plain' -Scope User -Exists $fsExists)[0].Removable) 'padding: an unpadded dead entry is still removable'
 $pc = Get-PathAnalysis -Raw 'C:\Windows' -Scope User -Exists $fsExists -OtherScopeKeys @('c:\windows')
 Ok ($pc[0].Class -eq 'cross-duplicate' -and -not $pc[0].Removable) 'duplicate: a User copy of a Machine entry is never removed (cross scope)'
 $again = Get-PathAnalysis -Raw $repaired -Scope User -Exists $fsExists -Expand $expand -OtherScopeKeys $mKeys

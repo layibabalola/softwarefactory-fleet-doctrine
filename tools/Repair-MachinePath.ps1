@@ -109,7 +109,8 @@ Classify every segment of one scope's raw (unexpanded) PATH value.
   -Exists   scriptblock: param($folder) -> $true when the folder exists
   -Expand   scriptblock: param($text)   -> expanded text
   -OtherScopeKeys  keys of the Machine PATH, so a User entry that repeats one is redundant
-Classes: ok, empty, unc, unresolved, drive-absent, dead, cross-duplicate, duplicate.
+Classes: ok, empty, unc, unresolved, multi, relative, drive-absent, unreadable, pending, dead,
+dead-var, duplicate, cross-duplicate, duplicate-var. Only empty (User) and dead are ever removable.
 #>
 function Get-PathAnalysis {
     param(
@@ -162,9 +163,8 @@ function Get-PathAnalysis {
                 elseif ($seg -match '%') { $class = 'dead-var' }
                 else { $class = 'dead' }
             }
-            # A duplicate verdict also rests on expansion and quoting. Only a plain LITERAL entry
-            # repeating a plain LITERAL entry is removable; a %VAR% or quoted entry on either side is
-            # reported, not removed.
+            # Duplicates of every kind are reported, never removed (see $removable below). The
+            # indirect/plain split only names which kind it is.
             elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = $(if ($indirect) { 'duplicate-var' } else { 'cross-duplicate' }) }
             elseif ($Scope -eq 'User' -and $otherVar.Contains($key)) { $class = 'duplicate-var' }
             elseif ($seen.Contains($key)) { $class = $(if ($indirect) { 'duplicate-var' } else { 'duplicate' }) }
@@ -179,6 +179,10 @@ function Get-PathAnalysis {
         $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead') } else { $class -eq 'dead' }
         if ($seg -match '%') { $removable = $false }   # backstop: an entry written with a %VAR% is never removed, whatever its class
         if ($seg.Contains('"')) { $removable = $false }   # any quoted entry, balanced or not: reported, never removed
+        # Existence was probed on the trimmed spelling. When trimming changed it (ASCII or Unicode
+        # whitespace such as U+00A0 / U+3000, which Windows keeps in folder names), the folder that
+        # really exists may be the padded one: never remove on a verdict about a different spelling.
+        if ($trimmed -and $expanded -cne $expanded.Trim()) { $removable = $false }
         $rows.Add([pscustomobject]@{
             # Written keeps every character a new process receives (quotes and whitespace padding
             # included): it is what is measured and what a runner .path is rewritten from.
@@ -381,8 +385,7 @@ function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a miss
     return 'keep'
 }
 
-# Keys whose removal makes a runner .path stale: DEAD entries only. A removed duplicate's folder
-# still exists, so a .path that lists it is not broken.
+# Keys whose removal makes a runner .path stale: DEAD entries only (duplicates are never removed).
 function Get-StaleRunnerKeys([object[]]$RemovedRows) {
     return ,@(@($RemovedRows) | Where-Object { $_ -and $_.Key -and $_.Class -eq 'dead' } | ForEach-Object Key)
 }
