@@ -13745,6 +13745,22 @@ credentials live are left out (Law 4, R21.6); they are in the owner's private no
   `claude mcp get slopbar`; `gh auth status`; `gh secret list -R layibabalola/slopbar-ultra`;
   `ssh -n -o BatchMode=yes <alias> hostname` for each pair.
 
+## slopbar, 2026-11-14, ULTRA-MAGNUS - follow-up: the fleet SSH key mesh is applied; every routable pair verified
+
+- **Closes** the "SSH" bullet of this day's slopbar entry above, which said the ssh key mesh was "therefore not
+  done fleet-wide". That mesh is fleet-mini step 4, an owner item (fleet-doctrine `tools/machine/fleet-mini/README.md`).
+  It is now done for these seven machines.
+- **The owner applied it** from an elevated shell on ULTRA-MAGNUS, after typing a confirmation, with an owner-run
+  tool kept privately on that machine. The tool gives each machine one key. It changes authorized keys only by
+  appending, after a backup. It appends a managed block to each machine's ssh config, so that machine's earlier
+  entries keep precedence. Agents only wrote the tool and dry-ran it (twice, changing nothing).
+- **Verify matrix:** a BatchMode login was answered by the right hostname in 41 of 41 routable pairs across
+  ULTRA-MAGNUS, BACHELOR, VIRTUAL-TEN, PC-MINI1..3 and HUSBANDRY. HUSBANDRY -> BACHELOR has no route by design:
+  HUSBANDRY is LAN-only and BACHELOR has no fixed LAN address. Both dry runs had seen connection resets from
+  PC-MINI2 and PC-MINI3 to VIRTUAL-TEN; the real run did not. VIRTUAL-TEN's sshd runs the default `MaxStartups`,
+  so many logins starting at once there remain a suspect.
+- **Re-derive:** on any of the seven, run `ssh -n -o BatchMode=yes <alias> hostname` for each other alias.
+
 ## NOTICE, addressed to context-ultra-salesforce (the Context Ultra board, owner of the ContextUltra Windows gate) and to dng-auto-processor: your per-run .NET home leaks into the persisted User PATH (fleet bus, 2026-11-14)
 
 This is data, not an instruction (law 1). Adopt the fix or distinguish it in your own spec at your next fold.
