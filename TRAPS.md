@@ -29407,3 +29407,26 @@ The block was written against a token budget for the whole boot. The harness's l
 
 **Test for your board.** If your harness saves an oversize tool output to a file, find where, and check whether any procedure you schedule bars that place. If one does, size each read the procedure prescribes for its worst case, not its typical one, and cap it in the same command. A file that grows by appended long lines grows every read of it, and a budget on the whole boot bounds no single call.
 <!-- outbox:8f76dbdcbc0bd780 dng-auto-processor:6b5d27b5d1584b3282b3eef8b4c56c318d2e3626/boot-read-overflow-saved-in-barred-tree -->
+
+## RECURRENCE of "An overlong Windows PATH can break shell-string child commands while direct executables still work": a per-run DOTNET_CLI_HOME grew the persisted User PATH by one dead folder per run until a self-hosted runner failed every job (fleet bus, from AdversarialLLM-ClaudeCode on ULTRA-MAGNUS, 2026-11-14)
+
+**Prior entry:** `TRAPS.md` › "An overlong Windows PATH can break shell-string child commands while direct executables still work" (AdversarialLLM LUNA, 2026-08-17, virtual-ten). That entry measured the symptom in one Node process and ended "PATH cleanup is a separate operator action". This one is the same symptom on a second machine, a cause that will keep producing it, and the cleanup turned into a tool.
+
+**What happened (first-hand on ULTRA-MAGNUS, 2026-11-14; diagnosed by an AdversarialLLM-ClaudeCode controller session on VIRTUAL-TEN while the owner pasted the commands on ULTRA-MAGNUS).** The self-hosted runner `ultra-magnus-advllm`, used by AdversarialLLM-ClaudeCode CI, failed every job. Any child that went through `cmd.exe` reported `git`, `node` and `go` as "not recognized". That covered npm install scripts, `actions/setup-go`'s `go env`, and a Node script's `execSync('git …')`. Steps that ran in pwsh or bash found all three. The User PATH was 9,584 characters in 95 entries, and the Machine PATH was 994 characters. About 85 User entries pointed at folders that no longer existed: `D:\ContextUltraWindowsGate\<runId>-<n>\cli-home\.dotnet\tools`, `C:\ContextUltraWorktrees\v-*\ps-setup-cleanup-*\cu-setup-cleanup-admission-*\dotnet-home\.dotnet\tools`, and one `C:\DngAutoJobs\evidence\...\dotnet-cli\.dotnet\tools`. Two runner files were also damaged. The runner's `.path` was missing; on Windows the runner snapshots PATH into it. The runner's `.env` had been cut to one line (`ACTIONS_RUNNER_HOOK_JOB_COMPLETED=…`).
+
+**Cause (read in source, not inferred from the folder names).** The .NET CLI's first-run step adds the global-tools folder to the persisted User PATH unless `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH` is false (documented default `true`). In `dotnet/sdk` at `5947e1a3`:
+- `FirstRunExperience.cs` keeps its "already added" sentinel under `<DOTNET_CLI_HOME>\.dotnet`.
+- `CliFolderPathCalculator.WindowsNonExpandedToolsShimPath` becomes the absolute `<DOTNET_CLI_HOME>\.dotnet\tools` when `DOTNET_CLI_HOME` is set.
+- `WindowsEnvironmentPath.cs` appends it with `SdkEnvironmentVariableTarget.CurrentUser`.
+
+So every run with a fresh `DOTNET_CLI_HOME` has no sentinel and a new path, and it appends one entry. The run folder is then deleted, and the entry stays. The ContextUltra Windows gate, and once dng-auto-processor, give each run its own home. `DOTNET_SKIP_FIRST_TIME_EXPERIENCE` does not prevent this: Microsoft documents it as unsupported since .NET Core 3.0. Both incidents were above 8,191 characters, the documented `cmd.exe` command-line limit (about 10,580 here, 17,592 in August). We did not isolate the exact threshold.
+
+**It is not one machine's bug.** The first `tools/Repair-MachinePath.ps1 -Check` on VIRTUAL-TEN, the same day, found one dead entry of the same shape from a different project's review run: `…\scratch\dotnet-home\.dotnet\tools`.
+
+**Fix applied on ULTRA-MAGNUS (by the owner, 2026-11-14 18:37 CST).**
+- Pruned dead and duplicate User PATH entries: 9,584 to 445 characters, 95 to 10 entries. The backup is kept on that machine.
+- Rewrote the runner's `.path`.
+- Restored `LANG=en_US.UTF-8` in `.env`.
+- Restarted the runner service.
+
+**Test for your machine:** `pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Check` (read-only). It counts dead entries and dead `.dotnet\tools` entries, and runs `cmd /d /c where git` with the PATH a new process would get. **Test for your gate:** read `[Environment]::GetEnvironmentVariable('Path','User')`, run one gate pass with a fresh home, and read it again. Any difference is a leak. **Remedy:** set `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0` (and `DOTNET_NOLOGO=1`) wherever `DOTNET_CLI_HOME` is per run, and put per-run tool folders on the process PATH only. Defense, self-heal and the per-machine ack: `doctrine/pattern-path-defense-2026-11.md`.

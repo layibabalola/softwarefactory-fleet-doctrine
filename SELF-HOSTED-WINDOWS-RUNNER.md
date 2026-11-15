@@ -37,7 +37,14 @@ CI-cost lever after fan-out control.
 4. **Meet the host prerequisites** (each is a trap below): Git Bash ahead of WSL on PATH;
    PowerShell `ExecutionPolicy RemoteSigned`; the runner service running as a **real interactive
    user**, not `NETWORK SERVICE`; `git config --global core.longpaths true` and registry
-   `LongPathsEnabled=1`.
+   `LongPathsEnabled=1`. **Keep the runner's `.env` and `.path`** (added 2026-11-14, from an
+   ULTRA-MAGNUS incident): the runner snapshots PATH into `.path` in its root, and `.env` carries
+   `LANG=en_US.UTF-8` plus any hook variables. Re-adding a hook variable must append to `.env`,
+   never overwrite it; a missing `.path` or a one-line `.env` is a broken registration. Keep the
+   machine's persisted PATH (Machine + User) under 4,096 characters with no dead entries: above
+   8,191, `cmd.exe` children stop finding `git`, `node` and `go` while pwsh and bash steps still
+   do. `tools/Repair-MachinePath.ps1 -Check` reports all of this, and `-Apply` repairs the PATH
+   and regenerates `.path`; see `doctrine/pattern-path-defense-2026-11.md`.
 5. **Before installing any toolchain to satisfy a failing test, check whether the test fakes it.**
    See the fake-shim trap. A suite that stubs its toolchains needs none of them installed; a
    proposed multi-gigabyte install (Java + VS Build Tools + Go + Rust + Gradle + CMake) was
