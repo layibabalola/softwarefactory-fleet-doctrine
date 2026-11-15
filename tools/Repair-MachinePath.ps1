@@ -158,6 +158,10 @@ function Get-PathAnalysis {
             # overridden, so its deadness is reported, never acted on.
             $e = & $Exists $trimmed
             if ($null -eq $e) { $class = 'unreadable' }
+            # WOW64 redirects ...\System32 to SysWOW64 for 32-bit programs, so a folder this 64-bit
+            # process cannot see there may be one a 32-bit program resolves: one view's "missing" is
+            # never dead.
+            elseif (-not $e -and $trimmed -match '\\System32(\\|$)') { $class = 'unreadable' }
             elseif (-not $e) {
                 if ($pending.Contains($key)) { $class = 'pending' }
                 elseif ($seg -match '%') { $class = 'dead-var' }

@@ -85,6 +85,14 @@ foreach ($ws in @([char]0x00A0, [char]0x2007, [char]0x202F, [char]0x3000, ' ', "
     $wo = Get-PathAnalysis -Raw ("$ws;C:\Windows") -Scope User -Exists $fsExists
     Ok (-not $wo[0].Removable -and (Get-RepairedPath $wo) -eq "$ws;C:\Windows") ("padding: a whitespace-only segment U+{0:X4} is never removed" -f [int][char]$ws)
 }
+# Round-15 Codex (blocking): WOW64. A folder missing from this 64-bit process's System32 may exist in
+# the 32-bit view (SysWOW64), so it is unreadable, never dead, in either scope.
+foreach ($sc in @('User', 'Machine')) {
+    $w6 = Get-PathAnalysis -Raw 'C:\Windows\System32\InstallShield;C:\WINDOWS\system32\Gone64' -Scope $sc -Exists $fsExists
+    Ok ($w6[0].Class -eq 'unreadable' -and $w6[1].Class -eq 'unreadable' -and @($w6 | Where-Object Removable).Count -eq 0) "wow64: a missing folder under System32 is unreadable, never removed ($sc)"
+}
+Ok ((Get-PathAnalysis -Raw 'C:\Windows\System32' -Scope Machine -Exists $fsExists)[0].Class -eq 'ok') 'wow64: an existing System32 entry is still ok'
+Ok ((Get-PathAnalysis -Raw 'C:\Tools\System32Backup' -Scope User -Exists $fsExists)[0].Class -eq 'dead') 'wow64: only a \System32\ path component is protected, not a look-alike name'
 $le = Get-PathAnalysis -Raw 'C:\Windows;;C:\Windows\System32' -Scope User -Exists $fsExists
 Ok ($le[1].Class -eq 'empty' -and $le[1].Removable -and (Get-RepairedPath $le) -eq 'C:\Windows;C:\Windows\System32') 'empty: a literally empty segment is still removed'
 $pc = Get-PathAnalysis -Raw 'C:\Windows' -Scope User -Exists $fsExists -OtherScopeKeys @('c:\windows')
