@@ -587,13 +587,14 @@ function Publish-Ack($state) {
     $rel = "path-health/$($record.machine).json"
     $target = Join-Path $BusRoot $rel
     $prev = if (Test-Path -LiteralPath $target) { Get-Content -LiteralPath $target -Raw } else { $null }
-    $need = Test-AckPublishNeeded -PreviousRaw $prev -Record $record -NowUtc $now -RefreshHours $RefreshHours
-    if (-not $need.Publish) { Say "ACK UNCHANGED: $rel ($($need.Reason)); not pushing a cadence commit."; return 0 }
     # The ack only counts on master: the reader runs there. A board's own checkout on a feature
     # branch would publish where nobody reads it, and detached HEAD cannot be pushed by name.
+    # Checked BEFORE "unchanged", so a branch copy can never report an ack master has not seen.
     $branch = ([string](& git -C $BusRoot symbolic-ref -q --short HEAD 2>$null)).Trim()
     if (-not $branch) { Say "PUBLISH FAILED: $BusRoot is on a detached HEAD; publish from a master checkout (the one-line command clones one)"; return 4 }
     if ($branch -ne 'master' -and -not $AllowBranch) { Say "PUBLISH FAILED: $BusRoot is on branch '$branch', not master; the reader would never see this ack. Use the one-line command, or pass -AllowBranch deliberately."; return 4 }
+    $need = Test-AckPublishNeeded -PreviousRaw $prev -Record $record -NowUtc $now -RefreshHours $RefreshHours
+    if (-not $need.Publish) { Say "ACK UNCHANGED: $rel ($($need.Reason)); not pushing a cadence commit."; return 0 }
     $already = @(& git -C $BusRoot diff --cached --name-only)
     if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
     [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))

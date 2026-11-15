@@ -36,7 +36,9 @@ global-tools folder to the **persisted User PATH** (registry, `CurrentUser`) unl
   the path is `%USERPROFILE%\.dotnet\tools`.
 - `src/Cli/dotnet/ShellShim/WindowsEnvironmentPath.cs` appends that path to the User PATH with
   `SdkEnvironmentVariableTarget.CurrentUser`. It skips the append only if the same path is
-  already present.
+  already on the process, User or Machine PATH. So a gate that puts its per-run tools folder on its
+  own **process** PATH before the first `dotnet` call also stops the write: a second guard, next to
+  the env var.
 
 So a gate that gives every run a fresh `DOTNET_CLI_HOME` gets a new sentinel location and a new
 tools path each time. Each run appends one more User PATH entry. The run's folder is then deleted
@@ -74,9 +76,9 @@ reference says it "is no longer supported in .NET Core 3.0 and later" and points
 
 | Mode | What it does | Needs Administrator |
 |---|---|---|
-| `-Check` | Read-only. Reports User and Machine PATH length and segment count, plus dead, duplicate and empty entries. Runs `cmd.exe /d /c where git` with the PATH a new process would get. Reports each runner under `C:\actions-runners\*`: its `.path` length and whether `.env` exists and sets `LANG`. Exit 0 HEALTHY, 1 UNHEALTHY, 2 UNEVALUABLE. UNHEALTHY means the total is over 4,096 characters, there is a dead entry in either scope, the cmd probe failed, or a runner's `.path` or `.env` is missing or wrong. Duplicates alone are reported but are not a finding. | No |
-| `-Apply` | Backs up both scopes (raw value and registry kind) under `%LOCALAPPDATA%\FleetPathRepair\<utc>\`. Removes dead, empty and duplicate User PATH entries, including User entries that repeat a Machine entry. Removes **dead** Machine PATH entries only when elevated. It never removes an entry whose folder exists, a UNC entry, an entry with an unexpanded `%VAR%`, or an entry on a drive that is not mounted. It keeps the raw `%VAR%` text and the order of what remains. Rewrites each runner's `.path`, but only when the runner service runs as the current user. Restarts a runner service only when elevated and `gh api` reports `busy: false`; otherwise it skips the restart and says why. Writes `receipt.json`. Exit is the post-repair check verdict, or 2 if a write failed. | Only for Machine PATH entries and runner restarts |
-| `-Publish` | Adds the ack (section 5) to either mode. | No |
+| `-Check` | Read-only. Reports User and Machine PATH length and segment count, plus dead, duplicate and empty entries. Runs `cmd.exe /d /c where git` with the PATH a new process would get. Reports each runner under `C:\actions-runners\*`: its `.path` length, and whether `.env` exists and sets a non-empty `LANG`. Exit 0 HEALTHY, 1 UNHEALTHY, 2 UNEVALUABLE. UNHEALTHY means any of these: the total is over 4,096 characters; either scope has an absolute entry whose folder is definitely gone; the cmd probe failed; or a runner's `.path` or `.env` is missing, empty or wrong. Duplicates alone are reported but are not a finding. The `where git` probe is a smoke test, not a reproduction of the failure: `where.exe` reads PATH itself and may pass on a PATH that breaks other `cmd.exe` lookups. The length limit is the real guard. | No |
+| `-Apply` | Backs up both scopes (raw value and registry kind) under `%LOCALAPPDATA%\FleetPathRepair\<utc>\` before any write. Removes dead, empty and duplicate User PATH entries, including User entries that repeat a Machine entry. Removes **dead** Machine PATH entries only when elevated. It keeps the raw `%VAR%` text and the order of what remains. **It never removes** any of these: an entry whose folder exists; a folder it cannot inspect (access denied); a UNC entry; an entry written with a `%VAR%` (it was expanded with this process's environment, which a harness may have overridden), including one that expands to several folders; an entry on a drive that is not mounted; or the not-yet-created `%USERPROFILE%\.dotnet\tools` and `%APPDATA%\npm`. Installers write those last two before the folder exists, and their own sentinels never re-add them. It rewrites a runner's `.path` only when the service account has the same SID as the current user (`.\name` is the local account), and only when `.path` is missing, over the limit, or still holds an entry it just removed. A hand-ordered `.path` is kept. It restarts that runner's service only when elevated and `gh api` reports `busy: false`; otherwise it skips the restart and says why. One residual race is accepted: a job picked up between that read and the restart is interrupted. It writes `receipt.json` even when a later step fails. Exit is the post-repair check verdict, or 2 if any write failed. | Only for Machine PATH entries and runner restarts |
+| `-Publish` | Adds the ack (section 5) to either mode. It publishes only from a `master` checkout, and refuses a detached HEAD or an index that already holds staged files. | No |
 
 `-Apply` is each machine's owner's call. No session runs it on a machine without the owner asking.
 
@@ -107,14 +109,22 @@ Administrator, only git with push access to the bus, and it takes a few seconds.
 PowerShell 7 or Windows PowerShell (PowerShell 7, `pwsh`, must be installed: the tool needs it):
 
 ```powershell
-$d=Join-Path $env:TEMP "fleet-path-ack-$PID"; git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; git -C $d sparse-checkout set tools path-health; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; Remove-Item -Recurse -Force $d
+$d=Join-Path $env:TEMP "fleet-path-ack-$PID"; git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; if ($LASTEXITCODE) { "BLOCKED: git clone exit $LASTEXITCODE" } else { git -C $d sparse-checkout set tools path-health; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; $rc=$LASTEXITCODE; if ($rc -le 1) { Remove-Item -Recurse -Force $d; "ACK DONE (check exit $rc)" } else { "BLOCKED: exit $rc - clone kept at $d" } }
 ```
 
 It clones master fresh into a temporary folder, so it never touches a board's own bus checkout or
-branch. It runs the read-only check and publishes `path-health/<MACHINE>.json` to master: counts
-and verdict only, with no paths and no user names (law 4). Then it deletes the clone. It pushes only
-when the content changed or the record is over 24 hours old (law 3). An UNHEALTHY ack is still an
-ack. It tells the fleet the machine looked; the repair is `-Apply`, separately.
+branch. It runs the read-only check and publishes `path-health/<MACHINE>.json` to master. The record
+holds counts, verdict and ordinal runner labels only: no paths, no user names, no runner folder
+names (law 4). It pushes only when the content changed or the record is over 24 hours old (law 3).
+
+The last line it prints is one of three:
+- `ACK DONE (check exit 0)`: HEALTHY. The clone is deleted.
+- `ACK DONE (check exit 1)`: UNHEALTHY, but acked. The clone is deleted. The repair is `-Apply`,
+  separately. An UNHEALTHY ack is still an ack: it tells the fleet the machine looked.
+- `BLOCKED: exit <n>`: the check could not evaluate (2) or the publish failed (4). The clone is kept,
+  and with it any ack committed but not pushed. Record it as a BLOCKED line (below).
+
+Parsed with zero errors in Windows PowerShell 5.1 and PowerShell 7.6.
 
 **The ledger:** `pwsh -NoProfile -File tools/Get-FleetPathHealthStatus.ps1` lists every machine as
 ACKED (with HEALTHY/UNHEALTHY), STALE (older than 7 days), ABSENT, DISTINGUISHED or BLOCKED. The
