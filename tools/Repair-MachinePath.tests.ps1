@@ -412,6 +412,25 @@ Ok ((Get-RunnerPathDeadCount "C:\Windows;C:\Gone\one;C:\Gone\two`r`n" $fsExists)
 Ok ((Get-RunnerPathDeadCount 'C:\Users\v\.dotnet\tools;%X%\gone;\\srv\s;C:\Windows\System32\Gone;Q:\x' $fsExists @('c:\users\v\.dotnet\tools')) -eq 0) 'runner .path: pending, %VAR%, UNC, System32 and unmounted entries are never dead'
 Ok ((Get-RunnerPathDeadCount '' $fsExists) -eq 0 -and (Get-RunnerPathDeadCount $null $fsExists) -eq 0) 'runner .path: empty text has no dead entries'
 Ok ($src -match 'Get-RunnerPathDeadCount \$pathText \$existsReal \$pendingReal' -and $src -match 'Invoke-WhereGitProbe \$pathText') 'runner .path: the real check counts dead entries and probes git with the .path text'
+# Round-1 keys (Claude + third key): without .path the jobs get the SERVICE account's environment.
+$sidsK = @{ 'BOX1\me' = 'S-1-5-21-9-1001'; 'BOX1\builder' = 'S-1-5-21-9-1002' }
+$resK = { param($q) $sidsK[$q] }
+Ok ((Get-ServiceAccountKind 'NT AUTHORITY\NETWORK SERVICE' 'S-1-5-21-9-1001' 'BOX1' $resK) -eq 'service-identity' -and (Get-ServiceAccountKind 'LocalSystem' 'S-1-5-21-9-1001' 'BOX1' $resK) -eq 'service-identity') 'service: NETWORK SERVICE and LocalSystem are service identities'
+Ok ((Get-ServiceAccountKind '.\me' 'S-1-5-21-9-1001' 'BOX1' $resK) -eq 'same' -and (Get-ServiceAccountKind '.\builder' 'S-1-5-21-9-1001' 'BOX1' $resK) -eq 'other' -and (Get-ServiceAccountKind '' 'S-1-5-21-9-1001' 'BOX1' $resK) -eq 'unknown') 'service: same, other and unknown accounts'
+$svcRows = @(
+    @{ label = 'runner-1'; path_chars = $null; path_git = 'FAIL'; service_account = 'service-identity'; env_lines = $null; env_has_lang = $false }
+    @{ label = 'runner-2'; path_chars = $null; path_git = 'PASS'; service_account = 'service-identity'; env_lines = $null; env_has_lang = $false }
+    @{ label = 'runner-3'; path_chars = $null; path_git = 'SKIPPED'; service_account = 'other'; env_lines = $null; env_has_lang = $false }
+    @{ label = 'runner-4'; path_chars = $null; path_git = 'SKIPPED'; service_account = 'unknown'; env_lines = $null; env_has_lang = $false }
+    @{ label = 'runner-5'; path_chars = $null; path_git = 'SKIPPED'; service_account = 'same'; env_lines = $null; env_has_lang = $false })
+$svcF = Get-PathFindings -User $umU -Machine $umM -TotalChars 1470 -WhereGit PASS -Runners $svcRows
+Ok ($svcF.Count -eq 1 -and $svcF[0] -eq 'runner-service-git-failed:runner-1') 'service: no .path, a service identity whose Machine-only PATH has no git is a finding'
+$svcN = Get-PathNotes $svcRows
+Ok ($svcN -contains 'runner-service-other-account:runner-3' -and $svcN -contains 'runner-service-unknown:runner-4' -and -not @($svcN | Where-Object { $_ -match 'runner-(1|2|5)$' -and $_ -like 'runner-service*' })) 'service: another named account or an unreadable service is a note; same account and a passing service identity are not'
+$svcRec = New-AckRecord -MachineName 'X' -NowUtc $now -ToolCommit 'x' -User $umU -Machine $umM -TotalChars 1 -WhereGit PASS -Runners $svcRows -Findings $svcF
+Ok ($svcRec.runners[0].service_account -eq 'service-identity' -and (New-AckRecord -MachineName 'X' -NowUtc $now -ToolCommit 'x' -User $umU -Machine $umM -TotalChars 1 -WhereGit PASS -Runners @(@{ label = 'runner-1' })).runners[0].service_account -eq 'unknown') 'ack: runner rows carry the service account class (never its name)'
+Ok ($src -match 'Invoke-WhereGitProbe \$MachinePath' -and $src -match 'Get-RunnerRows \$RunnerRoot \(Join-ExpandedPath \$m\.MachineAnalysis\)') 'service: the real check probes a service identity''s runner with the Machine PATH alone'
+
 # Fail-safe item 4: the header sentence about a failed publish reads as one sentence.
 Ok ($src -notmatch 'a failed publish\s*\r?\n\s*and takes' -and $src -match 'A failed publish takes\s+its own ack commit back') 'header: the failed-publish sentence is no longer garbled'
 
@@ -507,32 +526,66 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         $pubRec = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Findings @()
         $pubJson = (($pubRec | ConvertTo-Json -Depth 6) -replace "`r`n", "`n") + "`n"
         $pushTwin = {
-            param($n)
-            if ($n -ne 1) { return }
+            param($stage, $n)
+            if ($stage -ne 'before-push' -or $n -ne 1) { return }
             & $g -C $pw2 pull -q --ff-only
             [void](New-Item -ItemType Directory -Force -Path (Join-Path $pw2 'path-health'))
             [IO.File]::WriteAllText((Join-Path $pw2 $ackRel), $pubJson)
-            & $g -C $pw2 add $ackRel; & $g -C $pw2 commit -q -m 'path-health: TESTBOX HEALTHY (first-publication)'; & $g -C $pw2 push -q origin master
+            & $g -C $pw2 add $ackRel; & $g -C $pw2 commit -q -m 'twin publisher'; & $g -C $pw2 push -q origin master
         }
         # (2) A rejected push re-reads origin first: the record another run just pushed is "unchanged".
-        $rc2 = Publish-AckRecord -BusRoot $pw -Record $pubRec -NowUtc $pnow -BeforePush $pushTwin 6> $null
+        $rc2 = Publish-AckRecord -BusRoot $pw -Record $pubRec -NowUtc $pnow -TestHook $pushTwin 6> $null
         $acksOnOrigin = @(& git -C $pw log --format=%s refs/remotes/origin/master -- $ackRel)
-        Ok ($rc2 -eq 0 -and $acksOnOrigin.Count -eq 1) 'retry: after a rejected push, origin is re-read and an identical record already there is unchanged (exit 0, one ack commit)'
+        Ok ($rc2 -eq 0 -and $acksOnOrigin.Count -eq 1 -and $acksOnOrigin[0] -eq 'twin publisher') 'retry: after a rejected push, origin is re-read and an identical record already there is unchanged (exit 0, one ack commit)'
         Ok (-not ([string](& git -C $pw status --porcelain))) 'retry: the checkout is left clean after the re-read'
         # A rejected push for a different reason (another file landed) is rebuilt on the new tip and published.
         $otherRel = 'path-health/OTHERBOX.json'
         $pushOther = {
-            param($n)
-            if ($n -ne 1) { return }
+            param($stage, $n)
+            if ($stage -ne 'before-push' -or $n -ne 1) { return }
             & $g -C $pw2 pull -q --ff-only
             Set-Content -LiteralPath (Join-Path $pw2 $otherRel) -Value '{}'
             & $g -C $pw2 add $otherRel; & $g -C $pw2 commit -q -m 'path-health: OTHERBOX'; & $g -C $pw2 push -q origin master
         }
         $pubRec2 = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 802 -WhereGit PASS -Findings @()
-        $rc3 = Publish-AckRecord -BusRoot $pw -Record $pubRec2 -NowUtc $pnow -BeforePush $pushOther 6> $null
+        $rc3 = Publish-AckRecord -BusRoot $pw -Record $pubRec2 -NowUtc $pnow -TestHook $pushOther 6> $null
         & git -C $pw fetch -q origin
         & git -C $pw cat-file -e "refs/remotes/origin/master:$otherRel" 2>$null; $otherThere = ($LASTEXITCODE -eq 0)
         Ok ($rc3 -eq 0 -and ((& git -C $pw show "refs/remotes/origin/master:$ackRel") -join "`n") -match '"total_chars": 802' -and $otherThere) 'retry: a push rejected because origin moved is rebuilt on the new tip and published'
+        # Rejected twice (origin moves before each push): exit 4, nothing of ours left anywhere.
+        $pushEvery = {
+            param($stage, $n)
+            if ($stage -ne 'before-push') { return }
+            & $g -C $pw2 pull -q --ff-only
+            Set-Content -LiteralPath (Join-Path $pw2 "race-$n.md") -Value $n
+            & $g -C $pw2 add "race-$n.md"; & $g -C $pw2 commit -q -m "race $n"; & $g -C $pw2 push -q origin master
+        }
+        $pubRecR = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 899 -WhereGit PASS -Findings @()
+        $rcR = Publish-AckRecord -BusRoot $pw -Record $pubRecR -NowUtc $pnow -TestHook $pushEvery 6> $null
+        & git -C $pw fetch -q origin
+        Ok ($rcR -eq 4 -and -not ([string](& git -C $pw status --porcelain)) -and ([string](& git -C $pw rev-list --count 'refs/remotes/origin/master..HEAD')).Trim() -eq '0' -and ((& git -C $pw show "refs/remotes/origin/master:$ackRel") -join "`n") -notmatch '"total_chars": 899') 'retry: rejected twice is exit 4 with no commit, staged change or ack file of ours, and nothing on origin'
+        & $g -C $pw merge -q --ff-only origin/master
+        # Codex round-1 blocking 2: the push sends the exact commit the guard checked, never a HEAD that
+        # another process moved on top of it.
+        $sneak = {
+            param($stage, $n)
+            if ($stage -ne 'before-push') { return }
+            Set-Content -LiteralPath (Join-Path $pw 'sneak.md') -Value 'unreviewed'
+            & $g -C $pw add sneak.md; & $g -C $pw commit -q -m 'unreviewed local work'
+        }
+        $pubRecS = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 777 -WhereGit PASS -Findings @()
+        $rcS = Publish-AckRecord -BusRoot $pw -Record $pubRecS -NowUtc $pnow -TestHook $sneak 6> $null
+        & git -C $pw fetch -q origin
+        & git -C $pw cat-file -e 'refs/remotes/origin/master:sneak.md' 2>$null; $sneakOnOrigin = ($LASTEXITCODE -eq 0)
+        Ok ($rcS -eq 0 -and -not $sneakOnOrigin -and ((& git -C $pw show "refs/remotes/origin/master:$ackRel") -join "`n") -match '"total_chars": 777') 'push: a commit made on top of the ack after the guard never reaches origin'
+        & $g -C $pw reset -q --hard origin/master
+        # Codex round-1 blocking 1: a rehearsal whose undo fails is exit 4, never a clean 5.
+        $lockHook = { param($stage, $n) if ($stage -eq 'before-rehearsal-undo') { [IO.File]::WriteAllText((Join-Path $pw '.git/index.lock'), '') } }
+        $pubRecL = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 778 -WhereGit PASS -Findings @()
+        try { $rcL = Publish-AckRecord -BusRoot $pw -Record $pubRecL -NowUtc $pnow -NoPush -TestHook $lockHook 6> $null }
+        finally { Remove-Item -LiteralPath (Join-Path $pw '.git/index.lock') -Force -ErrorAction SilentlyContinue }
+        Ok ($rcL -eq 4) 'rehearsal: an undo blocked by an index lock is exit 4 (kept commit reported), never 5'
+        & $g -C $pw reset -q --hard origin/master
         $blobBytes = Get-GitStdoutBytes $pw @('cat-file', 'blob', "refs/remotes/origin/master:$ackRel")
         Ok ($null -ne $blobBytes -and [Array]::IndexOf([byte[]]$blobBytes, [byte]13) -lt 0) 'publish: the ack blob is LF only, whatever the platform'
         # (3) -NoPush never fast-forwards a checkout that is behind origin.

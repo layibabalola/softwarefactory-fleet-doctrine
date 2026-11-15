@@ -293,7 +293,13 @@ function Get-PathFindings {
     foreach ($r in @($Runners)) {
         $label = Get-RowValue $r 'label'
         $pc = Get-RowValue $r 'path_chars'
-        if ($null -eq $pc) { continue }   # absent .path: optional, a note only
+        if ($null -eq $pc) {
+            # Absent .path: the jobs get the SERVICE account's environment. For a service identity
+            # (NETWORK SERVICE, LocalSystem) that is the Machine PATH alone, so git is probed with
+            # that; a failure is a broken runner, not a note.
+            if ((Get-RowValue $r 'service_account') -eq 'service-identity' -and (Get-RowValue $r 'path_git') -eq 'FAIL') { $f.Add("runner-service-git-failed:$label") }
+            continue
+        }
         if ($pc -eq 0) { $f.Add("runner-path-empty:$label") }
         elseif ($pc -gt $MaxTotalChars) { $f.Add("runner-path-over-${MaxTotalChars}:${label}:$pc") }
         $pd = Get-RowValue $r 'path_dead'
@@ -309,6 +315,14 @@ function Get-PathNotes([object[]]$Runners = @()) {
     foreach ($r in @($Runners)) {
         $label = Get-RowValue $r 'label'
         if ($null -eq (Get-RowValue $r 'path_chars')) { $n.Add("runner-path-absent:$label") }
+        if ($null -eq (Get-RowValue $r 'path_chars')) {
+            # Without .path, this machine's -Check measures the checking user's PATH, which is the
+            # jobs' PATH only when the service runs as that user.
+            switch ([string](Get-RowValue $r 'service_account')) {
+                'other' { $n.Add("runner-service-other-account:$label") }   # its User PATH is not measured here
+                'unknown' { $n.Add("runner-service-unknown:$label") }
+            }
+        }
         if ($null -eq (Get-RowValue $r 'env_lines')) { $n.Add("runner-env-absent:$label") }
         elseif (-not (Get-RowValue $r 'env_has_lang')) { $n.Add("runner-env-no-lang:$label") }
     }
@@ -328,6 +342,7 @@ function New-AckRecord {
         [ordered]@{
             label = [string](Get-RowValue $r 'label'); path_chars = (Get-RowValue $r 'path_chars'); path_dead = (Get-RowValue $r 'path_dead')
             path_git = $(if ($git) { [string]$git } else { 'SKIPPED' }); env_lines = (Get-RowValue $r 'env_lines'); env_has_lang = [bool](Get-RowValue $r 'env_has_lang')
+            service_account = $(if ($sa = Get-RowValue $r 'service_account') { [string]$sa } else { 'unknown' })
         }
     })
     [ordered]@{
@@ -415,6 +430,17 @@ function ConvertTo-QualifiedAccount([AllowNull()][string]$StartName, [string]$Co
     return $StartName
 }
 
+# Which account a runner service runs as, relative to the checking user, as a publishable class:
+# 'same', 'service-identity' (LocalSystem / NT AUTHORITY\... / NT SERVICE\...: no user PATH, so the
+# jobs see the Machine PATH alone), 'other' (a named account whose User PATH is not measured here),
+# or 'unknown' (no service name, or it could not be read).
+function Get-ServiceAccountKind([AllowNull()][string]$StartName, [string]$MySid, [string]$ComputerName, [scriptblock]$Resolve) {
+    if (-not $StartName) { return 'unknown' }
+    if ($null -eq (ConvertTo-QualifiedAccount $StartName $ComputerName)) { return 'service-identity' }
+    if (Test-SameServiceAccount $StartName $MySid $ComputerName $Resolve) { return 'same' }
+    return 'other'
+}
+
 # Same account iff both resolve to the same SID. Resolution failure is "not the same" (fail closed).
 # $Resolve: param($qualifiedName) -> SID string or $null.
 function Test-SameServiceAccount([AllowNull()][string]$StartName, [string]$MySid, [string]$ComputerName, [scriptblock]$Resolve) {
@@ -427,7 +453,7 @@ function Test-SameServiceAccount([AllowNull()][string]$StartName, [string]$MySid
 <#
 Rewrite a runner's .path only when it exists and is empty, over the limit, or still carries an entry
 this repair removed. Otherwise leave it: a hand-ordered .path (Git Bash ahead of WSL) is not ours to
-flatten, and a MISSING .path is never created: the runner then follows its service environment,
+flatten, and a MISSING .path is never created: the runner then uses its service environment (refreshed on a service restart),
 while a written .path freezes the jobs' PATH until someone rewrites it.
 #>
 function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a missing file ($null) into ''
@@ -475,12 +501,14 @@ function Get-FinalExitCode([int]$CheckCode, [bool]$Published, [int]$PublishCode 
 # on a throwaway repository with a throwaway bare origin.
 # Why the ack push must not happen, or $null. The push must carry the ack commit and nothing else:
 # a board's own master checkout may hold local, unreviewed commits.
-function Get-AckPushBlocker([string]$BusRoot, [string]$Branch, [string]$Rel) {
+# -Rev names the exact commit that will be pushed (default HEAD), so the guard and the push judge
+# the same object even if another process moves HEAD in between.
+function Get-AckPushBlocker([string]$BusRoot, [string]$Branch, [string]$Rel, [string]$Rev = 'HEAD') {
     & git -C $BusRoot fetch -q origin $Branch *> $null
     if ($LASTEXITCODE -ne 0) { return "cannot fetch origin/$Branch" }
-    $ahead = "$(& git -C $BusRoot rev-list --count "refs/remotes/origin/${Branch}..HEAD" 2>$null)".Trim()
+    $ahead = "$(& git -C $BusRoot rev-list --count "refs/remotes/origin/${Branch}..$Rev" 2>$null)".Trim()
     if ($ahead -ne '1') { return "HEAD is $ahead commits ahead of origin/$Branch, not 1" }
-    $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r HEAD 2>$null)
+    $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r $Rev 2>$null)
     if ($files.Count -ne 1 -or $files[0] -ne $Rel) { return "HEAD commit touches $($files -join ', '), not exactly $Rel" }
     return $null
 }
@@ -567,7 +595,8 @@ function Restore-AckFile([string]$BusRoot, [string]$Rel) {
 <#
 Publish one ack record to <BusRoot>/path-health/<MACHINE>.json on origin. Returns 0 (published, or
 origin already holds this record), 4 (failed; nothing of ours left behind) or 5 (-NoPush rehearsal).
--BeforePush is a test seam only: it runs just before each push, with the attempt number.
+-TestHook is a test seam only: it is called as (stage, attempt) at 'before-push' and
+'before-rehearsal-undo', so tests can race the publisher at exactly those points.
 #>
 function Publish-AckRecord {
     param(
@@ -577,7 +606,7 @@ function Publish-AckRecord {
         [int]$RefreshHours = 24,
         [switch]$NoPush,
         [switch]$AllowBranch,
-        [scriptblock]$BeforePush = $null
+        [scriptblock]$TestHook = $null
     )
     if (-not (Test-Path -LiteralPath (Join-Path $BusRoot '.git'))) { Say "PUBLISH FAILED: $BusRoot is not a git checkout of the bus"; return 4 }
     $rel = "path-health/$($Record.machine).json"
@@ -605,7 +634,10 @@ function Publish-AckRecord {
         if (-not $need.Publish) {
             if ($NoPush) { Say "REHEARSAL (-NoPush): $rel ($($need.Reason)) as published on origin/$branch; nothing written."; return 5 }   # a rehearsal is never an ack
             $how = if ($attempt -gt 1) { 'another run published it while this push was rejected' } else { 'not pushing a cadence commit' }
-            Say "ACK UNCHANGED: $rel ($($need.Reason)) as published on origin/$branch; $how."; return 0
+            # The bus is right; say so if THIS checkout's copy is not (a reader run here reads the file).
+            & git -C $BusRoot diff --quiet "refs/remotes/origin/$branch" -- $rel *> $null
+            $local = if ($LASTEXITCODE -ne 0) { " NOTE: the working-tree copy in $BusRoot differs from origin's; it was left as it is." } else { '' }
+            Say "ACK UNCHANGED: $rel ($($need.Reason)) as published on origin/$branch; $how.$local"; return 0
         }
         if ($NoPush) {
             # A rehearsal never moves the checkout: it commits on HEAD as it stands and takes the
@@ -627,25 +659,43 @@ function Publish-AckRecord {
         $staged = @(& git -C $BusRoot diff --cached --name-only)
         # Nothing staged means HEAD already holds these bytes while origin does not (an unpushed
         # earlier commit): not an ack.
+        if ($staged.Count -eq 0 -and $NoPush) { Say "REHEARSAL (-NoPush): HEAD already holds this $rel but origin/$branch does not; a real publish would fast-forward first. Nothing committed."; return 5 }
         if ($staged.Count -eq 0) { Say "PUBLISH FAILED: HEAD already holds this $rel but origin/$branch does not (an earlier unpushed commit?); rerun the one-line command"; return 4 }
         if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
             [void](Restore-AckFile $BusRoot $rel)
             Say "PUBLISH FAILED: staging area held other files ($($staged -join ', ')); refusing to commit."; return 4
         }
         & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($Record.machine) $($Record.verdict) ($($need.Reason))" *> $null
-        if ($LASTEXITCODE -ne 0) { [void](Restore-AckFile $BusRoot $rel); Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?); ack unstaged'; return 4 }
+        if ($LASTEXITCODE -ne 0) {
+            $r = Restore-AckFile $BusRoot $rel
+            $left = @(& git -C $BusRoot diff --cached --name-only)
+            $state = if ($left -contains $rel) { "ack file $r but still STAGED (index locked?): run 'git -C <bus> reset -q -- $rel'" } else { "ack $r and unstaged" }
+            Say "PUBLISH FAILED: commit failed (is git user.name/user.email set, or the index locked?); $state"; return 4
+        }
         $ackBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)".Trim()   # the exact blob this run committed
+        $ackCommit = "$(& git -C $BusRoot rev-parse -q --verify HEAD 2>$null)".Trim()   # the exact commit this run made: the only thing ever pushed
         # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit).
         $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $Record.machine -Branch $branch -BlobOid $ackBlob }
         if ($NoPush) {
             # A rehearsal proves the commit works, then takes it back: a kept rehearsal commit would
             # make every later -Publish on this checkout fail as "2 commits ahead".
-            Say "REHEARSAL (-NoPush): $rel verdict=$($Record.verdict) ($($need.Reason)) committed, not pushed ($(& $undo))"; return 5
+            # Run the push guard too, so a rehearsal reports what the real push would refuse.
+            $wouldBlock = Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel -Rev $ackCommit
+            $verdictNote = if ($wouldBlock) { "; a real publish here would be REFUSED: $wouldBlock" } else { '' }
+            if ($TestHook) { & $TestHook 'before-rehearsal-undo' $attempt }
+            $u = & $undo
+            # A rehearsal that could not take its commit back is a failure, not a rehearsal: the kept
+            # commit would make the next real publish refuse as "2 commits ahead".
+            if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED (-NoPush): rehearsal commit could not be undone ($u); remove it with 'git -C <bus> reset -q --mixed HEAD~1' once nothing else holds the index"; return 4 }
+            Say "REHEARSAL (-NoPush): $rel verdict=$($Record.verdict) ($($need.Reason)) committed, not pushed ($u)$verdictNote"; return 5
         }
-        $why = Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel
+        if (-not $ackCommit) { Say "PUBLISH FAILED: cannot read the ack commit just made ($(& $undo))"; return 4 }
+        $why = Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel -Rev $ackCommit
         if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
-        if ($BeforePush) { & $BeforePush $attempt }
-        & git -C $BusRoot push -q --no-follow-tags origin "HEAD:refs/heads/$branch" *> $null
+        if ($TestHook) { & $TestHook 'before-push' $attempt }
+        # Push the exact commit the guard checked, never HEAD: another process may have committed on
+        # top of it since, and HEAD would carry that commit too.
+        & git -C $BusRoot push -q --no-follow-tags origin "${ackCommit}:refs/heads/$branch" *> $null
         if ($LASTEXITCODE -eq 0) { Say "ACK PUBLISHED: $rel verdict=$($Record.verdict) ($($need.Reason))"; return 0 }
         $u = & $undo
         if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED: push rejected ($u)"; return 4 }
@@ -769,7 +819,13 @@ function Invoke-WhereGitProbe([string]$FreshPath) {
     } catch { 'FAIL' } finally { $env:Path = $saved; $env:NoDefaultCurrentDirectoryInExePath = $savedNoCwd }
 }
 
-function Get-RunnerRows([string]$Root) {
+$script:MySid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$script:ResolveSid = {
+    param($q)
+    try { ([Security.Principal.NTAccount]::new($q)).Translate([Security.Principal.SecurityIdentifier]).Value } catch { $null }
+}
+
+function Get-RunnerRows([string]$Root, [string]$MachinePath = '') {
     if (-not (Test-Path -LiteralPath $Root -PathType Container)) { return ,@() }
     $n = 0
     $rows = foreach ($d in (Get-ChildItem -LiteralPath $Root -Directory -ErrorAction SilentlyContinue | Sort-Object Name)) {
@@ -795,12 +851,24 @@ function Get-RunnerRows([string]$Root) {
         $svcName = $null
         $svcFile = Join-Path $d.FullName '.service'
         if (Test-Path -LiteralPath $svcFile) { $svcName = ([string](Get-Content -LiteralPath $svcFile -Raw)).Trim() }
+        # Which account the jobs run as decides what an absent .path means (Get-ServiceAccountKind).
+        $svcAccount = 'unknown'
+        if ($svcName) {
+            try {
+                $svc = Get-CimInstance Win32_Service -Filter ("Name='{0}'" -f ($svcName -replace "'", "''")) -ErrorAction Stop
+                if ($svc) { $svcAccount = Get-ServiceAccountKind ([string]$svc.StartName) $script:MySid $env:COMPUTERNAME $script:ResolveSid }
+            } catch { $svcAccount = 'unknown' }
+        }
+        if ($null -eq $pathChars -and $svcAccount -eq 'service-identity') {
+            # A service identity has no user PATH of ours: its jobs see the Machine PATH alone.
+            $pathGit = Invoke-WhereGitProbe $MachinePath
+        }
         $runnerJson = $null
         try { $runnerJson = (Get-Content -LiteralPath (Join-Path $d.FullName '.runner') -Raw).TrimStart([char]0xFEFF) | ConvertFrom-Json } catch { }
         [pscustomobject]@{
             # `label` is what travels: a runner folder may be named after an account (law 4).
             name = $d.Name; label = "runner-$n"; path_chars = $pathChars; path_dead = $pathDead; path_git = $pathGit
-            env_lines = $envLines; env_has_lang = (Test-EnvHasLang $envText)
+            env_lines = $envLines; env_has_lang = (Test-EnvHasLang $envText); service_account = $svcAccount
             Dir = $d.FullName; Service = $svcName
             Url = if ($runnerJson -and $runnerJson.PSObject.Properties['gitHubUrl']) { [string]$runnerJson.gitHubUrl } else { $null }
             Agent = if ($runnerJson -and $runnerJson.PSObject.Properties['agentName']) { [string]$runnerJson.agentName } else { $null }
@@ -822,7 +890,7 @@ function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$find
     Say ("Machine PATH : {0,6} chars  {1,3} segments  dead {2}  duplicate {3}" -f $m.MachineStats.chars, $m.MachineStats.segments, $m.MachineStats.dead, $m.MachineStats.duplicates)
     Say ("Total (new process): {0} chars (limit {1}); cmd /d /c git --version: {2}" -f $total, $MaxTotalChars, $whereGit)
     foreach ($r in @($runners)) {
-        $pathDesc = if ($null -eq $r.path_chars) { 'absent (optional: jobs get the service environment)' } else { "$($r.path_chars) chars, dead $(if ($null -eq $r.path_dead) { '-' } else { $r.path_dead }), git $($r.path_git)" }
+        $pathDesc = if ($null -eq $r.path_chars) { "absent (optional: jobs get the service environment, account: $($r.service_account))" } else { "$($r.path_chars) chars, dead $(if ($null -eq $r.path_dead) { '-' } else { $r.path_dead }), git $($r.path_git)" }
         $envDesc = if ($null -eq $r.env_lines) { 'absent (optional)' } else { "$($r.env_lines) lines$(if (-not $r.env_has_lang) { ', no LANG (note only)' })" }
         Say ("Runner {0} (published as {1}): .path {2}; .env {3}" -f $r.name, $r.label, $pathDesc, $envDesc)
     }
@@ -842,7 +910,7 @@ function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$find
 function Get-CurrentState {
     $m = Measure-Machine
     $whereGit = Invoke-WhereGitProbe $m.FreshPath
-    $runners = Get-RunnerRows $RunnerRoot
+    $runners = Get-RunnerRows $RunnerRoot (Join-ExpandedPath $m.MachineAnalysis)
     $total = $m.FreshPath.Length
     $findings = Get-PathFindings -User $m.UserStats -Machine $m.MachineStats -TotalChars $total -MaxTotalChars $MaxTotalChars -WhereGit $whereGit -Runners $runners
     [pscustomobject]@{ M = $m; WhereGit = $whereGit; Runners = $runners; Total = $total; Findings = $findings }
