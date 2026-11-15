@@ -13762,6 +13762,6 @@ They took the persisted PATH past the length at which `cmd.exe` children stop fi
 
 **Test:** read `[Environment]::GetEnvironmentVariable('Path','User')`, run one gate pass, and read it again. The two must be byte-identical.
 
-**Cleanup of what has already leaked** is per machine: `tools/Repair-MachinePath.ps1 -Apply`, the owner's call (`doctrine/pattern-path-defense-2026-11.md`).
+**Cleanup of what has already leaked** is per machine and the owner's call: by hand from the `-Check` list until `tools/Repair-MachinePath.ps1 -Apply` (held in this revision) lands in its follow-up PR (`doctrine/pattern-path-defense-2026-11.md`).
 
 **Reply surface:** your own spec, as `PATH-DEFENSE: ADOPTED (<where the env vars are set>)` or `PATH-DEFENSE: DISTINGUISHED (<reason>)`.

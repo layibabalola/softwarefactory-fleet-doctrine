@@ -18,7 +18,9 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             get, and every self-hosted runner under -RunnerRoot (its .path length, its .env).
             Exit 0 HEALTHY, 1 UNHEALTHY, 2 UNEVALUABLE.
 
-  -Apply    Backs up first, then removes dead and empty entries from the User PATH (duplicates
+  -Apply    HELD in this revision: exits 2 before reading or writing anything (it ships in a
+            follow-up PR). The design it will enable:
+            Backs up first, then removes dead and empty entries from the User PATH (duplicates
             are reported, never removed).
             It touches the Machine PATH only when elevated, and only to remove dead entries.
             It never removes an entry whose folder exists, a UNC entry, an entry with an
@@ -493,6 +495,13 @@ if ([int]$Check.IsPresent + [int]$Apply.IsPresent -ne 1) {
     Say 'PRECONDITION: pass exactly one of -Check or -Apply (optionally with -Publish).'
     exit 2
 }
+# -Apply is HELD in this revision: nothing below reads or writes the registry, a runner or the bus
+# for it. Its removal rules (rounds 10-16 of bus PR #96) ship in a follow-up PR once they pass
+# review on their own. -Check and -Publish are unaffected.
+if ($Apply) {
+    Say 'HELD: -Apply is not enabled in this revision; it ships in a follow-up PR. Nothing was read or changed. Repair by hand from the -Check list (doctrine/pattern-path-defense-2026-11.md section 3).'
+    exit 2
+}
 
 $userKeyPath = 'Environment'
 $machineKeyPath = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'
@@ -866,7 +875,7 @@ try {
             New-AckRecord -MachineName $env:COMPUTERNAME -NowUtc (Get-Date).ToUniversalTime() -ToolCommit (Get-ToolCommit $PSScriptRoot) -User $state.M.UserStats -Machine $state.M.MachineStats -TotalChars $state.Total -WhereGit $state.WhereGit -Runners $state.Runners -Findings $state.Findings | ConvertTo-Json -Depth 6 | ForEach-Object { Say $_ }
         } else {
             Write-Report $state.M $state.WhereGit $state.Runners $state.Findings $state.Total
-            if ($state.Findings.Count) { Say 'Repair (owner''s call): pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Apply   (Administrator only if Machine PATH has dead entries or a runner must restart)' }
+            if ($state.Findings.Count) { Say 'Repair (owner''s call): by hand from the list above for now; -Apply is held until its follow-up PR lands.' }
         }
         $code = if ($state.Findings.Count) { 1 } else { 0 }
     }

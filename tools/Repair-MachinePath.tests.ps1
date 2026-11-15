@@ -359,6 +359,10 @@ Ok ($qx[0].Class -eq 'duplicate-var' -and -not $qx[0].Removable) 'duplicate: a p
 Ok ((Get-RunnerPathAction ('C:\Windows\System32' + (' ' * 5000))) -eq 'rewrite:over-limit') 'runner: whitespace padding past the limit counts as over the limit'
 Ok ((Get-RunnerPathAction '   ') -eq 'rewrite:empty') 'runner: a whitespace-only .path is still empty'
 # Third key 1: a 32-bit process on 64-bit Windows is UNEVALUABLE, never a verdict.
+# -Apply is HELD in this revision: it exits 2 before any registry, runner or bus access.
+$heldAt = $src.IndexOf('if ($Apply) {' + "`n" + '    Say ''HELD:'); if ($heldAt -lt 0) { $heldAt = $src.IndexOf('if ($Apply) {' + "`r`n" + '    Say ''HELD:') }
+$firstRead = $src.IndexOf('$userKeyPath = ')
+Ok ($heldAt -gt 0 -and $firstRead -gt $heldAt -and $src.Substring($heldAt, 400) -match 'exit 2') 'held: -Apply exits 2 before the first registry access'
 Ok ($src -match 'Is64BitOperatingSystem -and -not \[Environment\]::Is64BitProcess\) \{[^}]*exit 2') 'bitness: a 32-bit pwsh on 64-bit Windows exits 2 (UNEVALUABLE)'
 
 # --- 9. round-3 key findings: pending set, exit codes, publish push guard ---------------------------
