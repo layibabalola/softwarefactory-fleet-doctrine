@@ -146,6 +146,11 @@ function Get-FleetMiniItems {
             { $f = Get-RegValue 'HKCU:\Control Panel\Accessibility\MouseKeys' 'Flags'; if ($null -eq $f) { $null } else { [int]$f } } `
             { param($v) $null -ne $v -and (([int]$v) -band 1) -eq 1 } `
             { Set-FleetMiniMouseKeys } ''
+        New-FleetMiniItem 'printscreen-capture' 'user' 'Print Screen key takes a screenshot (does not open the Snipping Tool)' `
+            'Windows 11 makes Print Screen open the Snipping Tool by default; the owner wants the classic behaviour on every mini (PrtScn copies the screen, Alt+PrtScn the active window, Win+PrtScn saves a file). Win+Shift+S still opens the Snipping Tool. A missing value means the Windows default (Snipping Tool), so it reads as DRIFT.' `
+            { Get-RegValue 'HKCU:\Control Panel\Keyboard' 'PrintScreenKeyForSnippingEnabled' } `
+            { param($v) $null -ne $v -and [int]$v -eq 0 } `
+            { Set-ItemProperty -Path 'HKCU:\Control Panel\Keyboard' -Name PrintScreenKeyForSnippingEnabled -Value 0 -Type DWord; 'set (if Print Screen still opens the Snipping Tool, sign out and back in)' } ''
         New-FleetMiniItem 'git-longpaths' 'user' 'git core.longpaths=true' `
             'Worktrees under deep paths fail to check out without it, even with the OS long-path switch on.' `
             { $v = git config --global core.longpaths 2>$null; if ($v) { "$v".Trim() } else { $null } } `

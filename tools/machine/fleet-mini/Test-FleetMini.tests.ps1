@@ -27,6 +27,9 @@ foreach ($i in $items) {
 # 3. Mouse Keys judgement: on = bit 0 set
 $mk = $items | Where-Object Id -eq 'mouse-keys'
 Assert ((& $mk.Ok 31) -and -not (& $mk.Ok 62) -and -not (& $mk.Ok $null)) 'mouse-keys: 31 on, 62 off, missing off'
+# 3b. Print Screen judgement: only an explicit 0 is OK; missing is the Windows default (Snipping Tool)
+$ps = $items | Where-Object Id -eq 'printscreen-capture'
+Assert ((& $ps.Ok 0) -and -not (& $ps.Ok 1) -and -not (& $ps.Ok $null)) 'printscreen-capture: 0 ok, 1 drift, missing drift'
 
 # 4. a real read of this machine returns one row per item with a known status
 $rows = @(Invoke-FleetMiniCheck)

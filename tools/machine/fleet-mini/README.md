@@ -44,6 +44,7 @@ check as the account that signs in at the console. Every applied change is writt
 | id | class | what | why |
 |---|---|---|---|
 | mouse-keys | user | Mouse Keys on, keypad mouse while Num Lock is on | headless remote control cannot drag window edges otherwise |
+| printscreen-capture | user | `HKCU\Control Panel\Keyboard` `PrintScreenKeyForSnippingEnabled=0` | Print Screen takes a screenshot instead of opening the Snipping Tool (owner preference, 2026-11-15) |
 | git-longpaths | user | `git config --global core.longpaths true` | deep worktrees fail to check out |
 | sleep-never, hibernate-never | admin | AC sleep and hibernate timeouts 0 | a sleeping mini drops ssh, lanes and remote control |
 | fast-startup-off | admin | `HiberbootEnabled=0` | a shutdown is otherwise a hibernate; restarts lie |
