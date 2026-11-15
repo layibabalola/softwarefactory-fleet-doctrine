@@ -84,7 +84,7 @@ reference says it "is no longer supported in .NET Core 3.0 and later" and points
 
 ## 4. Rule (c): a check that runs without anyone remembering
 
-Each machine wires `-Check` into a path that runs on its own, and alerts on a non-zero exit. That
+Each machine wires `-Check` into a path that runs on its own, and alerts on a failure exit (codes below). That
 is the adoption step. **The bus never installs it.** Two shapes that fit:
 
 - **SessionStart** (Claude Code, user scope): a hook that runs
@@ -112,7 +112,7 @@ Administrator, only git with push access to the bus, and it takes a few seconds.
 PowerShell 7 or Windows PowerShell (PowerShell 7, `pwsh`, must be installed: the tool needs it):
 
 ```powershell
-$d=Join-Path $env:TEMP ("fleet-path-ack-" + [guid]::NewGuid().ToString("N").Substring(0,8)); if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { "BLOCKED: PowerShell 7 (pwsh) is not installed" } else { git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; if ($LASTEXITCODE) { "BLOCKED: git clone exit $LASTEXITCODE" } else { git -C $d sparse-checkout set tools path-health; $rc=$null; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; $rc=$LASTEXITCODE; if ($rc -in 10,11) { Remove-Item -Recurse -Force $d; "ACK DONE (exit $rc)" } else { "BLOCKED: exit $rc - clone kept at $d" } } }
+$d=Join-Path $env:TEMP ("fleet-path-ack-" + [guid]::NewGuid().ToString("N").Substring(0,8)); if (-not (Get-Command pwsh -ErrorAction SilentlyContinue)) { "BLOCKED: PowerShell 7 (pwsh) is not installed" } else { git clone -q --depth 1 --filter=blob:none --sparse https://github.com/layibabalola/softwarefactory-fleet-doctrine.git $d; if ($LASTEXITCODE) { "BLOCKED: git clone exit $LASTEXITCODE" } else { git -C $d sparse-checkout set tools path-health; if ($LASTEXITCODE) { "BLOCKED: git sparse-checkout exit $LASTEXITCODE - clone kept at $d" } else { $rc=$null; pwsh -NoProfile -File "$d\tools\Repair-MachinePath.ps1" -Check -Publish -BusRoot $d; $rc=$LASTEXITCODE; if ($rc -in 10,11) { Remove-Item -Recurse -Force $d; "ACK DONE (exit $rc)" } else { "BLOCKED: exit $rc - clone kept at $d" } } } }
 ```
 
 It clones master fresh into a temporary folder, so it never touches a board's own bus checkout or

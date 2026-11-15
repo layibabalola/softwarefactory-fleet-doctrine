@@ -124,14 +124,28 @@ $n1 = Test-AckPublishNeeded -PreviousRaw $prevRaw -Record $later -NowUtc $now.Ad
 Ok (-not $n1.Publish) 'publish: same content, new stamp and new tool_commit -> no cadence push'
 $n2 = Test-AckPublishNeeded -PreviousRaw $prevRaw -Record $later -NowUtc $now.AddHours(25) -RefreshHours 24
 Ok ($n2.Publish -and $n2.Reason -eq 'refresh:24h') 'publish: refresh after RefreshHours'
-$n3 = Test-AckPublishNeeded -PreviousRaw $prevRaw -Record $healthy -NowUtc $now.AddHours(1)
+$healthyUM = New-AckRecord -MachineName 'ULTRA-MAGNUS' -NowUtc $now.AddHours(1) -ToolCommit 'b' -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Findings @()
+$n3 = Test-AckPublishNeeded -PreviousRaw $prevRaw -Record $healthyUM -NowUtc $now.AddHours(1)
 Ok ($n3.Publish -and $n3.Reason -eq 'changed') 'publish: changed content publishes at once'
-Ok ((Test-AckPublishNeeded -PreviousRaw '{not json' -Record $rec -NowUtc $now).Reason -eq 'previous-unreadable') 'publish: unreadable previous record is republished'
+Ok ((Test-AckPublishNeeded -PreviousRaw '{not json' -Record $rec -NowUtc $now).Reason -eq 'previous-invalid') 'publish: unreadable previous record is republished'
 # Codex round-4 finding 2: a previous stamp the reader would reject is republished, never "unchanged".
 $offRaw = $prevRaw -replace '("published_utc":\s*"[^"]+)Z"', '$1+02:00"'
-Ok ($offRaw -ne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $offRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid-stamp') 'publish: an offset previous stamp is republished'
+Ok ($offRaw -ne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $offRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid') 'publish: an offset previous stamp is republished'
 $futRaw = $prevRaw -replace '"published_utc":\s*"\d{4}', '"published_utc": "2099'
-Ok ($futRaw -ne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $futRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-future-stamp') 'publish: a future previous stamp is republished'
+Ok ($futRaw -ne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $futRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid') 'publish: a future previous stamp is republished'
+
+# Codex round-5 finding 1: publisher and reader share ONE validator, so a record the reader rejects
+# is never "unchanged" to the publisher.
+$dupRaw = $prevRaw -replace '("published_utc":\s*"[^"]+")', '$1, "published_utc": "2099-11-14T23:00:00Z"'
+Ok ($dupRaw -ne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $dupRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid') 'publish: a repeated published_utc key is republished, never unchanged'
+$dupThrew = $false; try { $null = Test-AckRecord -Raw $dupRaw -FileMachine 'ULTRA-MAGNUS' -NowUtc $now.AddHours(2) } catch { $dupThrew = $_.Exception.Message -like '*repeated*' }
+Ok $dupThrew 'reader: a repeated top-level key is UNEVALUABLE'
+Ok ((Test-AckPublishNeeded -PreviousRaw "[$prevRaw]" -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid') 'publish: an array-wrapped previous record is republished'
+$lowRaw = $prevRaw -creplace '"UNHEALTHY"', '"unhealthy"'
+Ok ($lowRaw -cne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $lowRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid') 'publish: a lower-case verdict is republished, never unchanged'
+$otherBox = $prevRaw -replace '"machine":\s*"ULTRA-MAGNUS"', '"machine": "BACHELOR"'
+Ok ((Test-AckPublishNeeded -PreviousRaw $otherBox -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid') 'publish: a previous record naming another machine is republished'
+Ok (-not (Test-AckPublishNeeded -PreviousRaw $prevRaw -Record $later -NowUtc $now.AddHours(2)).Publish) 'publish: a valid unchanged record still needs no push'
 
 # --- 7. reader: derived roster and statuses ---------------------------------------------------------
 $hb = @('{"board":"a","machine":"VIRTUAL-TEN"}', '{"board":"b","machine":"BACHELOR"}', '{"board":"c","machine":"ULTRA-MAGNUS"}', '{"board":"d","machine":"VIRTUAL-TEN"}', '{"no":"machine"}')

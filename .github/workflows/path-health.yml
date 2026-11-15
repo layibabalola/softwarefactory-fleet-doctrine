@@ -10,12 +10,14 @@ on:
     paths:
       - "tools/Repair-MachinePath*.ps1"
       - "tools/Get-FleetPathHealthStatus.ps1"
+      - "tools/PathHealthRecord.ps1"
       - ".github/workflows/path-health.yml"
   push:
     branches: [master]
     paths:
       - "tools/Repair-MachinePath*.ps1"
       - "tools/Get-FleetPathHealthStatus.ps1"
+      - "tools/PathHealthRecord.ps1"
       - ".github/workflows/path-health.yml"
   workflow_dispatch:
 

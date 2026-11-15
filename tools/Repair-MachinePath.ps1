@@ -33,7 +33,7 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             user names), commits that one file and pushes it to master. It pushes only when
             the content changed or the published record is older than -RefreshHours (law 3).
             The record is published whatever the verdict: an UNHEALTHY ack is still an ack.
-            -NoPush commits locally and stops (rehearsal; exit 5, never an ack). A successful publish (or a confirmed
+            -NoPush rehearses: commits, then undoes its own commit (exit 5, never an ack). A successful publish (or a confirmed
             unchanged one) exits 10 when HEALTHY and 11 when UNHEALTHY; a failed publish exits 4
             and takes its own ack commit back off the checkout. It refuses a detached HEAD, a
             branch other than master (unless -AllowBranch), a non-empty index, and any push whose
@@ -67,6 +67,9 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Test-AckRecord: the ack validator the reader uses, so publisher and reader judge an ack alike.
+. (Join-Path $PSScriptRoot 'PathHealthRecord.ps1')
 
 $script:AckSchema = 'fleet-path-health.v1'
 
@@ -242,26 +245,23 @@ Returns @{ Publish = bool; Reason = string }.
 function Test-AckPublishNeeded {
     param([AllowNull()][string]$PreviousRaw, [System.Collections.IDictionary]$Record, [datetime]$NowUtc, [int]$RefreshHours = 24)
     if (-not $PreviousRaw) { return @{ Publish = $true; Reason = 'first-publication' } }
-    try { $prev = $PreviousRaw | ConvertFrom-Json -AsHashtable -ErrorAction Stop } catch { return @{ Publish = $true; Reason = 'previous-unreadable' } }
+    # The previous record must pass the READER's validator (shared, PathHealthRecord.ps1): one the
+    # reader would call UNEVALUABLE (bad JSON, non-object root, repeated key, wrong schema/machine/
+    # verdict case, non-Z or future stamp, findings that contradict the verdict) is republished,
+    # never "unchanged".
+    try { $valid = Test-AckRecord -Raw $PreviousRaw -FileMachine ([string]$Record['machine']) -NowUtc $NowUtc }
+    catch { return @{ Publish = $true; Reason = 'previous-invalid' } }
+    try { $prev = $PreviousRaw | ConvertFrom-Json -AsHashtable -ErrorAction Stop } catch { return @{ Publish = $true; Reason = 'previous-invalid' } }
     $strip = {
         param($h)
         $c = [ordered]@{}
-        foreach ($k in $h.Keys) { if ($k -notin @('published_utc', 'tool_commit')) { $c[$k] = $h[$k] } }
+        foreach ($k in @($h.Keys | Sort-Object)) { if ($k -cnotin @('published_utc', 'tool_commit')) { $c[$k] = $h[$k] } }
         ($c | ConvertTo-Json -Depth 6 -Compress)
     }
     $prevCanon = & $strip $prev
     $newCanon = & $strip (($Record | ConvertTo-Json -Depth 6) | ConvertFrom-Json -AsHashtable)
-    if ($prevCanon -ne $newCanon) { return @{ Publish = $true; Reason = 'changed' } }
-    # Raw text, never the coerced object: ConvertFrom-Json turns an ISO stamp into local time.
-    # The stamp must pass the READER's rules (exact yyyy-MM-ddTHH:mm:ssZ, not over 10 min in the
-    # future): a previous record the reader would call UNEVALUABLE is republished, never "unchanged".
-    $stamp = if ($PreviousRaw -match '"published_utc"\s*:\s*"([^"]*)"') { $Matches[1] } else { '' }
-    if ($stamp -cnotmatch '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\z') { return @{ Publish = $true; Reason = 'previous-invalid-stamp' } }
-    try {
-        $prevUtc = [datetime]::ParseExact($stamp, "yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]'AdjustToUniversal,AssumeUniversal')
-    } catch { return @{ Publish = $true; Reason = 'previous-invalid-stamp' } }
-    if ($prevUtc -gt $NowUtc.AddMinutes(10)) { return @{ Publish = $true; Reason = 'previous-future-stamp' } }
-    $age = ($NowUtc - $prevUtc).TotalHours
+    if ($prevCanon -cne $newCanon) { return @{ Publish = $true; Reason = 'changed' } }   # case-sensitive
+    $age = ($NowUtc - $valid.PublishedUtc).TotalHours
     if ($age -lt $RefreshHours) { return @{ Publish = $false; Reason = ('unchanged, {0:n1} h old' -f $age) } }
     return @{ Publish = $true; Reason = "refresh:${RefreshHours}h" }
 }
@@ -709,29 +709,44 @@ function Publish-Ack($state) {
     $remote = Get-RemoteAckRaw -BusRoot $BusRoot -Branch $branch -Rel $rel
     if (-not $remote.Ok) { Say "PUBLISH FAILED: cannot read origin/$branch to compare the ack"; return 4 }
     $need = Test-AckPublishNeeded -PreviousRaw $remote.Raw -Record $record -NowUtc $now -RefreshHours $RefreshHours
-    if (-not $need.Publish) { Say "ACK UNCHANGED: $rel ($($need.Reason)) as published on origin/$branch; not pushing a cadence commit."; return 0 }
+    if (-not $need.Publish) {
+        if ($NoPush) { Say "REHEARSAL (-NoPush): $rel ($($need.Reason)) as published on origin/$branch; nothing written."; return 5 }   # a rehearsal is never an ack
+        Say "ACK UNCHANGED: $rel ($($need.Reason)) as published on origin/$branch; not pushing a cadence commit."; return 0
+    }
     $already = @(& git -C $BusRoot diff --cached --name-only)
     if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
+    # Before the commit exists, a failure unstages the ack and puts the file back to HEAD's copy (or
+    # removes it), so no failed run leaves a staged or stray ack that blocks or fools the next one.
+    $unstage = {
+        & git -C $BusRoot reset -q -- $rel *> $null
+        & git -C $BusRoot cat-file -e "HEAD:$rel" *> $null
+        if ($LASTEXITCODE -eq 0) { & git -C $BusRoot checkout -q HEAD -- $rel *> $null }
+        else { Remove-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue }
+    }
     [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
     [IO.File]::WriteAllText($target, ($record | ConvertTo-Json -Depth 6) + "`n", [Text.UTF8Encoding]::new($false))
     & git -C $BusRoot add -- $rel *> $null
-    if ($LASTEXITCODE -ne 0) { Say "PUBLISH FAILED: git add $rel failed (exit $LASTEXITCODE)"; return 4 }
+    if ($LASTEXITCODE -ne 0) { $x = $LASTEXITCODE; & $unstage; Say "PUBLISH FAILED: git add $rel failed (exit $x)"; return 4 }
     $staged = @(& git -C $BusRoot diff --cached --name-only)
     # Nothing staged means HEAD already holds these bytes while origin does not (an unpushed earlier
     # commit): not an ack.
     if ($staged.Count -eq 0) { Say "PUBLISH FAILED: HEAD already holds this $rel but origin/$branch does not (an earlier unpushed commit?); rerun the one-line command"; return 4 }
     if ($staged.Count -ne 1 -or $staged[0] -ne $rel) {
-        & git -C $BusRoot reset -q -- $rel *> $null
+        & $unstage
         Say "PUBLISH FAILED: staging area held other files ($($staged -join ', ')); refusing to commit."; return 4
     }
     & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
-    if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?)'; return 4 }
-    if ($NoPush) { Say "ACK COMMITTED, NOT PUSHED (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason))"; return 5 }   # a rehearsal is not an ack
+    if ($LASTEXITCODE -ne 0) { & $unstage; Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?); ack unstaged'; return 4 }
+    $ackBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)).Trim()   # the exact blob this run committed
     # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit), so a rerun
     # starts clean. After a successful pull --rebase the branch has moved to origin's tip; that
     # fast-forward is kept (it holds only reviewed master commits).
-    $ackBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)).Trim()   # the exact blob this run committed
     $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine -Branch $branch -BlobOid $ackBlob }
+    if ($NoPush) {
+        # A rehearsal proves the commit works, then takes it back: a kept rehearsal commit would make
+        # every later -Publish on this checkout fail as "2 commits ahead".
+        Say "REHEARSAL (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason)) committed, not pushed ($(& $undo))"; return 5
+    }
     $onlyAck = { Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel }
     $why = & $onlyAck
     if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
@@ -766,7 +781,12 @@ try {
         }
         $code = if ($state.Findings.Count) { 1 } else { 0 }
     }
-    if ($Publish) { $code = Get-FinalExitCode -CheckCode $code -Published $true -PublishCode (Publish-Ack $state) }
+    if ($Publish) {
+        # A failed -Apply (2) is not published: exit 2 means "no ack", and a fresh ack on master behind
+        # a 2 would make a caller record BLOCKED while the ledger says ACKED.
+        if ($code -eq 2) { Say 'NOT PUBLISHED: -Apply failed (exit 2); fix it, then publish with -Check -Publish.' }
+        else { $code = Get-FinalExitCode -CheckCode $code -Published $true -PublishCode (Publish-Ack $state) }
+    }
     exit $code
 } catch {
     Say "UNEVALUABLE: $($_.Exception.Message)"
