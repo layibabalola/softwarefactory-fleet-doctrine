@@ -586,6 +586,38 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         finally { Remove-Item -LiteralPath (Join-Path $pw '.git/index.lock') -Force -ErrorAction SilentlyContinue }
         Ok ($rcL -eq 4) 'rehearsal: an undo blocked by an index lock is exit 4 (kept commit reported), never 5'
         & $g -C $pw reset -q --hard origin/master
+        # Codex round-2 blocking 2: another writer replaces the ack between the write and `git add`.
+        $swap = { param($stage, $n) if ($stage -eq 'before-add') { [IO.File]::WriteAllText((Join-Path $pw $ackRel), "{`"forged`": true}`n") } }
+        $originBefore = ([string](& git -C $pw rev-parse refs/remotes/origin/master)).Trim()
+        $pubRecW = New-AckRecord -MachineName 'TESTBOX' -NowUtc $pnow -ToolCommit ('d' * 40) -User $clean -Machine $clean -TotalChars 779 -WhereGit PASS -Findings @()
+        $rcW = Publish-AckRecord -BusRoot $pw -Record $pubRecW -NowUtc $pnow -TestHook $swap 6> $null
+        & git -C $pw fetch -q origin
+        Ok ($rcW -eq 4 -and ([string](& git -C $pw rev-parse refs/remotes/origin/master)).Trim() -eq $originBefore -and ([string](& git -C $pw rev-list --count 'refs/remotes/origin/master..HEAD')).Trim() -eq '0' -and -not ([string](& git -C $pw status --porcelain))) 'publish: a record swapped in before `git add` is never pushed (exit 4, our commit undone, tree clean)'
+        # Commit failure (a failing pre-commit hook): exit 4 and the ack is not left staged.
+        $hooks = Join-Path $tmp 'hooks'; [void](New-Item -ItemType Directory -Force -Path $hooks)
+        [IO.File]::WriteAllText((Join-Path $hooks 'pre-commit'), "#!/bin/sh`nexit 1`n")
+        if (-not $IsWindows) { & chmod +x (Join-Path $hooks 'pre-commit') }
+        & $g -C $pw config core.hooksPath $hooks
+        $rcC = Publish-AckRecord -BusRoot $pw -Record $pubRecW -NowUtc $pnow 6> $null
+        & $g -C $pw config --unset core.hooksPath
+        Ok ($rcC -eq 4 -and -not @(& git -C $pw diff --cached --name-only) -and -not ([string](& git -C $pw status --porcelain))) 'publish: a failed commit is exit 4 with the ack unstaged and restored'
+        # Codex round-2 blocking 1: an undo whose ack file cannot be put back says so (never "undone").
+        [void](New-Item -ItemType Directory -Force -Path (Join-Path $pw 'path-health'))
+        $newRel = 'path-health/LOCKBOX.json'
+        [IO.File]::WriteAllText((Join-Path $pw $newRel), "{}`n")
+        & $g -C $pw add $newRel; & $g -C $pw commit -q -m 'path-health: LOCKBOX HEALTHY (first-publication)'
+        $lbBlob = ([string](& git -C $pw rev-parse "HEAD:$newRel")).Trim()
+        $phDir = Join-Path $pw 'path-health'
+        $holder = $null
+        try {
+            if ($IsWindows) { $holder = [IO.File]::Open((Join-Path $pw $newRel), 'Open', 'Read', 'None') } else { & chmod 555 $phDir }
+            $uL = Undo-AckCommit $pw $newRel 'LOCKBOX' 'master' $lbBlob
+        } finally { if ($holder) { $holder.Dispose() } elseif (-not $IsWindows) { & chmod 755 $phDir } }
+        Ok ($uL -like 'ack commit undone, but the ack FILE could not be restored*') 'undo: an ack file that cannot be removed or restored is reported, never "undone locally"'
+        Ok (Test-AckFileMatchesHead $pw $ackRel) 'undo: Test-AckFileMatchesHead accepts a file that matches HEAD'
+        Remove-Item -LiteralPath (Join-Path $pw $newRel) -Force
+        Ok (Test-AckFileMatchesHead $pw $newRel) 'undo: Test-AckFileMatchesHead accepts an absent file HEAD does not have'
+        & $g -C $pw reset -q --hard origin/master
         $blobBytes = Get-GitStdoutBytes $pw @('cat-file', 'blob', "refs/remotes/origin/master:$ackRel")
         Ok ($null -ne $blobBytes -and [Array]::IndexOf([byte[]]$blobBytes, [byte]13) -lt 0) 'publish: the ack blob is LF only, whatever the platform'
         # (3) -NoPush never fast-forwards a checkout that is behind origin.

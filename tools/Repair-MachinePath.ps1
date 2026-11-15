@@ -453,7 +453,7 @@ function Test-SameServiceAccount([AllowNull()][string]$StartName, [string]$MySid
 <#
 Rewrite a runner's .path only when it exists and is empty, over the limit, or still carries an entry
 this repair removed. Otherwise leave it: a hand-ordered .path (Git Bash ahead of WSL) is not ours to
-flatten, and a MISSING .path is never created: the runner then uses its service environment (refreshed on a service restart),
+flatten, and a MISSING .path is never created: the runner then uses its service environment (fixed when the service started; a reboot refreshes it),
 while a written .path freezes the jobs' PATH until someone rewrites it.
 #>
 function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a missing file ($null) into ''
@@ -540,14 +540,27 @@ function Undo-AckCommit([string]$BusRoot, [string]$Rel, [string]$Machine, [strin
     $headBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$Rel" 2>$null)".Trim()
     if (-not $onOrigin -and $BlobOid -and $headBlob -eq $BlobOid -and $files.Count -eq 1 -and $files[0] -eq $Rel -and $subj.StartsWith("path-health: $Machine ")) {
         & git -C $BusRoot reset -q --mixed HEAD~1 *> $null
-        if ($LASTEXITCODE -eq 0) {
-            & git -C $BusRoot cat-file -e "HEAD:$Rel" *> $null
-            if ($LASTEXITCODE -eq 0) { & git -C $BusRoot checkout -q HEAD -- $Rel *> $null }
-            else { Remove-Item -LiteralPath (Join-Path $BusRoot $Rel) -Force -ErrorAction SilentlyContinue }
-            return 'ack commit undone locally'
-        }
+        if ($LASTEXITCODE -ne 0) { return 'ack commit left in place (reset failed: is the index locked?)' }
+        # The commit is gone; the file must really be back to the new HEAD's copy (or gone), or the
+        # undo is not done: a leftover ack on disk is what a rerun or a local reader would trust.
+        [void](Restore-AckFile $BusRoot $Rel)
+        if (-not (Test-AckFileMatchesHead $BusRoot $Rel)) { return 'ack commit undone, but the ack FILE could not be restored (locked?)' }
+        return 'ack commit undone locally'
     }
     return 'ack commit left in place (HEAD is not the ack commit)'
+}
+
+# True when the working-tree ack is exactly what checkout of HEAD would give: the same bytes when
+# HEAD has the file, absent when it does not.
+function Test-AckFileMatchesHead([string]$BusRoot, [string]$Rel) {
+    $target = Join-Path $BusRoot $Rel
+    & git -C $BusRoot cat-file -e "HEAD:$Rel" *> $null
+    if ($LASTEXITCODE -ne 0) { return (-not (Test-Path -LiteralPath $target)) }
+    if (-not (Test-Path -LiteralPath $target -PathType Leaf)) { return $false }
+    $want = Get-GitStdoutBytes $BusRoot @('cat-file', '--filters', "HEAD:$Rel")
+    if ($null -eq $want) { return $false }
+    try { $have = [System.IO.File]::ReadAllBytes($target) } catch { return $false }
+    return ([Convert]::ToBase64String([byte[]]$want) -ceq [Convert]::ToBase64String($have))
 }
 
 # Messages go straight to stdout: Write-Output inside a function that also returns a value would
@@ -596,7 +609,8 @@ function Restore-AckFile([string]$BusRoot, [string]$Rel) {
 Publish one ack record to <BusRoot>/path-health/<MACHINE>.json on origin. Returns 0 (published, or
 origin already holds this record), 4 (failed; nothing of ours left behind) or 5 (-NoPush rehearsal).
 -TestHook is a test seam only: it is called as (stage, attempt) at 'before-push' and
-'before-rehearsal-undo', so tests can race the publisher at exactly those points.
+'before-rehearsal-undo' and 'before-add', so tests can race the publisher at exactly those points.
+Exit 4 means the publish failed; the message names anything it could not take back.
 #>
 function Publish-AckRecord {
     param(
@@ -654,6 +668,7 @@ function Publish-AckRecord {
         }
         [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
         [System.IO.File]::WriteAllText($target, $json, [System.Text.UTF8Encoding]::new($false))
+        if ($TestHook) { & $TestHook 'before-add' $attempt }
         & git -C $BusRoot add -- $rel *> $null
         if ($LASTEXITCODE -ne 0) { $x = $LASTEXITCODE; [void](Restore-AckFile $BusRoot $rel); Say "PUBLISH FAILED: git add $rel failed (exit $x)"; return 4 }
         $staged = @(& git -C $BusRoot diff --cached --name-only)
@@ -674,6 +689,13 @@ function Publish-AckRecord {
         }
         $ackBlob = "$(& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)".Trim()   # the exact blob this run committed
         $ackCommit = "$(& git -C $BusRoot rev-parse -q --verify HEAD 2>$null)".Trim()   # the exact commit this run made: the only thing ever pushed
+        # The commit must hold THIS run's record, byte for byte: another writer may have replaced the
+        # file between the write and `git add`, and the filename-only push guard would not see it.
+        $committed = if ($ackBlob) { Get-GitStdoutBytes $BusRoot @('cat-file', 'blob', $ackBlob) } else { $null }
+        if ($null -eq $committed -or [Convert]::ToBase64String([byte[]]$committed) -cne [Convert]::ToBase64String([System.Text.UTF8Encoding]::new($false).GetBytes($json))) {
+            $u = Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $Record.machine -Branch $branch -BlobOid $ackBlob
+            Say "PUBLISH FAILED: the committed $rel is not this run's record (another writer changed the file?); nothing pushed ($u)"; return 4
+        }
         # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit).
         $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $Record.machine -Branch $branch -BlobOid $ackBlob }
         if ($NoPush) {
@@ -686,7 +708,7 @@ function Publish-AckRecord {
             $u = & $undo
             # A rehearsal that could not take its commit back is a failure, not a rehearsal: the kept
             # commit would make the next real publish refuse as "2 commits ahead".
-            if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED (-NoPush): rehearsal commit could not be undone ($u); remove it with 'git -C <bus> reset -q --mixed HEAD~1' once nothing else holds the index"; return 4 }
+            if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED (-NoPush): rehearsal not fully taken back ($u). The rehearsal commit is ${ackCommit}: if HEAD is still that commit, run 'git -C <bus> reset -q --mixed HEAD~1' and 'git -C <bus> checkout -- $rel' once nothing holds the index; if HEAD moved, check 'git log' first."; return 4 }
             Say "REHEARSAL (-NoPush): $rel verdict=$($Record.verdict) ($($need.Reason)) committed, not pushed ($u)$verdictNote"; return 5
         }
         if (-not $ackCommit) { Say "PUBLISH FAILED: cannot read the ack commit just made ($(& $undo))"; return 4 }
@@ -855,7 +877,8 @@ function Get-RunnerRows([string]$Root, [string]$MachinePath = '') {
         $svcAccount = 'unknown'
         if ($svcName) {
             try {
-                $svc = Get-CimInstance Win32_Service -Filter ("Name='{0}'" -f ($svcName -replace "'", "''")) -ErrorAction Stop
+                # WQL strings escape with a backslash; a wedged WMI gives up after 15 s ('unknown'), never a hang.
+                $svc = Get-CimInstance Win32_Service -Filter ("Name='{0}'" -f ($svcName.Replace('\', '\\').Replace("'", "\'"))) -OperationTimeoutSec 15 -ErrorAction Stop
                 if ($svc) { $svcAccount = Get-ServiceAccountKind ([string]$svc.StartName) $script:MySid $env:COMPUTERNAME $script:ResolveSid }
             } catch { $svcAccount = 'unknown' }
         }
@@ -890,7 +913,7 @@ function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$find
     Say ("Machine PATH : {0,6} chars  {1,3} segments  dead {2}  duplicate {3}" -f $m.MachineStats.chars, $m.MachineStats.segments, $m.MachineStats.dead, $m.MachineStats.duplicates)
     Say ("Total (new process): {0} chars (limit {1}); cmd /d /c git --version: {2}" -f $total, $MaxTotalChars, $whereGit)
     foreach ($r in @($runners)) {
-        $pathDesc = if ($null -eq $r.path_chars) { "absent (optional: jobs get the service environment, account: $($r.service_account))" } else { "$($r.path_chars) chars, dead $(if ($null -eq $r.path_dead) { '-' } else { $r.path_dead }), git $($r.path_git)" }
+        $pathDesc = if ($null -eq $r.path_chars) { "absent (optional: jobs get the service environment, account: $($r.service_account), git with Machine PATH: $($r.path_git))" } else { "$($r.path_chars) chars, dead $(if ($null -eq $r.path_dead) { '-' } else { $r.path_dead }), git $($r.path_git)" }
         $envDesc = if ($null -eq $r.env_lines) { 'absent (optional)' } else { "$($r.env_lines) lines$(if (-not $r.env_has_lang) { ', no LANG (note only)' })" }
         Say ("Runner {0} (published as {1}): .path {2}; .env {3}" -f $r.name, $r.label, $pathDesc, $envDesc)
     }

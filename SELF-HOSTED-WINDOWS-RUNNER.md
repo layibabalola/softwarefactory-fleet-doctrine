@@ -40,7 +40,7 @@ CI-cost lever after fan-out control.
    `LongPathsEnabled=1`. **The runner's `.path` and `.env` are optional** (corrected 2026-11-15;
    the 2026-11-14 wording called a missing `.path` a broken registration, which was wrong).
    Without `.path`, jobs take PATH from the runner service's environment (Machine PATH plus the
-   service account's User PATH as of the last service start, refreshed by a restart); agent-bridge's and
+   service account's User PATH as of the last service start; treat a reboot as what refreshes it); agent-bridge's and
    Cloudvore's Windows CI ran green on ULTRA-MAGNUS with neither file. A `.path` that exists is the
    jobs' PATH, **frozen until it is rewritten**, so a hand-written one stops later PATH repairs from
    reaching those jobs: write one only when a runner needs an order its service PATH cannot give,
