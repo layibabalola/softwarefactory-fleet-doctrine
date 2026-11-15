@@ -267,6 +267,26 @@ $ub = Get-PathAnalysis -Raw 'C:\Windows;"C:\Gone;x' -Scope User -Exists $fsExist
 Ok (@($ub | Where-Object Removable).Count -eq 0) 'split: an unbalanced quote is never removed'
 Ok ((Split-PathList 'a;;b').Count -eq 3 -and (Split-PathList 'a;"b;c";d')[1] -eq '"b;c"') 'split: empty segments survive and quotes group'
 
+# Round-9 keys. Codex 1: a quoted entry keeps its quotes in the joined (probe / runner .path) value.
+$qj = Join-ExpandedPath (Get-PathAnalysis -Raw 'C:\Windows;"C:\a;b"' -Scope User -Exists $fsExists)
+Ok ($qj -eq 'C:\Windows;"C:\a;b"' -and (Split-PathList $qj).Count -eq 2) 'join: a quoted entry with a semicolon stays one entry in the probe / runner value'
+# Codex 2: empty segments count toward the length a new process gets.
+$padRaw = (';' * 9000) + 'C:\Windows'
+$padA = Get-PathAnalysis -Raw $padRaw -Scope User -Exists $fsExists
+$padS = Get-ScopeStats $padA $padRaw (Join-ExpandedPath $padA)
+Ok ($padS.chars -eq 9010) 'length: 9,000 empty segments are measured (9,010 chars), never hidden'
+Ok ((Get-PathFindings -User $padS -Machine $clean -TotalChars ($padS.chars + 400) -WhereGit PASS -Runners @()) -contains 'total-over-4096:9410') 'length: a semicolon-padded PATH is UNHEALTHY, never acked HEALTHY'
+# Codex 3: a runner .path is split the same quote-aware way; a quoted fragment never matches a removed key.
+Ok ((Get-RunnerPathAction '"C:\RemovedPrefix;still-live";C:\Windows\System32' @('c:\removedprefix')) -eq 'keep') 'runner: a quoted live .path entry is never read as holding a removed entry'
+Ok ((Get-RunnerPathAction 'C:\Windows\System32;C:\RemovedPrefix' @('c:\removedprefix')) -eq 'rewrite:holds-removed-entry') 'runner: a plain stale entry still triggers the rewrite'
+# Claude 1 / third key 1: an unbalanced quote is a finding, never HEALTHY.
+$uqA = Get-PathAnalysis -Raw 'C:\Windows;C:\x";C:\Gone1;C:\Gone2' -Scope User -Exists $fsExists
+$uqS = Get-ScopeStats $uqA 'C:\Windows;C:\x";C:\Gone1;C:\Gone2' (Join-ExpandedPath $uqA)
+Ok ($uqS.unbalanced_quotes -eq 1 -and (Get-PathFindings -User $uqS -Machine $clean -TotalChars 500 -WhereGit PASS -Runners @()) -contains 'user-unbalanced-quote:1') 'quote: an unbalanced quote is a finding, so the machine is never acked HEALTHY'
+# Third key 6: Sysnative is a WOW64 alias a 64-bit process cannot see: never dead, never removed.
+$sn = Get-PathAnalysis -Raw 'C:\Windows\Sysnative' -Scope Machine -Exists { param($p) $p -eq 'C:\' }
+Ok ($sn[0].Class -eq 'unreadable' -and -not $sn[0].Removable) 'machine: C:\Windows\Sysnative is never dead or removed'
+
 # --- 9. round-3 key findings: pending set, exit codes, publish push guard ---------------------------
 $ps = Get-PendingKeySet @($expand, { param($t) $t.Replace('%USERPROFILE%', 'D:\Profiles\u').Replace('%APPDATA%', 'D:\Profiles\u\AppData\Roaming') })
 Ok ($ps -is [string[]] -and @($ps | Where-Object { $_ -isnot [string] -or $_ -match ' ' }).Count -eq 0) 'pending: the union is a flat string array, never an array of arrays'

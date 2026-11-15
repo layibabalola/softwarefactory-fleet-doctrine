@@ -144,6 +144,7 @@ function Get-PathAnalysis {
         elseif ($trimmed.Contains(';')) { $class = 'multi' }   # a %VAR% that expands to several folders: never one folder's verdict
         elseif ($trimmed -notmatch '^[A-Za-z]:\\') { $class = 'relative' }   # resolved against the current directory: never this tool's verdict
         elseif ($trimmed -match '^[A-Za-z]:' -and ($true -ne (& $Exists ($trimmed.Substring(0, 2) + '\')))) { $class = 'drive-absent' }
+        elseif ($trimmed -match '\\Sysnative(\\|$)') { $class = 'unreadable' }   # WOW64 alias: invisible to a 64-bit process, never dead
         else {
             # $Exists returns $true, $false, or $null for "could not tell" (access denied). Only a
             # definite $false is dead, and only an entry written as an absolute path is removable:
@@ -170,7 +171,7 @@ function Get-PathAnalysis {
         if ($seg -match '%') { $removable = $false }   # backstop: an entry written with a %VAR% is never removed, whatever its class
         if ((([regex]::Matches($seg, '"')).Count % 2) -ne 0) { $removable = $false }   # an unbalanced quote: never this tool's verdict
         $rows.Add([pscustomobject]@{
-            Index = $i; Raw = $seg; Expanded = $trimmed; Key = $key; Class = $class; Removable = $removable
+            Index = $i; Raw = $seg; Expanded = $trimmed; Written = $expanded.Trim(); Key = $key; Class = $class; Removable = $removable
             DotnetTools = ($trimmed -match '\\\.dotnet\\tools$')
         })
         $i++
@@ -195,11 +196,14 @@ function Get-ScopeStats([object[]]$Analysis, [string]$Raw, [string]$ExpandedJoin
         pending           = @($a | Where-Object Class -eq 'pending').Count
         dead_dotnet_tools = @($a | Where-Object { $_.Class -eq 'dead' -and $_.DotnetTools }).Count
         removable         = @($a | Where-Object Removable).Count
+        unbalanced_quotes = @($a | Where-Object { (([regex]::Matches([string]$_.Raw, '"')).Count % 2) -ne 0 }).Count
     }
 }
 
 function Join-ExpandedPath([object[]]$Analysis) {
-    return (@($Analysis | Where-Object { $_.Expanded } | ForEach-Object { $_.Expanded }) -join ';')
+    # Every segment, empty ones included, with its quotes kept: the length a new process really gets,
+    # and a value that, written to a runner's .path, keeps a quoted entry that contains a semicolon one entry.
+    return (@($Analysis | ForEach-Object { [string]$_.Written }) -join ';')
 }
 
 <#
@@ -220,6 +224,10 @@ function Get-PathFindings {
     if ($TotalChars -gt $MaxTotalChars) { $f.Add("total-over-${MaxTotalChars}:$TotalChars") }
     if ($User.dead -gt 0) { $f.Add("user-dead:$($User.dead)") }
     if ($Machine.dead -gt 0) { $f.Add("machine-dead:$($Machine.dead)") }
+    # An unbalanced quote folds every later entry into one segment this tool cannot judge, and it
+    # breaks cmd.exe's PATH search for those entries: never a HEALTHY machine.
+    if ($User.Contains('unbalanced_quotes') -and $User.unbalanced_quotes -gt 0) { $f.Add("user-unbalanced-quote:$($User.unbalanced_quotes)") }
+    if ($Machine.Contains('unbalanced_quotes') -and $Machine.unbalanced_quotes -gt 0) { $f.Add("machine-unbalanced-quote:$($Machine.unbalanced_quotes)") }
     if ($WhereGit -eq 'FAIL') { $f.Add('cmd-where-git-failed') }
     foreach ($r in @($Runners)) {
         if ($null -eq $r.path_chars) { $f.Add("runner-path-missing:$($r.label)") }
@@ -345,7 +353,13 @@ function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a miss
     if ($t.Length -eq 0) { return 'rewrite:empty' }
     if ($t.Length -gt $MaxChars) { return 'rewrite:over-limit' }
     $removed = [System.Collections.Generic.HashSet[string]]::new([string[]]@($RemovedKeys), [StringComparer]::Ordinal)
-    foreach ($seg in ($t -split ';')) { if ($seg.Trim() -and $removed.Contains((Get-PathKey $seg))) { return 'rewrite:holds-removed-entry' } }
+    # Same quote-aware split as the PATH itself. A quoted or unbalanced segment is never matched:
+    # its fragments are not entries, so they can never make a healthy .path look stale.
+    foreach ($seg in (Split-PathList $t)) {
+        $s = $seg.Trim()
+        if (-not $s -or $s.Contains('"')) { continue }
+        if ($removed.Contains((Get-PathKey $s))) { return 'rewrite:holds-removed-entry' }
+    }
     return 'keep'
 }
 
@@ -787,7 +801,7 @@ function Publish-Ack($state) {
         }
         $why = Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel
         if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
-        & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
+        & git -C $BusRoot push -q --no-follow-tags origin "HEAD:refs/heads/$branch" *> $null
         if ($LASTEXITCODE -eq 0) { Say "ACK PUBLISHED: $rel verdict=$($record.verdict) ($($need.Reason))"; return 0 }
         $u = & $undo
         if ($u -ne 'ack commit undone locally') { Say "PUBLISH FAILED: push rejected ($u)"; return 4 }
