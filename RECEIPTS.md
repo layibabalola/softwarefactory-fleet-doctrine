@@ -13684,3 +13684,63 @@ All book `ended-incomplete`. The answer judged is the `-o` last-message file, el
 **Narrowed promise:** a driver still calling a hand-written stage-chain copy that neither exports the variable nor forwards the deadline still waits 60 min. A long wait holds the chain open until its deadline.
 **Falsifier:** `pytest tests/coordination/test_build_guard.py -k "staging_deadline or full_stage_chain or no_deadline_control"` passes; on `0a553b4e` the first fails with `wait=60m`.
 <!-- outbox:4d047e60cc7ef1b9 mlv-app:cd45eeb5264b -->
+
+## slopbar, 2026-11-14, ULTRA-MAGNUS - SlopBar Ultra development opened to every Windows fleet machine; SSH, gh and release-key gaps measured
+
+*Uncarded append: slopbar is not a fleet member (see the 2026-10-22 slopbar append in TRAPS.md). Recorded on
+Layi's instruction to put these facts on the bus. Usernames, addresses, key file paths, emails and where
+credentials live are left out (Law 4, R21.6); they are in the owner's private notes on the machines.*
+
+- **Why.** SlopBar Ultra (fork `layibabalola/slopbar-ultra`, local `C:\code\slopbar`) had been developed only on
+  BACHELOR. The owner wants to fix an issue on the machine that shows it, so every Windows fleet machine needs
+  the same working state.
+- **Code had no local-only state.** On BACHELOR, `git log --branches --not --remotes` printed nothing and all
+  13 slopbar worktrees had no changes or untracked files, so GitHub held every commit. BACHELOR's main checkout
+  sat 42 commits behind `origin/claude/subscription-value` (slopbar d79c9d2); its `ultra` worktree matched
+  `origin/ultra` (slopbar 221e97d).
+- **State that lived only on BACHELOR:** the project's Claude memory (8 entries), the 12-script remote-check
+  toolkit that slopbar `docs/RESUME.md` (on `ultra`) points to, the release updater signing key, and the
+  global CLAUDE.md line that binds "resume our work" in `C:\code\slopbar`.
+- **Replicated (receipt).** All six other Windows machines (ULTRA-MAGNUS, VIRTUAL-TEN, PC-MINI1..3, HUSBANDRY) now have `C:\code\slopbar` on `claude/subscription-value`
+  with an `upstream` remote, the `ultra` worktree at slopbar 221e97d, the memory and the toolkit,
+  sha256-identical to BACHELOR's. A ninth memory entry (name the machine you are on; derive whether it can
+  push, build or publish) was added on every machine, BACHELOR included. Repo-local git identity and
+  `core.autocrlf=true` match BACHELOR's, because the repo has no `.gitattributes`. The signing key was not
+  copied anywhere.
+- **SlopBar itself** is installed and running on BACHELOR, ULTRA-MAGNUS and VIRTUAL-TEN; on ULTRA-MAGNUS the door
+  reports 0.1.0-ultra.5. It is not installed on PC-MINI1..3 or HUSBANDRY, so the slopbar app cannot be tested there.
+- **Fixed (receipt).** The `slopbar` MCP server was registered as the literal string
+  `%LOCALAPPDATA%\SlopBar\slopbar-mcp.exe` on ULTRA-MAGNUS and VIRTUAL-TEN, which Claude Code does
+  not expand, so every session there started with that server failed ("Connection closed"). BACHELOR had the
+  absolute path. Re-registered with the absolute path through `claude mcp add`; `claude mcp get slopbar` now
+  reports Connected on both. Cause: slopbar `README.md` line 93 (slopbar f35a52c) prints the cmd.exe form
+  in a plain code block, and run from PowerShell or Git Bash it stores the variable name instead of the path.
+- **SSH (key auth, BatchMode, measured pair by pair).** VIRTUAL-TEN reaches all six others. BACHELOR reaches
+  ULTRA-MAGNUS and VIRTUAL-TEN only: its ssh config has no entry for any mini. ULTRA-MAGNUS reaches BACHELOR
+  and VIRTUAL-TEN; PC-MINI1..3 refuse its key. HUSBANDRY is on the LAN only, not the tailnet, so a machine
+  away from home cannot reach it. fleet-mini's step 4, "the ssh key mesh" (owner item, fleet-doctrine
+  `tools/machine/fleet-mini/README.md`), is therefore not done fleet-wide. An owner-run mesh script with a
+  dry-run mode is in preparation on ULTRA-MAGNUS. Nothing was applied, because key and authorized-key changes are owner items.
+- **Push and gh.** `gh auth status`: valid on ULTRA-MAGNUS, token invalid on BACHELOR and VIRTUAL-TEN, PC-MINI1, PC-MINI2 and PC-MINI3; gh is not installed on HUSBANDRY.
+  slopbar RESUME.md's `gh` steps and the release script need it. Separately, `git push --dry-run` over an ssh
+  session fails on BACHELOR and VIRTUAL-TEN ("could not read Username"): Git Credential Manager cannot reach
+  the credential store from an ssh logon. Pushes work from the desktop session, not from an agent driving
+  the machine over ssh.
+- **Release signing.** The SlopBar Ultra updater key exists on one machine, and the fork's `ultra-release.yml`
+  publisher has no secrets (`gh secret list -R layibabalola/slopbar-ultra` is empty), so only that machine can
+  publish a release. Adding the two `ULTRA_` secrets is not enough on its own:
+  - The workflow builds with `--features ultra-updates` only. slopbar `scripts/publish-ultra-release.ps1`
+    also passes a `--config` override that adds the installer hook `src-tauri/nsis/ultra-hooks.nsh` (it renames
+    a running `slopbar-mcp.exe`), and it refuses an installer without that hook. A CI release would therefore
+    ship without the hook, and on any machine with agent sessions open, the old MCP server would stay behind.
+  - Once the secrets exist, the tag the local script pushes would also start the workflow, giving two
+    publishers for one tag.
+
+  The owner's decision is pending.
+- **Version spread (Law 5).** Claude Code 2.1.321 on ULTRA-MAGNUS, 2.1.325 on BACHELOR and VIRTUAL-TEN;
+  gh 2.100.0 / 2.97.0 / 2.97.0; git 2.55 / 2.56 / 2.40 on those three; the minis run Claude Code 2.1.323, gh 2.104.0 and git 2.56; HUSBANDRY has git 2.37 and Node 10, no Claude Code and 13 GB free on C:. For slopbar builds: Rust is present on BACHELOR,
+  VIRTUAL-TEN and PC-MINI1 only; the MSVC C++ tools are missing on PC-MINI2, PC-MINI3 and HUSBANDRY, and VIRTUAL-TEN
+  has only VS 2017's.
+- **Re-derive.** `git -C C:\code\slopbar log --branches --not --remotes` (empty = nothing local-only);
+  `claude mcp get slopbar`; `gh auth status`; `gh secret list -R layibabalola/slopbar-ultra`;
+  `ssh -n -o BatchMode=yes <alias> hostname` for each pair.
