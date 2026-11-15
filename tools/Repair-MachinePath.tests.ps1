@@ -127,6 +127,11 @@ Ok ($n2.Publish -and $n2.Reason -eq 'refresh:24h') 'publish: refresh after Refre
 $n3 = Test-AckPublishNeeded -PreviousRaw $prevRaw -Record $healthy -NowUtc $now.AddHours(1)
 Ok ($n3.Publish -and $n3.Reason -eq 'changed') 'publish: changed content publishes at once'
 Ok ((Test-AckPublishNeeded -PreviousRaw '{not json' -Record $rec -NowUtc $now).Reason -eq 'previous-unreadable') 'publish: unreadable previous record is republished'
+# Codex round-4 finding 2: a previous stamp the reader would reject is republished, never "unchanged".
+$offRaw = $prevRaw -replace '("published_utc":\s*"[^"]+)Z"', '$1+02:00"'
+Ok ($offRaw -ne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $offRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-invalid-stamp') 'publish: an offset previous stamp is republished'
+$futRaw = $prevRaw -replace '"published_utc":\s*"\d{4}', '"published_utc": "2099'
+Ok ($futRaw -ne $prevRaw -and (Test-AckPublishNeeded -PreviousRaw $futRaw -Record $later -NowUtc $now.AddHours(2)).Reason -eq 'previous-future-stamp') 'publish: a future previous stamp is republished'
 
 # --- 7. reader: derived roster and statuses ---------------------------------------------------------
 $hb = @('{"board":"a","machine":"VIRTUAL-TEN"}', '{"board":"b","machine":"BACHELOR"}', '{"board":"c","machine":"ULTRA-MAGNUS"}', '{"board":"d","machine":"VIRTUAL-TEN"}', '{"no":"machine"}')
@@ -261,7 +266,7 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         Set-Content -LiteralPath (Join-Path $wc 'README.md') -Value 'bus+local'
         & $g -C $wc add README.md; & $g -C $wc commit -q --amend -m $ackMsg
         Ok ((Get-AckPushBlocker $wc 'master' $ackRel) -like 'HEAD commit touches*') 'push guard: an ack commit that also touches another file is refused'
-        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX') -like 'ack commit left in place*') 'undo: a HEAD that is not exactly our ack is never reset'
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX' 'master' ([string](& git -C $wc rev-parse -q --verify "HEAD:$ackRel")).Trim()) -like 'ack commit left in place*') 'undo: a HEAD that is not exactly our ack is never reset'
         & $g -C $wc reset -q --hard origin/master
         Set-Content -LiteralPath (Join-Path $wc 'other.md') -Value 'unreviewed'
         & $g -C $wc add other.md; & $g -C $wc commit -q -m 'local unreviewed work'
@@ -270,7 +275,7 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         & $g -C $wc add $ackRel; & $g -C $wc commit -q -m $ackMsg
         Ok ((Get-AckPushBlocker $wc 'master' $ackRel) -like 'HEAD is 2 commits ahead*') 'push guard: local unreviewed commits under the ack block the push'
         $prior = ([string](& git -C $wc rev-parse HEAD~1)).Trim()
-        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX') -eq 'ack commit undone locally') 'undo: our own one-file ack commit is taken back'
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX' 'master' ([string](& git -C $wc rev-parse -q --verify "HEAD:$ackRel")).Trim()) -eq 'ack commit undone locally') 'undo: our own one-file ack commit is taken back'
         Ok (([string](& git -C $wc rev-parse HEAD)).Trim() -eq $prior -and -not (Test-Path -LiteralPath (Join-Path $wc $ackRel))) 'undo: HEAD returns to the prior commit and an ack file new to HEAD is removed (no untracked leftover)'
         Ok ((Get-AckPushBlocker $wc 'nosuchbranch' $ackRel) -like 'cannot fetch*') 'push guard: an unfetchable branch blocks the push'
         # Round-4 finding 1: the previous record comes from origin, never the working tree.
@@ -287,8 +292,16 @@ if (Get-Command git -ErrorAction SilentlyContinue) {
         Ok ($r.Ok -and $r.Raw -match '"v":1') 'remote ack: the origin copy is read when present'
         Set-Content -LiteralPath (Join-Path $wc $ackRel) -Value '{"v":2}'
         & $g -C $wc add $ackRel; & $g -C $wc commit -q -m $ackMsg
-        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX') -eq 'ack commit undone locally' -and (Get-Content -Raw (Join-Path $wc $ackRel)) -match '"v":1') 'undo: an ack file HEAD already had is restored to the HEAD copy'
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX' 'master' ([string](& git -C $wc rev-parse -q --verify "HEAD:$ackRel")).Trim()) -eq 'ack commit undone locally' -and (Get-Content -Raw (Join-Path $wc $ackRel)) -match '"v":1') 'undo: an ack file HEAD already had is restored to the HEAD copy'
         Ok ((Get-RemoteAckRaw $wc 'nosuchbranch' $ackRel).Ok -eq $false) 'remote ack: an unfetchable branch is not readable'
+        # Codex round-4 finding 3: never reset a commit another publisher pushed.
+        $pushedHead = ([string](& git -C $wc rev-parse HEAD)).Trim()
+        $pushedBlob = ([string](& git -C $wc rev-parse -q --verify "HEAD:$ackRel")).Trim()
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX' 'master' $pushedBlob) -like 'ack commit left in place*' -and ([string](& git -C $wc rev-parse HEAD)).Trim() -eq $pushedHead) 'undo: an ack commit already on origin (a rebase dropped ours for it) is never reset'
+        Set-Content -LiteralPath (Join-Path $wc $ackRel) -Value '{"v":3}'
+        & $g -C $wc add $ackRel; & $g -C $wc commit -q -m $ackMsg
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX' 'master' $pushedBlob) -like 'ack commit left in place*') 'undo: a local ack commit whose blob is not the one this run wrote is never reset'
+        Ok ((Undo-AckCommit $wc $ackRel 'TESTBOX' 'master' '') -like 'ack commit left in place*') 'undo: no recorded blob means no reset (fail closed)'
         Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '(\d\d:\d\d:\d\d)Z', '$1z') -FileMachine 'VIRTUAL-TEN' }) 'reader: a lower-case z stamp is UNEVALUABLE'
         Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '(\d\d:\d\d:\d\d)Z', '$1Z\n') -FileMachine 'VIRTUAL-TEN' }) 'reader: a stamp with a trailing newline is UNEVALUABLE'
         Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '\d{4}-\d\d-\d\dT', '2026-02-31T') -FileMachine 'VIRTUAL-TEN' }) 'reader: an impossible date is UNEVALUABLE'

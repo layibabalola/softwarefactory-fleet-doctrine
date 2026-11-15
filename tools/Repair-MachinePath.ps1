@@ -253,10 +253,15 @@ function Test-AckPublishNeeded {
     $newCanon = & $strip (($Record | ConvertTo-Json -Depth 6) | ConvertFrom-Json -AsHashtable)
     if ($prevCanon -ne $newCanon) { return @{ Publish = $true; Reason = 'changed' } }
     # Raw text, never the coerced object: ConvertFrom-Json turns an ISO stamp into local time.
-    $age = 9999
-    if ($PreviousRaw -match '"published_utc"\s*:\s*"([^"]+)"') {
-        try { $age = ($NowUtc - [datetimeoffset]::Parse($Matches[1]).UtcDateTime).TotalHours } catch { $age = 9999 }
-    }
+    # The stamp must pass the READER's rules (exact yyyy-MM-ddTHH:mm:ssZ, not over 10 min in the
+    # future): a previous record the reader would call UNEVALUABLE is republished, never "unchanged".
+    $stamp = if ($PreviousRaw -match '"published_utc"\s*:\s*"([^"]*)"') { $Matches[1] } else { '' }
+    if ($stamp -cnotmatch '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\z') { return @{ Publish = $true; Reason = 'previous-invalid-stamp' } }
+    try {
+        $prevUtc = [datetime]::ParseExact($stamp, "yyyy-MM-dd'T'HH:mm:ss'Z'", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]'AdjustToUniversal,AssumeUniversal')
+    } catch { return @{ Publish = $true; Reason = 'previous-invalid-stamp' } }
+    if ($prevUtc -gt $NowUtc.AddMinutes(10)) { return @{ Publish = $true; Reason = 'previous-future-stamp' } }
+    $age = ($NowUtc - $prevUtc).TotalHours
     if ($age -lt $RefreshHours) { return @{ Publish = $false; Reason = ('unchanged, {0:n1} h old' -f $age) } }
     return @{ Publish = $true; Reason = "refresh:${RefreshHours}h" }
 }
@@ -379,10 +384,16 @@ function Get-RemoteAckRaw([string]$BusRoot, [string]$Branch, [string]$Rel) {
 # Take our own ack commit back off the checkout AND restore the ack file to the new HEAD's copy
 # (or remove it if HEAD has none), so a failed publish leaves no ack on disk for a rerun to mistake
 # for a published one. Only a HEAD that is exactly our one-file ack commit is undone.
-function Undo-AckCommit([string]$BusRoot, [string]$Rel, [string]$Machine) {
+# OWNERSHIP: HEAD is ours only if it is NOT reachable from origin/<Branch> (so no publisher's pushed
+# commit, including an equivalent one a rebase dropped ours in favour of, is ever reset), it touches
+# exactly the ack file, and its copy of that file is the exact blob this run wrote ($BlobOid).
+function Undo-AckCommit([string]$BusRoot, [string]$Rel, [string]$Machine, [string]$Branch, [string]$BlobOid) {
     $files = @(& git -C $BusRoot diff-tree --no-commit-id --name-only -r HEAD 2>$null)
     $subj = ([string](& git -C $BusRoot log -1 --format=%s HEAD 2>$null)).Trim()
-    if ($files.Count -eq 1 -and $files[0] -eq $Rel -and $subj.StartsWith("path-health: $Machine ")) {
+    & git -C $BusRoot merge-base --is-ancestor HEAD "refs/remotes/origin/$Branch" *> $null
+    $onOrigin = ($LASTEXITCODE -eq 0)
+    $headBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$Rel" 2>$null)).Trim()
+    if (-not $onOrigin -and $BlobOid -and $headBlob -eq $BlobOid -and $files.Count -eq 1 -and $files[0] -eq $Rel -and $subj.StartsWith("path-health: $Machine ")) {
         & git -C $BusRoot reset -q --mixed HEAD~1 *> $null
         if ($LASTEXITCODE -eq 0) {
             & git -C $BusRoot cat-file -e "HEAD:$Rel" *> $null
@@ -719,7 +730,8 @@ function Publish-Ack($state) {
     # Any failure after the commit undoes our own ack commit and file (Undo-AckCommit), so a rerun
     # starts clean. After a successful pull --rebase the branch has moved to origin's tip; that
     # fast-forward is kept (it holds only reviewed master commits).
-    $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine }
+    $ackBlob = ([string](& git -C $BusRoot rev-parse -q --verify "HEAD:$rel" 2>$null)).Trim()   # the exact blob this run committed
+    $undo = { Undo-AckCommit -BusRoot $BusRoot -Rel $rel -Machine $record.machine -Branch $branch -BlobOid $ackBlob }
     $onlyAck = { Get-AckPushBlocker -BusRoot $BusRoot -Branch $branch -Rel $rel }
     $why = & $onlyAck
     if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack ($(& $undo))"; return 4 }
