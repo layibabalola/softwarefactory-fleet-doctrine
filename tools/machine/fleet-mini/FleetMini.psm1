@@ -14,9 +14,15 @@ function Get-RegValue([string]$Path, [string]$Name) {
 }
 
 function Get-PowerAcSeconds([string]$Sub, [string]$Setting) {
-    $line = powercfg /q SCHEME_CURRENT $Sub $Setting 2>$null | Select-String 'Current AC Power Setting Index' | Select-Object -First 1
-    if (-not $line) { return $null }
-    return [Convert]::ToInt32(($line.ToString().Split(':')[-1].Trim()), 16)
+    # The two "...Power Setting Index: 0x..." lines are AC then DC; match the hex, not the (localized) label.
+    $hex = @(powercfg /q SCHEME_CURRENT $Sub $Setting 2>$null | ForEach-Object { if ($_ -match ':\s*(0x[0-9a-fA-F]{8})\s*$') { $Matches[1] } })
+    if ($LASTEXITCODE -or $hex.Count -lt 2) { throw "powercfg could not read $Sub/$Setting (exit $LASTEXITCODE)" }
+    return [Convert]::ToInt32($hex[-2], 16)
+}
+
+function Assert-Native([string]$What) {
+    if ($LASTEXITCODE) { throw "$What exited $LASTEXITCODE" }
+    return 'set'
 }
 
 function Test-FleetMiniElevated {
@@ -39,8 +45,11 @@ function Initialize-MouseKeysType {
     $script:MouseKeysType = [FleetMini.MouseKeys]
 }
 
-# MKF_MOUSEKEYSON|AVAILABLE|HOTKEYACTIVE|CONFIRMHOTKEY|HOTKEYSOUND = 0x1F: on, keypad moves the pointer while Num Lock
-# is on (Settings > Accessibility > Mouse > Mouse keys On, "Only use mouse keys when Num lock is on" ticked).
+# 0x1F = MKF_MOUSEKEYSON|AVAILABLE|HOTKEYACTIVE|CONFIRMHOTKEY|HOTKEYSOUND. MEASURED, not taken from the docs: on a
+# Windows 11 25H2 mini, Settings > Accessibility > Mouse with "Mouse keys" On, "Only use mouse keys when Num lock is
+# on" ticked and the taskbar icon unticked stored Flags=31 (0x1F), with MKF_REPLACENUMBERS (0x80) CLEAR. The
+# documented meaning of 0x80 reads the other way round; the stored value is what the Settings page writes, so it is
+# copied exactly. Writing the whole value (not OR-ing bits) reproduces that page state on every mini.
 $script:MouseKeysWant = 0x1F
 
 function Set-FleetMiniMouseKeysHere {
@@ -67,23 +76,34 @@ function Get-ConsoleSessionId {
 function Set-FleetMiniMouseKeys {
     # In the console session: set it directly. From ssh (another session), a per-user SPI call would land in the
     # wrong session, so run the same call once inside the console session through a one-shot Interactive task.
+    # The stored value is per account (HKCU); the live state belongs to whoever is at the console. When this runs in
+    # session 0 with nobody at the console, only the stored value changes, and the result says so.
     $here = (Get-Process -Id $PID).SessionId
     $console = Get-ConsoleSessionId
-    if ($null -eq $console -or $console -eq $here) { return Set-FleetMiniMouseKeysHere }
+    if ($console -eq $here) { return Set-FleetMiniMouseKeysHere }
+    if ($null -eq $console) {
+        $r = Set-FleetMiniMouseKeysHere
+        if ($here -eq 0) { return "STORED ONLY (no console session found; live state unchanged until the next sign-in): $r" }
+        return $r
+    }
     $dir = Join-Path ([IO.Path]::GetTempPath()) ('fleet-mini-' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Force $dir | Out-Null
     try {
         Copy-Item -LiteralPath $script:ModuleFile -Destination "$dir\FleetMini.psm1"
         $receipt = "$dir\result.txt"
-        @"
-`$ErrorActionPreference = 'Stop'
-try { Import-Module '$dir\FleetMini.psm1' -Force; (Set-FleetMiniMouseKeysHere) | Set-Content '$receipt' }
-catch { "ERROR: `$_" | Set-Content '$receipt' }
-"@ | Set-Content "$dir\run.ps1" -Encoding utf8
+        # run.ps1 embeds no paths ($PSScriptRoot), so a quote or space in the temp path cannot break it; the receipt is
+        # written to a temp name and renamed, so a reader never sees half a file.
+        @'
+$ErrorActionPreference = 'Stop'
+try { Import-Module (Join-Path $PSScriptRoot 'FleetMini.psm1') -Force; $out = Set-FleetMiniMouseKeysHere }
+catch { $out = "ERROR: $_" }
+Set-Content -LiteralPath (Join-Path $PSScriptRoot 'result.tmp') -Value $out
+Move-Item -LiteralPath (Join-Path $PSScriptRoot 'result.tmp') -Destination (Join-Path $PSScriptRoot 'result.txt') -Force
+'@ | Set-Content "$dir\run.ps1" -Encoding utf8
         $ps = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
         $conhost = Join-Path $env:WINDIR 'System32\conhost.exe'
         $name = 'FleetMini-OneShot-' + [Guid]::NewGuid().ToString('N').Substring(0, 8)
-        $action = New-ScheduledTaskAction -Execute $conhost -Argument "--headless $ps -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $dir\run.ps1"
+        $action = New-ScheduledTaskAction -Execute $conhost -Argument "--headless `"$ps`" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$dir\run.ps1`""
         $principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive -RunLevel Limited
         Register-ScheduledTask -TaskName $name -Action $action -Principal $principal -Force | Out-Null
         try {
@@ -91,7 +111,7 @@ catch { "ERROR: `$_" | Set-Content '$receipt' }
             for ($i = 0; $i -lt 30 -and -not (Test-Path $receipt); $i++) { Start-Sleep -Seconds 1 }
         } finally { Unregister-ScheduledTask -TaskName $name -Confirm:$false -ErrorAction SilentlyContinue }
         if (-not (Test-Path $receipt)) { throw 'console-session task left no result in 30 s (state UNKNOWN, not a failure proof)' }
-        $r = Get-Content $receipt -Raw
+        $r = "$(Get-Content -LiteralPath $receipt -Raw)"
         if ($r -match '^ERROR:') { throw $r.Trim() }
         return "console session $console`: $($r.Trim())"
     } finally { Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue }
@@ -113,14 +133,14 @@ function Get-FleetMiniItems {
             'Worktrees under deep paths fail to check out without it, even with the OS long-path switch on.' `
             { $v = git config --global core.longpaths 2>$null; if ($v) { "$v".Trim() } else { $null } } `
             { param($v) $v -eq 'true' } `
-            { git config --global core.longpaths true; "set" } ''
+            { git config --global core.longpaths true; Assert-Native 'git config' } ''
         New-FleetMiniItem 'sleep-never' 'admin' 'Never sleep on AC power' `
             'A sleeping mini drops ssh, scheduled lanes and remote control; nobody is at the keyboard to wake it.' `
             { Get-PowerAcSeconds SUB_SLEEP STANDBYIDLE } { param($v) $v -eq 0 } `
-            { powercfg /change standby-timeout-ac 0; "set" } ''
+            { powercfg /change standby-timeout-ac 0; Assert-Native 'powercfg' } ''
         New-FleetMiniItem 'hibernate-never' 'admin' 'Never hibernate on AC power' 'Same reason as sleep.' `
             { Get-PowerAcSeconds SUB_SLEEP HIBERNATEIDLE } { param($v) $v -eq 0 } `
-            { powercfg /change hibernate-timeout-ac 0; "set" } ''
+            { powercfg /change hibernate-timeout-ac 0; Assert-Native 'powercfg' } ''
         New-FleetMiniItem 'fast-startup-off' 'admin' 'Fast startup off' `
             'Fast startup turns a shutdown into a hibernate, so a "restart" may not reload drivers or services and uptime lies.' `
             { Get-RegValue 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' 'HiberbootEnabled' } { param($v) $v -eq 0 } `
@@ -132,10 +152,15 @@ function Get-FleetMiniItems {
             'Ledgers, receipts and token expiry compare clocks across machines; a drifting clock breaks ordering.' `
             { $s = Get-Service w32time -ErrorAction SilentlyContinue; if ($s) { "$($s.StartType)" } else { $null } } { param($v) $v -eq 'Automatic' } `
             { Set-Service w32time -StartupType Automatic; Start-Service w32time -ErrorAction SilentlyContinue; "set" } ''
-        New-FleetMiniItem 'exec-policy' 'admin' 'LocalMachine execution policy RemoteSigned' `
-            'Fleet scripts run locally; Unrestricted prompts on downloaded files and Restricted blocks them.' `
-            { "$(Get-ExecutionPolicy -Scope LocalMachine)" } { param($v) $v -eq 'RemoteSigned' } `
-            { Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force; "set" } ''
+        New-FleetMiniItem 'exec-policy' 'admin' 'LocalMachine execution policy RemoteSigned (pwsh 7 and Windows PowerShell 5.1)' `
+            'Fleet scripts run locally under both shells; Unrestricted prompts on downloaded files and Restricted (the 5.1 default on client Windows) blocks them. The two shells keep separate machine policies.' `
+            { $p51 = Get-RegValue 'HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell' 'ExecutionPolicy'
+              $p7 = if ($PSVersionTable.PSEdition -eq 'Core') { "$(Get-ExecutionPolicy -Scope LocalMachine)" } else { 'n/a' }
+              "ps7=$p7 ps51=$(if ($p51) { $p51 } else { 'Restricted(default)' })" } `
+            { param($v) $v -in 'ps7=RemoteSigned ps51=RemoteSigned', 'ps7=n/a ps51=RemoteSigned' } `
+            { if ($PSVersionTable.PSEdition -eq 'Core') { Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force }
+              & (Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -NonInteractive -Command 'Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force'
+              Assert-Native 'powershell.exe Set-ExecutionPolicy' } ''
         New-FleetMiniItem 'sshd' 'admin' 'OpenSSH server running and Automatic' `
             'ssh is how every other fleet machine drives this one (the key mesh).' `
             { $s = Get-Service sshd -ErrorAction SilentlyContinue; if ($s) { "$($s.Status)/$($s.StartType)" } else { $null } } `
@@ -185,15 +210,25 @@ function Get-FleetMiniItems {
     }
     foreach ($t in $tools.Keys) {
         $name = $t
+        # python: Windows ships a WindowsApps "python.exe" alias that only opens the Store, so being on PATH proves
+        # nothing; ask it for a version instead.
+        $get = if ($name -eq 'python') {
+            { $o = "$(& python -V 2>&1)"; if ($LASTEXITCODE -eq 0 -and $o -match 'Python 3') { $true } else { $false } }
+        } else { [scriptblock]::Create("[bool](Get-Command '$name' -ErrorAction SilentlyContinue)") }
         $items += New-FleetMiniItem "tool-$name" 'owner' "$name on PATH" 'Every lane and fleet script assumes the same toolchain on every mini.' `
-            ([scriptblock]::Create("[bool](Get-Command '$name' -ErrorAction SilentlyContinue)")) { param($v) $v -eq $true } $null $tools[$t]
+            $get { param($v) $v -eq $true } $null $tools[$t]
     }
     return $items
 }
 
 function Invoke-FleetMiniCheck {
     [CmdletBinding()] param([string[]]$Only)
-    foreach ($i in Get-FleetMiniItems) {
+    $all = @(Get-FleetMiniItems)
+    # `pwsh -File ... -Only a,b` passes one string "a,b"; an unknown id must fail loudly, never read as "all clear".
+    $Only = @($Only | ForEach-Object { "$_" -split ',' } | ForEach-Object Trim | Where-Object { $_ })
+    $unknown = @($Only | Where-Object { $_ -notin $all.Id })
+    if ($unknown) { throw "unknown baseline id(s): $($unknown -join ', '). Known: $($all.Id -join ', ')" }
+    foreach ($i in $all) {
         if ($Only -and $Only -notcontains $i.Id) { continue }
         $cur = $null; $err = $null
         try { $cur = & $i.Get } catch { $err = "$_" }

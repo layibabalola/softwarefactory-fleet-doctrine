@@ -28,11 +28,21 @@ if (-not $Hosts) {
         $cmd = 'pwsh -NoProfile -NonInteractive -EncodedCommand ' + [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($remote))
         $p = Start-Process ssh -ArgumentList '-n', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', $h, $cmd `
             -RedirectStandardOutput $out -RedirectStandardError "$out.err" -NoNewWindow -PassThru
-        if (-not $p.WaitForExit($TimeoutSeconds * 1000)) { Stop-Process -Id $p.Id -Force; Write-Warning "$h`: TIMEOUT"; $unreadable++; continue }
+        if (-not $p.WaitForExit($TimeoutSeconds * 1000)) {
+            Stop-Process -Id $p.Id -Force
+            # best effort: do not leave the module copy behind on the remote host
+            $c = Start-Process ssh -ArgumentList '-n', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', $h, "pwsh -NoProfile -EncodedCommand $([Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes("Remove-Item ~/$remoteDir.psm1 -ErrorAction SilentlyContinue")))" `
+                -RedirectStandardOutput "$out.clean" -RedirectStandardError "$out.clean.err" -NoNewWindow -PassThru
+            if (-not $c.WaitForExit(20000)) { Stop-Process -Id $c.Id -Force -ErrorAction SilentlyContinue }
+            Remove-Item $out, "$out.err", "$out.clean", "$out.clean.err" -ErrorAction SilentlyContinue
+            Write-Warning "$h`: TIMEOUT (a copy ~/$remoteDir.psm1 may remain there)"; $unreadable++; continue
+        }
         $text = Get-Content $out -Raw -ErrorAction SilentlyContinue
         Remove-Item $out, "$out.err" -ErrorAction SilentlyContinue
         if (-not $text -or $text.IndexOf('[') -lt 0) { Write-Warning "$h`: no result"; $unreadable++; continue }
-        $rows += @($text.Substring($text.IndexOf('[')) | ConvertFrom-Json) | ForEach-Object { $_ | Add-Member -NotePropertyName Host -NotePropertyValue $h -PassThru }
+        try { $parsed = @($text.Substring($text.IndexOf('[')) | ConvertFrom-Json) }
+        catch { Write-Warning "$h`: unreadable result ($($_.Exception.Message))"; $unreadable++; continue }
+        $rows += $parsed | ForEach-Object { $_ | Add-Member -NotePropertyName Host -NotePropertyValue $h -PassThru }
     }
 }
 

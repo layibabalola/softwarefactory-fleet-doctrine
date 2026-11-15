@@ -32,7 +32,9 @@ An ssh key login of an admin account is already elevated, so the owner can also 
 another fleet machine with `ssh <alias> pwsh -NoProfile -File ...`. Per-user items still land in the
 person signed in at the console: Mouse Keys is set through a one-shot Interactive task in the console
 session (deleted at once), because a `SystemParametersInfo` call from the ssh session would change the
-wrong session. Every applied change is written to a JSON receipt with its before and after values
+wrong session. If no one is signed in at the console, only the stored value changes and the receipt
+says `STORED ONLY`. The Mouse Keys check reads the stored value of the account running it, so run the
+check as the account that signs in at the console. Every applied change is written to a JSON receipt with its before and after values
 (`%ProgramData%\fleet\fleet-mini\receipts\` when elevated).
 
 ## The baseline
@@ -45,14 +47,18 @@ wrong session. Every applied change is written to a JSON receipt with its before
 | fast-startup-off | admin | `HiberbootEnabled=0` | a shutdown is otherwise a hibernate; restarts lie |
 | long-paths | admin | `LongPathsEnabled=1` | paths over 260 characters |
 | w32time-auto | admin | Windows Time Automatic | ledgers and receipts compare clocks across machines |
-| exec-policy | admin | LocalMachine RemoteSigned | fleet scripts run locally |
+| exec-policy | admin | LocalMachine RemoteSigned in both pwsh 7 and Windows PowerShell 5.1 | fleet scripts run locally under both |
 | sshd, ssh-default-shell | admin | OpenSSH server Running/Automatic, default shell pwsh 7 | how every other machine drives this one |
 | smart-app-control-off | owner | Smart App Control off | it blocks freshly built test DLLs at random |
 | auto-sign-in | owner | AutoAdminLogon=1, password as an LSA secret, never plaintext | after a restart there must be a desktop to attach to |
 | display-present | owner | an active display (HDMI emulator or capture device) | otherwise Windows falls back to a tiny virtual screen |
 | remote-control, tailscale | owner | TeamViewer service Automatic; Tailscale installed | graphical access before sign-in; ssh off the LAN |
 | ssh-authorized-keys | owner | `%ProgramData%\ssh\administrators_authorized_keys` | admin accounts read keys from there, not `~/.ssh` |
-| tool-* | owner | git, pwsh, gh, node, python, dotnet, claude, codex on PATH | every lane assumes the same toolchain |
+| tool-* | owner | git, pwsh, gh, node, python, dotnet, claude, codex on PATH (python must answer `-V`: the WindowsApps Store alias does not count) | every lane assumes the same toolchain |
+
+Mouse Keys value: `Flags=31` is copied from what the Settings page stored with "Only use mouse keys when
+Num lock is on" ticked (measured). `MKF_REPLACENUMBERS` (0x80) is clear in it, although the documented
+meaning of that bit reads the other way round.
 
 **Classes.** `user` is applied for the signed-in account without elevation. `admin` is applied only
 from an elevated shell, which is the owner's. `owner` is never applied: it covers security settings,

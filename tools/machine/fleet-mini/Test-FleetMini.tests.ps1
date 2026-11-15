@@ -33,6 +33,17 @@ $rows = @(Invoke-FleetMiniCheck)
 Assert ($rows.Count -eq $items.Count) 'check returns one row per item'
 Assert (-not ($rows | Where-Object { $_.Status -notin 'OK', 'DRIFT', 'UNKNOWN' })) 'every status is OK, DRIFT or UNKNOWN'
 
+# 4b. -Only: comma form accepted, unknown id refused (never "all clear")
+Assert (@(Invoke-FleetMiniCheck -Only 'mouse-keys,long-paths').Count -eq 2) '-Only "a,b" selects two items'
+$threw = $false; try { Invoke-FleetMiniCheck -Only 'no-such-item' | Out-Null } catch { $threw = $true }
+Assert $threw '-Only with an unknown id throws'
+$ep = $items | Where-Object Id -eq 'exec-policy'
+Assert ((& $ep.Ok 'ps7=RemoteSigned ps51=RemoteSigned') -and -not (& $ep.Ok 'ps7=RemoteSigned ps51=Restricted(default)')) 'exec-policy needs both shells RemoteSigned'
+$py = $items | Where-Object Id -eq 'tool-python'
+Assert ("$($py.Get)" -match '-V') 'tool-python asks for a version (Store alias does not count)'
+$gen = "$((Get-Command Set-FleetMiniMouseKeys).ScriptBlock)"
+Assert ($gen -match 'PSScriptRoot' -and $gen -match '-File `"') 'one-shot run.ps1 embeds no paths and the task quotes its -File path'
+
 # 5. apply logic, on fake items inside the module scope (nothing real is touched)
 $probe = Join-Path ([IO.Path]::GetTempPath()) ('fleet-mini-test-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory $probe | Out-Null
