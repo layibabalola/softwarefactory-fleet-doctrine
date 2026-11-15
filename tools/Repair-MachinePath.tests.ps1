@@ -204,6 +204,20 @@ Ok ((Get-RestartDecision $false $false) -eq 'skip:needs-administrator') 'restart
 Ok ((Get-RestartDecision $true $true) -eq 'skip:busy') 'restart: never while busy'
 Ok ((Get-RestartDecision $true 'gh not installed') -like 'skip:busy-unknown*') 'restart: never when busy cannot be read'
 Ok ((Get-RestartDecision $true $false) -eq 'restart') 'restart: elevated and idle'
+Ok ((Get-RunnerPathAction '' @()) -eq 'rewrite:empty' -and (Get-RunnerPathAction "  `r`n" @()) -eq 'rewrite:empty') 'runner: empty or blank .path is rewritten'
+$dupA = Get-PathAnalysis -Raw 'C:\Go\bin;C:\Go\bin;C:\Program Files\Git\cmd;C:\Gone\abs' -Scope User -Exists $fsExists -OtherScopeKeys @('c:\program files\git\cmd')
+$stale = Get-StaleRunnerKeys @($dupA | Where-Object Removable)
+Ok ($stale.Count -eq 1 -and $stale[0] -eq 'c:\gone\abs') 'runner: only dead removals make a .path stale, not duplicates'
+Ok ((Get-RunnerPathAction 'C:\Program Files\Git\cmd;C:\Windows\System32;C:\Go\bin' $stale) -eq 'keep') 'runner: a hand-ordered .path listing a removed duplicate is kept'
+$varDup2 = Get-PathAnalysis -Raw 'C:\Go\bin;%GO%\bin' -Scope User -Exists $fsExists -Expand { param($t) $t.Replace('%GO%', 'C:\Go') } -OtherScopeKeys @('c:\users\u\bin')
+Ok ($varDup2[1].Class -eq 'duplicate-var' -and -not $varDup2[1].Removable) 'hazard: a %VAR% duplicate is reported, never removed'
+$varCross = Get-PathAnalysis -Raw '%GO%\bin' -Scope User -Exists $fsExists -Expand { param($t) $t.Replace('%GO%', 'C:\Go') } -OtherScopeKeys @('c:\go\bin')
+Ok ($varCross[0].Class -eq 'duplicate-var' -and -not $varCross[0].Removable) 'hazard: a %VAR% repeat of a Machine entry is reported, never removed'
+$rel = Get-PathAnalysis -Raw 'node_modules\.bin;.\tools;C:' -Scope User -Exists { param($p) $false }
+Ok (@($rel | Where-Object { $_.Class -eq 'relative' -and -not $_.Removable }).Count -eq 3) 'hazard: relative entries are never judged or removed'
+Ok (Throws { Test-AckRecord -Raw "[$goodRaw]" -FileMachine 'VIRTUAL-TEN' }) 'reader: a top-level array is UNEVALUABLE'
+Ok (Throws { Test-AckRecord -Raw $goodRaw -FileMachine 'VIRTUAL-TEN' -NowUtc $now.AddHours(-1) }) 'reader: a stamp in the future is UNEVALUABLE'
+Ok (Throws { Test-AckRecord -Raw ($goodRaw -replace '"findings":\s*\[\s*\]', '"findings": ["user-dead:1"]') -FileMachine 'VIRTUAL-TEN' }) 'reader: HEALTHY with findings is UNEVALUABLE'
 $fe = Get-PathFindings -User $clean -Machine $clean -TotalChars 801 -WhereGit PASS -Runners @(@{ label = 'runner-1'; path_chars = 0; env_lines = 1; env_has_lang = (Test-EnvHasLang 'LANG=') })
 Ok ($fe -contains 'runner-path-empty:runner-1' -and $fe -contains 'runner-env-no-lang:runner-1') 'runner: empty .path and LANG= with no value are findings'
 

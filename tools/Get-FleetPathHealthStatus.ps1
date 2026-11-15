@@ -54,7 +54,9 @@ function Get-ReceiptDecisions([string]$ReceiptsText) {
 Validate one ack at its TOP level: schema, machine equal to the file name, verdict, UTC stamp.
 Anything else throws, so a malformed or misfiled ack is UNEVALUABLE, never a pass.
 #>
-function Test-AckRecord([string]$Raw, [string]$FileMachine) {
+function Test-AckRecord([string]$Raw, [string]$FileMachine, [Nullable[datetime]]$NowUtc = $null) {
+    # ConvertFrom-Json unwraps a one-element array, so the text itself must open an object.
+    if (-not ([string]$Raw).TrimStart([char]0xFEFF).TrimStart().StartsWith('{')) { throw "path-health/$FileMachine.json is not a JSON object" }
     $o = $Raw | ConvertFrom-Json -ErrorAction Stop
     if ($o -isnot [pscustomobject]) { throw "path-health/$FileMachine.json is not a JSON object" }
     $p = $o.PSObject.Properties
@@ -67,7 +69,9 @@ function Test-AckRecord([string]$Raw, [string]$FileMachine) {
     $utc = if ($v -is [datetime]) { if ($v.Kind -eq [DateTimeKind]::Unspecified) { throw "path-health/$FileMachine.json: published_utc has no zone" }; $v.ToUniversalTime() }
            elseif ([string]$v -match 'Z$') { [datetimeoffset]::Parse([string]$v, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime }
            else { throw "path-health/$FileMachine.json: published_utc is not a UTC Z stamp" }
-    $findings = if ($p['findings']) { @($o.findings | ForEach-Object { [string]$_ }) } else { @() }
+    if ($null -ne $NowUtc -and $utc -gt ([datetime]$NowUtc).AddMinutes(10)) { throw "path-health/$FileMachine.json: published_utc is in the future" }
+    $findings = @(if ($p["findings"]) { $o.findings | ForEach-Object { [string]$_ } })   # @() : an if-expression unrolls an empty array to $null
+    if (($o.verdict -eq 'HEALTHY') -ne ($findings.Count -eq 0)) { throw "path-health/$FileMachine.json: verdict $($o.verdict) contradicts its $($findings.Count) findings" }
     return [pscustomobject]@{ PublishedUtc = $utc; Verdict = [string]$o.verdict; Findings = $findings }
 }
 
@@ -81,7 +85,7 @@ function Get-PathHealthRows {
     $rows = foreach ($n in $names) {
         $status = 'ABSENT'; $verdict = ''; $age = $null; $detail = ''
         if ($Acks.Contains($n)) {
-            $a = Test-AckRecord -Raw ([string]$Acks[$n]) -FileMachine $n   # throws -> UNEVALUABLE upstream
+            $a = Test-AckRecord -Raw ([string]$Acks[$n]) -FileMachine $n -NowUtc $NowUtc   # throws -> UNEVALUABLE upstream
             $age = ($NowUtc - $a.PublishedUtc).TotalDays
             $verdict = $a.Verdict
             $f = $a.Findings -join ', '

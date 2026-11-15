@@ -113,6 +113,7 @@ function Get-PathAnalysis {
         elseif ($trimmed.StartsWith('\\')) { $class = 'unc' }
         elseif ($trimmed -match '%[^%;]+%') { $class = 'unresolved' }
         elseif ($trimmed.Contains(';')) { $class = 'multi' }   # a %VAR% that expands to several folders: never one folder's verdict
+        elseif ($trimmed -notmatch '^[A-Za-z]:\\') { $class = 'relative' }   # resolved against the current directory: never this tool's verdict
         elseif ($trimmed -match '^[A-Za-z]:' -and ($true -ne (& $Exists ($trimmed.Substring(0, 2) + '\')))) { $class = 'drive-absent' }
         else {
             # $Exists returns $true, $false, or $null for "could not tell" (access denied). Only a
@@ -126,10 +127,11 @@ function Get-PathAnalysis {
                 elseif ($seg -match '%') { $class = 'dead-var' }
                 else { $class = 'dead' }
             }
-            elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = 'cross-duplicate' }
-            elseif ($seen.Contains($key)) { $class = 'duplicate' }
+            # A duplicate verdict also rests on expansion, so a %VAR% duplicate is reported, not removed.
+            elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = $(if ($seg -match '%') { 'duplicate-var' } else { 'cross-duplicate' }) }
+            elseif ($seen.Contains($key)) { $class = $(if ($seg -match '%') { 'duplicate-var' } else { 'duplicate' }) }
         }
-        if ($key -and $class -in @('ok', 'unc', 'unresolved', 'multi', 'drive-absent', 'unreadable', 'pending', 'dead-var')) { [void]$seen.Add($key) }
+        if ($key -and $class -in @('ok', 'unc', 'unresolved', 'multi', 'relative', 'drive-absent', 'unreadable', 'pending', 'dead-var')) { [void]$seen.Add($key) }
         $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead', 'duplicate', 'cross-duplicate') } else { $class -eq 'dead' }
         $rows.Add([pscustomobject]@{
             Index = $i; Raw = $seg; Expanded = $trimmed; Key = $key; Class = $class; Removable = $removable
@@ -151,9 +153,9 @@ function Get-ScopeStats([object[]]$Analysis, [string]$Raw, [string]$ExpandedJoin
         raw_chars         = ([string]$Raw).Length
         segments          = $a.Count
         dead              = @($a | Where-Object Class -eq 'dead').Count
-        duplicates        = @($a | Where-Object { $_.Class -in @('duplicate', 'cross-duplicate') }).Count
+        duplicates        = @($a | Where-Object { $_.Class -in @('duplicate', 'cross-duplicate', 'duplicate-var') }).Count
         empty             = @($a | Where-Object Class -eq 'empty').Count
-        unverifiable      = @($a | Where-Object { $_.Class -in @('unc', 'unresolved', 'multi', 'drive-absent', 'unreadable', 'dead-var') }).Count
+        unverifiable      = @($a | Where-Object { $_.Class -in @('unc', 'unresolved', 'multi', 'relative', 'drive-absent', 'unreadable', 'dead-var') }).Count
         pending           = @($a | Where-Object Class -eq 'pending').Count
         dead_dotnet_tools = @($a | Where-Object { $_.Class -eq 'dead' -and $_.DotnetTools }).Count
         removable         = @($a | Where-Object Removable).Count
@@ -290,10 +292,17 @@ function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a miss
     [string[]]$RemovedKeys = @(), [int]$MaxChars = 4096) {
     if ($null -eq $PathText) { return 'rewrite:missing' }
     $t = $PathText.Trim()
+    if ($t.Length -eq 0) { return 'rewrite:empty' }
     if ($t.Length -gt $MaxChars) { return 'rewrite:over-limit' }
     $removed = [System.Collections.Generic.HashSet[string]]::new([string[]]@($RemovedKeys), [StringComparer]::Ordinal)
     foreach ($seg in ($t -split ';')) { if ($seg.Trim() -and $removed.Contains((Get-PathKey $seg))) { return 'rewrite:holds-removed-entry' } }
     return 'keep'
+}
+
+# Keys whose removal makes a runner .path stale: DEAD entries only. A removed duplicate's folder
+# still exists, so a .path that lists it is not broken.
+function Get-StaleRunnerKeys([object[]]$RemovedRows) {
+    return ,@(@($RemovedRows) | Where-Object { $_ -and $_.Key -and $_.Class -eq 'dead' } | ForEach-Object Key)
 }
 
 # Restart only when elevated AND GitHub says the runner is idle. $Busy is $true/$false or a string
@@ -363,13 +372,19 @@ $existsReal = {
     catch { return $null }
 }
 $expandReal = { param($t) [Environment]::ExpandEnvironmentVariables($t) }
+# Pending folders are named from the user's token (GetFolderPath), not from $env:USERPROFILE /
+# $env:APPDATA, which a harness may have overridden. Both spellings count.
+$pendingReal = @(
+    @(Get-PendingKeys $expandReal) +
+    @(Get-PendingKeys { param($t) $t.Replace('%USERPROFILE%', [Environment]::GetFolderPath('UserProfile')).Replace('%APPDATA%', [Environment]::GetFolderPath('ApplicationData')) })
+)
 
 function Measure-Machine {
     $mRaw = Read-RawPath 'Machine'
     $uRaw = Read-RawPath 'User'
     $mA = Get-PathAnalysis -Raw $mRaw.Value -Scope Machine -Exists $existsReal -Expand $expandReal
     $mKeys = @($mA | Where-Object Key | ForEach-Object Key)
-    $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys -PendingKeys (Get-PendingKeys $expandReal)
+    $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys -PendingKeys $pendingReal
     $mJoined = Join-ExpandedPath $mA
     $uJoined = Join-ExpandedPath $uA
     $fresh = (@($mJoined, $uJoined) | Where-Object { $_ }) -join ';'
@@ -512,10 +527,9 @@ function Invoke-Apply {
         } catch { $failed = $true; $actions.Add("machine: WRITE FAILED: $($_.Exception.Message)") }
     } elseif ($mRemove.Count) { $actions.Add("machine: $($mRemove.Count) dead entries LEFT IN PLACE - not elevated; rerun -Apply as Administrator to remove them") }
     else { $actions.Add('machine: nothing removable') }
-    if ($changed) { Send-EnvironmentChanged }
-
     $post = $null
     try {
+        if ($changed) { Send-EnvironmentChanged }   # inside the try: a blocked Add-Type must not skip the receipt
         $after = Measure-Machine
         $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name
         $mySid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -523,7 +537,8 @@ function Invoke-Apply {
             param($q)
             try { ([Security.Principal.NTAccount]::new($q)).Translate([Security.Principal.SecurityIdentifier]).Value } catch { $null }
         }
-        $removedKeys = @(@($uRemove) + @($(if ($machineWritten) { $mRemove })) | Where-Object Key | ForEach-Object Key)
+        # Only DEAD entries make a runner .path stale: a removed duplicate's folder still exists.
+        $removedKeys = Get-StaleRunnerKeys (@($(if ($userWritten) { $uRemove })) + @($(if ($machineWritten) { $mRemove })))
         foreach ($r in $before.Runners) {
             # One runner's failure is recorded and the next runner still runs; the receipt is
             # written in the finally below whatever happens.
@@ -609,10 +624,23 @@ function Publish-Ack($state) {
     & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
     if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?)'; return 4 }
     if ($NoPush) { Say "ACK COMMITTED, NOT PUSHED (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason))"; return 0 }
+    # The push must carry the ack commit and nothing else: a board's own master checkout may hold
+    # local, unreviewed commits, and pushing HEAD would publish them too.
+    $onlyAck = {
+        & git -C $BusRoot fetch -q origin $branch *> $null
+        if ($LASTEXITCODE -ne 0) { return "cannot fetch origin/$branch" }
+        $ahead = ([string](& git -C $BusRoot rev-list --count "refs/remotes/origin/${branch}..HEAD" 2>$null)).Trim()
+        if ($ahead -ne '1') { return "HEAD is $ahead commits ahead of origin/$branch, not 1" }
+        return $null
+    }
+    $why = & $onlyAck
+    if ($why) { Say "PUBLISH FAILED: $why; refusing to push anything but the ack (ack committed locally)"; return 4 }
     & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
     if ($LASTEXITCODE -ne 0) {
         & git -C $BusRoot pull -q --rebase origin $branch *> $null
         if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: push rejected and rebase failed; ack committed locally only'; return 4 }
+        $why = & $onlyAck
+        if ($why) { Say "PUBLISH FAILED after rebase: $why; ack committed locally only"; return 4 }
         & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
         if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: push rejected twice; ack committed locally only'; return 4 }
     }
