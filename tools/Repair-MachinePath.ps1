@@ -29,10 +29,11 @@ Modes (exactly one of -Check or -Apply; -Publish may ride on either):
             Exit is the post-repair -Check verdict, or 2 if a write failed.
 
   -Publish  Writes path-health/<MACHINE>.json in -BusRoot (counts and verdict only: no paths, no
-            user names), commits that one file and pushes the current branch. It pushes only when
+            user names), commits that one file and pushes it to master. It pushes only when
             the content changed or the published record is older than -RefreshHours (law 3).
             The record is published whatever the verdict: an UNHEALTHY ack is still an ack.
-            -NoPush commits locally and stops (rehearsal). A failed publish exits 4.
+            -NoPush commits locally and stops (rehearsal). A failed publish exits 4. It refuses a
+            detached HEAD, a branch other than master (unless -AllowBranch), or a non-empty index.
 
 Tests dot-source this file with -Library and call the pure functions with injected PATH strings
 and an injected folder-exists predicate. Nothing in the test path reads or writes the real
@@ -51,6 +52,7 @@ param(
     [switch]$Apply,
     [switch]$Publish,
     [switch]$NoPush,
+    [switch]$AllowBranch,
     [string]$BusRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$RunnerRoot = 'C:\actions-runners',
     [int]$MaxTotalChars = 4096,
@@ -92,10 +94,13 @@ function Get-PathAnalysis {
         [ValidateSet('User', 'Machine')][string]$Scope,
         [Parameter(Mandatory)][scriptblock]$Exists,
         [scriptblock]$Expand = { param($t) $t },
-        [string[]]$OtherScopeKeys = @()
+        [string[]]$OtherScopeKeys = @(),
+        [string[]]$PendingKeys = @()
     )
     $other = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     foreach ($k in $OtherScopeKeys) { [void]$other.Add($k) }
+    $pending = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($k in $PendingKeys) { [void]$pending.Add($k) }
     $seen = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
     $rows = [System.Collections.Generic.List[object]]::new()
     $i = 0
@@ -107,11 +112,24 @@ function Get-PathAnalysis {
         if (-not $trimmed) { $class = 'empty' }
         elseif ($trimmed.StartsWith('\\')) { $class = 'unc' }
         elseif ($trimmed -match '%[^%;]+%') { $class = 'unresolved' }
-        elseif ($trimmed -match '^[A-Za-z]:' -and -not (& $Exists ($trimmed.Substring(0, 2) + '\'))) { $class = 'drive-absent' }
-        elseif (-not (& $Exists $trimmed)) { $class = 'dead' }
-        elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = 'cross-duplicate' }
-        elseif ($seen.Contains($key)) { $class = 'duplicate' }
-        if ($key -and $class -in @('ok', 'unc', 'unresolved', 'drive-absent')) { [void]$seen.Add($key) }
+        elseif ($trimmed.Contains(';')) { $class = 'multi' }   # a %VAR% that expands to several folders: never one folder's verdict
+        elseif ($trimmed -match '^[A-Za-z]:' -and ($true -ne (& $Exists ($trimmed.Substring(0, 2) + '\')))) { $class = 'drive-absent' }
+        else {
+            # $Exists returns $true, $false, or $null for "could not tell" (access denied). Only a
+            # definite $false is dead, and only an entry written as an absolute path is removable:
+            # a %VAR% entry was expanded with this process's environment, which a harness may have
+            # overridden, so its deadness is reported, never acted on.
+            $e = & $Exists $trimmed
+            if ($null -eq $e) { $class = 'unreadable' }
+            elseif (-not $e) {
+                if ($pending.Contains($key)) { $class = 'pending' }
+                elseif ($seg -match '%') { $class = 'dead-var' }
+                else { $class = 'dead' }
+            }
+            elseif ($Scope -eq 'User' -and $other.Contains($key)) { $class = 'cross-duplicate' }
+            elseif ($seen.Contains($key)) { $class = 'duplicate' }
+        }
+        if ($key -and $class -in @('ok', 'unc', 'unresolved', 'multi', 'drive-absent', 'unreadable', 'pending', 'dead-var')) { [void]$seen.Add($key) }
         $removable = if ($Scope -eq 'User') { $class -in @('empty', 'dead', 'duplicate', 'cross-duplicate') } else { $class -eq 'dead' }
         $rows.Add([pscustomobject]@{
             Index = $i; Raw = $seg; Expanded = $trimmed; Key = $key; Class = $class; Removable = $removable
@@ -135,7 +153,8 @@ function Get-ScopeStats([object[]]$Analysis, [string]$Raw, [string]$ExpandedJoin
         dead              = @($a | Where-Object Class -eq 'dead').Count
         duplicates        = @($a | Where-Object { $_.Class -in @('duplicate', 'cross-duplicate') }).Count
         empty             = @($a | Where-Object Class -eq 'empty').Count
-        unverifiable      = @($a | Where-Object { $_.Class -in @('unc', 'unresolved', 'drive-absent') }).Count
+        unverifiable      = @($a | Where-Object { $_.Class -in @('unc', 'unresolved', 'multi', 'drive-absent', 'unreadable', 'dead-var') }).Count
+        pending           = @($a | Where-Object Class -eq 'pending').Count
         dead_dotnet_tools = @($a | Where-Object { $_.Class -eq 'dead' -and $_.DotnetTools }).Count
         removable         = @($a | Where-Object Removable).Count
     }
@@ -165,10 +184,11 @@ function Get-PathFindings {
     if ($Machine.dead -gt 0) { $f.Add("machine-dead:$($Machine.dead)") }
     if ($WhereGit -eq 'FAIL') { $f.Add('cmd-where-git-failed') }
     foreach ($r in @($Runners)) {
-        if ($null -eq $r.path_chars) { $f.Add("runner-path-missing:$($r.name)") }
-        elseif ($r.path_chars -gt $MaxTotalChars) { $f.Add("runner-path-over-${MaxTotalChars}:$($r.name):$($r.path_chars)") }
-        if ($null -eq $r.env_lines) { $f.Add("runner-env-missing:$($r.name)") }
-        elseif (-not $r.env_has_lang) { $f.Add("runner-env-no-lang:$($r.name)") }
+        if ($null -eq $r.path_chars) { $f.Add("runner-path-missing:$($r.label)") }
+        elseif ($r.path_chars -eq 0) { $f.Add("runner-path-empty:$($r.label)") }
+        elseif ($r.path_chars -gt $MaxTotalChars) { $f.Add("runner-path-over-${MaxTotalChars}:$($r.label):$($r.path_chars)") }
+        if ($null -eq $r.env_lines) { $f.Add("runner-env-missing:$($r.label)") }
+        elseif (-not $r.env_has_lang) { $f.Add("runner-env-no-lang:$($r.label)") }
     }
     return ,$f.ToArray()
 }
@@ -181,7 +201,7 @@ function New-AckRecord {
     )
     if ($MachineName -notmatch '^[A-Za-z0-9][A-Za-z0-9-]{0,62}$') { throw "machine name '$MachineName' is not a bus-safe token" }
     $runnerRows = @(foreach ($r in @($Runners)) {
-        [ordered]@{ name = [string]$r.name; path_chars = $r.path_chars; env_lines = $r.env_lines; env_has_lang = [bool]$r.env_has_lang }
+        [ordered]@{ label = [string]$r.label; path_chars = $r.path_chars; env_lines = $r.env_lines; env_has_lang = [bool]$r.env_has_lang }
     })
     [ordered]@{
         schema        = $script:AckSchema
@@ -228,7 +248,60 @@ function Test-AckPublishNeeded {
 
 function Test-EnvHasLang([AllowNull()][string]$EnvText) {
     if ($null -eq $EnvText) { return $false }
-    return [bool](($EnvText -split "`r?`n") | Where-Object { $_ -match '^\s*LANG\s*=' })
+    return [bool](($EnvText -split "`r?`n") | Where-Object { $_ -match '^\s*LANG\s*=\s*\S' })   # LANG= with no value is no LANG
+}
+
+<#
+Canonical per-user folders that installers put on PATH before they exist (created on first use):
+the .NET SDK writes `%USERPROFILE%\.dotnet\tools` raw, and Node's installer adds `%APPDATA%\npm`.
+Missing, they are 'pending', never dead: removing one hides every later global tool, because the
+installer's own sentinel says it already added the entry.
+#>
+function Get-PendingKeys([scriptblock]$Expand) {
+    return ,@(@('%USERPROFILE%\.dotnet\tools', '%APPDATA%\npm') | ForEach-Object { Get-PathKey ([string](& $Expand $_)) })
+}
+
+# Qualify a service StartName for SID resolution. `.\name` is a LOCAL account (COMPUTER\name), never
+# a domain account of the same short name. Service-only identities (LocalSystem, NT AUTHORITY\...)
+# and empty names return $null: no user PATH of ours belongs to them.
+function ConvertTo-QualifiedAccount([AllowNull()][string]$StartName, [string]$ComputerName) {
+    if (-not $StartName) { return $null }
+    if ($StartName -ieq 'LocalSystem' -or $StartName -match '^NT AUTHORITY\\' -or $StartName -match '^NT SERVICE\\') { return $null }
+    if ($StartName.StartsWith('.\')) { return "$ComputerName\$($StartName.Substring(2))" }
+    if ($StartName -match '^[^\\@]+@[^\\@]+$') { return $StartName }   # UPN
+    if ($StartName -notmatch '\\') { return "$ComputerName\$StartName" }
+    return $StartName
+}
+
+# Same account iff both resolve to the same SID. Resolution failure is "not the same" (fail closed).
+# $Resolve: param($qualifiedName) -> SID string or $null.
+function Test-SameServiceAccount([AllowNull()][string]$StartName, [string]$MySid, [string]$ComputerName, [scriptblock]$Resolve) {
+    $q = ConvertTo-QualifiedAccount $StartName $ComputerName
+    if (-not $q -or -not $MySid) { return $false }
+    $sid = & $Resolve $q
+    return ([bool]$sid -and $sid -eq $MySid)
+}
+
+<#
+Rewrite a runner's .path only when it is missing, over the limit, or still carries an entry this
+repair removed. Otherwise leave it: a hand-ordered .path (Git Bash ahead of WSL) is not ours to flatten.
+#>
+function Get-RunnerPathAction($PathText,   # untyped: [string] would turn a missing file ($null) into ''
+    [string[]]$RemovedKeys = @(), [int]$MaxChars = 4096) {
+    if ($null -eq $PathText) { return 'rewrite:missing' }
+    $t = $PathText.Trim()
+    if ($t.Length -gt $MaxChars) { return 'rewrite:over-limit' }
+    $removed = [System.Collections.Generic.HashSet[string]]::new([string[]]@($RemovedKeys), [StringComparer]::Ordinal)
+    foreach ($seg in ($t -split ';')) { if ($seg.Trim() -and $removed.Contains((Get-PathKey $seg))) { return 'rewrite:holds-removed-entry' } }
+    return 'keep'
+}
+
+# Restart only when elevated AND GitHub says the runner is idle. $Busy is $true/$false or a string
+# saying why busy could not be read.
+function Get-RestartDecision([bool]$Elevated, $Busy) {
+    if (-not $Elevated) { return 'skip:needs-administrator' }
+    if ($Busy -is [bool]) { if ($Busy) { return 'skip:busy' } else { return 'restart' } }
+    return "skip:busy-unknown ($Busy)"
 }
 
 if ($Library) { return }
@@ -281,7 +354,14 @@ public static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint Msg, UIntPtr wP
     [void][FleetPath.Native]::SendMessageTimeout([IntPtr]0xffff, 0x1A, [UIntPtr]::Zero, 'Environment', 2, 5000, [ref]$r)
 }
 
-$existsReal = { param($p) try { Test-Path -LiteralPath $p -PathType Container } catch { $false } }
+# $true exists, $false definitely absent, $null could not tell (access denied, I/O error): Test-Path
+# alone returns $false for a folder it cannot read, which would class a live entry as dead.
+$existsReal = {
+    param($p)
+    try { $i = Get-Item -LiteralPath $p -Force -ErrorAction Stop; return [bool]$i.PSIsContainer }
+    catch [System.Management.Automation.ItemNotFoundException] { return $false }
+    catch { return $null }
+}
 $expandReal = { param($t) [Environment]::ExpandEnvironmentVariables($t) }
 
 function Measure-Machine {
@@ -289,7 +369,7 @@ function Measure-Machine {
     $uRaw = Read-RawPath 'User'
     $mA = Get-PathAnalysis -Raw $mRaw.Value -Scope Machine -Exists $existsReal -Expand $expandReal
     $mKeys = @($mA | Where-Object Key | ForEach-Object Key)
-    $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys
+    $uA = Get-PathAnalysis -Raw $uRaw.Value -Scope User -Exists $existsReal -Expand $expandReal -OtherScopeKeys $mKeys -PendingKeys (Get-PendingKeys $expandReal)
     $mJoined = Join-ExpandedPath $mA
     $uJoined = Join-ExpandedPath $uA
     $fresh = (@($mJoined, $uJoined) | Where-Object { $_ }) -join ';'
@@ -314,8 +394,10 @@ function Invoke-WhereGitProbe([string]$FreshPath) {
 
 function Get-RunnerRows([string]$Root) {
     if (-not (Test-Path -LiteralPath $Root -PathType Container)) { return ,@() }
-    $rows = foreach ($d in (Get-ChildItem -LiteralPath $Root -Directory -ErrorAction SilentlyContinue)) {
+    $n = 0
+    $rows = foreach ($d in (Get-ChildItem -LiteralPath $Root -Directory -ErrorAction SilentlyContinue | Sort-Object Name)) {
         if (-not (Test-Path -LiteralPath (Join-Path $d.FullName '.runner'))) { continue }
+        $n++
         $pathFile = Join-Path $d.FullName '.path'
         $envFile = Join-Path $d.FullName '.env'
         $pathChars = $null; $envLines = $null; $envText = $null
@@ -330,7 +412,8 @@ function Get-RunnerRows([string]$Root) {
         $runnerJson = $null
         try { $runnerJson = (Get-Content -LiteralPath (Join-Path $d.FullName '.runner') -Raw).TrimStart([char]0xFEFF) | ConvertFrom-Json } catch { }
         [pscustomobject]@{
-            name = $d.Name; path_chars = $pathChars; env_lines = $envLines; env_has_lang = (Test-EnvHasLang $envText)
+            # `label` is what travels: a runner folder may be named after an account (law 4).
+            name = $d.Name; label = "runner-$n"; path_chars = $pathChars; env_lines = $envLines; env_has_lang = (Test-EnvHasLang $envText)
             Dir = $d.FullName; Service = $svcName
             Url = if ($runnerJson -and $runnerJson.PSObject.Properties['gitHubUrl']) { [string]$runnerJson.gitHubUrl } else { $null }
             Agent = if ($runnerJson -and $runnerJson.PSObject.Properties['agentName']) { [string]$runnerJson.agentName } else { $null }
@@ -352,7 +435,7 @@ function Write-Report($m, [string]$whereGit, [object[]]$runners, [string[]]$find
     Say ("Machine PATH : {0,6} chars  {1,3} segments  dead {2}  duplicate {3}" -f $m.MachineStats.chars, $m.MachineStats.segments, $m.MachineStats.dead, $m.MachineStats.duplicates)
     Say ("Total (new process): {0} chars (limit {1}); cmd /d /c where git: {2}" -f $total, $MaxTotalChars, $whereGit)
     foreach ($r in @($runners)) {
-        Say ("Runner {0}: .path {1}; .env {2}{3}" -f $r.name, $(if ($null -eq $r.path_chars) { 'MISSING' } else { "$($r.path_chars) chars" }), $(if ($null -eq $r.env_lines) { 'MISSING' } else { "$($r.env_lines) lines" }), $(if ($r.env_lines -and -not $r.env_has_lang) { ' (no LANG)' } else { '' }))
+        Say ("Runner {0} (published as {1}): .path {2}; .env {3}{4}" -f $r.name, $r.label, $(if ($null -eq $r.path_chars) { 'MISSING' } else { "$($r.path_chars) chars" }), $(if ($null -eq $r.env_lines) { 'MISSING' } else { "$($r.env_lines) lines" }), $(if ($r.env_lines -and -not $r.env_has_lang) { ' (no LANG)' } else { '' }))
     }
     if (@($runners).Count -eq 0) { Say "Runners: none under $RunnerRoot" }
     $show = @($m.UserAnalysis | Where-Object { $_.Class -ne 'ok' }) + @($m.MachineAnalysis | Where-Object { $_.Class -ne 'ok' } | ForEach-Object { $_ | Add-Member -NotePropertyName ScopeTag -NotePropertyValue 'Machine' -PassThru -Force })
@@ -410,13 +493,13 @@ function Invoke-Apply {
     @{ scope = 'Machine'; kind = $m.MachineRaw.Kind; present = $m.MachineRaw.Present; value = $m.MachineRaw.Value } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $dir 'machine-path.backup.json') -Encoding utf8
     Say "Backups: $dir"
 
-    $changed = $false
+    $changed = $false; $userWritten = $false; $machineWritten = $false
     $uRemove = @($m.UserAnalysis | Where-Object Removable)
     if ($uRemove.Count) {
         try {
             Write-RawPath 'User' (Get-RepairedPath $m.UserAnalysis) $m.UserRaw.Kind
             $actions.Add("user: removed $($uRemove.Count) entries ($((@($uRemove | Group-Object Class | ForEach-Object { "$($_.Name)=$($_.Count)" })) -join ', '))")
-            $changed = $true
+            $changed = $true; $userWritten = $true
         } catch { $failed = $true; $actions.Add("user: WRITE FAILED: $($_.Exception.Message)") }
     } else { $actions.Add('user: nothing removable') }
 
@@ -425,52 +508,71 @@ function Invoke-Apply {
         try {
             Write-RawPath 'Machine' (Get-RepairedPath $m.MachineAnalysis) $m.MachineRaw.Kind
             $actions.Add("machine: removed $($mRemove.Count) dead entries")
-            $changed = $true
+            $changed = $true; $machineWritten = $true
         } catch { $failed = $true; $actions.Add("machine: WRITE FAILED: $($_.Exception.Message)") }
     } elseif ($mRemove.Count) { $actions.Add("machine: $($mRemove.Count) dead entries LEFT IN PLACE - not elevated; rerun -Apply as Administrator to remove them") }
     else { $actions.Add('machine: nothing removable') }
     if ($changed) { Send-EnvironmentChanged }
 
-    $after = Measure-Machine
-    $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name
-    foreach ($r in $before.Runners) {
-        $svc = $null
-        if ($r.Service) { $svc = Get-CimInstance Win32_Service -Filter ("Name='{0}'" -f ($r.Service -replace "'", "''")) -ErrorAction SilentlyContinue }
-        $startName = if ($svc) { [string]$svc.StartName } else { '' }
-        $sameUser = $startName -and (($startName -ieq $me) -or ($startName -ieq (".\" + ($me -split '\\')[-1])))
-        if (-not $sameUser) {
-            $actions.Add("runner $($r.name): .path NOT rewritten - service runs as '$startName', this shell is '$me'; the User PATH it needs is that account's")
-            continue
+    $post = $null
+    try {
+        $after = Measure-Machine
+        $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+        $mySid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        $resolveSid = {
+            param($q)
+            try { ([Security.Principal.NTAccount]::new($q)).Translate([Security.Principal.SecurityIdentifier]).Value } catch { $null }
         }
-        $pathFile = Join-Path $r.Dir '.path'
-        try {
-            if (Test-Path -LiteralPath $pathFile) { Copy-Item -LiteralPath $pathFile -Destination (Join-Path $dir "runner-$($r.name).path.backup") }
-            [IO.File]::WriteAllText($pathFile, $after.FreshPath, [Text.UTF8Encoding]::new($false))
-            $actions.Add("runner $($r.name): .path rewritten ($($after.FreshPath.Length) chars)")
-        } catch { $failed = $true; $actions.Add("runner $($r.name): .path WRITE FAILED: $($_.Exception.Message)"); continue }
-        if ($null -eq $r.env_lines -or -not $r.env_has_lang) { $actions.Add("runner $($r.name): .env missing or without LANG - not edited; see SELF-HOSTED-WINDOWS-RUNNER.md host prerequisites") }
-        if (-not $elevated) { $actions.Add("runner $($r.name): restart SKIPPED - needs Administrator"); continue }
-        $busy = Get-RunnerBusy $r
-        if ($busy -is [bool] -and -not $busy) {
-            try { Restart-Service -Name $r.Service -ErrorAction Stop; $actions.Add("runner $($r.name): service restarted (idle per gh api)") }
-            catch { $failed = $true; $actions.Add("runner $($r.name): restart FAILED: $($_.Exception.Message)") }
-        } elseif ($busy -is [bool]) { $actions.Add("runner $($r.name): restart SKIPPED - runner is busy; restart '$($r.Service)' when idle") }
-        else { $actions.Add("runner $($r.name): restart SKIPPED - could not read busy ($busy); restart '$($r.Service)' when idle") }
+        $removedKeys = @(@($uRemove) + @($(if ($machineWritten) { $mRemove })) | Where-Object Key | ForEach-Object Key)
+        foreach ($r in $before.Runners) {
+            # One runner's failure is recorded and the next runner still runs; the receipt is
+            # written in the finally below whatever happens.
+            try {
+                $svc = $null
+                if ($r.Service) { $svc = Get-CimInstance Win32_Service -Filter ("Name='{0}'" -f ($r.Service -replace "'", "''")) -ErrorAction SilentlyContinue }
+                $startName = if ($svc) { [string]$svc.StartName } else { '' }
+                if (-not (Test-SameServiceAccount $startName $mySid $env:COMPUTERNAME $resolveSid)) {
+                    $actions.Add("runner $($r.name): .path NOT rewritten - service runs as '$startName', this shell is '$me'; the User PATH it needs is that account's")
+                    continue
+                }
+                $pathFile = Join-Path $r.Dir '.path'
+                $pathText = if (Test-Path -LiteralPath $pathFile) { [string](Get-Content -LiteralPath $pathFile -Raw) } else { $null }
+                $pathAction = Get-RunnerPathAction $pathText $removedKeys $MaxTotalChars
+                if ($pathAction -eq 'keep') { $actions.Add("runner $($r.name): .path kept (present, within limit, no removed entry)") }
+                else {
+                    if ($null -ne $pathText) { Copy-Item -LiteralPath $pathFile -Destination (Join-Path $dir "runner-$($r.name).path.backup") }
+                    [IO.File]::WriteAllText($pathFile, $after.FreshPath, [Text.UTF8Encoding]::new($false))
+                    $actions.Add("runner $($r.name): .path rewritten, $($pathAction -replace '^rewrite:', '') ($($after.FreshPath.Length) chars)")
+                }
+                if ($null -eq $r.env_lines -or -not $r.env_has_lang) { $actions.Add("runner $($r.name): .env missing or without LANG - not edited; see SELF-HOSTED-WINDOWS-RUNNER.md host prerequisites") }
+                if ($pathAction -eq 'keep') { continue }   # nothing changed for this runner: no restart owed
+                $decision = Get-RestartDecision $elevated $(if ($elevated) { Get-RunnerBusy $r } else { 'not read' })
+                if ($decision -eq 'restart') {
+                    # Residual race, accepted and stated: a job picked up between the busy read and
+                    # the restart is interrupted.
+                    Restart-Service -Name $r.Service -ErrorAction Stop
+                    $actions.Add("runner $($r.name): service restarted (idle per gh api)")
+                } else { $actions.Add("runner $($r.name): restart SKIPPED - $($decision -replace '^skip:', ''); restart '$($r.Service)' when idle") }
+            } catch { $failed = $true; $actions.Add("runner $($r.name): FAILED: $($_.Exception.Message)") }
+        }
+        $post = Get-CurrentState
+    } catch {
+        $failed = $true; $actions.Add("post-repair step FAILED: $($_.Exception.Message)")
+    } finally {
+        $receipt = [ordered]@{
+            schema = 'fleet-path-repair-receipt.v1'; utc = $stamp; machine = $env:COMPUTERNAME; elevated = $elevated
+            before = [ordered]@{ user = $before.M.UserStats; machine = $before.M.MachineStats; total = $before.Total; where_git = $before.WhereGit; findings = $before.Findings }
+            removed_user = @($(if ($userWritten) { $uRemove | ForEach-Object { [ordered]@{ class = $_.Class; entry = $_.Raw } } }))
+            removed_machine = @($(if ($machineWritten) { $mRemove | ForEach-Object { [ordered]@{ class = $_.Class; entry = $_.Raw } } }))
+            actions = $actions
+            after = $(if ($post) { [ordered]@{ user = $post.M.UserStats; machine = $post.M.MachineStats; total = $post.Total; where_git = $post.WhereGit; findings = $post.Findings } } else { $null })
+            failed = $failed
+        }
+        $receipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $dir 'receipt.json') -Encoding utf8
     }
-
-    $post = Get-CurrentState
-    $receipt = [ordered]@{
-        schema = 'fleet-path-repair-receipt.v1'; utc = $stamp; machine = $env:COMPUTERNAME; elevated = $elevated
-        before = [ordered]@{ user = $before.M.UserStats; machine = $before.M.MachineStats; total = $before.Total; where_git = $before.WhereGit; findings = $before.Findings }
-        removed_user = @($uRemove | ForEach-Object { [ordered]@{ class = $_.Class; entry = $_.Raw } })
-        removed_machine = @($(if ($elevated) { $mRemove | ForEach-Object { [ordered]@{ class = $_.Class; entry = $_.Raw } } }))
-        actions = $actions
-        after = [ordered]@{ user = $post.M.UserStats; machine = $post.M.MachineStats; total = $post.Total; where_git = $post.WhereGit; findings = $post.Findings }
-        failed = $failed
-    }
-    $receipt | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $dir 'receipt.json') -Encoding utf8
     foreach ($a in $actions) { Say "  $a" }
     Say "Receipt: $(Join-Path $dir 'receipt.json')"
+    if (-not $post) { $post = Get-CurrentState }
     Say '--- after ---'
     Write-Report $post.M $post.WhereGit $post.Runners $post.Findings $post.Total
     return [pscustomobject]@{ State = $post; Failed = $failed }
@@ -487,6 +589,13 @@ function Publish-Ack($state) {
     $prev = if (Test-Path -LiteralPath $target) { Get-Content -LiteralPath $target -Raw } else { $null }
     $need = Test-AckPublishNeeded -PreviousRaw $prev -Record $record -NowUtc $now -RefreshHours $RefreshHours
     if (-not $need.Publish) { Say "ACK UNCHANGED: $rel ($($need.Reason)); not pushing a cadence commit."; return 0 }
+    # The ack only counts on master: the reader runs there. A board's own checkout on a feature
+    # branch would publish where nobody reads it, and detached HEAD cannot be pushed by name.
+    $branch = ([string](& git -C $BusRoot symbolic-ref -q --short HEAD 2>$null)).Trim()
+    if (-not $branch) { Say "PUBLISH FAILED: $BusRoot is on a detached HEAD; publish from a master checkout (the one-line command clones one)"; return 4 }
+    if ($branch -ne 'master' -and -not $AllowBranch) { Say "PUBLISH FAILED: $BusRoot is on branch '$branch', not master; the reader would never see this ack. Use the one-line command, or pass -AllowBranch deliberately."; return 4 }
+    $already = @(& git -C $BusRoot diff --cached --name-only)
+    if ($already.Count) { Say "PUBLISH FAILED: staging area already holds $($already -join ', '); refusing to write or commit."; return 4 }
     [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target))
     [IO.File]::WriteAllText($target, ($record | ConvertTo-Json -Depth 6) + "`n", [Text.UTF8Encoding]::new($false))
     & git -C $BusRoot add -- $rel *> $null
@@ -499,12 +608,11 @@ function Publish-Ack($state) {
     & git -C $BusRoot -c commit.gpgsign=false commit -q -m "path-health: $($record.machine) $($record.verdict) ($($need.Reason))" *> $null
     if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: commit failed (is git user.name/user.email set?)'; return 4 }
     if ($NoPush) { Say "ACK COMMITTED, NOT PUSHED (-NoPush): $rel verdict=$($record.verdict) ($($need.Reason))"; return 0 }
-    & git -C $BusRoot push -q origin HEAD *> $null
+    & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
     if ($LASTEXITCODE -ne 0) {
-        $branch = (& git -C $BusRoot rev-parse --abbrev-ref HEAD).Trim()
         & git -C $BusRoot pull -q --rebase origin $branch *> $null
         if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: push rejected and rebase failed; ack committed locally only'; return 4 }
-        & git -C $BusRoot push -q origin HEAD *> $null
+        & git -C $BusRoot push -q origin "HEAD:refs/heads/$branch" *> $null
         if ($LASTEXITCODE -ne 0) { Say 'PUBLISH FAILED: push rejected twice; ack committed locally only'; return 4 }
     }
     Say "ACK PUBLISHED: $rel verdict=$($record.verdict) ($($need.Reason))"

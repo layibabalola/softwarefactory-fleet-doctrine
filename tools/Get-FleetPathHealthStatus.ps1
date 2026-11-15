@@ -51,6 +51,27 @@ function Get-ReceiptDecisions([string]$ReceiptsText) {
 }
 
 <#
+Validate one ack at its TOP level: schema, machine equal to the file name, verdict, UTC stamp.
+Anything else throws, so a malformed or misfiled ack is UNEVALUABLE, never a pass.
+#>
+function Test-AckRecord([string]$Raw, [string]$FileMachine) {
+    $o = $Raw | ConvertFrom-Json -ErrorAction Stop
+    if ($o -isnot [pscustomobject]) { throw "path-health/$FileMachine.json is not a JSON object" }
+    $p = $o.PSObject.Properties
+    if (-not $p['schema'] -or $o.schema -ne 'fleet-path-health.v1') { throw "path-health/$FileMachine.json: schema is not fleet-path-health.v1" }
+    if (-not $p['machine'] -or ([string]$o.machine).ToUpperInvariant() -ne $FileMachine.ToUpperInvariant()) { throw "path-health/$FileMachine.json: machine field does not match the file name" }
+    if (-not $p['verdict'] -or $o.verdict -notin @('HEALTHY', 'UNHEALTHY')) { throw "path-health/$FileMachine.json: verdict is not HEALTHY or UNHEALTHY" }
+    if (-not $p['published_utc']) { throw "path-health/$FileMachine.json: no top-level published_utc" }
+    # ConvertFrom-Json may already have turned the stamp into a [datetime]; a string must carry Z.
+    $v = $o.published_utc
+    $utc = if ($v -is [datetime]) { if ($v.Kind -eq [DateTimeKind]::Unspecified) { throw "path-health/$FileMachine.json: published_utc has no zone" }; $v.ToUniversalTime() }
+           elseif ([string]$v -match 'Z$') { [datetimeoffset]::Parse([string]$v, [Globalization.CultureInfo]::InvariantCulture).UtcDateTime }
+           else { throw "path-health/$FileMachine.json: published_utc is not a UTC Z stamp" }
+    $findings = if ($p['findings']) { @($o.findings | ForEach-Object { [string]$_ }) } else { @() }
+    return [pscustomobject]@{ PublishedUtc = $utc; Verdict = [string]$o.verdict; Findings = $findings }
+}
+
+<#
 Acks: map MACHINE -> raw JSON text. Returns one row per derived machine, sorted by name.
 #>
 function Get-PathHealthRows {
@@ -60,12 +81,10 @@ function Get-PathHealthRows {
     $rows = foreach ($n in $names) {
         $status = 'ABSENT'; $verdict = ''; $age = $null; $detail = ''
         if ($Acks.Contains($n)) {
-            $raw = [string]$Acks[$n]
-            $null = $raw | ConvertFrom-Json -ErrorAction Stop   # unparseable ack -> UNEVALUABLE upstream
-            if ($raw -notmatch '"published_utc"\s*:\s*"([^"]+)"') { throw "path-health/$n.json has no published_utc" }
-            $age = ($NowUtc - [datetimeoffset]::Parse($Matches[1]).UtcDateTime).TotalDays
-            $verdict = if ($raw -match '"verdict"\s*:\s*"([A-Z]+)"') { $Matches[1] } else { 'UNKNOWN' }
-            $f = if ($raw -match '"findings"\s*:\s*\[([^\]]*)\]') { (($Matches[1] -replace '\s|"', '') -split ',' | Where-Object { $_ }) -join ', ' } else { '' }
+            $a = Test-AckRecord -Raw ([string]$Acks[$n]) -FileMachine $n   # throws -> UNEVALUABLE upstream
+            $age = ($NowUtc - $a.PublishedUtc).TotalDays
+            $verdict = $a.Verdict
+            $f = $a.Findings -join ', '
             $status = if ($age -le $StaleDays) { 'ACKED' } else { 'STALE' }
             $detail = $f
         }
