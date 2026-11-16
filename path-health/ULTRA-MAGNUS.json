@@ -1,12 +1,10 @@
 {
   "schema": "fleet-path-health.v1",
   "machine": "ULTRA-MAGNUS",
-  "published_utc": "2026-11-16T01:50:56Z",
-  "tool_commit": "febf8a866a97cbc873bda0675a24904487d4c233",
-  "verdict": "UNHEALTHY",
-  "findings": [
-    "user-dead:6"
-  ],
+  "published_utc": "2026-11-16T01:53:54Z",
+  "tool_commit": "daef9a8215453810b817b6b1521ae353fee4f2cc",
+  "verdict": "HEALTHY",
+  "findings": [],
   "notes": [
     "runner-path-absent:runner-2",
     "runner-env-absent:runner-2",
@@ -21,14 +19,14 @@
     "runner-path-absent:runner-7",
     "runner-env-absent:runner-7"
   ],
-  "total_chars": 2070,
+  "total_chars": 1470,
   "user": {
-    "chars": 1075,
-    "segments": 17,
-    "dead": 6,
+    "chars": 475,
+    "segments": 11,
+    "dead": 0,
     "duplicates": 2,
     "empty": 0,
-    "dead_dotnet_tools": 6
+    "dead_dotnet_tools": 0
   },
   "machine_scope": {
     "chars": 994,
