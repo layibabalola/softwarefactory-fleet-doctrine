@@ -13,8 +13,8 @@ Diagnostic only (bus metrics law 1): rows are measurements; the verdict exists o
 What travels to the (public) bus: aggregates, project names from the allowlist in projects.json, and generic
 bucket names. Never process names, command lines, paths or user names.
 
-Exit codes: 0 ok; 1 headroom: a machine is ABSENT, STALE, LOW-COVERAGE, DUPLICATED, MISFILED, MIXED-CODE,
-LIVE-STALE or BUS-NOT-REFRESHED (data you cannot trust is never shown as spare capacity); 2 bad input or unreadable data;
+Exit codes: 0 ok; 1 headroom: a machine is ABSENT, STALE, LOW-COVERAGE, DUPLICATED, MISFILED, INVALID-ROW,
+MIXED-CODE, LIVE-STALE or BUS-NOT-REFRESHED (data you cannot trust is never shown as spare capacity); 2 bad input or unreadable data;
 3 publish failed; 4 publish succeeded but its receipt could not be written.
 """
 from __future__ import annotations
@@ -105,8 +105,9 @@ def public_kind(kind, allow):
     return kind if kind in getattr(allow, "kinds", ()) else "?"
 
 
-def read_minutes(data_dir: Path, day: dt.date):
-    """Rows for one UTC day, de-duplicated by minute. Returns (rows, duplicate_minutes, unparseable)."""
+def read_minutes(data_dir: Path, day: dt.date, dup_ts=None):
+    """Rows for one UTC day, de-duplicated by minute. Returns (rows, duplicate_minutes, unparseable); each
+    duplicated minute's ts is appended to dup_ts when given."""
     path = data_dir / f"minute-{day.isoformat()}.jsonl"
     by_ts, sids, dups, bad = {}, {}, 0, 0
     if not path.is_file():
@@ -138,6 +139,8 @@ def read_minutes(data_dir: Path, day: dt.date):
             # Every session already merged into this minute is remembered, so A, B, then A again is a replay.
             if sid in sids[row["ts"]] or (prev.get("secs") or 0) + (row.get("secs") or 0) > FULL_MINUTE_SECS:
                 dups += 1
+                if dup_ts is not None:
+                    dup_ts.append(row["ts"])
             else:
                 by_ts[row["ts"]] = merge_fragments(prev, row)
                 sids[row["ts"]].add(sid)
@@ -159,6 +162,8 @@ def merge_fragments(a, b):
     m = json.loads(json.dumps(b if wb >= wa else a))
     m["n"] = (a.get("n") or 0) + (b.get("n") or 0)
     m["secs"] = round(wa + wb, 1)
+    if "cpu_secs" in a or "cpu_secs" in b:
+        m["cpu_secs"] = round((a.get("cpu_secs", wa) or 0) + (b.get("cpu_secs", wb) or 0), 1)
     m["code"] = b.get("code") or a.get("code")
     # Every measured field merges explicitly, so the shorter fragment's low memory or disk is never lost:
     # *_mean weights by duration, *_max / *_min take the extreme, c_free_gb takes the lower.
@@ -199,6 +204,30 @@ def merge_value(sect, k, va, vb, wa, wb):
     return round((va * wa + vb * wb) / w, 3)  # *_mean, busy_threads and other rates weight by duration
 
 
+def _num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
+def valid_day_row(row, today):
+    """A published day row the reader may use: a COMPLETED UTC day (before today; a wrong clock cannot make a
+    row stay fresh), coverage within bounds, and every figure the verdict uses present and finite."""
+    try:
+        d = dt.date.fromisoformat(str(row.get("date")))
+    except ValueError:
+        return False
+    if d >= today:
+        return False
+    cov, quiet = row.get("coverage_min"), row.get("quiet_min")
+    if not (_num(cov) and _num(quiet) and 0 <= quiet <= cov <= FULL_DAY):
+        return False
+    need = [g(row, "cpu", "busy_threads_p95"), g(row, "cpu", "busy_threads_max"), g(row, "mem", "cov_min"),
+            g(row, "disk", "cov_min"), row.get("lp")]
+    if not all(_num(v) for v in need):
+        return False
+    hourly = row.get("hourly_utc") or {}
+    return all(isinstance(hourly.get(k), list) and len(hourly[k]) == 24 for k in ("cov", "busy_p95"))
+
+
 def full_day(row):
     """A day row is a full day when its NON-QUIET sampled minutes cover the day: at least LOW_COVERAGE of 1,440,
     scaled to the minutes outside owner quiet windows, and never fewer than MIN_ACTIVE; and memory and disk were
@@ -214,8 +243,10 @@ def full_day(row):
 
 
 def valid_minute(row):
-    """A minute counts as sampled only if it measured CPU over at least half a minute."""
-    return g(row, "cpu", "busy_threads") is not None and (row.get("secs") or 0) >= 30
+    """A minute counts as sampled only if CPU readings covered at least half of it (cpu_secs: time with a
+    successful CPU read; rows written before that field fall back to secs)."""
+    observed = row.get("cpu_secs", row.get("secs"))
+    return g(row, "cpu", "busy_threads") is not None and isinstance(observed, (int, float)) and observed >= 30
 
 
 def g(row, *keys):
@@ -529,14 +560,14 @@ def publish(bus: Path, data_dir: Path, dry_run=False, retries=5, look_back_days=
 def summarize(data_dir: Path, hours: float):
     now = utc_now()
     since = now - dt.timedelta(hours=hours)
-    rows, dups = [], 0
+    rows, dup_ts = [], []
     day = since.date()
     while day <= now.date():
-        got, d, _ = read_minutes(data_dir, day)
-        recent = [x for x in got if parse_ts(x["ts"]) >= since]
-        rows += [x for x in recent if valid_minute(x)]   # freshness is judged on usable minutes only
-        dups += d if recent else 0
+        got, _, _ = read_minutes(data_dir, day, dup_ts)
+        rows += [x for x in got if parse_ts(x["ts"]) >= since and valid_minute(x)]   # usable minutes only
         day += dt.timedelta(days=1)
+    usable = {x["ts"] for x in rows}
+    dups = len({ts for ts in dup_ts if ts in usable})      # duplication inside the window, among usable minutes
     rows.sort(key=lambda x: x["ts"])
     state = {}
     try:
@@ -607,7 +638,11 @@ def headroom(bus: Path, days: int, expect, live: bool):
     for m in machines:
         rec = {"machine": m, "states": ["MISFILED"] if m in misfiled else []}
         mine, seen_dates = [], set()
-        for x in sorted((x for x in rows if x["machine"] == m), key=lambda x: x["date"]):
+        for x in sorted((x for x in rows if x["machine"] == m), key=lambda x: str(x.get("date"))):
+            if not valid_day_row(x, today):
+                if "INVALID-ROW" not in rec["states"]:
+                    rec["states"].append("INVALID-ROW")   # future-dated, malformed or missing a required figure
+                continue
             if x["date"] in seen_dates:
                 if "DUPLICATED" not in rec["states"]:
                     rec["states"].append("DUPLICATED")   # one (machine, date) published twice: never counted twice
@@ -632,9 +667,10 @@ def headroom(bus: Path, days: int, expect, live: bool):
         if any(x.get("duplicate_min") for x in win) and "DUPLICATED" not in rec["states"]:
             rec["states"].append("DUPLICATED")
         if good and "STALE" not in rec["states"]:
-            # an upgrade day carries two builds; the newest counts. Only machines whose data is in use compare:
-            # a retired or stale machine left on an old build must not void everyone else's verdict.
-            newest_code[m] = (newest.get("code") or [None])[-1]
+            # The build behind the figures actually used: the newest FULL day's newest build (an upgrade day
+            # carries two). Only machines whose data is in use compare: a retired or stale machine left on an
+            # old build must not void everyone else's verdict.
+            newest_code[m] = (good[-1].get("code") or [None])[-1]
         rec["days_used"] = len(good)
         rec["days_low_coverage"] = len(win) - len(good)
         use = good

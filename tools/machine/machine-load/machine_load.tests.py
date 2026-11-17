@@ -153,6 +153,13 @@ class Rollup(unittest.TestCase):
         write_day(self.tmp, self.day, rows)
         self.assertEqual(ml.rollup(self.tmp, self.day, allow=set())["coverage_min"], 540)
 
+    def test_minute_with_failed_cpu_reads_is_not_coverage(self):
+        rows = full_day(self.day)
+        for x in rows:
+            x["cpu_secs"] = 10          # one good 10 s CPU read in a 60 s minute
+        write_day(self.tmp, self.day, rows)
+        self.assertIsNone(ml.rollup(self.tmp, self.day, allow=set()))
+
     def test_missing_day_is_none_not_a_crash(self):
         self.assertIsNone(ml.rollup(self.tmp, self.day, allow=set()))
         self.assertEqual(ml.read_minutes(self.tmp, self.day), ([], 0, 0))
@@ -433,6 +440,18 @@ class Headroom(unittest.TestCase):
         self.assertNotIn(0, rec["quiet_hours_utc"])
         self.assertIn(1, rec["quiet_hours_utc"])
 
+    def test_live_duplication_counts_only_the_window(self):
+        live = self.tmp / "live2"
+        now = ml.utc_now().replace(second=0, microsecond=0)
+        early = minute(now.strftime("%Y-%m-%dT00:00:00Z")) if now.hour >= 2 else None
+        rows = [minute((now - dt.timedelta(minutes=i)).strftime("%Y-%m-%dT%H:%M:00Z")) for i in range(1, 30)
+                if (now - dt.timedelta(minutes=i)).date() == now.date()]
+        if early is not None:
+            rows = [early, dict(early)] + rows                   # a replay hours before the window
+        write_day(live, now.date(), rows)
+        s = ml.summarize(live, 1.0)
+        self.assertEqual(s["duplicate_min"], 0)
+
     def test_live_unusable_fresh_rows_are_live_stale(self):
         me = ml.socket.gethostname().upper()
         self.add_days(me, [self.today - dt.timedelta(days=1)])
@@ -450,6 +469,39 @@ class Headroom(unittest.TestCase):
             ml.DATA_DIR = old_dir
             os.environ.clear(); os.environ.update(old)
         self.assertIn("LIVE-STALE", rec["states"])
+
+    def _push_row(self, machine, row, name="days-z.jsonl"):
+        p = self.bus / ml.BUS_DIR / machine / name
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a") as fh:
+            fh.write(json.dumps(row) + "\n")
+        run("git", "add", ".", cwd=self.bus); run("git", "commit", "-qm", machine, cwd=self.bus); run("git", "push", "-q", "origin", "HEAD:master", cwd=self.bus)
+
+    def test_future_and_malformed_rows_are_invalid(self):
+        day = self.today - dt.timedelta(days=1)
+        data = self.tmp / "fut"
+        write_day(data, day, full_day(day, machine="FUT"))
+        good = ml.rollup(data, day, allow={"airmypc"})
+        future = dict(good, date=(self.today + dt.timedelta(days=365)).isoformat())
+        self._push_row("FUT", future)
+        rec = self.recs(expect=["FUT"])["FUT"]
+        self.assertIn("INVALID-ROW", rec["states"])
+        self.assertEqual(rec.get("verdict", "UNKNOWN"), "UNKNOWN")      # its only row is unusable: no capacity claim
+        nullcpu = json.loads(json.dumps(good)); nullcpu["machine"] = "NULLCPU"
+        nullcpu["cpu"]["busy_threads_p95"] = None; nullcpu["cpu"]["busy_threads_max"] = None
+        self._push_row("NULLCPU", nullcpu)
+        rec = self.recs(expect=["NULLCPU"])["NULLCPU"]
+        self.assertIn("INVALID-ROW", rec["states"])
+        self.assertNotEqual(rec.get("verdict"), "ROOM")
+
+    def test_mixed_code_uses_the_build_behind_the_used_days(self):
+        d2, d1 = self.today - dt.timedelta(days=2), self.today - dt.timedelta(days=1)
+        self.add_days("BOX", [d2], code="old")
+        self.add_days("BOX", [d1], coverage=100, code="new")     # partial day on the new build: not used
+        self.add_days("OTHER", [d1], code="new")
+        recs = self.recs(expect=["BOX", "OTHER"])
+        self.assertIn("MIXED-CODE", recs["BOX"]["states"])
+        self.assertIn("MIXED-CODE", recs["OTHER"]["states"])
 
     def test_busy_machine_alone_is_full(self):
         self.add_days("BUSY", [self.today - dt.timedelta(days=1)], busy_fn=lambda i: 20.0)

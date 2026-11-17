@@ -317,7 +317,7 @@ try { $null = Read-ProcessCpu -PrevTickUtc $prevTick } catch { Write-Log "fatal 
 $t0 = [DateTime]::UtcNow
 $minuteStart = [DateTime]::new($t0.Ticks - ($t0.Ticks % [TimeSpan]::TicksPerMinute), [DateTimeKind]::Utc)
 $acc = $null
-function New-Acc { @{ samples = [Collections.Generic.List[hashtable]]::new(); proj = @{}; secs = 0.0; net = [long]0 } }
+function New-Acc { @{ samples = [Collections.Generic.List[hashtable]]::new(); proj = @{}; secs = 0.0; cpu_secs = 0.0; net = [long]0 } }
 $acc = New-Acc
 $selfCpu0 = $self.TotalProcessorTime.TotalSeconds
 $lastPrune = [DateTime]::MinValue
@@ -346,6 +346,8 @@ try {
         } else {
             $acc.samples.Add($c)
             $acc.secs += $elapsed
+            # time actually covered by a CPU reading: a failed counter read must not count as observed time
+            if ($null -ne $c['cpu_time_pct']) { $acc.cpu_secs += $elapsed }
             if ($net -ge $prevNet) { $acc.net += ($net - $prevNet) }
             $prevNet = $net
             foreach ($k in $pc.Keys) { $acc.proj[$k] = ($acc.proj[$k] ?? 0) + $pc[$k] }
@@ -371,6 +373,7 @@ try {
                     lp       = $LP
                     n        = $s.Count
                     secs     = [Math]::Round($acc.secs, 1)
+                    cpu_secs = [Math]::Round($acc.cpu_secs, 1)
                     cpu      = [ordered]@{
                         time_pct_mean = $cpuMean
                         time_pct_max  = Get-Stat ($s | ForEach-Object { $_['cpu_time_pct'] }) 'max'

@@ -36,30 +36,14 @@ function Test-LockedTree {
 }
 
 function Test-PreLockTree {
-    # Run BEFORE the installer changes any ACL. A handle opened while a non-admin owned an item, or held
-    # WRITE_DAC / WRITE_OWNER / GENERIC_ALL on it, keeps those rights after the lock (ACL changes do not revoke
-    # open handles) and could put a writable DACL back. So: every item must already be owned by $TrustedSids,
-    # no other principal may hold those rights, and nothing may be a link. Empty = safe to lock in place.
+    # Run BEFORE the installer changes any ACL. Rights a non-admin held before the lock survive it in any handle
+    # opened earlier (ACL changes do not revoke open handles): WRITE_DAC could put a writable DACL back, DELETE
+    # could rename the verified root away and plant a replacement. So an existing tree is accepted only if it is
+    # ALREADY locked: owned by $TrustedSids, no write/delete/permission right for anyone else, and no link.
+    # Anything else must be removed by hand and recreated (a missing root is created protected in one call).
     param([string]$Path, [string[]]$TrustedSids = @('S-1-5-18', 'S-1-5-32-544'))
-    $dacRights = [long](0x40000 -bor 0x80000 -bor 0x10000000)   # WRITE_DAC, WRITE_OWNER, GENERIC_ALL
-    $bad = @()
-    $root = Get-Item -LiteralPath $Path -Force
-    foreach ($item in @($root) + @(Get-ChildItem -LiteralPath $Path -Force -Recurse)) {
-        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $bad += "reparse point (junction or symlink) at $($item.FullName)"; continue }
-        if (-not $item.PSIsContainer -and $item.LinkType -eq 'HardLink') { $bad += "hard link at $($item.FullName)"; continue }
-        $acl = Get-Acl -LiteralPath $item.FullName
-        $owner = try { ([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value } catch { "$($acl.Owner)" }
-        if ($owner -notin $TrustedSids) { $bad += "pre-existing owner $($acl.Owner) on $($item.FullName)" }
-        foreach ($ace in $acl.Access) {
-            if ($ace.AccessControlType -ne 'Allow') { continue }
-            $sid = try { $ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { "$($ace.IdentityReference)" }
-            if ($sid -in $TrustedSids -or $sid -eq 'S-1-3-0') { continue }   # CREATOR OWNER resolves to the (trusted) owner
-            if (([long][int]$ace.FileSystemRights -band $dacRights) -ne 0) { $bad += "$($ace.IdentityReference) could change permissions ($($ace.FileSystemRights)) on $($item.FullName)" }
-        }
-    }
-    return $bad
+    return @(Test-LockedTree -Path $Path -TrustedSids $TrustedSids | ForEach-Object { "pre-existing: $_" })
 }
-
 function New-ProtectedDirectory {
     # Creates $Path with its final protected DACL in the same call (no window in which it inherits
     # C:\ProgramData's "Users may create" rights). Owner: the elevated caller's default owner (Administrators).

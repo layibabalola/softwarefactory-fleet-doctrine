@@ -88,12 +88,16 @@ try {
     #    refused before any ACL changes (a handle opened earlier would keep that right)
     $pl = New-Tree 'prelock'
     $p = @(Test-PreLockTree -Path $pl -TrustedSids @('S-1-5-18', 'S-1-5-32-544'))   # owner is me: untrusted here
-    Check 'untrusted pre-existing owner refused' (($p -join ';') -match 'pre-existing owner') ($p -join '; ')
+    Check 'untrusted pre-existing owner refused' (($p -join ';') -match 'pre-existing: owner') ($p -join '; ')
     $p = @(Test-PreLockTree -Path $pl -TrustedSids $trusted)
     Check 'trusted pre-existing tree accepted' ($p.Count -eq 0) ($p -join '; ')
     & icacls.exe "$pl\bin" /grant '*S-1-5-32-545:(WDAC)' /Q | Out-Null
     $p = @(Test-PreLockTree -Path $pl -TrustedSids $trusted)
-    Check 'Users WRITE_DAC refused pre-lock' (($p -join ';') -match 'could change permissions') ($p -join '; ')
+    Check 'Users WRITE_DAC refused pre-lock' (($p -join ';') -match 'pre-existing: .*can write') ($p -join '; ')
+    $pm = New-Tree 'prelock-modify'
+    & icacls.exe $pm /grant '*S-1-5-32-545:(M)' /Q | Out-Null      # Modify carries DELETE: the root could be renamed away
+    $p = @(Test-PreLockTree -Path $pm -TrustedSids $trusted)
+    Check 'Users Modify (DELETE) on the root refused pre-lock' (($p -join ';') -match 'pre-existing: .*can write') ($p -join '; ')
 
     # 9. a protected directory is born with its final DACL (no inherited ProgramData "Users may create")
     $pd = Join-Path $base 'protected'
