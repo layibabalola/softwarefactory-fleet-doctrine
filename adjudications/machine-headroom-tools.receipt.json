@@ -1,0 +1,501 @@
+{
+  "rubric": "machine-headroom-tools",
+  "question": "Owner request 2026-11-16 (per-machine usage to a central location; headroom without hurting existing throughput): which of three rival tools (A machine-load, B host-headroom-20261116, C tools/host-headroom) is the fleet's one tool, and what survives from the others?",
+  "ranUtc": "2026-11-17T01:50:01.482Z",
+  "guard": {
+    "checked": false,
+    "reason": "proposer owns no candidate here; guard not applicable."
+  },
+  "rows": [
+    {
+      "id": "M1-quiet",
+      "statement": "Excludes owner quiet windows read in the REAL FleetQuiet record format (windows\\<id>.json, armedUtc/untilUtc; .released history).",
+      "weight": "MUST",
+      "incident": "coretemp-fleet RESULTS.md 2026-11-15: thermal trials run all-core saturation at the 74 W cap inside FleetQuiet windows, and the unquiet 050413Z-stacked run was contaminated by background work; counting a trial as project load reads a mini as FULL and teaches a false slowdown curve.",
+      "results": {
+        "A": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /REAL_FORMAT_EXCLUDED=True/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "real record fields: id,host,armedUtc,untilUtc,reason,directive,source,before,adapters,deadman\r\nREAL_FORMAT_EXCLUDED=False\r\nCONTROL (fields startUtc/endUtc +-24 h, which FleetQuiet never writes) excluded=True\r\nCONTROL (startUtc/endUtc +-1 h) excluded=False\r\n"
+        },
+        "B": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /REAL_FORMAT_EXCLUDED=True/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "real record fields: id,host,armedUtc,untilUtc,reason,directive,source,before,adapters,deadman\r\nREAL_FORMAT_EXCLUDED=False (B has no quiet-window reader: 0 files reference FleetQuiet)\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /REAL_FORMAT_EXCLUDED=True/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "real record fields: id,host,armedUtc,untilUtc,reason,directive,source,before,adapters,deadman\r\nREAL_FORMAT_EXCLUDED=True\r\nRELEASED_HISTORY_EXCLUDED=True\r\n"
+        }
+      }
+    },
+    {
+      "id": "M2-throughput",
+      "statement": "Answers the throughput question: at the SAME utilisation, a measured slowdown of running work turns ROOM into TIGHT/FULL.",
+      "weight": "MUST",
+      "incident": "Owner request 2026-11-16 (\"without negatively impacting throughput\"); RESULTS.md: all minis hold the ~74 W cap, so power not cores sets speed, and one trial did 21 % less work at the same 74 W; utilisation alone cannot see it.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT_FLAT=ROOM VERDICT_SLOW=(TIGHT|FULL|SATURATED)/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT_FLAT=ROOM VERDICT_SLOW=FULL safe_slow=8 basis_slow=clock falls below 90 % of its light-load value from 8 busy threads (measured)\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT_FLAT=ROOM VERDICT_SLOW=(TIGHT|FULL|SATURATED)/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT_FLAT=ROOM VERDICT_SLOW=TIGHT findings=canary-slowdown\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT_FLAT=ROOM VERDICT_SLOW=(TIGHT|FULL|SATURATED)/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT_FLAT=ROOM VERDICT_SLOW=TIGHT reasons=canary-wide-slowdown:1.36,canary-single-slowdown:1.36\r\n"
+        }
+      }
+    },
+    {
+      "id": "M3-heavyslot",
+      "statement": "An idle-CPU machine whose HeavySlot gate is held 70 % of the time with 20-min waits is not reported as plain ROOM (verdict or a surfaced gate verdict says so).",
+      "weight": "MUST",
+      "incident": "Measured 2026-11-16 on PC-MINI3: CPU p95 ~28 % while HeavySlot jobs waited up to 43 min (slot held 70 % of the day); a new heavy project queues behind every incumbent whatever the CPU says.",
+      "results": {
+        "A": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /VERDICT=(TIGHT|FULL|SATURATED)|GATE_FLAG=yes/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT=ROOM GATE_FLAG=none heavy_jobs_reported=True\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT=(TIGHT|FULL|SATURATED)|GATE_FLAG=yes/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT=TIGHT GATE_FLAG=yes:heavy-slot-bound duty=0.692\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT=(TIGHT|FULL|SATURATED)|GATE_FLAG=yes/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT=ROOM GATE_FLAG=yes:heavy_slot_verdict=FULL occupancy=0.7\r\n"
+        }
+      }
+    },
+    {
+      "id": "M4-nolock",
+      "statement": "Reading the HeavySlot ledger never makes HeavySlot's own append (AppendData, FileShare ReadWrite|Delete) fail. Negative control: a FileShare.Read holder must block it.",
+      "weight": "MUST",
+      "incident": "heavy-slot.ps1 Add-LedgerLine swallows a failed append as a WARN, so a reader holding FileShare.Read silently drops admit/exit lines (and so corrupts every duty/wait figure); TRAPS 2026-08-08: a locked file blocked the next build.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /APPEND_FAILURES=0 / => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "control: FileShare.Read holder blocked the append (detector works)\r\nAPPEND_FAILURES=0 ATTEMPTS=635 READER=ITER 317 \r\n"
+        },
+        "B": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /APPEND_FAILURES=0 / => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "control: FileShare.Read holder blocked the append (detector works)\r\nAPPEND_FAILURES=608 ATTEMPTS=628 READER=ITER 19 \r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /APPEND_FAILURES=0 / => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "control: FileShare.Read holder blocked the append (detector works)\r\nAPPEND_FAILURES=0 ATTEMPTS=655 READER=ITER 18 \r\n"
+        }
+      }
+    },
+    {
+      "id": "M5-failclosed",
+      "statement": "Missing or insufficient data never reads as room: no data and ~2 h of data both give UNKNOWN/INSUFFICIENT/UNEVALUABLE.",
+      "weight": "MUST",
+      "incident": "heartbeats/README.md: a board that never installed the duty and one whose task stopped both look like a quiet board; RULINGS 2026-08-30 test 4: silence has been read as health too many times on this bus.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT/ => matched; output NOT ~ /=ROOM/ => absent",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT partial-10h=UNKNOWN absent=none states=['LOW-COVERAGE']\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT/ => matched; output NOT ~ /=ROOM/ => absent",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT 100min-of-perfect-data=INSUFFICIENT-DATA no-data=INSUFFICIENT-DATA\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT/ => matched; output NOT ~ /=ROOM/ => absent",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT 10min-of-perfect-data=UNEVALUABLE no-data=UNEVALUABLE\r\n"
+        }
+      }
+    },
+    {
+      "id": "M6-law4",
+      "statement": "A record built from this machine's REAL local data carries no path, user name, image or script name (public bus).",
+      "weight": "MUST",
+      "incident": "Bus README law 4 and CI-COST-CONTROL.md: the bus is public by owner decision; heartbeats/README warns literal paths are machine facts with an expiry date.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /LEAKS=0/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "RECORD_BYTES=2084 LEAKS=0 []\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /LEAKS=0/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "RECORD_BYTES=1166 LEAKS=0 \r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /LEAKS=0/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "RECORD_BYTES=2390 LEAKS=0 \r\n"
+        }
+      }
+    },
+    {
+      "id": "M7-ownclone",
+      "statement": "The installed publisher pushes from a repository it owns, never from (or via worktrees/refs of) the clone a person works in.",
+      "weight": "MUST",
+      "incident": "Owner rule for this duty (\"never pushes from a checkout a person uses\"); TRAPS lane-collision entries: three writers on one tree/index produced foreign work-block adoption and pushes blocked by a peer's byte-identical write.",
+      "results": {
+        "A": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /SHARES_PERSON_CLONE=False/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "PUBLISHER_BUS=C:\\!Layi Wkspc\\softwarefactory-fleet-doctrine GIT_COMMON=C:/!Layi Wkspc/softwarefactory-fleet-doctrine/.git\r\nSHARES_PERSON_CLONE=True\r\n"
+        },
+        "B": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /SHARES_PERSON_CLONE=False/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "using B default BusRoot = <script>\\..\\..\\..; installed script dir %USERPROFILE%\\AppData\\Local\\fleet\\host-headroom-tool\\tools\\machine\\host-headroom\r\nPUBLISHER_BUS=~\\AppData\\Local\\fleet\\host-headroom-tool GIT_COMMON=C:/!Layi Wkspc/softwarefactory-fleet-doctrine/.git\r\nSHARES_PERSON_CLONE=True\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /SHARES_PERSON_CLONE=False/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "PUBLISHER_BUS=~\\AppData\\Local\\HostHeadroom\\bus GIT_COMMON=%USERPROFILE%/AppData/Local/HostHeadroom/bus/.git\r\nSHARES_PERSON_CLONE=False\r\n"
+        }
+      }
+    },
+    {
+      "id": "M8-prereview",
+      "statement": "While the tool is unmerged, no installed publisher on any mini is armed to push to master.",
+      "weight": "MUST",
+      "incident": "Owner rule: nothing to master before review; RULINGS ratify-before-publish; CI-COST-CONTROL: repeated intermediate publication was the dominant avoidable cost (Aug 2026, $50 cap hit).",
+      "results": {
+        "A": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /ARMED_HOSTS=0/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "TOOL_MERGED=False\r\nHOST PC-MINI1 publisher_armed=True next=11/17/2026 19:17:00\r\nHOST PC-MINI2 publisher_armed=True next=11/17/2026 19:18:00\r\nHOST PC-MINI3 publisher_armed=True next=11/17/2026 19:19:00\r\nARMED_HOSTS=3\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /ARMED_HOSTS=0/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "TOOL_MERGED=False\r\nHOST PC-MINI1 publisher_armed=False next=\r\nHOST PC-MINI2 publisher_armed=False next=\r\nHOST PC-MINI3 publisher_armed=False next=\r\nARMED_HOSTS=0\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /ARMED_HOSTS=0/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "TOOL_MERGED=False\r\nHOST PC-MINI1 publisher_armed=False next=11/17/2026 01:23:04\r\nHOST PC-MINI2 publisher_armed=False next=11/17/2026 01:22:32\r\nHOST PC-MINI3 publisher_armed=False next=11/17/2026 01:22:56\r\nARMED_HOSTS=0\r\n"
+        }
+      }
+    },
+    {
+      "id": "M9-launch",
+      "statement": "Scheduled launch is windowless AND keeps the script's exit code (wscript /wait shim or the GUI launcher; not bare pwsh, not conhost --headless).",
+      "weight": "MUST",
+      "incident": "TRAPS 2026-09-02: bare pwsh under an Interactive principal flashed a console every fire for two days; TRAPS 2026-10-20: conhost --headless returns 0 for exit 7 and orphans the child on stop.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /LAUNCH=hidden-exitcode/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "PC-MINI1 MachineLoad Sampler EXEC=pairprog-hidden-task-launcher.exe\r\nPC-MINI1 MachineLoad Publisher EXEC=wscript.exe\r\nPC-MINI2 MachineLoad Sampler EXEC=pairprog-hidden-task-launcher.exe\r\nPC-MINI2 MachineLoad Publisher EXEC=wscript.exe\r\nPC-MINI3 MachineLoad Sampler EXEC=pairprog-hidden-task-launcher.exe\r\nPC-MINI3 MachineLoad Publisher EXEC=wscript.exe\r"
+        },
+        "B": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /LAUNCH=hidden-exitcode/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "TASK_EXECUTE=$env:WINDIR\\System32\\conhost.exe (B's task is absent on every mini, so read from its installer)\r\nLAUNCH=conhost-headless (exit code hidden, child outlives a stop)\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /LAUNCH=hidden-exitcode/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "PC-MINI1 HostHeadroom Sampler EXEC=wscript.exe\r\nPC-MINI1 HostHeadroom Publisher EXEC=wscript.exe\r\nPC-MINI2 HostHeadroom Sampler EXEC=wscript.exe\r\nPC-MINI2 HostHeadroom Publisher EXEC=wscript.exe\r\nPC-MINI3 HostHeadroom Sampler EXEC=wscript.exe\r\nPC-MINI3 HostHeadroom Publisher EXEC=wscript.exe\r"
+        }
+      }
+    },
+    {
+      "id": "M10-runtime",
+      "statement": "Installed and producing data now on all three minis: task present and enabled, principal resolves to a SID (not WORKGROUP\\\\user), newest data < 10 min old, one data location.",
+      "weight": "MUST",
+      "incident": "USERDOMAIN reads WORKGROUP under ssh (all three authors hit it 2026-11-16); RULINGS test 7: a MUST tie breaks on runtime availability; a registration is not a firing (F-HOOK-01).",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /HOSTS_OK=3 of 3/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "HOST PC-MINI1 ok=True task=Running newest_age_min=1 principal=ok split_files=0\r\nHOST PC-MINI2 ok=True task=Running newest_age_min=1 principal=ok split_files=0\r\nHOST PC-MINI3 ok=True task=Running newest_age_min=0 principal=ok split_files=0\r\nHOSTS_OK=3 of 3\r\n"
+        },
+        "B": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /HOSTS_OK=3 of 3/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "HOST PC-MINI1 ok=False task=ABSENT newest_age_min=18.1 principal=no-task split_files=0\r\nHOST PC-MINI2 ok=False task=ABSENT newest_age_min=18 principal=no-task split_files=0\r\nHOST PC-MINI3 ok=False task=ABSENT newest_age_min=18.1 principal=no-task split_files=0\r\nHOSTS_OK=0 of 3\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /HOSTS_OK=3 of 3/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "HOST PC-MINI1 ok=True task=Running newest_age_min=0.7 principal=ok split_files=0\r\nHOST PC-MINI2 ok=True task=Running newest_age_min=0.1 principal=ok split_files=0\r\nHOST PC-MINI3 ok=True task=Running newest_age_min=1 principal=ok split_files=0\r\nHOSTS_OK=3 of 3\r\n"
+        }
+      }
+    },
+    {
+      "id": "M11-tests",
+      "statement": "The candidate's own test suite passes from a temp export of its branch.",
+      "weight": "MUST",
+      "incident": "RULINGS 2026-08-30: a ruling with no re-runnable evidence is an opinion with a timestamp.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /\\bOK\\b/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "[machine-load] FAILED: git fetch -q origin master: fatal: cannot change to '%USERPROFILE%\\AppData\\Local\\Temp\\tmppbsfhg0f\\no-such-clone': No such file or directory\r\n[machine-load] published 1 row(s) for PC-MINI1 (2026-11-16) at bus 2aed0ad0f0f4\r\n[machine-load] PC-MINI1: nothing new to publish (bus 2aed0ad0f0f4)\r\n...................\r\n----------------------------------------------------------------------\r\nRan 19 tests in 5.847s\r"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ / passed, 0 failed/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "ok   percentile: nearest rank p95 of 1..10 is 10\r\nok   percentile: p50 of 1..10 is 5\r\nok   percentile: empty is null, never 0\r\nok   histogram: merged p50 from dict + JSON object\r\nok   histogram: p99 lands in the top bin\r\nok   histogram: seconds at or above 75\r"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ / passed, 0 failed/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "ok   parses: Get-FleetHostHeadroom.ps1\r\nok   ascii: Get-FleetHostHeadroom.ps1\r\nok   parses: HostHeadroom.psm1\r\nok   ascii: HostHeadroom.psm1\r\nok   parses: HostHeadroom.tests.ps1\r\nok   ascii: HostHeadroom.tests.ps1\r"
+        }
+      }
+    },
+    {
+      "id": "M12-synthcap",
+      "statement": "Any synthetic load the sampler generates stays at or below half the physical cores (8 of 16).",
+      "weight": "MUST",
+      "incident": "Owner rule 2026-10-07: synthetic load capped at half the cores; saturation/load runs deferred while projects are active (coretemp README).",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /SYNTH_THREADS_MAX=[0-8] / => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "SYNTH_THREADS_MAX=0 (no synthetic load generator: 0 hits)\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /SYNTH_THREADS_MAX=[0-8] / => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "SYNTH_THREADS_MAX=1 (single-thread SHA-256 canary)\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /SYNTH_THREADS_MAX=[0-8] / => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "SYNTH_THREADS_MAX=8 of 16 physical cores (measured by running the canary once)\r\n"
+        }
+      }
+    },
+    {
+      "id": "S1-power",
+      "statement": "Reads package power from the REAL Core Temp adapter feed (dd.MM.yyyy local rows) so time at the power cap is visible.",
+      "weight": "SHOULD",
+      "incident": "RESULTS.md 2026-11-15: power, not temperature, sets the minis' speed (74 W limit); Core Temp throttle columns never fire.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /POWER_ROWS=[1-9]/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "POWER_ROWS=357 PKG_W_MAX=99.955\r\n"
+        },
+        "B": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /POWER_ROWS=[1-9]/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "POWER_ROWS=0 (B reads no power source: 0 files reference one)\r\n"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /POWER_ROWS=[1-9]/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "POWER_ROWS=894 AT_POWER_CEILING_FRAC=0.0189\r\n"
+        }
+      }
+    },
+    {
+      "id": "S2-cli-attrib",
+      "statement": "A CLI-like process with no path in its command line, cwd in a project, is attributed to that project (case 2, a child naming the project, is recorded as evidence).",
+      "weight": "SHOULD",
+      "incident": "Claude/Codex CLIs carry no project path in their command lines; measured 2026-11-16 that attribution otherwise collapses into unattributed/agent-cli buckets.",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /CASE1_CWD_ONLY=agent-bridge/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "CASE1_CWD_ONLY=agent-bridge CASE2_CHILD_NAMES_PROJECT=(parent-unlabelled;child=agent-bridge)\r\n"
+        },
+        "B": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /CASE1_CWD_ONLY=agent-bridge/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "CASE1_CWD_ONLY=softwarefactory-fleet-doctrine CASE2_CHILD_NAMES_PROJECT=softwarefactory-fleet-doctrine\r\n"
+        },
+        "C": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /CASE1_CWD_ONLY=agent-bridge/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "CASE1_CWD_ONLY=fleet-doctrine;V1=ancestor CASE2_CHILD_NAMES_PROJECT=fleet-doctrine;V2=ancestor\r\n"
+        }
+      }
+    },
+    {
+      "id": "S3-first-verdict",
+      "statement": "After 12 h of perfect data, the verdict the CENTRAL record would carry is already a real verdict.",
+      "weight": "SHOULD",
+      "incident": "All three tools were installed 2026-11-16 and at 01:23Z on 11-17 every one still reported INSUFFICIENT/UNKNOWN on every mini (live census); the owner has no answer until this clears.",
+      "results": {
+        "A": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /VERDICT_AFTER_12H=(ROOM|TIGHT|FULL|SATURATED)/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT_AFTER_12H=UNKNOWN\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /VERDICT_AFTER_12H=(ROOM|TIGHT|FULL|SATURATED)/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT_AFTER_12H=ROOM (published window 24 h)\r\n"
+        },
+        "C": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /VERDICT_AFTER_12H=(ROOM|TIGHT|FULL|SATURATED)/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "VERDICT_AFTER_12H=UNEVALUABLE (published window: Run-HostHeadroom -Hours default 168)\r\n"
+        }
+      }
+    },
+    {
+      "id": "S4-ci-cost",
+      "statement": "A record push to master does not start the sealed disposition-intake matrix (its push paths-ignore covers the record path).",
+      "weight": "SHOULD",
+      "incident": "CI-COST-CONTROL.md: Aug 2026 Actions hit the $50 cap; repeated intermediate publication, not storage, was the dominant avoidable cost.",
+      "results": {
+        "A": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /CI_TRIGGERED=False/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "RECORD_PATH=machine-load/PC-MINI1/days-2026-11.jsonl PUSH_PATHS_IGNORE=cos-feedback/**,heartbeats/** CI_TRIGGERED=True\r\n"
+        },
+        "B": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /CI_TRIGGERED=False/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "RECORD_PATH=heartbeats/machines/PC-MINI1.json PUSH_PATHS_IGNORE=cos-feedback/**,heartbeats/** CI_TRIGGERED=False\r\n"
+        },
+        "C": {
+          "verdict": "FAIL",
+          "why": "exit 0 => exit 0; output ~ /CI_TRIGGERED=False/ => no match",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "RECORD_PATH=host-headroom/PC-MINI1.json PUSH_PATHS_IGNORE=cos-feedback/**,heartbeats/** CI_TRIGGERED=True\r\n"
+        }
+      }
+    },
+    {
+      "id": "S5-cost",
+      "statement": "Measured sampler CPU under 2 CPU-seconds per minute (~0.1 % of a 32-thread mini) over 5 min on pc-mini2. B: UNMEASURED, not installed on any mini at probe time.",
+      "weight": "SHOULD",
+      "incident": "The owner question is about not slowing existing work; a monitor is itself load on the machine it measures (coretemp telemetry was budgeted the same way).",
+      "results": {
+        "A": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /CPU_S_PER_MIN=[01](\\.\\d+)?(\\s|$)/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "PROCS=2 CPU_S_PER_MIN=1.32\r\n"
+        },
+        "B": {
+          "verdict": "UNMEASURED",
+          "why": "no probe declared for this candidate"
+        },
+        "C": {
+          "verdict": "PASS",
+          "why": "exit 0 => exit 0; output ~ /CPU_S_PER_MIN=[01](\\.\\d+)?(\\s|$)/ => matched",
+          "expectedFail": false,
+          "exitCode": 0,
+          "evidence": "PROCS=2 CPU_S_PER_MIN=1.31\r\n"
+        }
+      }
+    }
+  ]
+}

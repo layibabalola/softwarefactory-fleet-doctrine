@@ -29,7 +29,10 @@ try {
     Assert ((Resolve-Family 'claude.exe') -eq 'llm-cli') 'llm-cli family'
     Assert ((Resolve-Family 'testhost.net8.exe') -eq 'test') 'test family'
     Assert ((Resolve-Family 'notepad.exe') -eq 'other') 'other family'
-
+    # working-folder attribution (ported from candidate A): our own cwd reads back, and a bare project cwd resolves
+    $null = Get-ProcessSnapshot
+    Assert (([HostHeadroomNative]::GetCurrentDirectory($PID)).TrimEnd('\') -ieq [Environment]::CurrentDirectory.TrimEnd('\')) 'PEB cwd of this process reads back'
+    Assert ((Resolve-PathProject 'C:\!Layi Wkspc\agent-bridge') -eq 'agent-bridge') 'a bare project cwd resolves to its project'
     # 3. percentiles
     Assert ((Get-Pct @(1..100) 95) -eq 95) 'p95 of 1..100'
     Assert ($null -eq (Get-Pct @() 50)) 'pct of empty is null'
@@ -99,7 +102,7 @@ try {
             Add-Content -LiteralPath (Join-Path $root "samples-$($g.Name).jsonl") -Value $g.Group -Encoding utf8 }
     }
     & $mod { param($f) $script:CoreTempFeed = $f } (Join-Path $tmp 'no-core-temp.csv')   # summaries below must not see the hot fixture
-    $hours = 2; $n = [int]($hours * 240)
+    $hours = 8; $n = [int]($hours * 240)   # a verdict needs >= 6 h of sampled span
     $quietRoot = Join-Path $tmp 'quiet-machine'; Write-Samples $quietRoot { 5 } $n
     $sq = Get-HostHeadroomSummary -Hours $hours -Root $quietRoot
     Assert ($sq.headroom.verdict -eq 'ROOM') "quiet machine -> ROOM ($($sq.headroom.verdict): $($sq.headroom.reasons -join ' '))"
@@ -111,10 +114,10 @@ try {
     $sb = Get-HostHeadroomSummary -Hours $hours -Root $busyRoot
     Assert ($sb.headroom.verdict -eq 'FULL') "a third of samples saturated -> FULL ($($sb.headroom.verdict))"
 
-    $thinRoot = Join-Path $tmp 'thin'; Write-Samples $thinRoot { 5 } 40
+    $thinRoot = Join-Path $tmp 'thin'; Write-Samples $thinRoot { 5 } 960   # 4 h of perfect data: span under 6 h
     Assert ((Get-HostHeadroomSummary -Hours $hours -Root $thinRoot).headroom.verdict -eq 'UNEVALUABLE') 'low coverage -> UNEVALUABLE, never ROOM'
 
-    @{ id = 'fq-test'; armedUtc = [datetime]::UtcNow.AddHours(-3).ToString('o'); untilUtc = [datetime]::UtcNow.AddMinutes(5).ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $qdir 'fq-test.json')
+    @{ id = 'fq-test'; armedUtc = [datetime]::UtcNow.AddHours(-9).ToString('o'); untilUtc = [datetime]::UtcNow.AddMinutes(5).ToString('o') } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $qdir 'fq-test.json')
     $sx = Get-HostHeadroomSummary -Hours $hours -Root $busyRoot
     Assert ($sx.samples -eq 0 -and $sx.excluded_quiet_window_samples -ge $n - 1) "quiet-window samples are excluded ($($sx.excluded_quiet_window_samples))"
     Remove-Item -LiteralPath (Join-Path $qdir 'fq-test.json')
@@ -131,10 +134,10 @@ try {
     Assert $threw2 'publish refuses a sentinel folder nested in another repo (no reset --hard can reach the parent)'
     $res = Publish-HostHeadroom -BusRoot $fakeBus -Hours 2 -NoPush -Root $quietRoot
     Assert (@($res).Count -eq 1 -and $res.action -eq 'written-first-publication') "first publication written ($(($res | ConvertTo-Json -Compress -Depth 2)))"
-    $rec = Get-Content -LiteralPath (Join-Path $fakeBus "host-headroom/$($env:COMPUTERNAME.ToUpperInvariant()).json") -Raw | ConvertFrom-Json
+    $rec = Get-Content -LiteralPath (Join-Path $fakeBus "heartbeats/host-headroom/$($env:COMPUTERNAME.ToUpperInvariant()).json") -Raw | ConvertFrom-Json
     Assert ($rec.schema -eq 'fleet-host-headroom.v1' -and $rec.machine -eq $env:COMPUTERNAME.ToUpperInvariant()) 'record schema and machine'
     Assert ($rec.published_utc -match '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$' -or $rec.published_utc -is [datetime]) 'published_utc stamp'
-    $text = Get-Content -LiteralPath (Join-Path $fakeBus "host-headroom/$($env:COMPUTERNAME.ToUpperInvariant()).json") -Raw
+    $text = Get-Content -LiteralPath (Join-Path $fakeBus "heartbeats/host-headroom/$($env:COMPUTERNAME.ToUpperInvariant()).json") -Raw
     Assert ($text -notmatch '(?i)[a-z]:\\\\' -and $text -notmatch [regex]::Escape($env:USERNAME)) 'law 4: no paths or user name in the record'
 } finally {
     Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue

@@ -27,6 +27,8 @@ $script:CounterPaths = [ordered]@{
     diskLat   = '\PhysicalDisk(_Total)\Avg. Disk sec/Transfer'
 }
 
+$script:CwdReader = $null
+
 function Get-HostHeadroomRoot {
     $r = Join-Path $env:LOCALAPPDATA 'HostHeadroom'
     if (-not (Test-Path -LiteralPath $r)) { New-Item -ItemType Directory -Path $r -Force | Out-Null }
@@ -73,7 +75,7 @@ function ConvertTo-UtcStamp([datetime]$d) { $d.ToUniversalTime().ToString('yyyy-
 # that carry no path are still classed (claude/codex CLIs, Defender, build and test tools) so the
 # unattributed share is reported instead of hidden.
 $script:ProjectRules = @(
-    @{ re = '(?i)\\!Layi Wkspc\\([^\\"/]+)'; fixed = $null }
+    @{ re = '(?i)\\!Layi Wkspc\\([^\\"/]+)'; fixed = $null }   # also matches a bare cwd (no trailing separator)
     @{ re = '(?i)\b([a-z]:\\abwt\\[^\\"/ ]+)';  fixed = '<worktree>' }
 )
 $script:FamilyRules = [ordered]@{
@@ -136,10 +138,15 @@ function Resolve-Family([string]$name) {
 # path in its command line is attributed by the git/pwsh/pytest children it spawns).
 function Get-ProcessSnapshot {
     $procs = @(Get-CimInstance Win32_Process -Property ProcessId, ParentProcessId, Name, ExecutablePath, CommandLine, KernelModeTime, UserModeTime, PrivatePageCount, CreationDate)
-    $byPid = @{}; $kids = @{}; $own = @{}
+    $byPid = @{}; $kids = @{}; $own = @{}; $cwdHits = 0
+    if ($null -eq $script:CwdReader) { try { Initialize-HostHeadroomCanary; $script:CwdReader = $true } catch { $script:CwdReader = $false } }
     foreach ($p in $procs) {
         $id = [int]$p.ProcessId; $byPid[$id] = $p
         $own[$id] = Resolve-PathProject ("{0} {1}" -f $p.ExecutablePath, $p.CommandLine)
+        if (-not $own[$id] -and $id -gt 4 -and $script:CwdReader) {
+            $cwd = [HostHeadroomNative]::GetCurrentDirectory($id)
+            if ($cwd) { $own[$id] = Resolve-PathProject $cwd; if ($own[$id]) { $cwdHits++ } }
+        }
     }
     foreach ($p in $procs) {
         $pp = [int]$p.ParentProcessId
@@ -223,7 +230,34 @@ function Get-UsageDelta($prev, $cur, [double]$seconds) {
 # NEW job pays and the contention the existing ones feel, including power-limit clock drops that
 # no utilisation percentage shows.
 $script:CanarySource = @'
-using System; using System.Diagnostics; using System.IO; using System.Security.Cryptography; using System.Threading.Tasks;
+using System; using System.Diagnostics; using System.IO; using System.Runtime.InteropServices; using System.Security.Cryptography; using System.Threading.Tasks;
+// Ported from candidate A (PR 99, tools/machine/machine-load/MachineLoadNative.cs), per the 2026-11-17 merit
+// adjudication (per-property survivor S2): the current directory of another 64-bit process, read from its PEB
+// (RTL_USER_PROCESS_PARAMETERS.CurrentDirectory). Null when unreadable (protected, other user, 32-bit, exited).
+public static class HostHeadroomNative {
+    [StructLayout(LayoutKind.Sequential)] struct Pbi { public IntPtr ExitStatus, PebBaseAddress, AffinityMask, BasePriority, UniqueProcessId, InheritedFromUniqueProcessId; }
+    [DllImport("ntdll.dll")] static extern int NtQueryInformationProcess(IntPtr h, int c, ref Pbi i, int l, out int r);
+    [DllImport("kernel32.dll", SetLastError = true)] static extern IntPtr OpenProcess(int a, bool i, int pid);
+    [DllImport("kernel32.dll", SetLastError = true)] static extern bool ReadProcessMemory(IntPtr h, IntPtr a, byte[] b, IntPtr s, out IntPtr r);
+    [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
+    [DllImport("kernel32.dll")] static extern bool IsWow64Process(IntPtr h, out bool w);
+    public static string GetCurrentDirectory(int pid) {
+        IntPtr h = OpenProcess(0x0400 | 0x0010, false, pid);
+        if (h == IntPtr.Zero) return null;
+        try {
+            bool w; if (IsWow64Process(h, out w) && w) return null;
+            var i = new Pbi(); int r0; if (NtQueryInformationProcess(h, 0, ref i, Marshal.SizeOf(i), out r0) != 0) return null;
+            IntPtr rd; var ptr = new byte[8];
+            if (!ReadProcessMemory(h, i.PebBaseAddress + 0x20, ptr, (IntPtr)8, out rd)) return null;
+            IntPtr pars = (IntPtr)BitConverter.ToInt64(ptr, 0); var us = new byte[16];
+            if (!ReadProcessMemory(h, pars + 0x38, us, (IntPtr)16, out rd)) return null;
+            int len = BitConverter.ToUInt16(us, 0); IntPtr buf = (IntPtr)BitConverter.ToInt64(us, 8);
+            if (len <= 0 || len > 8192) return null;
+            var txt = new byte[len]; if (!ReadProcessMemory(h, buf, txt, (IntPtr)len, out rd)) return null;
+            return System.Text.Encoding.Unicode.GetString(txt);
+        } catch { return null; } finally { CloseHandle(h); }
+    }
+}
 public static class HostHeadroomCanary {
     static byte[] Buf(int kb) { var b = new byte[kb * 1024]; new Random(7).NextBytes(b); return b; }
     static void Spin(byte[] b, int reps) { for (int i = 0; i < reps; i++) { b[i % b.Length] ^= SHA256.HashData(b)[0]; } }
@@ -247,7 +281,7 @@ public static class HostHeadroomCanary {
 '@
 
 function Initialize-HostHeadroomCanary {
-    if ('HostHeadroomCanary' -as [type]) { return }
+    if (('HostHeadroomCanary' -as [type]) -and ('HostHeadroomNative' -as [type])) { return }
     $tag = [BitConverter]::ToString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($script:CanarySource + $PSVersionTable.PSVersion))).Replace('-', '').Substring(0, 12)
     $dll = Join-Path (Get-HostHeadroomRoot) "canary-$tag.dll"
     if (-not (Test-Path -LiteralPath $dll)) { Add-Type -TypeDefinition $script:CanarySource -OutputAssembly $dll -OutputType Library }
@@ -494,8 +528,13 @@ function Get-HostHeadroomSummary {
     $n = [math]::Max(1, $s.Count)
     $first = if ($s.Count) { ($s | Measure-Object tsUtc -Minimum).Minimum } else { $null }
     $spanH = if ($first) { [math]::Min($Hours, ([datetime]::UtcNow - $first).TotalHours) } else { 0 }
-    $expected = [math]::Floor($Hours * 3600 / 15)
-    $coverage = if ($expected) { [math]::Round([math]::Min(1, $s.Count / $expected), 3) } else { 0 }
+    # Coverage is measured over the span actually sampled (first sample to now, capped at the window), at
+    # the sampler's real rate: 17 samples per 300 s slot (255 s at 15 s). A verdict needs >= 6 h of span,
+    # so the first real verdict arrives after hours, not after most of a 7-day window has elapsed
+    # (merit adjudication 2026-11-17, survivor S3 from candidate B: 24 h window with a 6 h minimum).
+    $perHour = 12 * 17
+    $expected = [math]::Floor([math]::Max($spanH, 0.01) * $perHour)
+    $coverage = if ($s.Count) { [math]::Round([math]::Min(1, $s.Count / [math]::Max(1, $expected)), 3) } else { 0 }
 
     # physical-core equivalent in use: Windows fills idle physical cores before SMT siblings, so
     # busy% x logical processors, capped at the core count, approximates physical cores occupied.
@@ -547,8 +586,8 @@ function Get-HostHeadroomSummary {
     $reasons = [System.Collections.Generic.List[string]]::new(); $rank = 0
     function Bump([int]$to, [string]$why) { if ($to -gt $script:rank) { $script:rank = $to }; $reasons.Add($why) }
     $script:rank = 0
-    if ($s.Count -eq 0 -or $coverage -lt 0.6 -or $can.Count -lt 20) {
-        $verdict = 'UNEVALUABLE'; $reasons.Add("coverage:$coverage"); $reasons.Add("canary-runs:$($can.Count)")
+    if ($s.Count -eq 0 -or $spanH -lt 6 -or $coverage -lt 0.6 -or $can.Count -lt 20) {
+        $verdict = 'UNEVALUABLE'; $reasons.Add("span-hours:$([math]::Round($spanH, 1))"); $reasons.Add("coverage:$coverage"); $reasons.Add("canary-runs:$($can.Count)")
     } else {
         if ($satFrac -ge 0.10) { Bump 2 "cpu-saturated-frac:$satFrac" } elseif ($satFrac -ge 0.03) { Bump 1 "cpu-saturated-frac:$satFrac" }
         if ($burstFrac -ge 0.20) { Bump 2 "cpu-burst-frac:$burstFrac" } elseif ($burstFrac -ge 0.08) { Bump 1 "cpu-burst-frac:$burstFrac" }
@@ -630,7 +669,8 @@ function Publish-HostHeadroom {
     # law 1: the tool runs from an installed copy of a reviewed commit; report THAT commit, not bus HEAD
     $from = Join-Path $PSScriptRoot 'installed-from.json'
     $sum.tool_commit = if (Test-Path -LiteralPath $from) { (Get-Content -LiteralPath $from -Raw | ConvertFrom-Json).commit } else { "uninstalled:$(git -C $BusRoot rev-parse HEAD 2>$null)" }
-    $rel = "host-headroom/$($sum.machine).json"
+    # heartbeats/** is in disposition-intake.yml paths-ignore, so a record push starts no CI matrix (merit S4)
+    $rel = "heartbeats/host-headroom/$($sum.machine).json"
     $path = Join-Path $BusRoot $rel
     # Pushes only from the publisher's OWN clone (made by Install-HostHeadroom.ps1, marked by a sentinel
     # file), which it resets to origin/master each try. It never touches a checkout a person or a lane uses.

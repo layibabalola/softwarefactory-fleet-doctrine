@@ -7,7 +7,7 @@
     pwsh -NoProfile -File Get-FleetHostHeadroom.ps1 -Fit               # project footprint vs each machine's room
     ... -Json                                                          # machine-readable
 
-  Published mode reads host-headroom/*.json at origin/master of a bus clone (after a fetch), so it
+  Published mode reads heartbeats/host-headroom/*.json at origin/master of a bus clone (after a fetch), so it
   never needs the checkout to be pulled. Status per record: ALIVE (published within -StaleHours),
   STALE, UNEVALUABLE (unreadable or wrong schema). Exit 0 = all ALIVE, 1 = some STALE/UNEVALUABLE,
   2 = nothing readable. A status tool that cannot fail is not a status tool.
@@ -45,7 +45,7 @@ if ($Live) {
     }
 } else {
     git -C $BusRoot fetch --quiet origin master 2>$null
-    $names = @(git -C $BusRoot ls-tree --name-only origin/master host-headroom/ 2>$null | Where-Object { $_ -like '*.json' })
+    $names = @(git -C $BusRoot ls-tree --name-only origin/master heartbeats/host-headroom/ 2>$null | Where-Object { $_ -like '*.json' })
     foreach ($n in $names) {
         $machine = [IO.Path]::GetFileNameWithoutExtension($n)
         try {

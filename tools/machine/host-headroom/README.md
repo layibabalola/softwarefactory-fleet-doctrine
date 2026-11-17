@@ -1,7 +1,7 @@
 # tools/machine/host-headroom: how much room does each fleet machine have?
 
 A **machine tool**. Each mini samples its own load, measures how much slower a fixed small job runs
-when the machine is busy, and publishes one summary record to the bus at `host-headroom/<MACHINE>.json`.
+when the machine is busy, and publishes one summary record to the bus at `heartbeats/host-headroom/<MACHINE>.json`.
 One reader turns those records into a fleet table. It answers the owner's question (2026-11-16):
 *can this machine take another project without slowing the projects already on it?*
 
@@ -34,7 +34,7 @@ pwsh -NoProfile -File tools\machine\host-headroom\HostHeadroom.tests.ps1
 | | |
 |---|---|
 | **Installed copy** | `%USERPROFILE%\.claude\machine\host-headroom\` plus `installed-from.json` (the commit). Law 1: tasks run this copy, never a bus checkout. |
-| **Sampler** | Task `\Fleet\HostHeadroom Sampler`, every 5 min, Priority 4 (Normal), IgnoreNew, hidden-launcher chain. One pwsh run streams one PDH query for 290 s at 15 s intervals (rate counters average the whole interval). |
+| **Sampler** | Task `\Fleet\HostHeadroom Sampler`, every 5 min, Priority 4 (Normal), IgnoreNew, hidden-launcher chain. One pwsh run streams one PDH query for 255 s at 15 s intervals (17 samples; it ends well inside the 300 s slot) (rate counters average the whole interval). |
 | **Publisher** | Task `\Fleet\HostHeadroom Publisher`, every 6 h. Summarises 7 days and pushes only from its own clone `%LOCALAPPDATA%\HostHeadroom\bus` (sentinel `.host-headroom-publisher-clone`; it resets that clone to origin/master and refuses any other checkout). |
 | **Data** | `%LOCALAPPDATA%\HostHeadroom\samples-YYYYMMDD.jsonl` (14 days, ~3 MB/day), `runs.jsonl` (one receipt per run, success or failure). Raw samples never leave the machine. |
 | **Cost** | Measured on PC-MINI1: about 6 CPU-seconds per 5-minute run (process snapshot 0.33 s x 5, canary 2.5 s, counters), about 2% of one core, 0.06% of the machine. Every sample also records the sampler's own CPU and how late it landed. |
@@ -72,8 +72,9 @@ findings that shaped it, each measured on the minis:
   gate never disagree about what loaded means. Long waits are the project queueing behind the gate, not
   proof the hardware is full.
 - **Attribution.** Claude and Codex CLIs carry no project path in their command lines, and Win32_Process
-  has no working directory. A process's project comes from its own path, else its nearest ancestor's, else
-  the most common project among its descendants (a CLI is attributed by the git, pwsh and pytest children it
+  has no working directory. A process's project comes from its own path, else its **working folder** (read
+  from the process's PEB; ported from candidate A's `MachineLoadNative.cs`, PR #99, as a merit survivor),
+  else its nearest ancestor's, else the most common project among its descendants (a CLI is attributed by the git, pwsh and pytest children it
   spawns). What is left is reported as `_unattributed` with its share, plus per-family CPU (`defender`,
   `llm-cli`, `build`, `test`, `shell`, `wmi`): Defender alone measured 7-33% of busy CPU while scanning
   build output. The sampler's own tree is `_sampler`, never a project.
@@ -88,7 +89,7 @@ findings that shaped it, each measured on the minis:
 
 | Verdict | When |
 |---|---|
-| **UNEVALUABLE** | coverage under 60% of the window, or fewer than 20 canary runs. Never read as room. |
+| **UNEVALUABLE** | under 6 h of sampled span, coverage under 60% of that span (17 samples per 5-minute slot expected), or fewer than 20 canary runs. Never read as room. A fresh install gives its first verdict after about 6 h, not after most of the 7-day window (merit survivor from candidate B). |
 | **FULL** | saturated (CPU >= 95%, run queue >= 1 per logical processor, or a sample landed >= 10 s late) >= 10% of the time; busy >= 80% >= 20% of the time; HeavySlot-loaded >= 25%; canary wide slowdown >= 2.0 or single >= 1.6; free RAM under 4 GB |
 | **TIGHT** | the same signals at lower levels (saturated 3%, burst 8%, loaded 10%, wide slowdown 1.3, single 1.2, free RAM 12 GB), memory or disk pressure, >= 5% of time at 90 C, >= 10% at the power ceiling |
 | **ROOM** | none of the above |
@@ -101,21 +102,31 @@ them here and in `Get-HostHeadroomSummary` together, after a week of real data.
 
 - **Single writer:** the file name is the publishing machine's `COMPUTERNAME`.
 - **Push rule:** only when the verdict, the HeavySlot verdict, the kinds of reason, or the project set
-  changed **and** the change held for two consecutive summaries (hysteresis, so a value hovering at a
+  changed **and** the new shape has held for at least 4 h (hysteresis, so a value hovering at a
   threshold does not flap), or when the record is over 24 h old. Expect about one push per machine per day.
 - **What travels:** numbers, verdicts, reason tokens, project slugs and process-family names. No paths, no
   user names, no command lines. The tests check this.
-- **CI cost, open:** a push to master starts the sealed `disposition-intake.yml` matrix, whose
-  `paths-ignore` covers only `cos-feedback/**` and `heartbeats/**`. Adding `host-headroom/**` (and
-  `path-health/**`) needs that workflow's own epoch amendment; it is a recorded follow-up, as in
-  `path-health/README.md`.
+- **No CI cost:** records live under `heartbeats/`, which `disposition-intake.yml` already lists in
+  `paths-ignore`, so a record push starts no CI matrix and needs no workflow amendment.
+
+## Merit adjudication (2026-11-17)
+
+One owner prompt produced three tools (A: PR #99 `machine-load`; B: branch `machine/host-headroom-20261116`;
+C: this tool, PR #100). Under `RULINGS.md` "RULE ON MEASURED MERIT, ALWAYS", a neutral scorer that wrote
+none of them ran `tools/merit-adjudicate.mjs` against an incident-based rubric. The rubric, the receipt and
+the scorecard are in `adjudications/machine-headroom-tools.*`. Result: C passed 12 of 12 MUST tests, A 8,
+B 7. The SHOULD gaps C failed were fixed here by porting the better property from the other candidate,
+with credit: working-folder attribution (A), span-based coverage with a 6 h minimum (B), and the
+`heartbeats/` record path (B). Survivors not yet ported, recorded as follow-ups: A's clock-versus-load
+curve, data-quality states, HeavySlot duration trend and ACL-locked bin; B's per-second histograms,
+single-file plumbing commit and `-NeedCores/-NeedGB` fit query.
 
 ## Record shape (`fleet-host-headroom.v1`, abridged)
 
 ```json
 {
   "schema": "fleet-host-headroom.v1", "machine": "PC-MINI2", "published_utc": "2026-11-17T06:00:00Z",
-  "tool_commit": "<installed commit>", "window_hours": 168, "samples": 38000, "coverage": 0.94,
+  "tool_commit": "<installed commit>", "window_hours": 168, "span_hours": 168, "samples": 34000, "coverage": 0.99,
   "hardware": { "logical_processors": 32, "cores": 16, "ram_gb": 93.7 },
   "cpu": { "busy_pct_p50": 8, "busy_pct_p95": 62, "burst_frac": 0.05, "saturated_frac": 0.01,
            "freq_pct_busy_p10": 66, "phys_cores_free_p90": 6.1 },
