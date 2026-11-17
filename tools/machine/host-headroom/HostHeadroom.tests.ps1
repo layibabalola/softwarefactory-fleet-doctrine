@@ -22,7 +22,15 @@ try {
     Set-Content -LiteralPath (Join-Path $wtA '.git') -Value 'gitdir: C:/!Layi Wkspc/softwarefactory-fleet-doctrine/.git/worktrees/wt-a'
     Assert ((Resolve-WorktreeProject $wtA) -eq 'fleet-doctrine') 'worktree resolves to its own repo, not a fixed project'
     Assert ((Resolve-WorktreeProject (Join-Path $tmp 'abwt\missing')) -eq 'worktree-unknown') 'unreadable worktree is unknown, never a guess'
-    Assert ((Resolve-PathProject 'python -m pytest "C:\!Layi Wkspc\Adobe Document Cloud Ingester\tests"') -eq 'adobe-ingester') 'adobe slug'
+    # a worktree anywhere (here a stand-in for C:\temp or C:\mlvtmp) resolves through its repo's .git\worktrees index
+    $ws = Join-Path $tmp 'ws'; $gd = Join-Path $ws 'MLV-App\.git\worktrees\wi-x'; New-Item -ItemType Directory -Path $gd -Force | Out-Null
+    $far = Join-Path $tmp 'mlvtmp\MLV-wi-x'
+    Set-Content -LiteralPath (Join-Path $gd 'gitdir') -Value (($far -replace '\\', '/') + '/.git')
+    & $mod { param($w) $script:WorkspaceRoots = @($w); $script:WorktreeIndex = $null } $ws
+    Assert ((Resolve-PathProject "$far\artifacts\bin\testhost.exe --port 1") -eq 'mlv-app') 'a worktree outside the workspace resolves via the repo worktree index'
+    Assert ((Resolve-PathProject ("X:/elsewhere/" + (Split-Path $far -Leaf) + "/x.exe")) -ne 'mlv-app') 'the index matches the full worktree root, not a bare folder name'
+    Assert ($null -eq (Resolve-PathProject (Join-Path $tmp 'mlvtmp\other-folder\x.exe'))) 'an unregistered sibling folder is not attributed'
+    & $mod { $script:WorkspaceRoots = @('C:\!Layi Wkspc'); $script:WorktreeIndex = $null }    Assert ((Resolve-PathProject 'python -m pytest "C:\!Layi Wkspc\Adobe Document Cloud Ingester\tests"') -eq 'adobe-ingester') 'adobe slug'
     Assert ((Resolve-PathProject 'C:\!Layi Wkspc\MLV-App\build\x.exe') -eq 'mlv-app') 'mlv slug'
     Assert ($null -eq (Resolve-PathProject 'C:\Windows\system32\svchost.exe -k netsvcs')) 'system process has no project'
     Assert ((Resolve-Family 'MsMpEng.exe') -eq 'defender') 'defender family'

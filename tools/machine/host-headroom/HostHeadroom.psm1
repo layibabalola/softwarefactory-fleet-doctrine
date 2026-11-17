@@ -116,8 +116,52 @@ function Resolve-WorktreeProject([string]$wt) {
     $proj
 }
 
+# Every repo in the workspace lists its own linked worktrees in <repo>\.git\worktrees\<n>\gitdir, wherever
+# they live (C:\abwt on PC-MINI1, C:\temp on PC-MINI2, C:\mlvtmp on PC-MINI3, measured 2026-11-17). The
+# index maps each registered worktree root to its repo's slug, so a build or test host inside any worktree
+# is attributed to its project without guessing from a folder name. Built once per process (the sampler is
+# a fresh process every 5 minutes, so new worktrees are seen within one run).
+$script:WorkspaceRoots = @('C:\!Layi Wkspc')
+$script:WorktreeIndex = $null
+function Get-WorktreeIndex {
+    if ($null -ne $script:WorktreeIndex) { return $script:WorktreeIndex }
+    $byParent = @{}
+    foreach ($ws in $script:WorkspaceRoots) {
+        foreach ($repo in @(Get-ChildItem -LiteralPath $ws -Directory -ErrorAction SilentlyContinue)) {
+            $wtDir = Join-Path $repo.FullName '.git\worktrees'
+            if (-not (Test-Path -LiteralPath $wtDir -PathType Container)) { continue }
+            $slug = ConvertTo-ProjectSlug $repo.Name
+            foreach ($g in @(Get-ChildItem -LiteralPath $wtDir -Directory -ErrorAction SilentlyContinue)) {
+                try {
+                    $f = Join-Path $g.FullName 'gitdir'
+                    if (-not (Test-Path -LiteralPath $f -PathType Leaf)) { continue }
+                    $root = Split-Path ((Get-Content -LiteralPath $f -TotalCount 1).Trim() -replace '/', '\')
+                    if (-not $root) { continue }
+                    $parent = (Split-Path $root).TrimEnd('\').ToLowerInvariant() + '\'
+                    if (-not $byParent.ContainsKey($parent)) { $byParent[$parent] = @{} }
+                    $byParent[$parent][(Split-Path $root -Leaf).ToLowerInvariant()] = $slug
+                } catch { }
+            }
+        }
+    }
+    $script:WorktreeIndex = $byParent
+    $byParent
+}
+
 function Resolve-PathProject([string]$text) {
     if ([string]::IsNullOrEmpty($text)) { return $null }
+    $ix = Get-WorktreeIndex
+    if ($ix.Count) {
+        $lt = $text.ToLowerInvariant().Replace('/', '\')
+        foreach ($parent in $ix.Keys) {
+            $at = $lt.IndexOf($parent)
+            while ($at -ge 0) {
+                $m = [regex]::Match($lt.Substring($at + $parent.Length), '^[^\\" ]+')
+                if ($m.Success -and $ix[$parent].ContainsKey($m.Value)) { return $ix[$parent][$m.Value] }
+                $at = $lt.IndexOf($parent, $at + 1)
+            }
+        }
+    }
     foreach ($r in $script:ProjectRules) {
         $m = [regex]::Match($text, $r.re)
         if ($m.Success) {

@@ -72,7 +72,10 @@ findings that shaped it, each measured on the minis:
   gate never disagree about what loaded means. Long waits are the project queueing behind the gate, not
   proof the hardware is full.
 - **Attribution.** Claude and Codex CLIs carry no project path in their command lines, and Win32_Process
-  has no working directory. A process's project comes from its own path, else its **working folder** (read
+  has no working directory. A path inside a **linked worktree** resolves through the index every workspace
+  repo keeps in `.git\worktrees\*\gitdir`, wherever the worktree lives (`C:\abwt`, `C:\temp` and `C:\mlvtmp`
+  on the three minis, measured 2026-11-17), never from a folder name. A process's project comes from its
+  own path, else its **working folder** (read
   from the process's PEB; ported from candidate A's `MachineLoadNative.cs`, PR #99, as a merit survivor),
   else its nearest ancestor's, else the most common project among its descendants (a CLI is attributed by the git, pwsh and pytest children it
   spawns). What is left is reported as `_unattributed` with its share, plus per-family CPU (`defender`,
