@@ -43,10 +43,11 @@ if ($Install) {
     $extra = if ($Publish) { ' -Publish' } else { '' }
     $arg = "--headless `"$pw`" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Run$extra"
     $action = New-ScheduledTaskAction -Execute "$env:WINDIR\System32\conhost.exe" -Argument $arg -WorkingDirectory $PSScriptRoot
-    $t1 = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+    $me = [Security.Principal.WindowsIdentity]::GetCurrent().Name   # USERDOMAIN reads WORKGROUP over ssh
+    $t1 = New-ScheduledTaskTrigger -AtLogOn -User $me
     $t2 = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 15)
     $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -Priority 7
-    $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+    $principal = New-ScheduledTaskPrincipal -UserId $me -LogonType Interactive -RunLevel Limited
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $t1, $t2 -Settings $settings -Principal $principal -Force `
         -Description 'Fleet host-headroom sampler (softwarefactory-fleet-doctrine tools/machine/host-headroom). Read-only; diagnostic only.' | Out-Null
     # A reinstall (new code path or -Publish) replaces a running sampler; otherwise the old one keeps the mutex.
