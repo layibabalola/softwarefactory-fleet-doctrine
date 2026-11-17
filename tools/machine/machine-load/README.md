@@ -45,26 +45,31 @@ process. Both were dropped after an adversarial review.
 
 Per machine (the `--expect` list, default PC-MINI1..3; `--expect ""` reads every machine on the bus), over the
 last `--days` (default 7) **full** days: at least 1,200 of 1,440 minutes sampled outside owner quiet windows
-(scaled down for quiet minutes, never fewer than 360 active minutes), since the busy figures come from active
-minutes only:
+(scaled down for quiet minutes, never fewer than 360 active minutes), with memory and disk read in at least
+90 % of those minutes (a missing reading is never spare capacity), since the busy figures come from active
+minutes only. Quiet minutes are those inside a FleetQuiet window (`C:\ProgramData\FleetQuiet\windows\<Id>.json`,
+`armedUtc`..`untilUtc`; a released window is renamed `.released`):
 - **CPU spare** = safe threads (measured clock onset, or ASSUMED 16) minus the worst day's p95 busy threads.
 - **Memory spare** = lowest daily p05 available GB minus a 16 GB reserve. **Disk spare** = lowest C: free minus the
   owner's 50 GB floor.
 - **Verdict:** ROOM (>= 4 threads, >= 16 GB, >= 100 GB spare), TIGHT (some of each), FULL, or UNKNOWN (no full
-  day). The tightest resource is named. **Quiet hours** = hours where p95 load stayed under 10 % (FleetQuiet's
-  "quiet") every day: when a project could borrow the machine without contention.
+  day). The tightest resource (the one closest to its ROOM threshold) is named. **Quiet hours** = hours measured
+  (>= 30 minutes) on every day used, whose p95 load stayed under 10 % (FleetQuiet's "quiet") on every day: when a project could borrow the machine without contention.
 - It is **compute headroom only**: it does not count Claude/Codex account quota, HeavySlot or gate slots, or
   project rules such as AirMyPC's one-gate-at-a-time. Those can say no while the machine says ROOM.
 
 **Data you cannot trust is never shown as spare capacity.** The reader marks a machine ABSENT (no rows), STALE
 (newest day, or newest FULL day, over 2 days old: a recent partial day never vouches for old full days),
-LOW-COVERAGE (no full day in the window), DUPLICATED (a minute written twice), MIXED-CODE (machines whose data
+LOW-COVERAGE (no full day in the window), DUPLICATED (a minute written twice, or one machine-day published
+twice), MISFILED (a row in this machine's directory names another machine; it is ignored), MIXED-CODE (machines whose data
 is in use run different sampler builds; a stale machine does not count), BUS-NOT-REFRESHED (the fetch failed)
 or, with `--live`, LIVE-STALE (newest minute over 5 min old). **Any of these makes the verdict UNKNOWN** (the
 computed one is kept only as `verdict_untrusted`) and the exit code 1. Exit 2 = the bus could not be read.
 A minute counts as sampled only if it measured CPU over at least 30 s. A minute written in two parts is merged
-only when the parts come from two sampler runs (`sid`) and add up to at most 66 s (a restart); the same run
-twice, or more than a minute of measured time, is DUPLICATED. A merge keeps each extreme (the lower free memory
+only when the parts come from different sampler runs (`sid`; rows from before `sid` count as one run per build)
+and add up to at most 75 s (one minute plus one 10 s interval: a restart); a run already merged into that
+minute, or more measured time than that, is DUPLICATED. Under `--live`, freshness and duplication are judged
+on usable minutes only. A merge keeps each extreme (the lower free memory
 and disk, the higher peaks) and weights means by duration. A sample interval that runs more than 2 s past a
 minute boundary is dropped, so no work is booked to the wrong minute or UTC day.
 
@@ -73,7 +78,7 @@ minute boundary is dropped, so no work is booked to the wrong minute or UTC day.
 | Piece | Where | Does |
 |---|---|---|
 | `MachineLoadSampler.ps1` + `MachineLoadNative.cs` + `projects.json` + the windowless launcher (SHA-256 pinned) | `C:\ProgramData\MachineLoad\bin\` | one long-lived hidden pwsh; one row per UTC minute to `C:\ProgramData\MachineLoad\data\minute-<UTC date>.jsonl`; keeps 14 days; mutex `Global\MachineLoadSampler`; exits to be restarted above 400 MB |
-| Task `\Fleet\MachineLoad Sampler` | at logon + every 5 min (restart net; a running copy holds the mutex) | **elevated**, only so it can read the CPU time of services and protected processes (Defender): non-elevated it cannot see ~130 of ~310 processes. Everything it starts is inside `C:\ProgramData\MachineLoad`. The installer disables the task and stops the sampler, LOCKS the tree before copying any code (Administrators-owned, SYSTEM/Administrators full, Users read-only), VERIFIES it (no junction, symlink or hard link, no non-admin owner or write right, nothing in `data` but the sampler's own file names), deletes and rebuilds `bin`, copies, re-locks, and verifies `bin` holds exactly the source files with the source's hashes; anything else refuses the install. pwsh is the absolute `Program Files` path, the script pins `PSModulePath`, and it reads only the installed `projects.json` (no machine-local override), so no user-writable file is on the elevated path. Open handles a user took on a `data` file before the first lock can still write that file: data integrity only, never code. |
+| Task `\Fleet\MachineLoad Sampler` | at boot + every 5 min (restart net; a running copy holds the mutex) | runs as **SYSTEM**, so it can read the CPU time of services and protected processes (Defender; non-elevated it cannot see ~130 of ~310 processes), samples whether or not anyone is signed in, and inherits no user-writable environment (a logged-on user's `DOTNET_STARTUP_HOOKS` or `CORECLR_PROFILER_PATH` would load code into an elevated pwsh started as that user). Everything it starts is inside `C:\ProgramData\MachineLoad`. The installer refuses a dirty checkout (the manifest names the commit installed), disables the task and stops the sampler (pwsh 7 running exactly the installed script, by pid). A missing root is created with its final protected DACL in one call; an existing one must already be owned by SYSTEM/Administrators with nobody else able to change permissions (a handle opened earlier would keep WRITE_DAC through a lock), or the install refuses. It then LOCKS the tree before copying any code (Administrators-owned, SYSTEM/Administrators full, Users read-only), VERIFIES it (no junction, symlink or hard link, no non-admin owner or write right, nothing in `data` but the sampler's own file names), deletes and rebuilds `bin`, copies, re-locks, and verifies `bin` holds exactly the source files with the source's hashes; anything else refuses the install. pwsh is the absolute `Program Files` path, the script pins `PSModulePath`, and it reads only the installed `projects.json` (no machine-local override), so no user-writable file is on the elevated path. Open handles a user took on a `data` file before the first lock can still write that file: data integrity only, never code. |
 | Task `\Fleet\MachineLoad Publisher` | daily, 75-104 min after the UTC day closes (a fixed per-machine offset) | `machine_load.py publish`, non-elevated: appends every finished, unpublished UTC day still held on the machine (14 days) to the bus in ONE commit (fast-forward, 5 retries, never forced); receipt `%LOCALAPPDATA%\MachineLoad\publish-receipt(s).json(l)` (written even when it crashes) records exit code, bus HEAD and `launched_by`; a receipt that cannot be written is reported on stderr and exits 4. `-Status` flags a failed last task run, a failing receipt or one over 50 h old. |
 
 The publisher launches through the fleet's per-user windowless shim (`~/.claude/ops/launch-windowless.vbs`,
@@ -104,10 +109,14 @@ lines, paths or user names; those stay in the local minute files and in `summari
 - **Reader:** ABSENT, STALE (including an old full day behind a recent partial one), LOW-COVERAGE, DUPLICATED,
   MIXED-CODE (a stale or retired machine does not void the others), BUS-NOT-REFRESHED, LIVE-STALE, a FULL machine,
   and exit codes through `main()`.
-- **Publish:** missing days, a day 12 days back, idempotency, a rejected push retried, failing and unwritable receipts.
+- **Publish:** missing days, a day 12 days back, idempotency, a rejected push retried, failing and unwritable
+  receipts; a HeavySlot pair with an impossible span is dropped (only the day's own minutes are ever walked).
 - **Installer** (`Install-MachineLoad.tests.ps1`): a correct read-only tree passes; a Users write right, a junction
-  (inside or as the root), a hard link, a planted `.config` or data file, a hash mismatch and a missing file are
-  refused; the sampler matcher takes only pwsh 7 running exactly the installed script.
+  (inside or as the root), a hard link, a planted `.config` or data file, a hash mismatch, a missing file, an
+  untrusted pre-existing owner and a pre-lock WRITE_DAC are refused; a protected directory is born without Users
+  write; the sampler matcher takes only pwsh 7 running exactly the installed script; the sampler task is SYSTEM;
+  the sampler's own FleetQuiet reader (extracted from the script) honours armedUtc/untilUtc/.released with no
+  local-time shift; no time is floored with two clock reads.
 
 Not unit-tested: the sampler's live CPU-delta and PID-reuse accounting and the Core Temp parse run only inside
 the elevated sampler; the install proof (the task must write a fresh row with the installed code hash) is their

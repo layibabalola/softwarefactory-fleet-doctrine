@@ -101,6 +101,44 @@ class Rollup(unittest.TestCase):
         self.assertEqual((m["mem"]["commit_pct_max"], m["thermal"]["pkg_w_max"], m["thermal"]["n"]), (95, 74, 60))
         self.assertEqual(m["secs"], 60)
 
+    def test_replay_after_a_merge_is_a_duplicate(self):
+        a = minute("2026-11-10T00:05:00Z"); a["n"] = 2; a["secs"] = 20; a["sid"] = "A"
+        b = minute("2026-11-10T00:05:00Z"); b["n"] = 2; b["secs"] = 20; b["sid"] = "B"
+        write_day(self.tmp, self.day, [a, b, dict(a)])
+        rows, dups, _ = ml.read_minutes(self.tmp, self.day)
+        self.assertEqual((rows[0]["secs"], dups), (40, 1))
+
+    def test_sidless_fragments_of_one_build_are_a_replay(self):
+        a = minute("2026-11-10T00:05:00Z"); a["n"] = 2; a["secs"] = 20
+        b = minute("2026-11-10T00:05:00Z"); b["n"] = 2; b["secs"] = 20
+        write_day(self.tmp, self.day, [a, b])
+        self.assertEqual(ml.read_minutes(self.tmp, self.day)[1], 1)
+
+    def test_restart_with_one_extra_interval_still_merges(self):
+        a = minute("2026-11-10T00:05:00Z", code="old")                    # a full minute from the old run
+        b = minute("2026-11-10T00:05:00Z", code="new"); b["secs"] = 8.5; b["sid"] = "new"
+        write_day(self.tmp, self.day, [a, b])
+        rows, dups, _ = ml.read_minutes(self.tmp, self.day)
+        self.assertEqual((dups, rows[0]["secs"]), (0, 68.5))
+
+    def test_heavy_job_with_an_impossible_span_is_dropped_fast(self):
+        led = self.tmp / "ledger.jsonl"
+        led.write_text("\n".join([
+            json.dumps({"at": "0001-01-01T00:00:00Z", "event": "admit", "ticket": "x", "label": "airmypc:gate"}),
+            json.dumps({"at": "2026-11-10T01:00:00Z", "event": "exit", "ticket": "x"}),
+            json.dumps({"at": "2026-11-09T23:30:00Z", "event": "admit", "ticket": "y", "label": "airmypc:gate"}),
+            json.dumps({"at": "2026-11-10T00:30:00Z", "event": "exit", "ticket": "y"})]) + "\n")
+        old = ml.HEAVYSLOT_LEDGER
+        ml.HEAVYSLOT_LEDGER = led
+        t0 = dt.datetime.now()
+        try:
+            jobs = ml.heavy_jobs(self.day, {}, ml.load_projects())
+        finally:
+            ml.HEAVYSLOT_LEDGER = old
+        self.assertLess((dt.datetime.now() - t0).total_seconds(), 5)
+        self.assertEqual(jobs["airmypc:gate"]["n"], 1)
+        self.assertEqual(jobs["airmypc:gate"]["dur_s_max"], 3600)
+
     def test_concurrent_samplers_counted(self):
         a = minute("2026-11-10T00:05:00Z"); b = minute("2026-11-10T00:05:00Z")
         write_day(self.tmp, self.day, [a, b])
@@ -184,10 +222,16 @@ class Rollup(unittest.TestCase):
 
 class Helpers(unittest.TestCase):
     def test_full_day_excludes_quiet_minutes(self):
-        self.assertFalse(ml.full_day({"coverage_min": 1440, "quiet_min": 1300}))   # 140 active minutes
-        self.assertTrue(ml.full_day({"coverage_min": 1440, "quiet_min": 300}))
-        self.assertTrue(ml.full_day({"coverage_min": 1200, "quiet_min": 0}))
-        self.assertFalse(ml.full_day({"coverage_min": 1199, "quiet_min": 0}))
+        def d(cov, quiet, mem=None, disk=None):
+            act = cov - quiet
+            return {"coverage_min": cov, "quiet_min": quiet, "mem": {"cov_min": act if mem is None else mem},
+                    "disk": {"cov_min": act if disk is None else disk}}
+        self.assertFalse(ml.full_day(d(1440, 1300)))   # 140 active minutes
+        self.assertTrue(ml.full_day(d(1440, 300)))
+        self.assertTrue(ml.full_day(d(1200, 0)))
+        self.assertFalse(ml.full_day(d(1199, 0)))
+        self.assertFalse(ml.full_day(d(1440, 0, mem=1)))     # CPU everywhere, memory read once: not a full day
+        self.assertFalse(ml.full_day(d(1440, 0, disk=100)))
 
     def test_parse_iso_seven_digits(self):
         t = ml.parse_iso("2026-11-17T00:04:18.3742500Z")
@@ -342,6 +386,70 @@ class Headroom(unittest.TestCase):
             self.assertEqual(ml.main(["headroom", "--bus", str(self.bus), "--expect", "ONE", "--json"]), 0)
         finally:
             os.environ.clear(); os.environ.update(old)
+
+    def test_missing_memory_readings_are_not_spare_memory(self):
+        day = self.today - dt.timedelta(days=1)
+        data = self.tmp / "nomem"
+        rows = full_day(day, machine="NOMEM")
+        for x in rows[1:]:
+            x["mem"]["avail_gb_min"] = None
+        write_day(data, day, rows)
+        row = ml.rollup(data, day, allow={"airmypc"})
+        p = self.bus / ml.BUS_DIR / "NOMEM" / "days-x.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(row) + "\n")
+        run("git", "add", ".", cwd=self.bus); run("git", "commit", "-qm", "m", cwd=self.bus); run("git", "push", "-q", "origin", "HEAD:master", cwd=self.bus)
+        rec = self.recs(expect=["NOMEM"])["NOMEM"]
+        self.assertIn("LOW-COVERAGE", rec["states"])
+        self.assertEqual(rec["verdict"], "UNKNOWN")
+
+    def test_published_day_twice_and_misfiled_rows(self):
+        self.add_days("TWICE", [self.today - dt.timedelta(days=1)])
+        self.add_days("TWICE", [self.today - dt.timedelta(days=1)])
+        data = self.tmp / "mis"
+        day = self.today - dt.timedelta(days=1)
+        write_day(data, day, full_day(day, machine="OTHER"))
+        p = self.bus / ml.BUS_DIR / "HOST" / "days-x.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(ml.rollup(data, day, allow={"airmypc"})) + "\n")
+        run("git", "add", ".", cwd=self.bus); run("git", "commit", "-qm", "m", cwd=self.bus); run("git", "push", "-q", "origin", "HEAD:master", cwd=self.bus)
+        recs = self.recs(expect=["TWICE", "HOST"])
+        self.assertIn("DUPLICATED", recs["TWICE"]["states"])
+        self.assertEqual(recs["TWICE"]["days_used"], 1)
+        self.assertIn("MISFILED", recs["HOST"]["states"])
+        self.assertIn("ABSENT", recs["HOST"]["states"])
+
+    def test_hour_missing_on_one_day_is_not_quiet(self):
+        d1, d2 = self.today - dt.timedelta(days=1), self.today - dt.timedelta(days=2)
+        self.add_days("Q", [d1], busy_fn=lambda i: 1.0)
+        data = self.tmp / "q2"
+        rows = [x for x in full_day(d2, busy_fn=lambda i: 1.0, machine="Q") if not x["ts"][11:13] == "00"]
+        write_day(data, d2, rows)
+        row = ml.rollup(data, d2, allow={"airmypc"})
+        p = self.bus / ml.BUS_DIR / "Q" / "days-y.jsonl"
+        p.write_text(json.dumps(row) + "\n")
+        run("git", "add", ".", cwd=self.bus); run("git", "commit", "-qm", "q", cwd=self.bus); run("git", "push", "-q", "origin", "HEAD:master", cwd=self.bus)
+        rec = self.recs(expect=["Q"])["Q"]
+        self.assertNotIn(0, rec["quiet_hours_utc"])
+        self.assertIn(1, rec["quiet_hours_utc"])
+
+    def test_live_unusable_fresh_rows_are_live_stale(self):
+        me = ml.socket.gethostname().upper()
+        self.add_days(me, [self.today - dt.timedelta(days=1)])
+        live = self.tmp / "live"
+        now = ml.utc_now().replace(second=0, microsecond=0)
+        fresh = minute(now.strftime("%Y-%m-%dT%H:%M:00Z"), machine=me); fresh["secs"] = 1
+        write_day(live, now.date(), [fresh])
+        old_dir = ml.DATA_DIR
+        ml.DATA_DIR = live
+        old = os.environ.copy()
+        os.environ.clear(); os.environ.update(CLEAN_ENV)
+        try:
+            rec = {r["machine"]: r for r in ml.headroom(self.bus, 7, [me], live=True)}[me]
+        finally:
+            ml.DATA_DIR = old_dir
+            os.environ.clear(); os.environ.update(old)
+        self.assertIn("LIVE-STALE", rec["states"])
 
     def test_busy_machine_alone_is_full(self):
         self.add_days("BUSY", [self.today - dt.timedelta(days=1)], busy_fn=lambda i: 20.0)

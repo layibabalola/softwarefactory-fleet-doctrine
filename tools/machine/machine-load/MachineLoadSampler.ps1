@@ -259,18 +259,28 @@ function Read-CoreTemp([datetime]$FromUtc, [datetime]$ToUtc) {
 }
 
 function Test-QuietWindow([datetime]$AtUtc) {
-    # A FleetQuiet window is armed when a window record exists whose span covers now and that has not been released.
+    # FleetQuiet (C:\ProgramData\FleetQuiet\FleetQuiet.ps1) writes windows\<Id>.json with armedUtc/untilUtc and
+    # releases a window by renaming it to <Id>.released, so an existing .json is an unreleased window.
     try {
         if (-not (Test-Path $QuietDir)) { return $false }
         foreach ($f in Get-ChildItem $QuietDir -Filter *.json -File) {
-            $w = Get-Content -Raw $f.FullName | ConvertFrom-Json
-            $s = $w.PSObject.Properties['startUtc']; $e = $w.PSObject.Properties['endUtc']; $rel = $w.PSObject.Properties['releasedUtc']
-            if ($s -and $e -and -not ($rel -and $rel.Value)) {
-                if ($AtUtc -ge [datetime]::Parse($s.Value).ToUniversalTime() -and $AtUtc -le [datetime]::Parse($e.Value).ToUniversalTime()) { return $true }
-            }
+            try {
+                $w = Get-Content -Raw $f.FullName | ConvertFrom-Json
+                $s = ConvertTo-UtcTime $w.armedUtc; $e = ConvertTo-UtcTime $w.untilUtc
+                if ($s -and $e -and $AtUtc -ge $s -and $AtUtc -lt $e) { return $true }
+            } catch { }
         }
     } catch { }
     return $false
+}
+
+function ConvertTo-UtcTime($v) {
+    # ConvertFrom-Json already returns DateTime for ISO-8601; re-parsing its local-format string shifts it by
+    # the UTC offset (6 h here). Strings are parsed invariantly as UTC.
+    if ($null -eq $v -or "$v" -eq '') { return $null }
+    if ($v -is [datetime]) { if ($v.Kind -eq 'Unspecified') { return [DateTime]::SpecifyKind($v, 'Utc') } return $v.ToUniversalTime() }
+    if ($v -is [datetimeoffset]) { return $v.UtcDateTime }
+    return [DateTime]::Parse([string]$v, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]'AdjustToUniversal, AssumeUniversal')
 }
 
 function Get-Stat([object[]]$Values, [string]$Kind) {

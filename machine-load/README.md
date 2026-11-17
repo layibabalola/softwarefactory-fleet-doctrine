@@ -12,7 +12,7 @@ in the reader's output and is never written here.
 | **Files** | `machine-load/<MACHINE>/days-YYYY-MM.jsonl`, append-only; idempotency key (machine, date) |
 | **Push rule** | once per machine per day, after the UTC day closes; a missed day is caught up in the same single commit (law 3) |
 | **What travels** | aggregates only: percentiles, minute counts, a 24-entry hourly profile, core-hours per allowlisted project and per generic bucket, HeavySlot jobs as `project:kind` with duration (kind from an allowlist, else `?`). No process names, command lines, paths, branch names or user names (law 4; the bus is public). |
-| **Validation** | the reader trusts a machine only with a row and a full day no older than 2 days, at least one full day in the window (>= 1,200 of 1,440 minutes that each measured CPU for >= 30 s, counted outside owner quiet windows and scaled for them, never under 360), no duplicated minutes, the same newest sampler build as the other in-use machines, and a successful bus fetch; otherwise ABSENT / STALE / LOW-COVERAGE / DUPLICATED / MIXED-CODE / BUS-NOT-REFRESHED, exit 1, and the verdict is UNKNOWN. |
+| **Validation** | the reader trusts a machine only with a row and a full day no older than 2 days, at least one full day in the window (>= 1,200 of 1,440 minutes that each measured CPU for >= 30 s, counted outside owner quiet windows and scaled for them, never under 360, with memory and disk read in >= 90 % of them), no duplicated minutes or machine-days, no row filed under another machine's directory, the same newest sampler build as the other in-use machines, and a successful bus fetch; otherwise ABSENT / STALE / LOW-COVERAGE / DUPLICATED / MISFILED / MIXED-CODE / BUS-NOT-REFRESHED, exit 1, and the verdict is UNKNOWN. |
 | **CI** | a row push starts `disposition-intake.yml` (its `paths-ignore` covers only `cos-feedback/**` and `heartbeats/**`). Adding `machine-load/**` needs that workflow's epoch amendment: an open follow-up shared with `path-health/**`. |
 
 ## Record shape (`fleet/machine-load-day/v1`, abridged)
@@ -27,8 +27,8 @@ in the reader's output and is never written here.
            "clock_by_load": { "0-4": {"n": 1210, "perf_p50": 183.1}, "12-16": {"n": 40, "perf_p50": 171.0} },
            "counter": "busy threads = Processor(_Total)\\% Processor Time x LP / 100; clock = % Processor Utility / % Processor Time" },
   "power": { "pkg_w_p50": 28.6, "pkg_w_p95": 75.6, "pkg_w_max": 99.4, "min_pkg_ge_70w": 30, "core_c_p95": 90.1, "core_c_max": 94.0, "feed_min": 1438 },
-  "mem": { "avail_gb_p05": 55.2, "avail_gb_min": 51.0, "commit_pct_p95": 40.1, "hard_faults_p95": 120.0 },
-  "disk": { "busy_pct_p95": 6.0, "lat_ms_p95": 1.2, "c_free_gb_min": 1680 },
+  "mem": { "cov_min": 1436, "avail_gb_p05": 55.2, "avail_gb_min": 51.0, "commit_pct_p95": 40.1, "hard_faults_p95": 120.0 },
+  "disk": { "cov_min": 1438, "busy_pct_p95": 6.0, "lat_ms_p95": 1.2, "c_free_gb_min": 1680 },
   "net_mbps_p95": 9.1,
   "hourly_utc": { "cov": [60, "..."], "busy_p95": [3.1, "..."], "busy_max": [9.0, "..."] },
   "cpu_core_h": { "machine": 31.2, "attributed": 29.8, "residual_pct": 4.5,

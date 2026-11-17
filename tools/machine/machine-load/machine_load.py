@@ -13,8 +13,8 @@ Diagnostic only (bus metrics law 1): rows are measurements; the verdict exists o
 What travels to the (public) bus: aggregates, project names from the allowlist in projects.json, and generic
 bucket names. Never process names, command lines, paths or user names.
 
-Exit codes: 0 ok; 1 headroom: a machine is ABSENT, STALE, LOW-COVERAGE, DUPLICATED, MIXED-CODE, LIVE-STALE or
-BUS-NOT-REFRESHED (data you cannot trust is never shown as spare capacity); 2 bad input or unreadable data;
+Exit codes: 0 ok; 1 headroom: a machine is ABSENT, STALE, LOW-COVERAGE, DUPLICATED, MISFILED, MIXED-CODE,
+LIVE-STALE or BUS-NOT-REFRESHED (data you cannot trust is never shown as spare capacity); 2 bad input or unreadable data;
 3 publish failed; 4 publish succeeded but its receipt could not be written.
 """
 from __future__ import annotations
@@ -42,7 +42,8 @@ DATA_DIR = Path(r"C:\ProgramData\MachineLoad\data")     # written by the elevate
 RECEIPT_DIR = DEFAULT_DIR                                # the non-elevated publisher's own receipts
 BANDS = [(0, 4), (4, 8), (8, 12), (12, 16), (16, 20), (20, 24), (24, 28), (28, 33)]
 FULL_DAY = 1440
-FULL_MINUTE_SECS = 66.0     # two writes of one minute summing to more than this overlapped: a duplicate, not a restart split
+FULL_MINUTE_SECS = 75.0     # one minute plus one 10 s sampling interval (a restart's first fragment); more = overlap
+RESOURCE_COVERAGE = 0.90     # a full day also needs memory and disk readings in >= 90 % of its active minutes
 LOW_COVERAGE = 1200          # minutes of a full 1,440; scaled down only for owner quiet windows (see full_day())
 MIN_ACTIVE = 360             # a day needs at least this many non-quiet sampled minutes, whatever its quiet windows
 FRESH_DAYS = 2               # the newest FULL day must be at most this old, or capacity figures are STALE
@@ -107,7 +108,7 @@ def public_kind(kind, allow):
 def read_minutes(data_dir: Path, day: dt.date):
     """Rows for one UTC day, de-duplicated by minute. Returns (rows, duplicate_minutes, unparseable)."""
     path = data_dir / f"minute-{day.isoformat()}.jsonl"
-    by_ts, dups, bad = {}, 0, 0
+    by_ts, sids, dups, bad = {}, {}, 0, 0
     if not path.is_file():
         return [], 0, 0
     with path.open(encoding="utf-8", errors="replace") as fh:
@@ -124,21 +125,30 @@ def read_minutes(data_dir: Path, day: dt.date):
                 bad += 1
                 continue
             prev = by_ts.get(row["ts"])
+            sid = session_of(row)
             if prev is None:
                 by_ts[row["ts"]] = row
+                sids[row["ts"]] = {sid}
                 continue
             # A restart splits one minute between the old and the new sampler run: two different sampler
             # sessions (sid) whose measured seconds add up to at most one minute. Merge those halves. The same
             # session twice is a replay, and more than a minute of measured time means two samplers overlapped:
             # both count as a duplicate and the first write is kept. (Seconds, not sample counts: rows do not
             # say which -IntervalSec wrote them.)
-            same_session = prev.get("sid") is not None and prev.get("sid") == row.get("sid")
-            if same_session or (prev.get("secs") or 0) + (row.get("secs") or 0) > FULL_MINUTE_SECS:
+            # Every session already merged into this minute is remembered, so A, B, then A again is a replay.
+            if sid in sids[row["ts"]] or (prev.get("secs") or 0) + (row.get("secs") or 0) > FULL_MINUTE_SECS:
                 dups += 1
             else:
                 by_ts[row["ts"]] = merge_fragments(prev, row)
+                sids[row["ts"]].add(sid)
     rows = sorted(by_ts.values(), key=lambda x: x["ts"])
     return rows, dups, bad
+
+
+def session_of(row):
+    """The sampler run that wrote a row. Rows from before the sid field (builds up to 0a6ed3d1's parent) count as
+    one legacy session per build, so two sid-less fragments of the same build in one minute are a replay."""
+    return row.get("sid") or f"legacy:{row.get('code')}"
 
 
 def merge_fragments(a, b):
@@ -191,11 +201,16 @@ def merge_value(sect, k, va, vb, wa, wb):
 
 def full_day(row):
     """A day row is a full day when its NON-QUIET sampled minutes cover the day: at least LOW_COVERAGE of 1,440,
-    scaled to the minutes outside owner quiet windows, and never fewer than MIN_ACTIVE. Quiet minutes do not
+    scaled to the minutes outside owner quiet windows, and never fewer than MIN_ACTIVE; and memory and disk were
+    read in at least RESOURCE_COVERAGE of those minutes. Quiet minutes do not
     count: the busy percentiles and memory floors are computed from active minutes only."""
     cov, quiet = row.get("coverage_min", 0) or 0, row.get("quiet_min", 0) or 0
     active = cov - quiet
-    return active >= MIN_ACTIVE and active >= LOW_COVERAGE * (FULL_DAY - quiet) / FULL_DAY
+    if not (active >= MIN_ACTIVE and active >= LOW_COVERAGE * (FULL_DAY - quiet) / FULL_DAY):
+        return False
+    # CPU coverage alone is not enough: a day whose memory or disk readings are mostly missing would otherwise
+    # report its few readings as the machine's spare memory or disk.
+    return all((g(row, sect, "cov_min") or 0) >= RESOURCE_COVERAGE * active for sect in ("mem", "disk"))
 
 
 def valid_minute(row):
@@ -259,13 +274,16 @@ def heavy_jobs(day: dt.date, minutes_by_ts, allow):
                     continue      # the ledger is writable by any user: one bad line must not stop a publish
                 if end.date() != day:
                     continue
+                if end < start or (end - start).total_seconds() > 2 * 86400:
+                    continue      # any user can write the ledger: an impossible span is dropped, never walked or published
                 if True:
                     parts = str(a.get("label", "?:?")).split(":")
                     key = f"{public_label(parts[0], allow)}:{public_kind(parts[1] if len(parts) > 1 else '?', allow)}"
                     o = out[key]
                     o["n"] += 1
                     o["dur"].append((end - start).total_seconds())
-                    t = start.replace(second=0, microsecond=0)
+                    # walk only this UTC day's minutes (bounded at 1,440 whatever the ledger says)
+                    t = max(start, dt.datetime.combine(day, dt.time(), dt.timezone.utc)).replace(second=0, microsecond=0)
                     busy = []
                     while t <= end:
                         m = minutes_by_ts.get(t.strftime("%Y-%m-%dT%H:%M:00Z"))
@@ -353,12 +371,14 @@ def rollup(data_dir: Path, day: dt.date, allow=None):
             "feed_min": sum(1 for x in rows if (g(x, "thermal", "n") or 0) > 0),
         },
         "mem": {
+            "cov_min": sum(1 for x in active if g(x, "mem", "avail_gb_min") is not None),
             "avail_gb_p05": r(pct([g(x, "mem", "avail_gb_min") for x in active], 5), 1),
             "avail_gb_min": r(pct([g(x, "mem", "avail_gb_min") for x in rows], 0.0001), 1),
             "commit_pct_p95": r(pct([g(x, "mem", "commit_pct_max") for x in active], 95), 1),
             "hard_faults_p95": r(pct([g(x, "mem", "hard_faults_mean") for x in active], 95), 1),
         },
         "disk": {
+            "cov_min": sum(1 for x in active if g(x, "disk", "c_free_gb") is not None),
             "busy_pct_p95": r(pct([g(x, "disk", "busy_pct_mean") for x in active], 95), 1),
             "lat_ms_p95": r(pct([g(x, "disk", "lat_ms_max") for x in active], 95), 1),
             "c_free_gb_min": r(pct([g(x, "disk", "c_free_gb") for x in rows], 0.0001), 0),
@@ -399,17 +419,26 @@ def bus_files(bus: Path, ref="refs/remotes/origin/master"):
     return [f for f in p.stdout.splitlines() if f.endswith(".jsonl")]
 
 
-def bus_rows(bus: Path, ref="refs/remotes/origin/master"):
+def bus_rows(bus: Path, ref="refs/remotes/origin/master", misfiled=None):
+    """Day rows on the bus. A row whose machine is not its directory's (single writer per directory) is not
+    that machine's data: it is left out and the directory's machine is added to `misfiled`."""
     rows = []
     for f in bus_files(bus, ref):
+        parts = f.split("/")
+        owner = parts[1].upper() if len(parts) >= 3 else None
         p = git(bus, "show", f"{ref}:{f}")
         for line in p.stdout.splitlines():
             try:
                 row = json.loads(line)
             except ValueError:
                 continue
-            if row.get("schema") == DAY_SCHEMA:
-                rows.append(row)
+            if row.get("schema") != DAY_SCHEMA:
+                continue
+            if owner is not None and str(row.get("machine", "")).upper() != owner:
+                if misfiled is not None:
+                    misfiled.add(owner)
+                continue
+            rows.append(row)
     return rows
 
 
@@ -500,10 +529,13 @@ def publish(bus: Path, data_dir: Path, dry_run=False, retries=5, look_back_days=
 def summarize(data_dir: Path, hours: float):
     now = utc_now()
     since = now - dt.timedelta(hours=hours)
-    rows = []
+    rows, dups = [], 0
     day = since.date()
     while day <= now.date():
-        rows += [x for x in read_minutes(data_dir, day)[0] if parse_ts(x["ts"]) >= since]
+        got, d, _ = read_minutes(data_dir, day)
+        recent = [x for x in got if parse_ts(x["ts"]) >= since]
+        rows += [x for x in recent if valid_minute(x)]   # freshness is judged on usable minutes only
+        dups += d if recent else 0
         day += dt.timedelta(days=1)
     rows.sort(key=lambda x: x["ts"])
     state = {}
@@ -522,7 +554,7 @@ def summarize(data_dir: Path, hours: float):
     busy = [g(x, "cpu", "busy_threads") for x in rows]
     return {
         "machine": socket.gethostname().upper(), "now_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "hours": hours,
-        "minutes": len(rows), "newest_age_s": round((now - newest).total_seconds()) if newest else None,
+        "minutes": len(rows), "duplicate_min": dups, "newest_age_s": round((now - newest).total_seconds()) if newest else None,
         "code": rows[-1].get("code") if rows else None, "sampler_pid": state.get("pid"),
         "busy_threads_now": busy[-1] if busy else None, "busy_threads_p95": r(pct(busy, 95), 1),
         "busy_threads_max": r(pct(busy, 100), 1),
@@ -563,7 +595,8 @@ def clock_onset(rows):
 
 def headroom(bus: Path, days: int, expect, live: bool):
     fetched = git(bus, "fetch", "-q", "origin", "master").returncode == 0
-    rows = bus_rows(bus)
+    misfiled = set()
+    rows = bus_rows(bus, misfiled=misfiled)
     today = utc_now().date()
     window_start = today - dt.timedelta(days=days)
     # --expect names the fleet: a machine that once published but is no longer expected (retired) is left out,
@@ -572,8 +605,15 @@ def headroom(bus: Path, days: int, expect, live: bool):
     newest_code = {}
     out = []
     for m in machines:
-        mine = sorted((x for x in rows if x["machine"] == m), key=lambda x: x["date"])
-        rec = {"machine": m, "states": []}
+        rec = {"machine": m, "states": ["MISFILED"] if m in misfiled else []}
+        mine, seen_dates = [], set()
+        for x in sorted((x for x in rows if x["machine"] == m), key=lambda x: x["date"]):
+            if x["date"] in seen_dates:
+                if "DUPLICATED" not in rec["states"]:
+                    rec["states"].append("DUPLICATED")   # one (machine, date) published twice: never counted twice
+                continue
+            seen_dates.add(x["date"])
+            mine.append(x)
         if not mine:
             rec["states"].append("ABSENT")
             out.append(rec)
@@ -589,7 +629,7 @@ def headroom(bus: Path, days: int, expect, live: bool):
         elif dt.date.fromisoformat(good[-1]["date"]) < today - dt.timedelta(days=FRESH_DAYS) and "STALE" not in rec["states"]:
             # a recent partial day must not vouch for old full days: the capacity figures themselves are stale
             rec["states"].append("STALE")
-        if any(x.get("duplicate_min") for x in win):
+        if any(x.get("duplicate_min") for x in win) and "DUPLICATED" not in rec["states"]:
             rec["states"].append("DUPLICATED")
         if good and "STALE" not in rec["states"]:
             # an upgrade day carries two builds; the newest counts. Only machines whose data is in use compare:
@@ -618,7 +658,8 @@ def headroom(bus: Path, days: int, expect, live: bool):
         threads_spare = max(0.0, safe - busy_p95)
         mem_spare = None if avail is None else max(0.0, avail - MEM_RESERVE_GB)
         disk_spare = None if disk is None else max(0.0, disk - DISK_FLOOR_GB)
-        limits = {"cpu": threads_spare / max(1, safe), "memory": (mem_spare or 0) / 94.0, "disk": (disk_spare or 0) / 2000.0}
+        # tightest = the resource closest to its ROOM threshold (4 threads, 16 GB, 100 GB), whatever the machine's size
+        limits = {"cpu": threads_spare / 4.0, "memory": (mem_spare or 0) / 16.0, "disk": (disk_spare or 0) / 100.0}
         binding = min(limits, key=limits.get)
         if threads_spare >= 4 and (mem_spare or 0) >= 16 and (disk_spare or 0) >= 100:
             verdict = "ROOM"
@@ -628,8 +669,11 @@ def headroom(bus: Path, days: int, expect, live: bool):
             verdict = "FULL"
         quiet_h = []
         for h in range(24):
-            vals = [x["hourly_utc"]["busy_p95"][h] for x in use if x["hourly_utc"]["cov"][h] >= 30 and x["hourly_utc"]["busy_p95"][h] is not None]
-            if vals and max(vals) < lp * QUIET_THREADS_FRACTION:
+            # quiet means quiet on EVERY day used, so every day must have measured that hour (>= 30 minutes)
+            if any(x["hourly_utc"]["cov"][h] < 30 or x["hourly_utc"]["busy_p95"][h] is None for x in use):
+                continue
+            vals = [x["hourly_utc"]["busy_p95"][h] for x in use]
+            if max(vals) < lp * QUIET_THREADS_FRACTION:
                 quiet_h.append(h)
         proj = defaultdict(float)
         for x in use:
@@ -662,9 +706,10 @@ def headroom(bus: Path, days: int, expect, live: bool):
     if live:
         for rec in out:
             rec["live"] = live_summary(rec["machine"])
-            age = (rec["live"] or {}).get("newest_age_s")
-            if age is None or age > 300:
-                rec["states"].append("LIVE-STALE")
+            lv = rec["live"] or {}
+            age = lv.get("newest_age_s")
+            if age is None or age > 300 or lv.get("duplicate_min"):
+                rec["states"].append("LIVE-STALE")   # no usable minute in 5 min, or the live minutes are doubled
     for rec in out:
         if not fetched:
             rec["states"].append("BUS-NOT-REFRESHED")   # rows are whatever the clone last fetched

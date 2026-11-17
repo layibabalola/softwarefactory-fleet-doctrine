@@ -14,8 +14,9 @@
     2. Deletes bin and rebuilds it from nothing, copies the tool and the windowless launcher (hash-pinned below),
        re-locks, and verifies bin holds EXACTLY those files with the source's hashes (no planted .config/DLL).
        Everything the ELEVATED task starts lives there: no user-writable file is on the elevated launch path.
-    3. Registers \Fleet\MachineLoad Sampler (elevated: it reads the CPU time of services and protected
-       processes; at logon + a 5-minute restart net; a running copy holds a mutex) and
+    3. Registers \Fleet\MachineLoad Sampler (as SYSTEM: it reads the CPU time of services and protected
+       processes, and SYSTEM's environment is not user-writable; at boot + a 5-minute restart net; a running
+       copy holds a mutex) and
        \Fleet\MachineLoad Publisher (NOT elevated, daily after the UTC day closes).
     4. Proves the TASK (not this script) writes a fresh row with the code hash of the files just installed.
   -Status: task state, last results, newest row age, last publish receipt. Read-only, no elevation needed.
@@ -146,17 +147,27 @@ if (Get-ScheduledTask -TaskPath $TaskPath -TaskName $SamplerTask -ErrorAction Si
 }
 Stop-Sampler | Out-Null
 
-# Source hashes, taken BEFORE anything is copied: the installed bin must match these exactly.
+# Source hashes, taken BEFORE anything is copied: the installed bin must match these exactly. A dirty checkout
+# is refused, so the bytes installed are the commit the manifest and every published row name.
 $src = $PSScriptRoot
+$dirty = git -C $src status --porcelain -- . 2>$null
+if ($LASTEXITCODE -ne 0) { Write-Host "install refused: $src is not a git checkout (the manifest must name the commit installed)"; exit 2 }
+if ($dirty) { $dirty | ForEach-Object { "DIRTY: $_" }; Write-Host 'install refused: uncommitted changes in the tool folder'; exit 2 }
 $expectedBin = @{}
 foreach ($f in $Files) { $expectedBin[$f] = (Get-FileHash -Algorithm SHA256 (Join-Path $src $f)).Hash.ToLowerInvariant() }
 $expectedBin[$LauncherName] = $LauncherSha256.ToLowerInvariant()
 
-# A pre-planted ROOT junction or symlink is refused outright (icacls would only re-permission the link).
-if ((Test-Path -LiteralPath $Root) -and ((Get-Item -LiteralPath $Root -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-    Write-Host "install refused: $Root is a junction or symlink; remove it by hand after checking who made it"; exit 3
+# A missing root is created with its final protected DACL in one call. An EXISTING root (and everything under
+# it) must already be owned by SYSTEM/Administrators with no other principal able to change permissions, and
+# hold no link: otherwise a handle opened before the lock could undo it, so the install refuses instead of
+# locking in place. (C:\ProgramData lets Users create folders: a pre-planted root is the attack.)
+if (-not (Test-Path -LiteralPath $Root)) {
+    New-ProtectedDirectory -Path $Root
+} else {
+    $pre = @(Test-PreLockTree -Path $Root)
+    if ($pre) { $pre | ForEach-Object { "REFUSED: $_" }; Write-Host "install refused: $Root existed with an untrusted owner, right or link; inspect and remove it by hand"; exit 3 }
 }
-foreach ($d in $Root, $BinDir, $DataDir) { $null = New-Item -ItemType Directory -Force -Path $d }
+foreach ($d in $BinDir, $DataDir) { $null = New-Item -ItemType Directory -Force -Path $d }
 
 # 1. LOCK FIRST, before any code is copied: Administrators own everything, inheritance cut at the root,
 #    every child reset to inherit. From here on no non-admin can add or change anything under $Root.
@@ -165,10 +176,6 @@ function Lock-Tree {
     & icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-32-545:(OI)(CI)RX' /Q | Out-Null
     & icacls.exe "$Root\*" /reset /T /C /Q | Out-Null
 }
-# A junction or link inside the tree is refused before icacls touches anything (icacls /T must not be asked
-# to walk a link); the scan after the lock is the authoritative one, since only then can nothing change it.
-$pre = @(Test-LockedTree $Root | Where-Object { $_ -match '^(reparse point|hard link)' })
-if ($pre) { $pre | ForEach-Object { "REFUSED: $_" }; Write-Host 'install refused: a link was planted in the install tree'; exit 3 }
 Lock-Tree
 # 2. VERIFY the locked tree before trusting it: no junction, symlink or hard link anywhere (an elevated append
 #    through a hard link writes the link's target), no foreign owner or write right, nothing unexpected in data.
@@ -198,16 +205,21 @@ $user = [Security.Principal.WindowsIdentity]::GetCurrent().Name   # USERDOMAIN r
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable `
     -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Hidden
 
-# Sampler: elevated; the GUI-subsystem launcher in the locked bin starts pwsh with no window.
+# Sampler: runs as SYSTEM (it reads the CPU time of services and protected processes). Not as the logged-on
+# user with Highest: that process inherits the user's environment, which any non-elevated process of the user
+# can set (DOTNET_STARTUP_HOOKS, CORECLR_PROFILER_PATH load code into pwsh before the script runs). SYSTEM's
+# environment is admin-only, and SYSTEM runs whether or not anyone is signed in.
 $launcher = Join-Path $BinDir $LauncherName
 $samplerArgs = "--stdout `"$DataDir\sampler.out.log`" --stderr `"$DataDir\sampler.err.log`" --label `"MachineLoad Sampler`" -- `"$Pwsh`" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$BinDir\MachineLoadSampler.ps1`""
 $samplerAction = New-ScheduledTaskAction -Execute $launcher -Argument $samplerArgs
 $net = New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 5)
-$logon = New-ScheduledTaskTrigger -AtLogOn -User $user
-Register-ScheduledTask -TaskPath $TaskPath -TaskName $SamplerTask -Action $samplerAction -Trigger @($logon, $net) `
-    -Principal (New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Highest) -Settings $settings `
-    -Description 'Fleet machine-load sampler (bus tools/machine/machine-load). One row per UTC minute to C:\ProgramData\MachineLoad\data. Diagnostic only.' -Force | Out-Null
-
+$boot = New-ScheduledTaskTrigger -AtStartup
+$samplerPrincipal = New-ScheduledTaskPrincipal -UserId 'S-1-5-18' -LogonType ServiceAccount -RunLevel Highest
+Register-ScheduledTask -TaskPath $TaskPath -TaskName $SamplerTask -Action $samplerAction -Trigger @($boot, $net) `
+    -Principal $samplerPrincipal -Settings $settings `
+    -Description 'Fleet machine-load sampler (bus tools/machine/machine-load), as SYSTEM. One row per UTC minute to C:\ProgramData\MachineLoad\data. Diagnostic only.' -Force | Out-Null
+$regTask = Get-ScheduledTask -TaskPath $TaskPath -TaskName $SamplerTask
+if ($regTask.Principal.UserId -notin 'SYSTEM', 'S-1-5-18', 'NT AUTHORITY\SYSTEM') { Write-Host "install refused: sampler task principal is $($regTask.Principal.UserId), not SYSTEM"; exit 3 }
 # Publisher: NOT elevated; 75-104 min after the UTC day closes, a fixed per-machine offset so the minis do not race.
 $offset = 75 + (($env:COMPUTERNAME.ToCharArray() | ForEach-Object { [int]$_ } | Measure-Object -Sum).Sum % 30)
 $pubAt = [DateTime]::SpecifyKind([DateTime]::UtcNow.Date.AddMinutes($offset), 'Utc').ToLocalTime()
@@ -222,6 +234,11 @@ Register-ScheduledTask -TaskPath $TaskPath -TaskName $PublisherTask -Action $pub
 # Scheduled-task registry entry (machine-local, once).
 if (Test-Path (Split-Path $Registry)) {
     $reg = if (Test-Path $Registry) { Get-Content -Raw $Registry } else { '' }
+    # an entry written by an earlier build described an elevated logged-on-user task: correct it in place
+    if ($reg -match 'one long-lived hidden sampler \(elevated, launched only') {
+        $reg = $reg.Replace('one long-lived hidden sampler (elevated, launched only', 'one long-lived hidden sampler (as SYSTEM, launched only').Replace('logon start plus a 5-minute restart net', 'start at boot plus a 5-minute restart net')
+        [IO.File]::WriteAllText($Registry, $reg)
+    }
     if ($reg -notmatch [regex]::Escape('### \Fleet\MachineLoad Sampler')) {
         Add-Content -Path $Registry -Value @"
 
@@ -229,8 +246,8 @@ if (Test-Path (Split-Path $Registry)) {
 
 ### \Fleet\MachineLoad Sampler
 - **owner:** fleet machine tooling (bus ``tools/machine/machine-load``); machine owner controls retirement
-- **purpose:** one long-lived hidden sampler (elevated, launched only from ACL-locked C:\ProgramData\MachineLoad\bin) writing per-minute CPU, clock, memory, disk and per-project CPU rows to C:\ProgramData\MachineLoad\data.
-- **cadence-rationale:** logon start plus a 5-minute restart net; a running copy holds a mutex, so extra starts exit at once.
+- **purpose:** one long-lived hidden sampler (as SYSTEM, launched only from ACL-locked C:\ProgramData\MachineLoad\bin) writing per-minute CPU, clock, memory, disk and per-project CPU rows to C:\ProgramData\MachineLoad\data.
+- **cadence-rationale:** start at boot plus a 5-minute restart net; a running copy holds a mutex, so extra starts exit at once.
 - **retire-when:** the owner no longer wants machine headroom reporting, or a successor sampler replaces it (Install-MachineLoad.ps1 -Remove).
 
 ### \Fleet\MachineLoad Publisher

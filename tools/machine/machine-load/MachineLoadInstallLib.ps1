@@ -35,6 +35,46 @@ function Test-LockedTree {
     return $bad
 }
 
+function Test-PreLockTree {
+    # Run BEFORE the installer changes any ACL. A handle opened while a non-admin owned an item, or held
+    # WRITE_DAC / WRITE_OWNER / GENERIC_ALL on it, keeps those rights after the lock (ACL changes do not revoke
+    # open handles) and could put a writable DACL back. So: every item must already be owned by $TrustedSids,
+    # no other principal may hold those rights, and nothing may be a link. Empty = safe to lock in place.
+    param([string]$Path, [string[]]$TrustedSids = @('S-1-5-18', 'S-1-5-32-544'))
+    $dacRights = [long](0x40000 -bor 0x80000 -bor 0x10000000)   # WRITE_DAC, WRITE_OWNER, GENERIC_ALL
+    $bad = @()
+    $root = Get-Item -LiteralPath $Path -Force
+    foreach ($item in @($root) + @(Get-ChildItem -LiteralPath $Path -Force -Recurse)) {
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { $bad += "reparse point (junction or symlink) at $($item.FullName)"; continue }
+        if (-not $item.PSIsContainer -and $item.LinkType -eq 'HardLink') { $bad += "hard link at $($item.FullName)"; continue }
+        $acl = Get-Acl -LiteralPath $item.FullName
+        $owner = try { ([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value } catch { "$($acl.Owner)" }
+        if ($owner -notin $TrustedSids) { $bad += "pre-existing owner $($acl.Owner) on $($item.FullName)" }
+        foreach ($ace in $acl.Access) {
+            if ($ace.AccessControlType -ne 'Allow') { continue }
+            $sid = try { $ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { "$($ace.IdentityReference)" }
+            if ($sid -in $TrustedSids -or $sid -eq 'S-1-3-0') { continue }   # CREATOR OWNER resolves to the (trusted) owner
+            if (([long][int]$ace.FileSystemRights -band $dacRights) -ne 0) { $bad += "$($ace.IdentityReference) could change permissions ($($ace.FileSystemRights)) on $($item.FullName)" }
+        }
+    }
+    return $bad
+}
+
+function New-ProtectedDirectory {
+    # Creates $Path with its final protected DACL in the same call (no window in which it inherits
+    # C:\ProgramData's "Users may create" rights). Owner: the elevated caller's default owner (Administrators).
+    param([string]$Path, [string]$ReadSid = 'S-1-5-32-545')
+    $ds = [Security.AccessControl.DirectorySecurity]::new()
+    $ds.SetAccessRuleProtection($true, $false)
+    $inh = [Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit'
+    $none = [Security.AccessControl.PropagationFlags]::None
+    foreach ($s in 'S-1-5-18', 'S-1-5-32-544') {
+        $ds.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]$s, 'FullControl', $inh, $none, 'Allow'))
+    }
+    $ds.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]$ReadSid, 'ReadAndExecute', $inh, $none, 'Allow'))
+    $null = [IO.FileSystemAclExtensions]::Create([IO.DirectoryInfo]::new($Path), $ds)
+}
+
 function Test-InstallContents {
     # bin must hold exactly the files in $Expected (name -> lowercase SHA-256) with those hashes: a planted
     # launcher .config, DLL or extra script would otherwise be loaded by the elevated launcher. data may hold
@@ -61,9 +101,11 @@ function Test-InstallContents {
 }
 
 function Test-SamplerCommandLine {
-    # True only for pwsh 7 itself ($Pwsh) running exactly an installed sampler script, quoted or not (the
-    # b4bc3fe6 build launched it unquoted). Never a match on a process name or a script name alone.
-    param([string]$ExecutablePath, [string]$CommandLine, [string]$Pwsh)
+    # True only for pwsh 7 itself ($Pwsh) running exactly the installed sampler script at $Script, quoted or not
+    # (the b4bc3fe6 build launched it unquoted), as the last argument. Never a match on a process name, a script
+    # name or another copy of the script elsewhere.
+    param([string]$ExecutablePath, [string]$CommandLine, [string]$Pwsh, [string]$Script = 'C:\ProgramData\MachineLoad\bin\MachineLoadSampler.ps1')
     if ($ExecutablePath -ne $Pwsh) { return $false }
-    return "$CommandLine" -match '-File\s+("[A-Za-z]:\\[^"]*\\MachineLoad\\bin\\MachineLoadSampler\.ps1"|[A-Za-z]:\\\S*\\MachineLoad\\bin\\MachineLoadSampler\.ps1)\s*$'
+    $e = [regex]::Escape($Script)
+    return "$CommandLine" -match ("-File\s+(""$e""|$e)\s*$")
 }

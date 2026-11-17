@@ -79,10 +79,50 @@ try {
     $pw = 'C:\Program Files\PowerShell\7\pwsh.exe'
     $args0 = '"C:\Program Files\PowerShell\7\pwsh.exe" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File'
     Check 'quoted sampler matches' (Test-SamplerCommandLine $pw "$args0 `"C:\ProgramData\MachineLoad\bin\MachineLoadSampler.ps1`"" $pw)
+    Check 'copy under a user folder ignored' (-not (Test-SamplerCommandLine $pw "$args0 `"C:\Users\victim\MachineLoad\bin\MachineLoadSampler.ps1`"" $pw))
     Check 'unquoted (b4bc3fe6) sampler matches' (Test-SamplerCommandLine $pw "$args0 C:\ProgramData\MachineLoad\bin\MachineLoadSampler.ps1" $pw)
     Check 'other executable ignored' (-not (Test-SamplerCommandLine 'C:\Users\u\pwsh.exe' "$args0 `"C:\ProgramData\MachineLoad\bin\MachineLoadSampler.ps1`"" $pw))
     Check 'trailing arguments ignored' (-not (Test-SamplerCommandLine $pw "$args0 C:\ProgramData\MachineLoad\bin\MachineLoadSampler.ps1 -RunMinutes 5" $pw))
     Check 'other script ignored' (-not (Test-SamplerCommandLine $pw "$args0 `"C:\ProgramData\MachineLoad\bin\Other.ps1`"" $pw))
+    # 8. pre-lock: an existing tree owned by someone untrusted, or granting WRITE_DAC to someone untrusted, is
+    #    refused before any ACL changes (a handle opened earlier would keep that right)
+    $pl = New-Tree 'prelock'
+    $p = @(Test-PreLockTree -Path $pl -TrustedSids @('S-1-5-18', 'S-1-5-32-544'))   # owner is me: untrusted here
+    Check 'untrusted pre-existing owner refused' (($p -join ';') -match 'pre-existing owner') ($p -join '; ')
+    $p = @(Test-PreLockTree -Path $pl -TrustedSids $trusted)
+    Check 'trusted pre-existing tree accepted' ($p.Count -eq 0) ($p -join '; ')
+    & icacls.exe "$pl\bin" /grant '*S-1-5-32-545:(WDAC)' /Q | Out-Null
+    $p = @(Test-PreLockTree -Path $pl -TrustedSids $trusted)
+    Check 'Users WRITE_DAC refused pre-lock' (($p -join ';') -match 'could change permissions') ($p -join '; ')
+
+    # 9. a protected directory is born with its final DACL (no inherited ProgramData "Users may create")
+    $pd = Join-Path $base 'protected'
+    New-ProtectedDirectory -Path $pd
+    $acl = Get-Acl $pd
+    Check 'protected dir: inheritance cut' $acl.AreAccessRulesProtected
+    $usersWrite = $acl.Access | Where-Object { $_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value -eq 'S-1-5-32-545' -and (([long][int]$_.FileSystemRights -band 0x2) -ne 0) }
+    Check 'protected dir: Users cannot write' ($null -eq $usersWrite)
+
+    # 10. the sampler's FleetQuiet reader, extracted from the script itself, against a real FleetQuiet record shape
+    $ast = [System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PSScriptRoot 'MachineLoadSampler.ps1'), [ref]$null, [ref]$null)
+    foreach ($fn in 'Test-QuietWindow', 'ConvertTo-UtcTime') {
+        $def = $ast.Find({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq $fn }, $true)
+        . ([scriptblock]::Create($def.Extent.Text))
+    }
+    $QuietDir = Join-Path $base 'fq-windows'; $null = New-Item -ItemType Directory -Force -Path $QuietDir
+    $armed = [DateTime]::new(2026, 11, 17, 10, 0, 0, [DateTimeKind]::Utc); $until = $armed.AddHours(1)
+    [ordered]@{ id = 'fq-test'; host = 'X'; armedUtc = $armed.ToString('o'); untilUtc = $until.ToString('o') } | ConvertTo-Json | Set-Content "$QuietDir\fq-test.json"
+    Check 'quiet inside an armed window' (Test-QuietWindow $armed.AddMinutes(30))
+    Check 'not quiet 6 h off (no local-time shift)' (-not (Test-QuietWindow $armed.AddHours(6).AddMinutes(30)))
+    Check 'not quiet after untilUtc' (-not (Test-QuietWindow $until.AddMinutes(1)))
+    Move-Item "$QuietDir\fq-test.json" "$QuietDir\fq-test.released"
+    Check 'released window is not quiet' (-not (Test-QuietWindow $armed.AddMinutes(30)))
+
+    # 11. the sampler task runs as SYSTEM (a logged-on user's environment would load code into elevated pwsh)
+    $inst = Get-Content -Raw (Join-Path $PSScriptRoot 'Install-MachineLoad.ps1')
+    Check 'sampler principal is SYSTEM' ($inst -match "New-ScheduledTaskPrincipal -UserId 'S-1-5-18' -LogonType ServiceAccount -RunLevel Highest")
+    Check 'sampler not registered with a user principal' (-not ($inst -match 'RunLevel Highest\) -Settings'))
+
     # 7. the sampler floors a time with ONE clock read (two UtcNow reads stamped the first minute one early)
     $twice = Select-String -Path (Join-Path $PSScriptRoot 'MachineLoadSampler.ps1') -Pattern 'UtcNow\.Ticks.*UtcNow\.Ticks'
     Check 'no double clock read in a floor' ($null -eq $twice) ($twice | ForEach-Object Line)
