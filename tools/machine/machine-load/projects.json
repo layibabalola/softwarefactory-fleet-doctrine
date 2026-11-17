@@ -1,0 +1,29 @@
+{
+  "schema": "fleet/machine-load-projects/v1",
+  "comment": "Ordered rules: the first pattern (case-insensitive regex) matching a process's command line, image path or current directory names its project; '$1' takes the first capture group. Only names listed in 'publish' leave the machine; any other project label is published as '~other-project'. Buckets label processes that match no project, by image name.",
+  "rules": [
+    { "project": "airmypc", "pattern": "[\\\\/]temp[\\\\/]AirMyPC" },
+    { "project": "agent-bridge", "pattern": "[\\\\/]abwt[\\\\/]" },
+    { "project": "mlv-app", "pattern": "[\\\\/]mlvtmp([\\\\/]|$)" },
+    { "project": "slopbar", "pattern": "[\\\\/]code[\\\\/]slopbar" },
+    { "project": "adobe-ingester", "pattern": "!Layi Wkspc[\\\\/]Adobe Document Cloud Ingester" },
+    { "project": "fleet-doctrine", "pattern": "!Layi Wkspc[\\\\/]softwarefactory-fleet-doctrine" },
+    { "project": "mlv-app", "pattern": "!Layi Wkspc[\\\\/]MLV-App" },
+    { "project": "agent-bridge", "pattern": "!Layi Wkspc[\\\\/]agent-bridge" },
+    { "project": "$1", "pattern": "!Layi Wkspc[\\\\/]([^\\\\/\"]+)" },
+    { "project": "$1", "pattern": "^[A-Za-z]:[\\\\/]code[\\\\/]([^\\\\/\"]+)" }
+  ],
+  "publish": ["airmypc", "agent-bridge", "mlv-app", "slopbar", "adobe-ingester", "fleet-doctrine", "cloudvore", "conjugal", "dng-auto-processor"],
+  "buckets": {
+    "claude": ["claude.exe"],
+    "codex": ["codex.exe"],
+    "dotnet": ["dotnet.exe", "vbcscompiler.exe", "msbuild.exe", "testhost.exe"],
+    "node-python": ["node.exe", "python.exe", "python3.exe", "py.exe", "pythonw.exe"],
+    "shell": ["pwsh.exe", "powershell.exe", "cmd.exe", "conhost.exe", "bash.exe", "git.exe", "ssh.exe", "sshd.exe"],
+    "defender": ["msmpeng.exe", "mpdefendercoreservice.exe", "nissrv.exe", "mpcmdrun.exe", "smartscreen.exe"],
+    "remote-access": ["teamviewer.exe", "teamviewer_desktop.exe", "teamviewer_service.exe", "tailscaled.exe", "tailscale-ipn.exe"],
+    "telemetry": ["core temp.exe", "wscript.exe", "pairprog-hidden-task-launcher.exe"],
+    "desktop-apps": ["chatgpt.exe", "chatgpt classic.exe", "copilotapp.exe", "msedge.exe", "msedgewebview2.exe", "explorer.exe", "dwm.exe", "taskmgr.exe", "searchhost.exe", "startmenuexperiencehost.exe", "textinputhost.exe", "shellexperiencehost.exe", "widgets.exe"],
+    "system": ["svchost.exe", "system", "registry", "csrss.exe", "lsass.exe", "services.exe", "wininit.exe", "winlogon.exe", "wmiprvse.exe", "searchindexer.exe", "spoolsv.exe", "audiodg.exe", "runtimebroker.exe", "taskhostw.exe", "sihost.exe", "fontdrvhost.exe", "dllhost.exe", "memory compression", "secure system", "smss.exe", "tiworker.exe", "trustedinstaller.exe", "msiexec.exe", "compattelrunner.exe"]
+  }
+}
