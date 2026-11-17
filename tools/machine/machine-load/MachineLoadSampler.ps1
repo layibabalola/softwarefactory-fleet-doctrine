@@ -51,7 +51,15 @@ function Write-Log([string]$Message) {
 $mutex = [Threading.Mutex]::new($false, 'Global\MachineLoadSampler')
 $owned = $false
 try { $owned = $mutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $owned = $true }
-if (-not $owned) { Write-Log 'another sampler holds the mutex; exiting 0'; exit 0 }
+if (-not $owned) {
+    # Any account can create a Global mutex: if one that is not SYSTEM/Administrators-owned holds it, say so
+    # (rows then stop and the reader goes STALE; the log names why).
+    # (GetAccessControl is an extension method in .NET 5+: PowerShell needs the static form.)
+    $holder = try { [Threading.ThreadingAclExtensions]::GetAccessControl($mutex).GetOwner([Security.Principal.SecurityIdentifier]).Value } catch { $null }
+    if ($holder -and $holder -notin 'S-1-5-18', 'S-1-5-32-544') { Write-Log "mutex Global\MachineLoadSampler is held by a FOREIGN owner $holder; not sampling" }
+    else { Write-Log 'another sampler holds the mutex; exiting 0' }
+    exit 0
+}
 
 # ---- code identity ----
 $here = $PSScriptRoot

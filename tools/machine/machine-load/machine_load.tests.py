@@ -240,6 +240,15 @@ class Helpers(unittest.TestCase):
         self.assertFalse(ml.full_day(d(1440, 0, mem=1)))     # CPU everywhere, memory read once: not a full day
         self.assertFalse(ml.full_day(d(1440, 0, disk=100)))
 
+    def test_git_never_prompts_and_times_out(self):
+        old = ml.GIT_TIMEOUT_S
+        ml.GIT_TIMEOUT_S = 0.001
+        try:
+            with self.assertRaises(ml.Unavailable):
+                ml.git(HERE, "rev-parse", "HEAD")
+        finally:
+            ml.GIT_TIMEOUT_S = old
+
     def test_parse_iso_seven_digits(self):
         t = ml.parse_iso("2026-11-17T00:04:18.3742500Z")
         self.assertEqual((t.hour, t.minute, t.second, t.tzinfo), (0, 4, 18, dt.timezone.utc))
@@ -251,13 +260,15 @@ class Helpers(unittest.TestCase):
     def test_clock_onset_measured_and_assumed(self):
         def row(bands):
             return {"cpu": {"clock_by_load": {k: {"n": 100, "perf_p50": v} for k, v in bands.items()}}}
-        light, onset, _, _ = ml.clock_onset([row({"0-4": 180, "4-8": 178, "8-12": 170, "12-16": 150})])
-        self.assertEqual(onset, 12)
-        light, onset, seen, _ = ml.clock_onset([row({"0-4": 180, "4-8": 178})])
+        light, onset, _, _, gap = ml.clock_onset([row({"0-4": 180, "4-8": 178, "8-12": 170, "12-16": 150})])
+        self.assertEqual((onset, gap), (12, None))
+        light, onset, seen, _, gap = ml.clock_onset([row({"0-4": 180, "4-8": 178})])
         self.assertIsNone(onset)
         self.assertEqual(seen, 8)
-        light, onset, _, _ = ml.clock_onset([row({"16-20": 140, "28-32": 120})])   # no light-load baseline
+        light, onset, _, _, _ = ml.clock_onset([row({"16-20": 140, "28-32": 120})])   # no light-load baseline
         self.assertIsNone(onset)
+        light, onset, _, _, gap = ml.clock_onset([row({"0-4": 180, "4-8": 175, "12-16": 150})])   # 8-12 unmeasured
+        self.assertEqual((onset, gap), (None, 8))
 
 
 class Headroom(unittest.TestCase):

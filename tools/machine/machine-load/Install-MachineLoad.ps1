@@ -126,6 +126,8 @@ if ($Remove) {
 
 # ---------------- install ----------------
 if (-not (Test-Path $Pwsh)) { Write-Host "pwsh 7 not at $Pwsh"; exit 2 }
+# (This elevated installer runs python and git from the operator's PATH and is itself run from the operator's
+# checkout: the operator is trusted at install time. Only what the SYSTEM task later runs must be admin-only.)
 # Resolve the interpreter python itself reports (sys.executable), so a Python install-manager or
 # Store alias on PATH resolves to the real python.exe, and a Store "install me" stub (which does not
 # run) is refused instead of being written into the task.

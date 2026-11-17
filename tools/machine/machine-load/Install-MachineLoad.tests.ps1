@@ -122,6 +122,28 @@ try {
     Move-Item "$QuietDir\fq-test.json" "$QuietDir\fq-test.released"
     Check 'released window is not quiet' (-not (Test-QuietWindow $armed.AddMinutes(30)))
 
+    # 12. the sampler's Core Temp parser (extracted), in Central time: DST gap and repeated hour skipped, never misplaced
+    function Write-Log([string]$Message) { }
+    $def = $ast.Find({ param($n) $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -eq 'Read-CoreTemp' }, $true)
+    . ([scriptblock]::Create($def.Extent.Text))
+    $script:tz = [TimeZoneInfo]::FindSystemTimeZoneById('Central Standard Time'); $script:tzRead = [DateTime]::UtcNow
+    $CoreTempFeed = Join-Path $base 'coretemp.csv'
+    Set-Content -Path $CoreTempFeed -Value @('17.11.2026,1:59:59.500,x,70,40', '08.03.2026,2:30:0.000,x,71,41', '01.11.2026,1:30:0.000,x,72,42', 'garbage line')
+    $r = Read-CoreTemp ([DateTime]::new(2026, 11, 17, 7, 59, 0, [DateTimeKind]::Utc)) ([DateTime]::new(2026, 11, 17, 8, 0, 0, [DateTimeKind]::Utc))
+    Check 'Core Temp 01:59:59.5 CST lands at 07:59Z' ($r.n -eq 1 -and $r.pkg_w[0] -eq 40) "n=$($r.n)"
+    Check 'Core Temp age is not negative' ($r.age_s -ge 0) "age=$($r.age_s)"
+    $r = Read-CoreTemp ([DateTime]::new(2026, 3, 8, 7, 0, 0, [DateTimeKind]::Utc)) ([DateTime]::new(2026, 3, 8, 10, 0, 0, [DateTimeKind]::Utc))
+    Check 'Core Temp spring-forward gap skipped' ($r.n -eq 0) "n=$($r.n)"
+    $r = Read-CoreTemp ([DateTime]::new(2026, 11, 1, 5, 0, 0, [DateTimeKind]::Utc)) ([DateTime]::new(2026, 11, 1, 9, 0, 0, [DateTimeKind]::Utc))
+    Check 'Core Temp repeated autumn hour skipped' ($r.n -eq 0) "n=$($r.n)"
+
+    # 13. the sampler reads a mutex owner with the static extension form (the instance form does not exist in pwsh 7)
+    $mx = [Threading.Mutex]::new($false, "Local\ml-tests-$PID")
+    try { $own = [Threading.ThreadingAclExtensions]::GetAccessControl($mx).GetOwner([Security.Principal.SecurityIdentifier]).Value } finally { $mx.Dispose() }
+    Check 'mutex owner readable' ($own -eq $me) "owner=$own"
+    $src = Get-Content -Raw (Join-Path $PSScriptRoot 'MachineLoadSampler.ps1')
+    Check 'sampler uses the static mutex ACL call' ($src -match '\[Threading\.ThreadingAclExtensions\]::GetAccessControl\(\$mutex\)')
+
     # 11. the sampler task runs as SYSTEM (a logged-on user's environment would load code into elevated pwsh)
     $inst = Get-Content -Raw (Join-Path $PSScriptRoot 'Install-MachineLoad.ps1')
     Check 'sampler principal is SYSTEM' ($inst -match "New-ScheduledTaskPrincipal -UserId 'S-1-5-18' -LogonType ServiceAccount -RunLevel Highest")

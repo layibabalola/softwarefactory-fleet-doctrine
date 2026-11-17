@@ -47,6 +47,7 @@ RESOURCE_COVERAGE = 0.90     # a full day also needs memory and disk readings in
 LOW_COVERAGE = 1200          # minutes of a full 1,440; scaled down only for owner quiet windows (see full_day())
 MIN_ACTIVE = 360             # a day needs at least this many non-quiet sampled minutes, whatever its quiet windows
 FRESH_DAYS = 2               # the newest FULL day must be at most this old, or capacity figures are STALE
+GIT_TIMEOUT_S = 120           # one git call; five push attempts stay well inside the 15-minute task limit
 RETENTION_DAYS = 14          # the sampler keeps 14 days of minute files; publish considers all of them
 QUIET_THREADS_FRACTION = 0.10  # FleetQuiet WaitQuiet treats CPU < 10 % as quiet
 MEM_RESERVE_GB = 16.0
@@ -437,7 +438,13 @@ def git(cwd, *args, check=False):
     # Repository selectors are stripped: an inherited GIT_DIR/GIT_INDEX_FILE would aim the temp worktree's
     # add/commit at another repository (an inherited GIT_DIR once turned a shared repo bare).
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
-    p = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
+    env["GIT_TERMINAL_PROMPT"] = "0"   # never wait on a credential prompt in a hidden task
+    try:
+        p = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, encoding="utf-8", errors="replace",
+                           env=env, timeout=GIT_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        # inside the task's 15-minute limit, so the failing receipt is still written
+        raise Unavailable(f"git {' '.join(args[:2])}: no answer in {GIT_TIMEOUT_S} s")
     if check and p.returncode != 0:
         raise Unavailable(f"git {' '.join(args)}: {p.stderr.strip()[:300]}")
     return p
@@ -463,8 +470,10 @@ def bus_rows(bus: Path, ref="refs/remotes/origin/master", misfiled=None):
                 row = json.loads(line)
             except ValueError:
                 continue
-            if row.get("schema") != DAY_SCHEMA:
+            if not isinstance(row, dict) or row.get("schema") != DAY_SCHEMA:
                 continue
+            if owner is None or not isinstance(row.get("machine"), str) or "date" not in row:
+                continue      # not filed under machine-load/<MACHINE>/, or missing its key: not any machine's row
             if owner is not None and str(row.get("machine", "")).upper() != owner:
                 if misfiled is not None:
                     misfiled.add(owner)
@@ -602,7 +611,9 @@ def summarize(data_dir: Path, hours: float):
 # ---------------------------------------------------------------- headroom (reader)
 
 def clock_onset(rows):
-    """Combine clock-by-load bands over days. Returns (light_clock, onset_threads|None, max_band_seen, table)."""
+    """Combine clock-by-load bands over days. Returns (light_clock, onset_threads|None, max_band_seen, table,
+    gap_lo|None). Bands are walked in order from 0: an unmeasured band (< 10 minutes) before the first drop is a
+    gap, and gap_lo is its low edge (the onset could be anywhere in it, so nothing above it is claimed)."""
     acc = defaultdict(lambda: [0, 0.0])
     for row in rows:
         for band, v in (g(row, "cpu", "clock_by_load") or {}).items():
@@ -616,12 +627,18 @@ def clock_onset(rows):
         if key in acc and acc[key][0] >= 10:
             table.append((lo, min(hi, 32), acc[key][0], acc[key][1] / acc[key][0]))
     if not table:
-        return None, None, None, table
+        return None, None, None, table, None
     if table[0][0] != 0:
-        return None, None, table[-1][1], table   # no light-load baseline: an onset cannot be claimed as measured
+        return None, None, table[-1][1], table, None   # no light-load baseline: an onset cannot be claimed as measured
     light = table[0][3]
-    onset = next((lo for lo, hi, n, perf in table[1:] if perf < CLOCK_DROP * light), None)
-    return light, onset, table[-1][1], table
+    expected_lo = table[0][1]
+    for lo, hi, n, perf in table[1:]:
+        if lo != expected_lo:
+            return light, None, table[-1][1], table, expected_lo   # a band between was never measured
+        if perf < CLOCK_DROP * light:
+            return light, lo, table[-1][1], table, None
+        expected_lo = hi
+    return light, None, table[-1][1], table, None
 
 
 def headroom(bus: Path, days: int, expect, live: bool):
@@ -681,9 +698,13 @@ def headroom(bus: Path, days: int, expect, live: bool):
         lp = newest.get("lp") or 32
         busy_p95 = max(x["cpu"]["busy_threads_p95"] or 0 for x in use)
         busy_max = max(x["cpu"]["busy_threads_max"] or 0 for x in use)
-        light, onset, seen_max, table = clock_onset(use)
+        light, onset, seen_max, table, gap_lo = clock_onset(use)
         if onset is not None:
             safe, basis = onset, f"clock falls below {int(CLOCK_DROP * 100)} % of its light-load value from {onset} busy threads (measured)"
+        elif gap_lo is not None:
+            safe = min(gap_lo, lp // 2)
+            basis = (f"ASSUMED {safe}: the {gap_lo}-{gap_lo + 4} busy-thread band was never measured, so no onset "
+                     f"above it is claimed")
         else:
             safe = lp // 2
             basis = (f"ASSUMED one busy thread per physical core ({lp // 2}); the clock never fell "
