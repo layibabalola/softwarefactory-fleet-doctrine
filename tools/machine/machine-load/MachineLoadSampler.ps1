@@ -65,9 +65,10 @@ if (-not ('MachineLoadNative' -as [type])) {
 
 # ---- attribution rules ----
 # projects.json: ordered [{ "project": "...", "pattern": "<regex>" }]; a pattern may capture group 1 as the
-# project name. Optional machine-local additions at %LOCALAPPDATA%\MachineLoad\projects.local.json (first).
+# project name. Only the installed (locked, code-hashed) projects.json is read: no machine-local override,
+# so every rule this elevated process applies is in the code identity stamped on its rows.
 $rules = [Collections.Generic.List[object]]::new()
-foreach ($rf in @((Join-Path $OutDir 'projects.local.json'), (Join-Path $here 'projects.json'))) {
+foreach ($rf in @((Join-Path $here 'projects.json'))) {
     if (Test-Path $rf) {
         foreach ($r in (Get-Content -Raw $rf | ConvertFrom-Json).rules) {
             $rules.Add([pscustomobject]@{ Project = [string]$r.project; Regex = [regex]::new([string]$r.pattern, 'IgnoreCase') })
@@ -295,7 +296,8 @@ function Remove-OldFiles {
 # ---- main loop ----
 $self = Get-Process -Id $PID
 $startedUtc = [DateTime]::UtcNow
-Write-Log "start code=$codeHash interval=$IntervalSec lp=$LP"
+$sessionId = $startedUtc.ToString('yyyyMMddHHmmssfff')
+Write-Log "start code=$codeHash sid=$sessionId interval=$IntervalSec lp=$LP"
 $script:imageCpu = @{}
 $prevTick = [DateTime]::UtcNow
 $prevNet = Get-NetBytes
@@ -315,14 +317,18 @@ try {
         Start-Sleep -Milliseconds ([Math]::Max(50, [int]($next - [DateTime]::UtcNow).TotalMilliseconds))
         $tick = [DateTime]::UtcNow
         $elapsed = ($tick - $prevTick).TotalSeconds
+        $thisMinute = [DateTime]::new(($tick.Ticks - ($tick.Ticks % [TimeSpan]::TicksPerMinute)), [DateTimeKind]::Utc)
+        # An interval that started before this minute and ran more than 2 s into it (a late tick) cannot be
+        # placed in one UTC minute (or day): drop it rather than book the new minute's work to the old one.
+        $straddles = $prevTick -lt $thisMinute -and ($tick - $thisMinute).TotalSeconds -gt 2
         $c = Read-Counters
         $net = Get-NetBytes
         $pc = Read-ProcessCpu -PrevTickUtc $prevTick
         $prevTick = $tick
 
-        if ($elapsed -gt 3 * $IntervalSec) {
-            # suspended, slept or stalled: drop the interval rather than smear it across one sample
-            Write-Log ("gap of {0:N0}s; interval discarded" -f $elapsed)
+        if ($elapsed -gt 3 * $IntervalSec -or $straddles) {
+            # suspended, slept, stalled or late across a minute boundary: drop the interval rather than smear it
+            Write-Log ("interval of {0:N0}s discarded ({1})" -f $elapsed, $(if ($straddles) { 'straddles a minute boundary' } else { 'gap' }))
             $prevNet = $net
         } else {
             $acc.samples.Add($c)
@@ -332,7 +338,6 @@ try {
             foreach ($k in $pc.Keys) { $acc.proj[$k] = ($acc.proj[$k] ?? 0) + $pc[$k] }
         }
 
-        $thisMinute = [DateTime]::new(($tick.Ticks - ($tick.Ticks % [TimeSpan]::TicksPerMinute)), [DateTimeKind]::Utc)
         if ($thisMinute -gt $minuteStart) {
             if ($acc.samples.Count -gt 0) {
                 $s = $acc.samples
@@ -349,6 +354,7 @@ try {
                     machine  = $env:COMPUTERNAME
                     ts       = $minuteStart.ToString('yyyy-MM-ddTHH:mm:00Z')
                     code     = $codeHash
+                    sid      = $sessionId   # this sampler run; the reader tells a restart split (two sids) from a replay (one sid)
                     lp       = $LP
                     n        = $s.Count
                     secs     = [Math]::Round($acc.secs, 1)

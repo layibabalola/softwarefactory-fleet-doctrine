@@ -43,7 +43,10 @@ process. Both were dropped after an adversarial review.
 
 ## The headroom answer (reader only; never stored on the bus)
 
-Per machine, over the last `--days` (default 7) **full** days (>= 1,200 minutes sampled):
+Per machine (the `--expect` list, default PC-MINI1..3; `--expect ""` reads every machine on the bus), over the
+last `--days` (default 7) **full** days: at least 1,200 of 1,440 minutes sampled outside owner quiet windows
+(scaled down for quiet minutes, never fewer than 360 active minutes), since the busy figures come from active
+minutes only:
 - **CPU spare** = safe threads (measured clock onset, or ASSUMED 16) minus the worst day's p95 busy threads.
 - **Memory spare** = lowest daily p05 available GB minus a 16 GB reserve. **Disk spare** = lowest C: free minus the
   owner's 50 GB floor.
@@ -54,19 +57,24 @@ Per machine, over the last `--days` (default 7) **full** days (>= 1,200 minutes 
   project rules such as AirMyPC's one-gate-at-a-time. Those can say no while the machine says ROOM.
 
 **Data you cannot trust is never shown as spare capacity.** The reader marks a machine ABSENT (no rows), STALE
-(newest day over 2 days old), LOW-COVERAGE (no full day in the window), DUPLICATED (two samplers wrote the same
-minute), MIXED-CODE (machines run different sampler builds), BUS-NOT-REFRESHED (the fetch failed) or, with
-`--live`, LIVE-STALE (newest minute over 5 min old). **Any of these makes the verdict UNKNOWN** (the computed
-one is kept only as `verdict_untrusted`) and the exit code 1. Exit 2 = the bus could not be read. A minute
-counts as sampled only if it measured CPU over at least 30 s; a minute split by a sampler restart is merged.
+(newest day, or newest FULL day, over 2 days old: a recent partial day never vouches for old full days),
+LOW-COVERAGE (no full day in the window), DUPLICATED (a minute written twice), MIXED-CODE (machines whose data
+is in use run different sampler builds; a stale machine does not count), BUS-NOT-REFRESHED (the fetch failed)
+or, with `--live`, LIVE-STALE (newest minute over 5 min old). **Any of these makes the verdict UNKNOWN** (the
+computed one is kept only as `verdict_untrusted`) and the exit code 1. Exit 2 = the bus could not be read.
+A minute counts as sampled only if it measured CPU over at least 30 s. A minute written in two parts is merged
+only when the parts come from two sampler runs (`sid`) and add up to at most 66 s (a restart); the same run
+twice, or more than a minute of measured time, is DUPLICATED. A merge keeps each extreme (the lower free memory
+and disk, the higher peaks) and weights means by duration. A sample interval that runs more than 2 s past a
+minute boundary is dropped, so no work is booked to the wrong minute or UTC day.
 
 ## On each machine
 
 | Piece | Where | Does |
 |---|---|---|
 | `MachineLoadSampler.ps1` + `MachineLoadNative.cs` + `projects.json` + the windowless launcher (SHA-256 pinned) | `C:\ProgramData\MachineLoad\bin\` | one long-lived hidden pwsh; one row per UTC minute to `C:\ProgramData\MachineLoad\data\minute-<UTC date>.jsonl`; keeps 14 days; mutex `Global\MachineLoadSampler`; exits to be restarted above 400 MB |
-| Task `\Fleet\MachineLoad Sampler` | at logon + every 5 min (restart net; a running copy holds the mutex) | **elevated**, only so it can read the CPU time of services and protected processes (Defender): non-elevated it cannot see ~130 of ~310 processes. Everything it starts is inside `C:\ProgramData\MachineLoad`, which the installer makes Administrators-owned with SYSTEM/Administrators full and Users read-only, then VERIFIES (no non-admin write right, no non-admin owner, anywhere in the tree) or refuses. pwsh is the absolute `Program Files` path and the script pins `PSModulePath`, so no user-writable file is on the elevated path. |
-| Task `\Fleet\MachineLoad Publisher` | daily, 75-105 min after the UTC day closes (staggered per machine) | `machine_load.py publish`, non-elevated: appends every finished, unpublished UTC day to the bus in ONE commit (fast-forward, 5 retries, never forced); receipt `%LOCALAPPDATA%\MachineLoad\publish-receipt(s).json(l)` (written even when it crashes) records exit code, bus HEAD and `launched_by` |
+| Task `\Fleet\MachineLoad Sampler` | at logon + every 5 min (restart net; a running copy holds the mutex) | **elevated**, only so it can read the CPU time of services and protected processes (Defender): non-elevated it cannot see ~130 of ~310 processes. Everything it starts is inside `C:\ProgramData\MachineLoad`. The installer disables the task and stops the sampler, LOCKS the tree before copying any code (Administrators-owned, SYSTEM/Administrators full, Users read-only), VERIFIES it (no junction, symlink or hard link, no non-admin owner or write right, nothing in `data` but the sampler's own file names), deletes and rebuilds `bin`, copies, re-locks, and verifies `bin` holds exactly the source files with the source's hashes; anything else refuses the install. pwsh is the absolute `Program Files` path, the script pins `PSModulePath`, and it reads only the installed `projects.json` (no machine-local override), so no user-writable file is on the elevated path. Open handles a user took on a `data` file before the first lock can still write that file: data integrity only, never code. |
+| Task `\Fleet\MachineLoad Publisher` | daily, 75-104 min after the UTC day closes (a fixed per-machine offset) | `machine_load.py publish`, non-elevated: appends every finished, unpublished UTC day still held on the machine (14 days) to the bus in ONE commit (fast-forward, 5 retries, never forced); receipt `%LOCALAPPDATA%\MachineLoad\publish-receipt(s).json(l)` (written even when it crashes) records exit code, bus HEAD and `launched_by`; a receipt that cannot be written is reported on stderr and exits 4. `-Status` flags a failed last task run, a failing receipt or one over 50 h old. |
 
 The publisher launches through the fleet's per-user windowless shim (`~/.claude/ops/launch-windowless.vbs`,
 from coretemp-fleet), which is fine because it is not elevated; the sampler calls a hash-pinned copy of the
@@ -81,15 +89,29 @@ so growth shows in the data.
 ## What travels to the bus (public repository)
 
 Daily aggregates only (`fleet/machine-load-day/v1`, see `machine-load/README.md`). Project names only from the
-`publish` allowlist in `projects.json`; any other project is `~other-project`. Never process names, command
+`publish` allowlist in `projects.json`; any other project is `~other-project`. HeavySlot job kinds only from
+`publish_kinds`; any other kind is `?`. Never process names, command
 lines, paths or user names; those stay in the local minute files and in `summarize`/`--live` output over ssh.
 
 ## Tests
 
-`python tools/machine/machine-load/machine_load.tests.py`: stdlib only, no network, no elevation. Covers
-de-duplication and UTC-day bounds, nothing private in a day row, quiet minutes excluded, the clock signal,
-restart counting, percentiles, clock-onset measured vs assumed, and the reader: ABSENT, STALE, LOW-COVERAGE
-(UNKNOWN, never ROOM), MIXED-CODE and a FULL machine, on a throwaway git origin.
+`python tools/machine/machine-load/machine_load.tests.py`: stdlib only, no network, no elevation (it also runs
+`Install-MachineLoad.tests.ps1` on Windows with pwsh 7). Covers:
+- **Rollup:** de-duplication and UTC-day bounds; restart-split vs replay vs overlapping samplers; merges that keep
+  the worse memory and disk; coverage rules (quiet minutes, short minutes); nothing private in a day row (project
+  and job-kind allowlists); quiet minutes excluded; the clock signal; restart counting; percentiles; clock onset
+  measured vs assumed.
+- **Reader:** ABSENT, STALE (including an old full day behind a recent partial one), LOW-COVERAGE, DUPLICATED,
+  MIXED-CODE (a stale or retired machine does not void the others), BUS-NOT-REFRESHED, LIVE-STALE, a FULL machine,
+  and exit codes through `main()`.
+- **Publish:** missing days, a day 12 days back, idempotency, a rejected push retried, failing and unwritable receipts.
+- **Installer** (`Install-MachineLoad.tests.ps1`): a correct read-only tree passes; a Users write right, a junction
+  (inside or as the root), a hard link, a planted `.config` or data file, a hash mismatch and a missing file are
+  refused; the sampler matcher takes only pwsh 7 running exactly the installed script.
+
+Not unit-tested: the sampler's live CPU-delta and PID-reuse accounting and the Core Temp parse run only inside
+the elevated sampler; the install proof (the task must write a fresh row with the installed code hash) is their
+end-to-end check.
 
 ## Open (not done here)
 

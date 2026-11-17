@@ -78,6 +78,29 @@ class Rollup(unittest.TestCase):
         self.assertAlmostEqual(row["cpu_core_h"]["machine"] * 3600, 4.0 * 60 + 10.0 * 60, delta=20)  # CPU adds (core-hours carry 2 decimals)
         self.assertEqual(row["code"], ["new"])
 
+    def test_replay_of_one_session_is_a_duplicate(self):
+        a = minute("2026-11-10T00:05:00Z"); a["n"] = 2; a["secs"] = 20; a["sid"] = "s1"
+        b = dict(a)                                            # the same fragment written twice
+        write_day(self.tmp, self.day, [a, b])
+        rows, dups, bad = ml.read_minutes(self.tmp, self.day)    # 20 + 20 s would pass as a restart split by time alone
+        self.assertEqual((len(rows), dups, rows[0]["secs"]), (1, 1, 20))
+
+    def test_overlap_at_a_slow_interval_is_a_duplicate(self):
+        # -IntervalSec 20: two samplers each write n=3 over a full minute; counts look like a restart split
+        a = minute("2026-11-10T00:05:00Z"); a["n"] = 3; a["sid"] = "s1"
+        b = minute("2026-11-10T00:05:00Z"); b["n"] = 3; b["sid"] = "s2"
+        write_day(self.tmp, self.day, [a, b])
+        self.assertEqual(ml.rollup(self.tmp, self.day, allow=set())["duplicate_min"], 1)
+
+    def test_merge_keeps_the_worse_memory_and_disk(self):
+        a = minute("2026-11-10T00:05:00Z", avail=1.0, free=20.0); a["n"] = 1; a["secs"] = 10; a["sid"] = "old"
+        a["mem"]["commit_pct_max"] = 95; a["thermal"]["pkg_w_max"] = 74
+        b = minute("2026-11-10T00:05:00Z", avail=60.0, free=1500.0); b["n"] = 5; b["secs"] = 50; b["sid"] = "new"
+        m = ml.merge_fragments(a, b)
+        self.assertEqual((m["mem"]["avail_gb_min"], m["disk"]["c_free_gb"]), (1.0, 20.0))
+        self.assertEqual((m["mem"]["commit_pct_max"], m["thermal"]["pkg_w_max"], m["thermal"]["n"]), (95, 74, 60))
+        self.assertEqual(m["secs"], 60)
+
     def test_concurrent_samplers_counted(self):
         a = minute("2026-11-10T00:05:00Z"); b = minute("2026-11-10T00:05:00Z")
         write_day(self.tmp, self.day, [a, b])
@@ -101,9 +124,10 @@ class Rollup(unittest.TestCase):
         self.assertEqual(ml.public_label("~dotnet", allow), "~dotnet")
         self.assertEqual(ml.public_label("~secret-client", allow), "~other-project")
         self.assertEqual(ml.public_label("airmypc", allow), "airmypc")
-        self.assertEqual(ml.public_kind("gate"), "gate")
-        self.assertEqual(ml.public_kind("fix-acme-bug-branch-long"), "?")
-        self.assertEqual(ml.public_kind("/Users/layib/secret"), "?")
+        self.assertEqual(ml.public_kind("gate", allow), "gate")
+        self.assertEqual(ml.public_kind("secret-client", allow), "?")   # tidy syntax is not membership
+        self.assertEqual(ml.public_kind("fix-acme-bug-branch-long", allow), "?")
+        self.assertEqual(ml.public_kind("/Users/layib/secret", allow), "?")
 
     def test_heavy_ledger_bad_lines_and_privacy(self):
         led = self.tmp / "ledger.jsonl"
@@ -113,16 +137,19 @@ class Rollup(unittest.TestCase):
             json.dumps({"at": "2026-11-10T01:00:00.1234567Z", "event": "admit", "ticket": "t1", "label": "airmypc:gate:wi/secret-branch"}),
             json.dumps({"at": "2026-11-10T01:06:00Z", "event": "exit", "ticket": "t1"}),
             json.dumps({"at": "2026-11-10T02:00:00Z", "event": "admit", "ticket": "t2", "label": "clientx:C:/Users/layib/x"}),
-            json.dumps({"at": "2026-11-10T02:01:00Z", "event": "exit", "ticket": "t2"})]) + "\n")
+            json.dumps({"at": "2026-11-10T02:01:00Z", "event": "exit", "ticket": "t2"}),
+            json.dumps({"at": "2026-11-10T03:00:00Z", "event": "admit", "ticket": "t3", "label": "airmypc:acmecorp"}),
+            json.dumps({"at": "2026-11-10T03:01:00Z", "event": "exit", "ticket": "t3"})]) + "\n")
         old = ml.HEAVYSLOT_LEDGER
         ml.HEAVYSLOT_LEDGER = led
         try:
             jobs = ml.heavy_jobs(self.day, {}, ml.load_projects())
         finally:
             ml.HEAVYSLOT_LEDGER = old
-        self.assertEqual(set(jobs), {"airmypc:gate", "~other-project:?"})
+        self.assertEqual(set(jobs), {"airmypc:gate", "~other-project:?", "airmypc:?"})
         self.assertEqual(jobs["airmypc:gate"]["dur_s_p50"], 360)
         self.assertNotIn("secret", json.dumps(jobs))
+        self.assertNotIn("acmecorp", json.dumps(jobs))
 
     def test_nothing_private_travels(self):
         rows = full_day(self.day, proj={"secret-client-repo": 100, "airmypc": 50, "~claude": 10})
@@ -156,6 +183,12 @@ class Rollup(unittest.TestCase):
 
 
 class Helpers(unittest.TestCase):
+    def test_full_day_excludes_quiet_minutes(self):
+        self.assertFalse(ml.full_day({"coverage_min": 1440, "quiet_min": 1300}))   # 140 active minutes
+        self.assertTrue(ml.full_day({"coverage_min": 1440, "quiet_min": 300}))
+        self.assertTrue(ml.full_day({"coverage_min": 1200, "quiet_min": 0}))
+        self.assertFalse(ml.full_day({"coverage_min": 1199, "quiet_min": 0}))
+
     def test_parse_iso_seven_digits(self):
         t = ml.parse_iso("2026-11-17T00:04:18.3742500Z")
         self.assertEqual((t.hour, t.minute, t.second, t.tzinfo), (0, 4, 18, dt.timezone.utc))
@@ -225,7 +258,7 @@ class Headroom(unittest.TestCase):
         self.add_days("GOOD", recent)
         self.add_days("STALEBOX", [self.today - dt.timedelta(days=5)])
         self.add_days("PARTIAL", recent, coverage=600)
-        recs = self.recs(expect=["ABSENTBOX"])
+        recs = self.recs(expect=["GOOD", "STALEBOX", "PARTIAL", "ABSENTBOX"])
         self.assertEqual(recs["GOOD"]["states"], [])
         self.assertEqual(recs["GOOD"]["verdict"], "ROOM")
         self.assertIn("ABSENT", recs["ABSENTBOX"]["states"])
@@ -245,6 +278,70 @@ class Headroom(unittest.TestCase):
         self.assertEqual(recs["BUSY"]["verdict"], "UNKNOWN")
         self.assertIn("MIXED-CODE", recs["BUSY"]["states"])
         self.assertIn("ASSUMED", recs["BUSY"]["safe_basis"])
+
+    def test_old_full_day_with_recent_partial_is_stale(self):
+        self.add_days("BOX", [self.today - dt.timedelta(days=6)])
+        self.add_days("BOX", [self.today - dt.timedelta(days=1)], coverage=1)
+        rec = self.recs(expect=["BOX"])["BOX"]
+        self.assertIn("STALE", rec["states"])
+        self.assertEqual(rec["verdict"], "UNKNOWN")
+
+    def test_stale_or_retired_machine_does_not_void_others(self):
+        self.add_days("NEW", [self.today - dt.timedelta(days=1)], code="v2")
+        self.add_days("OLDBOX", [self.today - dt.timedelta(days=5)], code="v1")
+        self.add_days("RETIRED", [self.today - dt.timedelta(days=1)], code="v0")
+        recs = self.recs(expect=["NEW", "OLDBOX"])
+        self.assertNotIn("RETIRED", recs)                        # not expected: not read, cannot hold exit 1
+        self.assertEqual((recs["NEW"]["states"], recs["NEW"]["verdict"]), ([], "ROOM"))
+        self.assertIn("STALE", recs["OLDBOX"]["states"])
+        self.assertNotIn("MIXED-CODE", recs["OLDBOX"]["states"])
+
+    def test_duplicated_and_bus_not_refreshed_void_and_exit_1(self):
+        day = self.today - dt.timedelta(days=1)
+        data = self.tmp / "dup"
+        rows = full_day(day, machine="DUP")
+        write_day(data, day, rows + rows[:3])
+        row = ml.rollup(data, day, allow={"airmypc"})
+        p = self.bus / ml.BUS_DIR / "DUP" / "days-x.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(row) + "\n")
+        run("git", "add", ".", cwd=self.bus); run("git", "commit", "-qm", "dup", cwd=self.bus); run("git", "push", "-q", "origin", "HEAD:master", cwd=self.bus)
+        rec = self.recs(expect=["DUP"])["DUP"]
+        self.assertIn("DUPLICATED", rec["states"])
+        self.assertEqual((rec["verdict"], rec["verdict_untrusted"]), ("UNKNOWN", "ROOM"))
+        run("git", "remote", "set-url", "origin", str(self.tmp / "gone.git"), cwd=self.bus)
+        rec = self.recs(expect=["DUP"])["DUP"]
+        self.assertIn("BUS-NOT-REFRESHED", rec["states"])
+        old = os.environ.copy()
+        os.environ.clear(); os.environ.update(CLEAN_ENV)
+        try:
+            self.assertEqual(ml.main(["headroom", "--bus", str(self.bus), "--expect", "DUP", "--json"]), 1)
+        finally:
+            os.environ.clear(); os.environ.update(old)
+
+    def test_live_stale_when_this_machine_has_no_rows(self):
+        me = ml.socket.gethostname().upper()
+        self.add_days(me, [self.today - dt.timedelta(days=1)])
+        old_dir = ml.DATA_DIR
+        ml.DATA_DIR = self.tmp / "empty-live"
+        old = os.environ.copy()
+        os.environ.clear(); os.environ.update(CLEAN_ENV)
+        try:
+            rec = {r["machine"]: r for r in ml.headroom(self.bus, 7, [me], live=True)}[me]
+        finally:
+            ml.DATA_DIR = old_dir
+            os.environ.clear(); os.environ.update(old)
+        self.assertIn("LIVE-STALE", rec["states"])
+        self.assertEqual(rec["verdict"], "UNKNOWN")
+
+    def test_clean_fleet_exits_0(self):
+        self.add_days("ONE", [self.today - dt.timedelta(days=1)])
+        old = os.environ.copy()
+        os.environ.clear(); os.environ.update(CLEAN_ENV)
+        try:
+            self.assertEqual(ml.main(["headroom", "--bus", str(self.bus), "--expect", "ONE", "--json"]), 0)
+        finally:
+            os.environ.clear(); os.environ.update(old)
 
     def test_busy_machine_alone_is_full(self):
         self.add_days("BUSY", [self.today - dt.timedelta(days=1)], busy_fn=lambda i: 20.0)
@@ -290,6 +387,27 @@ class Publish(unittest.TestCase):
         rec = json.loads((self.receipts / "publish-receipt.json").read_text())
         self.assertEqual((rec["exit"], rec["launched_by"]), (0, "hand"))
 
+    def test_old_retained_day_is_published_after_a_long_outage(self):
+        old = ml.utc_now().date() - dt.timedelta(days=12)
+        write_day(self.data, old, full_day(old, machine=ml.socket.gethostname().upper()))
+        self.assertEqual(ml.main(["publish", "--bus", str(self.bus), "--dir", str(self.data), "--receipt-dir", str(self.receipts)]), 0)
+        self.assertEqual(sorted(r["date"] for r in ml.bus_rows(self.bus)), [old.isoformat(), self.yesterday.isoformat()])
+
+    def test_rejected_push_is_retried(self):
+        hook = self.origin / "hooks" / "pre-receive"
+        hook.write_text("#!/bin/sh\nif [ ! -f rejected-once ]; then touch rejected-once; echo no >&2; exit 1; fi\nexit 0\n", newline="\n")
+        os.chmod(hook, 0o755)
+        code, report, head = ml.publish(self.bus, self.data)
+        self.assertEqual(code, 0)
+        self.assertTrue(any("rejected" in line for line in report), report)
+        self.assertEqual([r["date"] for r in ml.bus_rows(self.bus)], [self.yesterday.isoformat()])
+
+    def test_unwritable_receipt_is_reported_not_silent(self):
+        blocker = self.tmp / "blocker"
+        blocker.write_text("a file where the receipt folder should be")
+        code = ml.main(["publish", "--bus", str(self.bus), "--dir", str(self.data), "--receipt-dir", str(blocker / "r")])
+        self.assertEqual(code, 4)
+
     def test_failure_writes_a_failing_receipt(self):
         (self.receipts).mkdir(parents=True)
         (self.receipts / "publish-receipt.json").write_text(json.dumps({"exit": 0}))
@@ -298,6 +416,16 @@ class Publish(unittest.TestCase):
         self.assertEqual(code, 3)
         rec = json.loads((self.receipts / "publish-receipt.json").read_text())
         self.assertEqual((rec["exit"], rec["launched_by"]), (3, "task"))
+
+
+class InstallerChecks(unittest.TestCase):
+    """Runs Install-MachineLoad.tests.ps1 (junctions, hard links, ACLs, planted files, the sampler matcher)."""
+
+    @unittest.skipUnless(os.name == "nt" and shutil.which("pwsh"), "Windows with pwsh 7 only")
+    def test_installer_checks(self):
+        p = subprocess.run(["pwsh", "-NoProfile", "-File", str(HERE / "Install-MachineLoad.tests.ps1")],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
 
 
 if __name__ == "__main__":

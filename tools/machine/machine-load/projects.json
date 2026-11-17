@@ -13,6 +13,8 @@
     { "project": "$1", "pattern": "!Layi Wkspc[\\\\/]([^\\\\/\"]+)" },
     { "project": "$1", "pattern": "^[A-Za-z]:[\\\\/]code[\\\\/]([^\\\\/\"]+)" }
   ],
+  "publish_kinds_comment": "HeavySlot job kinds that may travel; any other kind is published as '?' (a tidy kind can still be a client, branch or user name).",
+  "publish_kinds": ["gate", "build", "test", "soak", "bench", "review", "impl", "lane", "publish", "render", "other"],
   "publish": ["airmypc", "agent-bridge", "mlv-app", "slopbar", "adobe-ingester", "fleet-doctrine", "cloudvore", "conjugal", "dng-auto-processor"],
   "buckets": {
     "claude": ["claude.exe"],

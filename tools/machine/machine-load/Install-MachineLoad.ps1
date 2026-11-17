@@ -5,13 +5,15 @@
 
 .DESCRIPTION
   -Install (default, ELEVATED; an ssh session on a mini is elevated):
-    1. Builds C:\ProgramData\MachineLoad\{bin,data}, owned by Administrators, with SYSTEM and Administrators
-       full and Users read-only (inheritance cut at the root, every child reset). It then VERIFIES the result:
-       no account other than SYSTEM or Administrators may write anywhere under it, and the owner of every item
-       is SYSTEM or Administrators. Anything else refuses the install. (C:\ProgramData lets Users create
-       folders, so a pre-planted folder or file is the attack this check exists for.)
-    2. Copies the tool and the windowless launcher (hash-pinned below) into bin. Everything the ELEVATED task
-       starts lives there: no user-writable file is on the elevated launch path.
+    0. Disables the sampler task and stops the running sampler, so nothing restarts old code mid-install.
+    1. LOCKS C:\ProgramData\MachineLoad\{bin,data} before copying any code: owned by Administrators, SYSTEM and
+       Administrators full, Users read-only (inheritance cut at the root, every child reset). It then VERIFIES:
+       no junction, symlink or hard link anywhere, no owner or write right outside SYSTEM/Administrators, and
+       nothing in data but the sampler's own file names. Anything else refuses the install. (C:\ProgramData lets
+       Users create folders, so a pre-planted folder, junction, link or file is the attack this exists for.)
+    2. Deletes bin and rebuilds it from nothing, copies the tool and the windowless launcher (hash-pinned below),
+       re-locks, and verifies bin holds EXACTLY those files with the source's hashes (no planted .config/DLL).
+       Everything the ELEVATED task starts lives there: no user-writable file is on the elevated launch path.
     3. Registers \Fleet\MachineLoad Sampler (elevated: it reads the CPU time of services and protected
        processes; at logon + a 5-minute restart net; a running copy holds a mutex) and
        \Fleet\MachineLoad Publisher (NOT elevated, daily after the UTC day closes).
@@ -61,12 +63,11 @@ function Get-NewestRow {
     if (-not $line) { return $null }
     return $line | ConvertFrom-Json
 }
+. (Join-Path $PSScriptRoot 'MachineLoadInstallLib.ps1')   # Test-LockedTree, Test-InstallContents, Test-SamplerCommandLine
 function Stop-Sampler {
-    # by pid, verified by command line; never by name pattern alone
-    # only pwsh 7 itself, running exactly an installed sampler script (this or the earlier per-user bin)
+    # by pid, verified by executable and exact command line; never by name pattern alone
     foreach ($w in @(Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" -ErrorAction SilentlyContinue)) {
-        if ($w.ExecutablePath -eq $Pwsh -and "$($w.CommandLine)" -match '-File\s+("[A-Za-z]:\\[^"]*\\MachineLoad\\bin\\MachineLoadSampler\.ps1"|[A-Za-z]:\\\S*\\MachineLoad\\bin\\MachineLoadSampler\.ps1)\s*$') {
-            # quoted or not: the b4bc3fe6 build launched it unquoted, and missing it left the old sampler holding the mutex
+        if (Test-SamplerCommandLine -ExecutablePath $w.ExecutablePath -CommandLine $w.CommandLine -Pwsh $Pwsh) {
             Stop-Process -Id $w.ProcessId -Force -ErrorAction SilentlyContinue; "stopped sampler pid $($w.ProcessId)"
         }
     }
@@ -77,28 +78,6 @@ function Get-CodeHash([string]$Dir) {
     $sha = [Security.Cryptography.SHA256]::Create()
     ([BitConverter]::ToString($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes(($hashes -join ','))))).Replace('-', '').Substring(0, 12).ToLowerInvariant()
 }
-function Test-LockedTree([string]$Path) {
-    # returns a list of problems; empty = only SYSTEM/Administrators can change anything under $Path
-    $bad = @()
-    # Atomic write bits only: the composite names (Write, Modify, FullControl) also carry read and
-    # Synchronize bits, so OR-ing them in flagged a correct read-only ACE as writable.
-    # WriteData/CreateFiles 0x2, AppendData 0x4, WriteEA 0x10, DeleteChild 0x40, WriteAttributes 0x100,
-    # Delete 0x10000, WRITE_DAC 0x40000, WRITE_OWNER 0x80000, GENERIC_ALL 0x10000000, GENERIC_WRITE 0x40000000.
-    $writeRights = 0x2 -bor 0x4 -bor 0x10 -bor 0x40 -bor 0x100 -bor 0x10000 -bor 0x40000 -bor 0x80000 -bor 0x10000000 -bor 0x40000000
-    foreach ($item in @(Get-Item -Force $Path) + @(Get-ChildItem -Force -Recurse $Path)) {
-        $acl = Get-Acl -LiteralPath $item.FullName
-        $owner = ([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value
-        if ($owner -notin $AdminSids) { $bad += "owner $($acl.Owner) on $($item.FullName)" }
-        foreach ($ace in $acl.Access) {
-            if ($ace.AccessControlType -ne 'Allow') { continue }
-            $sid = try { $ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { "$($ace.IdentityReference)" }
-            if ($sid -in $AdminSids) { continue }
-            if (([long][int]$ace.FileSystemRights -band [long]$writeRights) -ne 0) { $bad += "$($ace.IdentityReference) can write ($($ace.FileSystemRights)) on $($item.FullName)" }
-        }
-    }
-    return $bad
-}
-
 if ($Status) {
     $bad = @()
     foreach ($n in $SamplerTask, $PublisherTask) {
@@ -106,6 +85,9 @@ if ($Status) {
         if (-not $t) { $bad += "task missing: $n"; continue }
         $i = $t | Get-ScheduledTaskInfo
         '{0,-24} state={1} last={2:u} result=0x{3:X} next={4:u}' -f $n, $t.State, $i.LastRunTime, $i.LastTaskResult, $i.NextRunTime
+        if ($t.State -eq 'Disabled') { $bad += "task disabled: $n" }
+        # 0 ok, 0x41301 running, 0x41303 not yet run; anything else is a failed last run
+        if ($i.LastTaskResult -notin 0, 0x41301, 0x41303) { $bad += ("{0} last run failed: 0x{1:X}" -f $n, $i.LastTaskResult) }
     }
     $row = Get-NewestRow
     if (-not $row) { $bad += 'no minute rows' } else {
@@ -114,7 +96,14 @@ if ($Status) {
         if ($age -gt 180) { $bad += "newest row is ${age}s old (STALE)" }
     }
     $rc = Join-Path $UserDir 'publish-receipt.json'
-    if (Test-Path $rc) { 'last publish: ' + ((Get-Content -Raw $rc | ConvertFrom-Json) | ConvertTo-Json -Compress) } else { 'last publish: none yet' }
+    if (Test-Path $rc) {
+        $r = Get-Content -Raw $rc | ConvertFrom-Json
+        'last publish: ' + ($r | ConvertTo-Json -Compress)
+        if ($r.exit -ne 0) { $bad += "last publish exited $($r.exit)" }
+        # the publisher runs daily; a receipt over 50 h old means at least one daily run left none
+        $rage = ([DateTime]::UtcNow - [datetime]::Parse($r.utc).ToUniversalTime()).TotalHours
+        if ($rage -gt 50) { $bad += ("last publish receipt is {0:N0} h old" -f $rage) }
+    } else { 'last publish: none yet' }
     $bad | ForEach-Object { "PROBLEM: $_" }
     exit ([int]($bad.Count -gt 0))
 }
@@ -145,33 +134,59 @@ if (-not (Test-Path $UserVbs)) { Write-Host "windowless shim missing: $UserVbs (
 $launcherSrc = $LauncherSources | Where-Object { (Test-Path $_) -and (Get-FileHash -Algorithm SHA256 $_).Hash -eq $LauncherSha256 } | Select-Object -First 1
 if (-not $launcherSrc) { Write-Host "no $LauncherName matching the pinned SHA-256 $LauncherSha256"; exit 2 }
 
+# Nothing may restart the old code while it is replaced: disable the task first, then stop the running sampler.
+if (Get-ScheduledTask -TaskPath $TaskPath -TaskName $SamplerTask -ErrorAction SilentlyContinue) {
+    Disable-ScheduledTask -TaskPath $TaskPath -TaskName $SamplerTask | Out-Null
+}
 Stop-Sampler | Out-Null
-foreach ($d in $Root, $BinDir, $DataDir, $UserDir) { $null = New-Item -ItemType Directory -Force -Path $d }
 
-# Older installs wrote minute rows to %LOCALAPPDATA%\MachineLoad: carry them over (data only, never code).
-foreach ($f in Get-ChildItem $UserDir -Filter 'minute-*.jsonl' -File -ErrorAction SilentlyContinue) {
-    $dest = Join-Path $DataDir $f.Name
-    if (Test-Path $dest) { Add-Content -Path $dest -Value (Get-Content -Raw $f.FullName).TrimEnd("`n") } else { Copy-Item $f.FullName $dest }
-    Remove-Item -Force $f.FullName
-}
-
+# Source hashes, taken BEFORE anything is copied: the installed bin must match these exactly.
 $src = $PSScriptRoot
-$manifest = [ordered]@{ installed_utc = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'); bus_commit = (git -C $src rev-parse HEAD 2>$null); files = [ordered]@{} }
-foreach ($f in $Files) {
-    Copy-Item -Force (Join-Path $src $f) (Join-Path $BinDir $f)
-    $manifest.files[$f] = (Get-FileHash -Algorithm SHA256 (Join-Path $BinDir $f)).Hash.ToLowerInvariant()
-}
-Copy-Item -Force $launcherSrc (Join-Path $BinDir $LauncherName)
-$manifest.files[$LauncherName] = $LauncherSha256.ToLowerInvariant()
-$manifest | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $BinDir 'manifest.json')
+$expectedBin = @{}
+foreach ($f in $Files) { $expectedBin[$f] = (Get-FileHash -Algorithm SHA256 (Join-Path $src $f)).Hash.ToLowerInvariant() }
+$expectedBin[$LauncherName] = $LauncherSha256.ToLowerInvariant()
 
-# Lock the tree: Administrators own everything, inheritance cut at the root, every child reset to inherit.
-& icacls.exe $Root /setowner '*S-1-5-32-544' /T /C /Q | Out-Null
-& icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-32-545:(OI)(CI)RX' /Q | Out-Null
-& icacls.exe "$Root\*" /reset /T /C /Q | Out-Null
-$aclProblems = Test-LockedTree $Root
-if ($aclProblems) { $aclProblems | ForEach-Object { "REFUSED: $_" }; Write-Host 'install refused: the install tree is writable by a non-admin'; exit 3 }
-if ((Get-FileHash -Algorithm SHA256 (Join-Path $BinDir $LauncherName)).Hash -ne $LauncherSha256) { Write-Host 'launcher hash changed after copy'; exit 3 }
+# A pre-planted ROOT junction or symlink is refused outright (icacls would only re-permission the link).
+if ((Test-Path -LiteralPath $Root) -and ((Get-Item -LiteralPath $Root -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+    Write-Host "install refused: $Root is a junction or symlink; remove it by hand after checking who made it"; exit 3
+}
+foreach ($d in $Root, $BinDir, $DataDir) { $null = New-Item -ItemType Directory -Force -Path $d }
+
+# 1. LOCK FIRST, before any code is copied: Administrators own everything, inheritance cut at the root,
+#    every child reset to inherit. From here on no non-admin can add or change anything under $Root.
+function Lock-Tree {
+    & icacls.exe $Root /setowner '*S-1-5-32-544' /T /C /Q | Out-Null
+    & icacls.exe $Root /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)F' '*S-1-5-32-544:(OI)(CI)F' '*S-1-5-32-545:(OI)(CI)RX' /Q | Out-Null
+    & icacls.exe "$Root\*" /reset /T /C /Q | Out-Null
+}
+# A junction or link inside the tree is refused before icacls touches anything (icacls /T must not be asked
+# to walk a link); the scan after the lock is the authoritative one, since only then can nothing change it.
+$pre = @(Test-LockedTree $Root | Where-Object { $_ -match '^(reparse point|hard link)' })
+if ($pre) { $pre | ForEach-Object { "REFUSED: $_" }; Write-Host 'install refused: a link was planted in the install tree'; exit 3 }
+Lock-Tree
+# 2. VERIFY the locked tree before trusting it: no junction, symlink or hard link anywhere (an elevated append
+#    through a hard link writes the link's target), no foreign owner or write right, nothing unexpected in data.
+$problems = @(Test-LockedTree $Root) + @(Test-InstallContents -BinDir $BinDir -DataDir $DataDir -Expected @{} | Where-Object { $_ -notmatch '^unexpected file in bin|^unexpected folder in bin' })
+if ($problems) { $problems | ForEach-Object { "REFUSED: $_" }; Write-Host 'install refused: the existing tree holds something a non-admin may have planted'; exit 3 }
+
+# 3. bin is rebuilt from nothing (a planted .config, DLL or file with an open handle never survives), then filled.
+Remove-Item -LiteralPath $BinDir -Recurse -Force
+$null = New-Item -ItemType Directory -Path $BinDir
+foreach ($f in $Files) { Copy-Item -Force (Join-Path $src $f) (Join-Path $BinDir $f) }
+Copy-Item -Force $launcherSrc (Join-Path $BinDir $LauncherName)
+$manifest = [ordered]@{ installed_utc = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ'); bus_commit = (git -C $src rev-parse HEAD 2>$null); files = [ordered]@{} }
+foreach ($k in $expectedBin.Keys | Sort-Object) { $manifest.files[$k] = $expectedBin[$k] }
+$manifest | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $BinDir 'manifest.json')
+$expectedBin['manifest.json'] = (Get-FileHash -Algorithm SHA256 (Join-Path $BinDir 'manifest.json')).Hash.ToLowerInvariant()
+
+# The publisher's receipts and logs live in the user's own folder (it runs NOT elevated). Nothing is ever copied
+# FROM there by this elevated script: a user-made symlink there could otherwise land an admin-only file in data.
+$null = New-Item -ItemType Directory -Force -Path $UserDir
+
+# 4. Re-lock and re-verify everything, including that bin holds exactly the source's bytes.
+Lock-Tree
+$problems = @(Test-LockedTree $Root) + @(Test-InstallContents -BinDir $BinDir -DataDir $DataDir -Expected $expectedBin)
+if ($problems) { $problems | ForEach-Object { "REFUSED: $_" }; Write-Host 'install refused after copy: the installed tree is not exactly the locked source'; exit 3 }
 
 $user = [Security.Principal.WindowsIdentity]::GetCurrent().Name   # USERDOMAIN reads WORKGROUP in an ssh session
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable `
