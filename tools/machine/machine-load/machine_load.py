@@ -37,6 +37,9 @@ BUS_DIR = "machine-load"
 HERE = Path(__file__).resolve().parent
 DEFAULT_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "MachineLoad"
 HEAVYSLOT_LEDGER = Path(r"C:\ProgramData\HeavySlot\ledger.jsonl")
+DATA_DIR = Path(r"C:\ProgramData\MachineLoad\data")     # written by the elevated sampler; ACL-locked, readable by Users
+RECEIPT_DIR = DEFAULT_DIR                                # the non-elevated publisher's own receipts
+KIND_RE = __import__("re").compile(r"^[a-z][a-z0-9-]{0,15}$")
 BANDS = [(0, 4), (4, 8), (8, 12), (12, 16), (16, 20), (20, 24), (24, 28), (28, 33)]
 FULL_DAY = 1440
 FULL_MINUTE_SAMPLES = 6     # 10 s sampling
@@ -72,14 +75,22 @@ def utc_now():
 
 
 def load_projects():
+    """The publish allowlist, plus the generic bucket names a '~' label may carry."""
     cfg = json.loads((HERE / "projects.json").read_text(encoding="utf-8"))
-    return set(cfg.get("publish", []))
+    allow = set(cfg.get("publish", []))
+    allow |= {"~" + b for b in cfg.get("buckets", {})} | {"~other", "~other-project", "~machine-load"}
+    return allow
 
 
 def public_label(label, allow):
-    if label.startswith("~"):
-        return label
+    """Only allowlisted project names and known bucket names travel; anything else is '~other-project'.
+    A '~' prefix alone is not trusted: a folder named '~client' captured by a '$1' rule must not leak."""
     return label if label in allow else "~other-project"
+
+
+
+def public_kind(kind):
+    return kind if KIND_RE.match(kind or "") else "?"
 
 
 def read_minutes(data_dir: Path, day: dt.date):
@@ -87,7 +98,7 @@ def read_minutes(data_dir: Path, day: dt.date):
     path = data_dir / f"minute-{day.isoformat()}.jsonl"
     by_ts, dups, bad = {}, 0, 0
     if not path.is_file():
-        return rows, 0, 0
+        return [], 0, 0
     with path.open(encoding="utf-8", errors="replace") as fh:
         for line in fh:
             line = line.strip()
@@ -106,13 +117,45 @@ def read_minutes(data_dir: Path, day: dt.date):
                 by_ts[row["ts"]] = row
                 continue
             # A restart splits one minute between the old and the new sampler (their sample counts add up to
-            # about one minute's worth). Two samplers running at once each write a near-full minute.
+            # about one minute's worth): merge the halves. Two samplers running at once each write a
+            # near-full minute: count a duplicate and keep the first.
             if (prev.get("n") or 0) + (row.get("n") or 0) > FULL_MINUTE_SAMPLES + 1:
                 dups += 1
-            if (row.get("n") or 0) > (prev.get("n") or 0):
-                by_ts[row["ts"]] = row
+            else:
+                by_ts[row["ts"]] = merge_fragments(prev, row)
     rows = sorted(by_ts.values(), key=lambda x: x["ts"])
     return rows, dups, bad
+
+
+def merge_fragments(a, b):
+    """One minute written in two parts by a restarting sampler: CPU-seconds add, means weight by duration,
+    extremes take the extreme, and the later fragment's identity (code) wins."""
+    wa, wb = (a.get("secs") or 0.0), (b.get("secs") or 0.0)
+    w = wa + wb or 1.0
+    m = json.loads(json.dumps(b if wb >= wa else a))
+    m["n"] = (a.get("n") or 0) + (b.get("n") or 0)
+    m["secs"] = round(wa + wb, 1)
+    m["code"] = b.get("code") or a.get("code")
+    for k in ("time_pct_mean", "busy_threads", "util_pct_mean", "perf_pct_mean"):
+        va, vb = g(a, "cpu", k), g(b, "cpu", k)
+        if va is not None and vb is not None:
+            m["cpu"][k] = round((va * wa + vb * wb) / w, 3)
+    for k in ("machine", "attributed", "residual"):
+        va, vb = g(a, "cpu_s", k), g(b, "cpu_s", k)
+        if va is not None or vb is not None:
+            m["cpu_s"][k] = round((va or 0) + (vb or 0), 2)
+    proj = defaultdict(float)
+    for part in (a, b):
+        for label, secs in (part.get("proj") or {}).items():
+            proj[label] += secs
+    m["proj"] = dict(proj)
+    m["merged"] = True
+    return m
+
+
+def valid_minute(row):
+    """A minute counts as sampled only if it measured CPU over at least half a minute."""
+    return g(row, "cpu", "busy_threads") is not None and (row.get("secs") or 0) >= 30
 
 
 def g(row, *keys):
@@ -157,18 +200,23 @@ def heavy_jobs(day: dt.date, minutes_by_ts, allow):
             for line in fh:
                 try:
                     ev = json.loads(line)
-                except ValueError:
-                    continue
-                if ev.get("event") == "admit":
-                    admits[ev.get("ticket")] = ev
-                elif ev.get("event") == "exit" and ev.get("ticket") in admits:
-                    a = admits.pop(ev["ticket"])
-                    end = parse_iso(ev["at"])
-                    if end.date() != day:
+                    if not isinstance(ev, dict):
                         continue
-                    start = parse_iso(a["at"])
+                    if ev.get("event") == "admit":
+                        admits[ev.get("ticket")] = ev
+                        continue
+                    if ev.get("event") != "exit" or ev.get("ticket") not in admits:
+                        continue
+                    a = admits.pop(ev["ticket"])
+                    end = parse_iso(str(ev["at"]))
+                    start = parse_iso(str(a["at"]))
+                except (ValueError, KeyError, TypeError):
+                    continue      # the ledger is writable by any user: one bad line must not stop a publish
+                if end.date() != day:
+                    continue
+                if True:
                     parts = str(a.get("label", "?:?")).split(":")
-                    key = f"{public_label(parts[0], allow)}:{parts[1] if len(parts) > 1 else '?'}"
+                    key = f"{public_label(parts[0], allow)}:{public_kind(parts[1] if len(parts) > 1 else '?')}"
                     o = out[key]
                     o["n"] += 1
                     o["dur"].append((end - start).total_seconds())
@@ -195,6 +243,9 @@ def rollup(data_dir: Path, day: dt.date, allow=None):
     if not rows:
         return None
     by_ts = {x["ts"]: x for x in rows}
+    rows = [x for x in rows if valid_minute(x)]
+    if not rows:
+        return None
     active = [x for x in rows if not x.get("quiet")]
     lp = rows[-1].get("lp") or 32
 
@@ -234,7 +285,7 @@ def rollup(data_dir: Path, day: dt.date, allow=None):
         "schema": DAY_SCHEMA,
         "machine": rows[-1]["machine"].upper(),
         "date": day.isoformat(),
-        "code": sorted({x.get("code") for x in rows if x.get("code")}),
+        "code": list(dict.fromkeys(x.get("code") for x in rows if x.get("code"))),   # first-seen order; last = newest build
         "lp": lp,
         "coverage_min": len(rows),
         "quiet_min": len(rows) - len(active),
@@ -287,7 +338,10 @@ def rollup(data_dir: Path, day: dt.date, allow=None):
 # ---------------------------------------------------------------- git / bus
 
 def git(cwd, *args, check=False):
-    p = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    # Repository selectors are stripped: an inherited GIT_DIR/GIT_INDEX_FILE would aim the temp worktree's
+    # add/commit at another repository (an inherited GIT_DIR once turned a shared repo bare).
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    p = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, encoding="utf-8", errors="replace", env=env)
     if check and p.returncode != 0:
         raise Unavailable(f"git {' '.join(args)}: {p.stderr.strip()[:300]}")
     return p
@@ -314,6 +368,17 @@ def bus_rows(bus: Path, ref="refs/remotes/origin/master"):
     return rows
 
 
+def tool_commit():
+    """The bus commit this copy was installed from (bin/manifest.json), else the checkout's HEAD."""
+    try:
+        c = json.loads((HERE / "manifest.json").read_text(encoding="utf-8-sig")).get("bus_commit")
+        if c:
+            return str(c)[:12]
+    except (OSError, ValueError):
+        pass
+    return git(HERE, "rev-parse", "HEAD").stdout.strip()[:12] or None
+
+
 def publish(bus: Path, data_dir: Path, dry_run=False, retries=5, look_back_days=10):
     machine = socket.gethostname().upper()
     allow = load_projects()
@@ -335,7 +400,7 @@ def publish(bus: Path, data_dir: Path, dry_run=False, retries=5, look_back_days=
                 if row:
                     row["machine"] = machine
                     row["published_utc"] = utc_now().strftime("%Y-%m-%dT%H:%M:%SZ")
-                    row["tool_commit"] = git(HERE, "rev-parse", "HEAD").stdout.strip()[:12] or None
+                    row["tool_commit"] = tool_commit()
                     rows.append(row)
             if not rows:
                 report.append(f"[machine-load] {machine}: nothing new to publish (bus {base[:12]})")
@@ -383,8 +448,10 @@ def summarize(data_dir: Path, hours: float):
     now = utc_now()
     since = now - dt.timedelta(hours=hours)
     rows = []
-    for day in {since.date(), now.date()}:
+    day = since.date()
+    while day <= now.date():
         rows += [x for x in read_minutes(data_dir, day)[0] if parse_ts(x["ts"]) >= since]
+        day += dt.timedelta(days=1)
     rows.sort(key=lambda x: x["ts"])
     state = {}
     try:
@@ -434,13 +501,15 @@ def clock_onset(rows):
             table.append((lo, min(hi, 32), acc[key][0], acc[key][1] / acc[key][0]))
     if not table:
         return None, None, None, table
+    if table[0][0] != 0:
+        return None, None, table[-1][1], table   # no light-load baseline: an onset cannot be claimed as measured
     light = table[0][3]
     onset = next((lo for lo, hi, n, perf in table[1:] if perf < CLOCK_DROP * light), None)
     return light, onset, table[-1][1], table
 
 
 def headroom(bus: Path, days: int, expect, live: bool):
-    git(bus, "fetch", "-q", "origin", "master")
+    fetched = git(bus, "fetch", "-q", "origin", "master").returncode == 0
     rows = bus_rows(bus)
     today = utc_now().date()
     window_start = today - dt.timedelta(days=days)
@@ -464,7 +533,7 @@ def headroom(bus: Path, days: int, expect, live: bool):
             rec["states"].append("LOW-COVERAGE")
         if any(x.get("duplicate_min") for x in win):
             rec["states"].append("DUPLICATED")
-        newest_code[m] = tuple(newest.get("code") or [])
+        newest_code[m] = (newest.get("code") or [None])[-1]   # an upgrade day carries two builds; the newest counts
         rec["days_used"] = len(good)
         rec["days_low_coverage"] = len(win) - len(good)
         use = good
@@ -535,13 +604,20 @@ def headroom(bus: Path, days: int, expect, live: bool):
             age = (rec["live"] or {}).get("newest_age_s")
             if age is None or age > 300:
                 rec["states"].append("LIVE-STALE")
+    for rec in out:
+        if not fetched:
+            rec["states"].append("BUS-NOT-REFRESHED")   # rows are whatever the clone last fetched
+        if rec["states"] and rec.get("verdict") not in (None, "UNKNOWN"):
+            # Any doubt about the data voids the verdict: stale or doubled data must never read as spare capacity.
+            rec["verdict_untrusted"] = rec["verdict"]
+            rec["verdict"] = "UNKNOWN"
     return out
 
 
 def live_summary(machine):
     me = socket.gethostname().upper()
     if machine == me:
-        return summarize(DEFAULT_DIR, 1.0)
+        return summarize(DATA_DIR, 1.0)
     alias = SSH_ALIAS.get(machine, machine.lower())
     cmd = ["ssh", "-n", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", alias,
            r"python C:\ProgramData\MachineLoad\bin\machine_load.py summarize --hours 1"]
@@ -569,10 +645,13 @@ def print_report(recs, days):
     for rec in recs:
         states = " ".join(rec["states"]) or "OK"
         print(f"== {rec['machine']}  [{states}]")
-        if rec.get("verdict", "UNKNOWN") == "UNKNOWN":
+        if rec.get("verdict", "UNKNOWN") == "UNKNOWN" and "verdict_untrusted" not in rec:
             print("   VERDICT UNKNOWN - no full day of data in the window; never shown as spare capacity\n")
             continue
-        print(f"   VERDICT {rec['verdict']} (tightest: {rec['binding']}); {rec['days_used']} full day(s), {rec['days_low_coverage']} partial")
+        if "verdict_untrusted" in rec:
+            print(f"   VERDICT UNKNOWN - the data is {', '.join(rec['states'])}; the figures below are NOT a capacity answer")
+        if rec["verdict"] != "UNKNOWN":
+            print(f"   VERDICT {rec['verdict']} (tightest: {rec['binding']}); {rec['days_used']} full day(s), {rec['days_low_coverage']} partial")
         print(f"   CPU     p95 {rec['busy_threads_p95']} / max {rec['busy_threads_max']} busy threads of {rec['lp']}; "
               f"safe up to {rec['safe_threads']} -> {rec['threads_spare']} threads spare at the busiest 5 % of minutes")
         print(f"           basis: {rec['safe_basis']}")
@@ -612,10 +691,10 @@ def write_receipt(data_dir: Path, rec):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    a = sub.add_parser("rollup"); a.add_argument("--day", required=True); a.add_argument("--dir", type=Path, default=DEFAULT_DIR)
-    a = sub.add_parser("publish"); a.add_argument("--bus", type=Path, required=True); a.add_argument("--dir", type=Path, default=DEFAULT_DIR); a.add_argument("--dry-run", action="store_true")
+    a = sub.add_parser("rollup"); a.add_argument("--day", required=True); a.add_argument("--dir", type=Path, default=DATA_DIR)
+    a = sub.add_parser("publish"); a.add_argument("--bus", type=Path, required=True); a.add_argument("--dir", type=Path, default=DATA_DIR); a.add_argument("--dry-run", action="store_true"); a.add_argument("--receipt-dir", type=Path, default=RECEIPT_DIR)
     a.add_argument("--launched-by", choices=["task", "hand"], default="hand")
-    a = sub.add_parser("summarize"); a.add_argument("--hours", type=float, default=1.0); a.add_argument("--dir", type=Path, default=DEFAULT_DIR)
+    a = sub.add_parser("summarize"); a.add_argument("--hours", type=float, default=1.0); a.add_argument("--dir", type=Path, default=DATA_DIR)
     a = sub.add_parser("headroom"); a.add_argument("--bus", type=Path, required=True); a.add_argument("--days", type=int, default=7)
     a.add_argument("--live", action="store_true"); a.add_argument("--json", action="store_true")
     a.add_argument("--expect", default="PC-MINI1,PC-MINI2,PC-MINI3")
@@ -638,10 +717,12 @@ def main(argv=None):
             code, report, head = publish(args.bus, args.dir, args.dry_run)
         except Unavailable as e:
             code, report, head = 3, [f"[machine-load] FAILED: {e}"], None
+        except Exception as e:  # any crash still leaves a failing receipt, never an older exit-0 one as the last word
+            code, report, head = 3, [f"[machine-load] CRASHED: {type(e).__name__}: {e}"], None
         for line in report:
             print(line)
         if not args.dry_run:
-            write_receipt(args.dir, {"utc": started, "machine": socket.gethostname().upper(), "launched_by": launched_by,
+            write_receipt(args.receipt_dir, {"utc": started, "machine": socket.gethostname().upper(), "launched_by": launched_by,
                                      "exit": code, "bus_head": head, "report": report})
         return code
     if args.cmd == "headroom":

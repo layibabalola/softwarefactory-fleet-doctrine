@@ -68,13 +68,61 @@ class Rollup(unittest.TestCase):
         self.assertEqual(row["duplicate_min"], 5)
         self.assertEqual(row["unparseable_rows"], 1)
 
-    def test_restart_overlap_is_not_a_duplicate(self):
-        a = minute("2026-11-10T00:05:00Z"); a["n"] = 2
-        b = minute("2026-11-10T00:05:00Z", busy=9.0); b["n"] = 4
+    def test_restart_fragments_merge(self):
+        a = minute("2026-11-10T00:05:00Z", busy=4.0, code="old"); a["n"] = 2; a["secs"] = 20
+        b = minute("2026-11-10T00:05:00Z", busy=10.0, code="new"); b["n"] = 4; b["secs"] = 40
         write_day(self.tmp, self.day, [a, b])
         row = ml.rollup(self.tmp, self.day, allow=set())
         self.assertEqual((row["coverage_min"], row["duplicate_min"]), (1, 0))
-        self.assertEqual(row["cpu"]["busy_threads_max"], 9.0)   # the fuller half is kept
+        self.assertAlmostEqual(row["cpu"]["busy_threads_max"], 8.0, delta=0.05)   # duration-weighted
+        self.assertAlmostEqual(row["cpu_core_h"]["machine"] * 3600, 4.0 * 60 + 10.0 * 60, delta=20)  # CPU adds (core-hours carry 2 decimals)
+        self.assertEqual(row["code"], ["new"])
+
+    def test_concurrent_samplers_counted(self):
+        a = minute("2026-11-10T00:05:00Z"); b = minute("2026-11-10T00:05:00Z")
+        write_day(self.tmp, self.day, [a, b])
+        self.assertEqual(ml.rollup(self.tmp, self.day, allow=set())["duplicate_min"], 1)
+
+    def test_minutes_without_cpu_are_not_coverage(self):
+        rows = full_day(self.day)
+        for x in rows[:600]:
+            x["cpu"]["busy_threads"] = None
+        for x in rows[600:900]:
+            x["secs"] = 10
+        write_day(self.tmp, self.day, rows)
+        self.assertEqual(ml.rollup(self.tmp, self.day, allow=set())["coverage_min"], 540)
+
+    def test_missing_day_is_none_not_a_crash(self):
+        self.assertIsNone(ml.rollup(self.tmp, self.day, allow=set()))
+        self.assertEqual(ml.read_minutes(self.tmp, self.day), ([], 0, 0))
+
+    def test_tilde_labels_and_heavy_kinds_are_allowlisted(self):
+        allow = ml.load_projects()
+        self.assertEqual(ml.public_label("~dotnet", allow), "~dotnet")
+        self.assertEqual(ml.public_label("~secret-client", allow), "~other-project")
+        self.assertEqual(ml.public_label("airmypc", allow), "airmypc")
+        self.assertEqual(ml.public_kind("gate"), "gate")
+        self.assertEqual(ml.public_kind("fix-acme-bug-branch-long"), "?")
+        self.assertEqual(ml.public_kind("/Users/layib/secret"), "?")
+
+    def test_heavy_ledger_bad_lines_and_privacy(self):
+        led = self.tmp / "ledger.jsonl"
+        led.write_text("\n".join([
+            "{not json", json.dumps({"event": "exit", "ticket": "zz"}), json.dumps({"event": "admit", "ticket": "t0"}),
+            json.dumps({"event": "exit", "ticket": "t0"}),
+            json.dumps({"at": "2026-11-10T01:00:00.1234567Z", "event": "admit", "ticket": "t1", "label": "airmypc:gate:wi/secret-branch"}),
+            json.dumps({"at": "2026-11-10T01:06:00Z", "event": "exit", "ticket": "t1"}),
+            json.dumps({"at": "2026-11-10T02:00:00Z", "event": "admit", "ticket": "t2", "label": "clientx:C:/Users/layib/x"}),
+            json.dumps({"at": "2026-11-10T02:01:00Z", "event": "exit", "ticket": "t2"})]) + "\n")
+        old = ml.HEAVYSLOT_LEDGER
+        ml.HEAVYSLOT_LEDGER = led
+        try:
+            jobs = ml.heavy_jobs(self.day, {}, ml.load_projects())
+        finally:
+            ml.HEAVYSLOT_LEDGER = old
+        self.assertEqual(set(jobs), {"airmypc:gate", "~other-project:?"})
+        self.assertEqual(jobs["airmypc:gate"]["dur_s_p50"], 360)
+        self.assertNotIn("secret", json.dumps(jobs))
 
     def test_nothing_private_travels(self):
         rows = full_day(self.day, proj={"secret-client-repo": 100, "airmypc": 50, "~claude": 10})
@@ -124,6 +172,8 @@ class Helpers(unittest.TestCase):
         light, onset, seen, _ = ml.clock_onset([row({"0-4": 180, "4-8": 178})])
         self.assertIsNone(onset)
         self.assertEqual(seen, 8)
+        light, onset, _, _ = ml.clock_onset([row({"16-20": 140, "28-32": 120})])   # no light-load baseline
+        self.assertIsNone(onset)
 
 
 class Headroom(unittest.TestCase):
@@ -181,6 +231,8 @@ class Headroom(unittest.TestCase):
         self.assertIn("ABSENT", recs["ABSENTBOX"]["states"])
         self.assertNotIn("verdict", recs["ABSENTBOX"])
         self.assertIn("STALE", recs["STALEBOX"]["states"])
+        self.assertEqual(recs["STALEBOX"]["verdict"], "UNKNOWN")          # stale data never reads as capacity
+        self.assertEqual(recs["STALEBOX"]["verdict_untrusted"], "ROOM")
         self.assertIn("LOW-COVERAGE", recs["PARTIAL"]["states"])
         self.assertEqual(recs["PARTIAL"]["verdict"], "UNKNOWN")
 
@@ -189,9 +241,63 @@ class Headroom(unittest.TestCase):
         self.add_days("BUSY", recent, busy_fn=lambda i: 20.0)
         self.add_days("OTHER", recent, code="zzz")
         recs = self.recs()
-        self.assertEqual(recs["BUSY"]["verdict"], "FULL")
+        self.assertEqual(recs["BUSY"]["verdict_untrusted"], "FULL")
+        self.assertEqual(recs["BUSY"]["verdict"], "UNKNOWN")
         self.assertIn("MIXED-CODE", recs["BUSY"]["states"])
         self.assertIn("ASSUMED", recs["BUSY"]["safe_basis"])
+
+    def test_busy_machine_alone_is_full(self):
+        self.add_days("BUSY", [self.today - dt.timedelta(days=1)], busy_fn=lambda i: 20.0)
+        rec = self.recs()["BUSY"]
+        self.assertEqual((rec["states"], rec["verdict"]), ([], "FULL"))
+
+
+class Publish(unittest.TestCase):
+    """publish() against a throwaway origin: missing days, idempotency, receipts."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.origin = self.tmp / "origin.git"
+        self.bus = self.tmp / "bus"
+        run("git", "init", "-q", "--bare", "-b", "master", str(self.origin), cwd=self.tmp)
+        run("git", "clone", "-q", str(self.origin), str(self.bus), cwd=self.tmp)
+        run("git", "config", "user.email", "t@t", cwd=self.bus)
+        run("git", "config", "user.name", "t", cwd=self.bus)
+        (self.bus / "README.md").write_text("x")
+        run("git", "add", ".", cwd=self.bus)
+        run("git", "commit", "-qm", "init", cwd=self.bus)
+        run("git", "push", "-q", "origin", "HEAD:master", cwd=self.bus)
+        self.data = self.tmp / "data"
+        self.receipts = self.tmp / "receipts"
+        self.yesterday = ml.utc_now().date() - dt.timedelta(days=1)
+        write_day(self.data, self.yesterday, full_day(self.yesterday, machine=ml.socket.gethostname().upper()))
+        self.env = os.environ.copy()
+        os.environ.clear(); os.environ.update(CLEAN_ENV)
+
+    def tearDown(self):
+        os.environ.clear(); os.environ.update(self.env)
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_publishes_once_with_gaps_and_is_idempotent(self):
+        code = ml.main(["publish", "--bus", str(self.bus), "--dir", str(self.data), "--receipt-dir", str(self.receipts)])
+        self.assertEqual(code, 0)
+        rows = ml.bus_rows(self.bus)
+        self.assertEqual([r["date"] for r in rows], [self.yesterday.isoformat()])   # nine missing days skipped, no crash
+        self.assertNotIn("SecretProcessName", json.dumps(rows))
+        code = ml.main(["publish", "--bus", str(self.bus), "--dir", str(self.data), "--receipt-dir", str(self.receipts)])
+        self.assertEqual(code, 0)
+        self.assertEqual(len(ml.bus_rows(self.bus)), 1)
+        rec = json.loads((self.receipts / "publish-receipt.json").read_text())
+        self.assertEqual((rec["exit"], rec["launched_by"]), (0, "hand"))
+
+    def test_failure_writes_a_failing_receipt(self):
+        (self.receipts).mkdir(parents=True)
+        (self.receipts / "publish-receipt.json").write_text(json.dumps({"exit": 0}))
+        code = ml.main(["publish", "--bus", str(self.tmp / "no-such-clone"), "--dir", str(self.data),
+                        "--receipt-dir", str(self.receipts), "--launched-by", "task"])
+        self.assertEqual(code, 3)
+        rec = json.loads((self.receipts / "publish-receipt.json").read_text())
+        self.assertEqual((rec["exit"], rec["launched_by"]), (3, "task"))
 
 
 if __name__ == "__main__":

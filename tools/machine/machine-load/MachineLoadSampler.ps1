@@ -2,7 +2,7 @@
 <#
 .SYNOPSIS
   Fleet machine-load sampler: one long-lived, low-cost process per machine that writes one JSON row per
-  UTC minute to %LOCALAPPDATA%\MachineLoad\minute-<UTC date>.jsonl.
+  UTC minute to C:\ProgramData\MachineLoad\data\minute-<UTC date>.jsonl.
 
 .DESCRIPTION
   Every -IntervalSec seconds it reads Windows performance counters (CPU time, effective clock, memory,
@@ -21,7 +21,7 @@
 [CmdletBinding()]
 param(
     [int]$IntervalSec = 10,
-    [string]$OutDir = (Join-Path $env:LOCALAPPDATA 'MachineLoad'),
+    [string]$OutDir = 'C:\ProgramData\MachineLoad\data',   # ACL-locked; this sampler runs elevated
     [int]$RetainDays = 14,
     [string]$CoreTempFeed = 'C:\temp\hwinfo-log-adapter.csv',
     [string]$QuietDir = 'C:\ProgramData\FleetQuiet\windows',
@@ -29,6 +29,8 @@ param(
     [int]$RunMinutes = 0          # 0 = run until stopped; >0 for tests
 )
 
+# This script runs ELEVATED: autoload modules only from machine paths, never from the user's writable module folder.
+$env:PSModulePath = @("$PSHOME\Modules", "$env:ProgramFiles\PowerShell\Modules", "$env:windir\System32\WindowsPowerShell\v1.0\Modules") -join ';'
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3.0
 $SchemaMinute = 'fleet/machine-load-minute/v1'
@@ -134,12 +136,16 @@ $lastCpu = @{}     # key -> TotalProcessorTime seconds
 function Update-Labels($Procs, $NewKeys) {
     # One WMI query for all new processes this tick: command line, image path, parent.
     if ($NewKeys.Count -eq 0) { return }
-    $ids = @($NewKeys.Keys | ForEach-Object { $NewKeys[$_].Id }) | Select-Object -First 200
+    $ids = @($NewKeys.Keys | ForEach-Object { $NewKeys[$_].Id })
     $cim = @{}
-    try {
-        $filter = ($ids | ForEach-Object { "ProcessId=$_" }) -join ' OR '
-        foreach ($w in Get-CimInstance Win32_Process -Filter $filter -Property ProcessId, ParentProcessId, CommandLine, ExecutablePath -OperationTimeoutSec 5) { $cim[[int]$w.ProcessId] = $w }
-    } catch { Write-Log "cim lookup failed: $($_.Exception.Message)" }
+    for ($i = 0; $i -lt $ids.Count; $i += 100) {
+        # batches of 100: at startup every process is new, and none may be left unlooked-up for its whole life
+        $batch = $ids[$i..([Math]::Min($i + 99, $ids.Count - 1))]
+        try {
+            $filter = ($batch | ForEach-Object { "ProcessId=$_" }) -join ' OR '
+            foreach ($w in Get-CimInstance Win32_Process -Filter $filter -Property ProcessId, ParentProcessId, CommandLine, ExecutablePath -OperationTimeoutSec 5) { $cim[[int]$w.ProcessId] = $w }
+        } catch { Write-Log "cim lookup failed: $($_.Exception.Message)" }
+    }
     # Parents first is not guaranteed; resolve in order of start time so a child sees its parent's label.
     foreach ($key in ($NewKeys.Keys | Sort-Object { $NewKeys[$_].StartTicks })) {
         $p = $NewKeys[$key]
@@ -155,7 +161,9 @@ function Update-Labels($Procs, $NewKeys) {
             # inherit a PROJECT label (not a bucket) from the nearest live labelled ancestor
             $parentId = [int]$w.ParentProcessId
             $parentKey = $script:keyByPid[$parentId]
-            if ($parentKey -and $labels.ContainsKey($parentKey) -and -not $labels[$parentKey].StartsWith('~')) { $label = $labels[$parentKey] }
+            # only a parent that started before this child (a reused PID belongs to an unrelated process)
+            if ($parentKey -and $labels.ContainsKey($parentKey) -and -not $labels[$parentKey].StartsWith('~') -and
+                [long]($parentKey.Split('|')[1]) -le $p.StartTicks) { $label = $labels[$parentKey] }
         }
         if (-not $label) {
             $img = ($p.Name + '.exe').ToLowerInvariant()
@@ -232,16 +240,19 @@ function Read-CoreTemp([datetime]$FromUtc, [datetime]$ToUtc) {
             try {
                 $sec = [double]::Parse($tp[2], [Globalization.CultureInfo]::InvariantCulture)
                 $local = [datetime]::new([int]$dp[2], [int]$dp[1], [int]$dp[0], [int]$tp[0], [int]$tp[1], [int][Math]::Floor($sec), [DateTimeKind]::Unspecified)
+                if ($tz.IsAmbiguousTime($local)) { continue }   # the repeated autumn hour cannot be placed: skip, never misplace
                 $utc = [TimeZoneInfo]::ConvertTimeToUtc($local, $tz)
+                $coreC = [double]::Parse($f[3], [Globalization.CultureInfo]::InvariantCulture)
+                $pkgW = [double]::Parse($f[4], [Globalization.CultureInfo]::InvariantCulture)
             } catch { continue }
             if (-not $newest -or $utc -gt $newest) { $newest = $utc }
             if ($utc -ge $FromUtc -and $utc -lt $ToUtc) {
                 $res.n++
-                $res.core_c.Add([double]::Parse($f[3], [Globalization.CultureInfo]::InvariantCulture))
-                $res.pkg_w.Add([double]::Parse($f[4], [Globalization.CultureInfo]::InvariantCulture))
+                $res.core_c.Add($coreC)
+                $res.pkg_w.Add($pkgW)
             }
         }
-        if ($newest) { $res.age_s = [Math]::Round(($ToUtc - $newest).TotalSeconds) }
+        if ($newest) { $res.age_s = [Math]::Max(0, [Math]::Round(($ToUtc - $newest).TotalSeconds)) }
     } catch { Write-Log "coretemp read failed: $($_.Exception.Message)" }
     return $res
 }

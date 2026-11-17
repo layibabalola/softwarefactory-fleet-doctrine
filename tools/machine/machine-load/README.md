@@ -54,20 +54,24 @@ Per machine, over the last `--days` (default 7) **full** days (>= 1,200 minutes 
   project rules such as AirMyPC's one-gate-at-a-time. Those can say no while the machine says ROOM.
 
 **Data you cannot trust is never shown as spare capacity.** The reader marks a machine ABSENT (no rows), STALE
-(newest day over 2 days old), LOW-COVERAGE (no full day in the window; verdict UNKNOWN), DUPLICATED (two
-samplers wrote the same minute), MIXED-CODE (machines run different sampler builds) or, with `--live`,
-LIVE-STALE (newest minute over 5 min old), and exits 1. Exit 2 = the bus could not be read.
+(newest day over 2 days old), LOW-COVERAGE (no full day in the window), DUPLICATED (two samplers wrote the same
+minute), MIXED-CODE (machines run different sampler builds), BUS-NOT-REFRESHED (the fetch failed) or, with
+`--live`, LIVE-STALE (newest minute over 5 min old). **Any of these makes the verdict UNKNOWN** (the computed
+one is kept only as `verdict_untrusted`) and the exit code 1. Exit 2 = the bus could not be read. A minute
+counts as sampled only if it measured CPU over at least 30 s; a minute split by a sampler restart is merged.
 
 ## On each machine
 
 | Piece | Where | Does |
 |---|---|---|
-| `MachineLoadSampler.ps1` + `MachineLoadNative.cs` + `projects.json` | `C:\ProgramData\MachineLoad\bin\` (ACL-locked: SYSTEM and Administrators full, Users read and execute) | one long-lived hidden pwsh; one row per UTC minute to `%LOCALAPPDATA%\MachineLoad\minute-<UTC date>.jsonl`; keeps 14 days; mutex `Global\MachineLoadSampler`; exits to be restarted above 400 MB |
-| Task `\Fleet\MachineLoad Sampler` | at logon + every 5 min (restart net; a running copy holds the mutex) | **elevated**, only so it can read the CPU time of services and protected processes (Defender): non-elevated it cannot see ~130 of ~310 processes |
-| Task `\Fleet\MachineLoad Publisher` | daily, 75-105 min after the UTC day closes (staggered per machine) | `machine_load.py publish`, non-elevated: appends every finished, unpublished UTC day to the bus in ONE commit (fast-forward, 5 retries, never forced); receipt `%LOCALAPPDATA%\MachineLoad\publish-receipt(s).json(l)` records exit code, bus HEAD and `launched_by` |
+| `MachineLoadSampler.ps1` + `MachineLoadNative.cs` + `projects.json` + the windowless launcher (SHA-256 pinned) | `C:\ProgramData\MachineLoad\bin\` | one long-lived hidden pwsh; one row per UTC minute to `C:\ProgramData\MachineLoad\data\minute-<UTC date>.jsonl`; keeps 14 days; mutex `Global\MachineLoadSampler`; exits to be restarted above 400 MB |
+| Task `\Fleet\MachineLoad Sampler` | at logon + every 5 min (restart net; a running copy holds the mutex) | **elevated**, only so it can read the CPU time of services and protected processes (Defender): non-elevated it cannot see ~130 of ~310 processes. Everything it starts is inside `C:\ProgramData\MachineLoad`, which the installer makes Administrators-owned with SYSTEM/Administrators full and Users read-only, then VERIFIES (no non-admin write right, no non-admin owner, anywhere in the tree) or refuses. pwsh is the absolute `Program Files` path and the script pins `PSModulePath`, so no user-writable file is on the elevated path. |
+| Task `\Fleet\MachineLoad Publisher` | daily, 75-105 min after the UTC day closes (staggered per machine) | `machine_load.py publish`, non-elevated: appends every finished, unpublished UTC day to the bus in ONE commit (fast-forward, 5 retries, never forced); receipt `%LOCALAPPDATA%\MachineLoad\publish-receipt(s).json(l)` (written even when it crashes) records exit code, bus HEAD and `launched_by` |
 
-Both tasks launch through the fleet's windowless shim (`~/.claude/ops/launch-windowless.vbs`, from
-coretemp-fleet); a bare pwsh/python action under an Interactive principal pops a console window (TRAPS).
+The publisher launches through the fleet's per-user windowless shim (`~/.claude/ops/launch-windowless.vbs`,
+from coretemp-fleet), which is fine because it is not elevated; the sampler calls a hash-pinned copy of the
+same launcher from the locked bin. A bare pwsh/python action under an Interactive principal pops a console
+window (TRAPS).
 Entries are added to `~/.claude/machine/SCHEDULED-TASK-REGISTRY.md` on install.
 
 **Cost (measured on PC-MINI2):** about 0.6 CPU-second per minute (~0.03 % of 32 threads), ~200 MB working set

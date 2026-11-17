@@ -12,7 +12,7 @@ in the reader's output and is never written here.
 | **Files** | `machine-load/<MACHINE>/days-YYYY-MM.jsonl`, append-only; idempotency key (machine, date) |
 | **Push rule** | once per machine per day, after the UTC day closes; a missed day is caught up in the same single commit (law 3) |
 | **What travels** | aggregates only: percentiles, minute counts, a 24-entry hourly profile, core-hours per allowlisted project and per generic bucket, HeavySlot jobs as `project:kind` with duration. No process names, command lines, paths, branch names or user names (law 4; the bus is public). |
-| **Validation** | the reader trusts a machine only with a row no older than 2 days, at least one full day (>= 1,200 sampled minutes) in the window, no duplicated minutes, and the same sampler code as the other machines; otherwise ABSENT / STALE / LOW-COVERAGE / DUPLICATED / MIXED-CODE, exit 1, and never a ROOM verdict. |
+| **Validation** | the reader trusts a machine only with a row no older than 2 days, at least one full day (>= 1,200 minutes that each measured CPU for >= 30 s) in the window, no duplicated minutes, the same newest sampler build as the other machines, and a successful bus fetch; otherwise ABSENT / STALE / LOW-COVERAGE / DUPLICATED / MIXED-CODE / BUS-NOT-REFRESHED, exit 1, and the verdict is UNKNOWN. |
 | **CI** | a row push starts `disposition-intake.yml` (its `paths-ignore` covers only `cos-feedback/**` and `heartbeats/**`). Adding `machine-load/**` needs that workflow's epoch amendment: an open follow-up shared with `path-health/**`. |
 
 ## Record shape (`fleet/machine-load-day/v1`, abridged)
