@@ -31,8 +31,8 @@ function ConvertTo-Utc($v) { if ($v -is [datetime]) { if ($v.Kind -eq 'Unspecifi
 
 $records = [System.Collections.Generic.List[object]]::new()
 if ($Live) {
-    $installed = Join-Path $env:USERPROFILE '.claude\machine\host-headroom\Run-HostHeadroom.ps1'
-    $cmd = "& `"$installed`" -Mode Summary -Hours $Hours"
+    # $env:USERPROFILE stays literal here so each machine expands its OWN profile path
+    $cmd = "& (Join-Path `$env:USERPROFILE '.claude\machine\host-headroom\Run-HostHeadroom.ps1') -Mode Summary -Hours $Hours"
     $enc = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($cmd))
     foreach ($h in $Hosts) {
         $isLocal = $h -ieq $env:COMPUTERNAME -or ($h -replace '^pc-', '') -ieq ($env:COMPUTERNAME -replace '^pc-', '')

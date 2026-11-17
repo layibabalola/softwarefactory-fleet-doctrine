@@ -30,6 +30,6 @@ try {
     [Console]::Error.WriteLine("host-headroom $Mode failed: $($_.Exception.Message)")
 } finally {
     $receipt.seconds = [math]::Round(([datetime]::UtcNow - $started).TotalSeconds, 1)
-    Add-Content -LiteralPath (Join-Path $root 'runs.jsonl') -Value ($receipt | ConvertTo-Json -Compress -Depth 4) -Encoding utf8
+    Add-SharedLine (Join-Path $root 'runs.jsonl') ($receipt | ConvertTo-Json -Compress -Depth 4)
 }
 exit $code

@@ -44,6 +44,27 @@ function Get-HostHardware {
     }
 }
 
+# Read a file other tools keep appending to (HeavySlot ledger, Core Temp feed, our own samples) without
+# blocking their writers: open with FileShare ReadWrite|Delete, read it all into memory, close, then parse.
+# [IO.File]::ReadLines holds a FileShare.Read handle for the whole parse, which makes their appends fail.
+function Read-SharedLines([string]$Path) {
+    $fs = [IO.FileStream]::new($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)
+    try { $sr = [IO.StreamReader]::new($fs, [Text.Encoding]::UTF8, $true); $text = $sr.ReadToEnd() } finally { $fs.Dispose() }
+    $text -split "`r?`n"
+}
+
+# Append one line, retrying briefly if a reader without shared access holds the file.
+function Add-SharedLine([string]$Path, [string]$Line) {
+    for ($i = 1; $i -le 5; $i++) {
+        try {
+            $fs = [IO.FileStream]::new($Path, [IO.FileMode]::Append, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete)
+            try { $b = [Text.Encoding]::UTF8.GetBytes($Line + "`n"); $fs.Write($b, 0, $b.Length) } finally { $fs.Dispose() }
+            return
+        } catch [IO.IOException] { Start-Sleep -Milliseconds (200 * $i) }
+    }
+    throw "could not append to $Path after 5 tries"
+}
+
 function ConvertTo-UtcStamp([datetime]$d) { $d.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ') }
 
 # ---------------------------------------------------------------- attribution
@@ -53,7 +74,7 @@ function ConvertTo-UtcStamp([datetime]$d) { $d.ToUniversalTime().ToString('yyyy-
 # unattributed share is reported instead of hidden.
 $script:ProjectRules = @(
     @{ re = '(?i)\\!Layi Wkspc\\([^\\"/]+)'; fixed = $null }
-    @{ re = '(?i)\b[a-z]:\\abwt\\';           fixed = 'agent-bridge' }
+    @{ re = '(?i)\b([a-z]:\\abwt\\[^\\"/ ]+)';  fixed = '<worktree>' }
 )
 $script:FamilyRules = [ordered]@{
     'defender'    = '^(?i)(MsMpEng|MpDefenderCoreService|NisSrv|MpCopyAccelerator)\.exe$'
@@ -75,11 +96,32 @@ function ConvertTo-ProjectSlug([string]$name) {
     }
 }
 
+# A worktree outside the workspace belongs to the repo its .git file points at (gitdir: <repo>\.git\worktrees\x).
+# Cached per process; unreadable -> 'worktree-unknown', never a guess.
+$script:WorktreeCache = @{}
+function Resolve-WorktreeProject([string]$wt) {
+    $k = $wt.ToLowerInvariant()
+    if ($script:WorktreeCache.ContainsKey($k)) { return $script:WorktreeCache[$k] }
+    $proj = 'worktree-unknown'
+    try {
+        $g = Join-Path $wt '.git'
+        if (Test-Path -LiteralPath $g -PathType Leaf) {
+            $m = [regex]::Match((Get-Content -LiteralPath $g -TotalCount 1), '(?i)gitdir:\s*(.+?)[\\/]\.git[\\/]worktrees[\\/]')
+            if ($m.Success) { $proj = ConvertTo-ProjectSlug (Split-Path $m.Groups[1].Value -Leaf) }
+        }
+    } catch { }
+    $script:WorktreeCache[$k] = $proj
+    $proj
+}
+
 function Resolve-PathProject([string]$text) {
     if ([string]::IsNullOrEmpty($text)) { return $null }
     foreach ($r in $script:ProjectRules) {
         $m = [regex]::Match($text, $r.re)
-        if ($m.Success) { if ($r.fixed) { return $r.fixed } else { return (ConvertTo-ProjectSlug $m.Groups[1].Value) } }
+        if ($m.Success) {
+            if ($r.fixed -eq '<worktree>') { return (Resolve-WorktreeProject $m.Groups[1].Value) }
+            if ($r.fixed) { return $r.fixed } else { return (ConvertTo-ProjectSlug $m.Groups[1].Value) }
+        }
     }
     $null
 }
@@ -93,7 +135,7 @@ function Resolve-Family([string]$name) {
 # nearest ancestor's, else the most common project among its descendants (a claude CLI with no
 # path in its command line is attributed by the git/pwsh/pytest children it spawns).
 function Get-ProcessSnapshot {
-    $procs = @(Get-CimInstance Win32_Process -Property ProcessId, ParentProcessId, Name, ExecutablePath, CommandLine, KernelModeTime, UserModeTime, WorkingSetSize, CreationDate)
+    $procs = @(Get-CimInstance Win32_Process -Property ProcessId, ParentProcessId, Name, ExecutablePath, CommandLine, KernelModeTime, UserModeTime, PrivatePageCount, CreationDate)
     $byPid = @{}; $kids = @{}; $own = @{}
     foreach ($p in $procs) {
         $id = [int]$p.ProcessId; $byPid[$id] = $p
@@ -124,7 +166,7 @@ function Get-ProcessSnapshot {
     $snap = @{}
     foreach ($p in $procs) {
         $id = [int]$p.ProcessId; $proj = $up[$id]
-        if ($selfTree.Contains($id)) { $snap[$id] = [pscustomobject]@{ cpu = ([double]$p.KernelModeTime + [double]$p.UserModeTime) / 1e7; ws = [double]$p.WorkingSetSize; project = $null; via = $null; family = 'headroom-sampler'; created = $p.CreationDate; readable = $true }; continue }; $via = if ($own[$id]) { 'own' } elseif ($proj) { 'ancestor' } else { $null }
+        if ($selfTree.Contains($id)) { $snap[$id] = [pscustomobject]@{ cpu = ([double]$p.KernelModeTime + [double]$p.UserModeTime) / 1e7; ws = [double]$p.PrivatePageCount; project = $null; via = $null; family = 'headroom-sampler'; created = $p.CreationDate; readable = $true }; continue }; $via = if ($own[$id]) { 'own' } elseif ($proj) { 'ancestor' } else { $null }
         if (-not $proj -and $kids.ContainsKey($id)) {
             $votes = @{}; $stack = [System.Collections.Generic.Stack[int]]::new(); foreach ($k in $kids[$id]) { $stack.Push($k) }
             $seen = 0
@@ -137,7 +179,7 @@ function Get-ProcessSnapshot {
         }
         $snap[$id] = [pscustomobject]@{
             cpu     = ([double]$p.KernelModeTime + [double]$p.UserModeTime) / 1e7
-            ws      = [double]$p.WorkingSetSize
+            ws      = [double]$p.PrivatePageCount
             project = $proj
             via     = $via
             family  = Resolve-Family $p.Name
@@ -233,10 +275,12 @@ function Invoke-HostHeadroomCanary([int]$PhysicalCores) {
 # Every sample records how late it landed: a sampler starved by load is itself contention evidence.
 function Invoke-HostHeadroomSampler {
     [CmdletBinding()]
-    param([int]$DurationSec = 290, [int]$IntervalSec = 15, [int]$AttributionEvery = 4, [int]$RetentionDays = 14, [switch]$NoCanary)
+    param([int]$DurationSec = 255, [int]$IntervalSec = 15, [int]$AttributionEvery = 4, [int]$RetentionDays = 14, [switch]$NoCanary)
     $startedAt = Get-Date
     $root = Get-HostHeadroomRoot
     $hw = Get-HostHardware
+    # Get-Counter waits one interval before its first sample, and snapshots/canary add time: 255 s of
+    # samples leaves ~30 s of slack in the 300 s slot, so a slow run under load is not skipped by IgnoreNew.
     $max = [math]::Max(1, [int][math]::Floor($DurationSec / $IntervalSec))
     $keys = @($script:CounterPaths.Keys); $paths = @($script:CounterPaths.Values)
     $suffix = @($paths | ForEach-Object { $_.Substring($_.IndexOf('\', 1)).ToLowerInvariant() })
@@ -281,7 +325,7 @@ function Invoke-HostHeadroomSampler {
         }
         if (-not $NoCanary -and $i -eq $canaryAt) { $rec.canary = Invoke-HostHeadroomCanary $hw.cores }
         if ($i -eq $max) { $self.Refresh(); $rec.sampler_cpu_s = [math]::Round($self.TotalProcessorTime.TotalSeconds - $selfCpu0, 2) }
-        Add-Content -LiteralPath (& $file) -Value ($rec | ConvertTo-Json -Compress -Depth 6) -Encoding utf8
+        Add-SharedLine (& $file) ($rec | ConvertTo-Json -Compress -Depth 6)
     }
     Get-ChildItem -LiteralPath $root -Filter 'samples-*.jsonl' | Where-Object { $_.LastWriteTimeUtc -lt [datetime]::UtcNow.AddDays(-$RetentionDays) } | Remove-Item -Force
 }
@@ -309,7 +353,7 @@ function Read-HostHeadroomSamples([double]$Hours, [string]$Root = (Get-HostHeadr
              Select-Object -Unique | Where-Object { Test-Path -LiteralPath $_ }
     $styles = [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal
     foreach ($f in $files) {
-        foreach ($line in [IO.File]::ReadLines($f)) {
+        foreach ($line in (Read-SharedLines $f)) {
             if (-not $line) { continue }
             try { $r = $line | ConvertFrom-Json } catch { continue }
             $ts = ConvertTo-UtcDate $r.ts $styles
@@ -356,7 +400,7 @@ function Read-CoreTempWindow([double]$Hours, $Exclude = @()) {
     $cpu = [System.Collections.Generic.List[double]]::new(); $c = [System.Collections.Generic.List[double]]::new()
     $w = [System.Collections.Generic.List[double]]::new(); $dt = [System.Collections.Generic.List[double]]::new()
     $inv = [Globalization.CultureInfo]::InvariantCulture; $prev = $null
-    foreach ($line in [IO.File]::ReadLines($script:CoreTempFeed)) {
+    foreach ($line in (Read-SharedLines $script:CoreTempFeed)) {
         if ($line.Length -lt 20 -or $line[0] -eq 'D') { continue }
         $f = $line.Split(',')
         if ($f.Count -lt 5) { continue }
@@ -367,7 +411,9 @@ function Read-CoreTempWindow([double]$Hours, $Exclude = @()) {
         $gap = if ($prev) { [math]::Min(10.0, [math]::Max(0.0, ($ts - $prev).TotalSeconds)) } else { 2.0 }
         $prev = $ts
         if ($Exclude -and (Test-InWindows $ts.ToUniversalTime() $Exclude)) { continue }
-        $cpu.Add([double]::Parse($f[2], $inv)); $c.Add([double]::Parse($f[3], $inv)); $w.Add([double]::Parse($f[4], $inv)); $dt.Add($gap)
+        $vc = 0.0; $vt = 0.0; $vw = 0.0; $fl = [Globalization.NumberStyles]::Float
+        if (-not ([double]::TryParse($f[2], $fl, $inv, [ref]$vc) -and [double]::TryParse($f[3], $fl, $inv, [ref]$vt) -and [double]::TryParse($f[4], $fl, $inv, [ref]$vw))) { continue }
+        $cpu.Add($vc); $c.Add($vt); $w.Add($vw); $dt.Add($gap)
     }
     if ($cpu.Count -eq 0) { return [ordered]@{ rows = 0 } }
     $T = ($dt | Measure-Object -Sum).Sum
@@ -393,9 +439,10 @@ function Read-HeavySlotWindow([double]$Hours) {
     if (-not (Test-Path -LiteralPath $script:HeavySlotLedger)) { return $null }
     $since = [datetime]::UtcNow.AddHours(-$Hours)
     $admits = @{}; $gates = [System.Collections.Generic.List[object]]::new(); $reaped = 0
-    foreach ($line in [IO.File]::ReadLines($script:HeavySlotLedger)) {
+    foreach ($line in (Read-SharedLines $script:HeavySlotLedger)) {
+        if (-not $line) { continue }   # the shared read splits on newlines: the last element is empty
         try { $e = $line | ConvertFrom-Json } catch { continue }
-        if (-not $e.PSObject.Properties['at']) { continue }
+        if ($null -eq $e -or -not $e.PSObject.Properties['at']) { continue }
         $at = ConvertTo-UtcDate $e.at
         if ($at -lt $since.AddHours(-12)) { continue }
         $ev = "$($e.event)"
@@ -404,12 +451,20 @@ function Read-HeavySlotWindow([double]$Hours) {
         if ($ev -eq 'admit') {
             $label = if ($e.PSObject.Properties['label'] -and $e.label) { "$($e.label)" } else { 'unlabelled' }
             $admits[$e.ticket] = [pscustomobject]@{ at = $at; label = $label; cls = "$($e.class)"; waited = [double]($e.waitedMs ?? 0) }
-        } elseif ($ev -eq 'exit' -and $admits.ContainsKey($e.ticket)) {
+        } elseif (($ev -eq 'exit' -or $ev -like 'reap*') -and $admits.ContainsKey($e.ticket)) {
             $a = $admits[$e.ticket]; $admits.Remove($e.ticket)
             if ($at -lt $since) { continue }
             $gates.Add([pscustomobject]@{ project = ConvertTo-ProjectSlug (($a.label -split ':')[0]); cls = $a.cls
                 start = $(if ($a.at -lt $since) { $since } else { $a.at }); end = $at; waitS = $a.waited / 1000 })
         }
+    }
+    # admits still open: held until now, at most 3 h (HeavySlot's default max hold is 90 min, so an
+    # older open admit is a holder that died without an exit row, not a live hold)
+    $nowU = [datetime]::UtcNow
+    foreach ($a in @($admits.Values)) {
+        $s0 = if ($a.at -lt $since) { $since } else { $a.at }
+        $e0 = if (($nowU - $a.at).TotalHours -gt 3) { $a.at.AddHours(3) } else { $nowU }
+        if ($e0 -gt $s0) { $gates.Add([pscustomobject]@{ project = ConvertTo-ProjectSlug (($a.label -split ':')[0]); cls = $a.cls; start = $s0; end = $e0; waitS = $a.waited / 1000 }) }
     }
     # whole-machine occupancy: union of hold intervals
     $held = 0.0; $curS = $null; $curE = $null
@@ -551,14 +606,25 @@ function Get-HostHeadroomSummary {
 # than RefreshHours. Single writer: the file name is this machine's COMPUTERNAME.
 function Publish-HostHeadroom {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$BusRoot, [double]$Hours = 168, [double]$RefreshHours = 24, [switch]$NoPush, [string]$Root = (Get-HostHeadroomRoot))
+    param([Parameter(Mandatory)][string]$BusRoot, [double]$Hours = 168, [double]$RefreshHours = 24, [switch]$NoPush, [string]$Root = (Get-HostHeadroomRoot), [double]$MinConfirmGapHours = 4)
     $sum = Get-HostHeadroomSummary -Hours $Hours -Root $Root
     $shape = '{0}|{1}|{2}|{3}' -f $sum.headroom.verdict, $sum.headroom.heavy_slot_verdict,
         ((@($sum.headroom.reasons | ForEach-Object { ($_ -split ':')[0] }) | Sort-Object) -join ','),
         ((@($sum.projects | ForEach-Object { $_.project }) | Sort-Object) -join ',')
     $stateFile = Join-Path $Root 'publish-state.json'
-    $prevShape = if (Test-Path -LiteralPath $stateFile) { (Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json).last_shape } else { $null }
-    [IO.File]::WriteAllText($stateFile, (@{ last_shape = $shape; at = ConvertTo-UtcStamp (Get-Date) } | ConvertTo-Json -Compress))
+    # Hysteresis: a shape is CONFIRMED once it has been seen continuously for MinConfirmGapHours (state
+    # keeps the first time this shape was seen), so a value hovering at a threshold, or two manual runs a
+    # minute apart, cannot flip the published verdict. A stale-record refresh still publishes, marked
+    # headroom.confirmed = false when its shape is not yet confirmed.
+    $since0 = ConvertTo-UtcStamp (Get-Date)
+    if (Test-Path -LiteralPath $stateFile) {
+        $st = Get-Content -LiteralPath $stateFile -Raw | ConvertFrom-Json
+        if ($st.last_shape -eq $shape) { $since0 = "$(ConvertTo-UtcStamp (ConvertTo-UtcDate $st.at))" }
+    }
+    $confirmed = ([datetime]::UtcNow - (ConvertTo-UtcDate $since0)).TotalHours -ge $MinConfirmGapHours
+    $prevShape = if ($confirmed) { $shape } else { $null }
+    $sum.headroom.confirmed = $confirmed
+    [IO.File]::WriteAllText($stateFile, (@{ last_shape = $shape; at = $since0 } | ConvertTo-Json -Compress))
 
     $sum.published_utc = ConvertTo-UtcStamp (Get-Date)
     # law 1: the tool runs from an installed copy of a reviewed commit; report THAT commit, not bus HEAD
@@ -569,6 +635,9 @@ function Publish-HostHeadroom {
     # Pushes only from the publisher's OWN clone (made by Install-HostHeadroom.ps1, marked by a sentinel
     # file), which it resets to origin/master each try. It never touches a checkout a person or a lane uses.
     if (-not $NoPush) {
+        $rootFull = [IO.Path]::GetFullPath($BusRoot).TrimEnd('\')
+        $top = "$(git -C $BusRoot rev-parse --show-toplevel 2>$null)".Replace('/', '\').TrimEnd('\')
+        if ($top -ine $rootFull) { throw "refusing to push from '$BusRoot': it is not its own git repository root (toplevel '$top')" }
         if (-not (Test-Path -LiteralPath (Join-Path $BusRoot '.host-headroom-publisher-clone'))) {
             throw "refusing to push from '$BusRoot': not a host-headroom publisher clone (no sentinel). Use -NoPush, or install."
         }
@@ -601,7 +670,9 @@ function Publish-HostHeadroom {
         git -C $BusRoot add -- $rel
         git -C $BusRoot diff --cached --quiet -- $rel
         if ($LASTEXITCODE -eq 0) { return [pscustomobject]@{ action = 'no-diff'; verdict = $sum.headroom.verdict } }
-        git -C $BusRoot commit --quiet -m $msg -- $rel 2>&1 | Out-Null
+        $cout = git -C $BusRoot commit --quiet -m $msg -- $rel 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "git commit failed in publisher clone: $($cout -join ' ')" }
+        if ("$(git -C $BusRoot rev-parse HEAD)" -eq "$(git -C $BusRoot rev-parse origin/master)") { throw 'commit did not advance HEAD past origin/master' }
         git -C $BusRoot push --quiet origin HEAD:master 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) { return [pscustomobject]@{ action = "pushed-$why"; verdict = $sum.headroom.verdict; commit = "$(git -C $BusRoot rev-parse --short HEAD)" } }
         Start-Sleep -Seconds (5 * $try)   # lost a race with another machine's push; the next try resets onto it
@@ -611,4 +682,4 @@ function Publish-HostHeadroom {
 
 Export-ModuleMember -Function Invoke-HostHeadroomSampler, Get-HostHeadroomSummary, Publish-HostHeadroom, Get-HostHardware,
     Get-ProcessSnapshot, Get-UsageDelta, Resolve-PathProject, Resolve-Family, ConvertTo-ProjectSlug, Read-HeavySlotWindow,
-    Read-CoreTempWindow, Read-HostHeadroomSamples, Invoke-HostHeadroomCanary, Get-Pct, Get-WeightedPct, Get-QuietWindows, Test-InWindows, ConvertTo-UtcDate
+    Read-CoreTempWindow, Read-HostHeadroomSamples, Read-SharedLines, Add-SharedLine, Resolve-WorktreeProject, Invoke-HostHeadroomCanary, Get-Pct, Get-WeightedPct, Get-QuietWindows, Test-InWindows, ConvertTo-UtcDate

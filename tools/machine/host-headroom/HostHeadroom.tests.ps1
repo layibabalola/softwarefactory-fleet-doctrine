@@ -17,7 +17,11 @@ New-Item -ItemType Directory -Path $tmp | Out-Null
 try {
     # 2. project and family attribution
     Assert ((Resolve-PathProject '"C:\Program Files\PowerShell\7\pwsh.exe" -File "C:\!Layi Wkspc\agent-bridge\tools\x.ps1"') -eq 'agent-bridge') 'workspace path -> agent-bridge'
-    Assert ((Resolve-PathProject 'git -C C:\abwt\dmncsol3 status') -eq 'agent-bridge') 'abwt worktree -> agent-bridge'
+    # worktrees under X:\abwt resolve through their .git file to the repo they belong to
+    $wtA = Join-Path $tmp 'abwt\wt-a'; New-Item -ItemType Directory -Path $wtA -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $wtA '.git') -Value 'gitdir: C:/!Layi Wkspc/softwarefactory-fleet-doctrine/.git/worktrees/wt-a'
+    Assert ((Resolve-WorktreeProject $wtA) -eq 'fleet-doctrine') 'worktree resolves to its own repo, not a fixed project'
+    Assert ((Resolve-WorktreeProject (Join-Path $tmp 'abwt\missing')) -eq 'worktree-unknown') 'unreadable worktree is unknown, never a guess'
     Assert ((Resolve-PathProject 'python -m pytest "C:\!Layi Wkspc\Adobe Document Cloud Ingester\tests"') -eq 'adobe-ingester') 'adobe slug'
     Assert ((Resolve-PathProject 'C:\!Layi Wkspc\MLV-App\build\x.exe') -eq 'mlv-app') 'mlv slug'
     Assert ($null -eq (Resolve-PathProject 'C:\Windows\system32\svchost.exe -k netsvcs')) 'system process has no project'
@@ -62,6 +66,20 @@ try {
     Assert ($hs.gates -eq 3) "heavy slot gates ($($hs.gates))"
     Assert ([math]::Abs($hs.occupancy_frac - (26 / 60)) -lt 0.01) "occupancy is the union, 20+6 of 60 min ($($hs.occupancy_frac))"
     Assert ((@($hs.projects.project) -join ',') -eq 'airmypc,unlabelled') 'unlabelled admits are kept, not dropped'
+    # a reaped ticket closes its gate; an open admit counts as held until now
+    Add-Content -LiteralPath $ledger -Value (@{ at = $u.AddMinutes(-12).ToString('o'); event = 'admit'; ticket = 't4'; label = 'mlv:x:pytest'; class = 'shared'; waitedMs = 0 } | ConvertTo-Json -Compress)
+    Add-Content -LiteralPath $ledger -Value (@{ at = $u.AddMinutes(-10).ToString('o'); event = 'reaped'; ticket = 't4' } | ConvertTo-Json -Compress)
+    Add-Content -LiteralPath $ledger -Value (@{ at = $u.AddMinutes(-5).ToString('o'); event = 'admit'; ticket = 't5'; label = 'mlv:y:pytest'; class = 'shared'; waitedMs = 0 } | ConvertTo-Json -Compress)
+    $hs2 = Read-HeavySlotWindow -Hours 1
+    Assert ($hs2.gates -eq 5) "reaped and open gates are counted ($($hs2.gates))"
+    Assert ([math]::Abs($hs2.occupancy_frac - (33 / 60)) -lt 0.01) "occupancy includes reaped (2 min) and open (5 min) holds ($($hs2.occupancy_frac))"
+
+    # readers never block the appenders (HeavySlot, Core Temp and the sampler append while we read)
+    $shared = Join-Path $tmp 'shared.jsonl'; Set-Content -LiteralPath $shared -Value 'a'
+    $fs = [IO.FileStream]::new($shared, 'Open', 'Read', ([IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete))
+    try { Add-SharedLine $shared 'b'; $appended = $true } catch { $appended = $false } finally { $fs.Dispose() }
+    Assert $appended 'append succeeds while a shared reader is open'
+    Assert ((@(Read-SharedLines $shared | Where-Object { $_ }) -join ',') -eq 'a,b') 'shared reader sees the appended line'
 
     # 6. summary + verdict on synthetic samples (quiet machine -> ROOM; saturated -> FULL; quiet window excluded)
     $qdir = Join-Path $tmp 'quiet'; New-Item -ItemType Directory -Path $qdir | Out-Null
@@ -103,10 +121,16 @@ try {
 
     # 7. publisher: refuses to push from a checkout that is not its own clone; -NoPush writes the record
     $fakeBus = Join-Path $tmp 'bus'; New-Item -ItemType Directory -Path $fakeBus | Out-Null
-    $threw = $false; try { Publish-HostHeadroom -BusRoot $fakeBus -Hours 2 -Root $quietRoot | Out-Null } catch { $threw = $_.Exception.Message -like '*not a host-headroom publisher clone*' }
-    Assert $threw 'publish refuses a non-publisher checkout'
+    $threw = $false; try { Publish-HostHeadroom -BusRoot $fakeBus -Hours 2 -Root $quietRoot | Out-Null } catch { $threwMsg = $_.Exception.Message; $threw = $threwMsg -like '*not a host-headroom publisher clone*' -or $threwMsg -like '*not its own git repository root*' }
+    Assert $threw "publish refuses a non-publisher checkout ($threwMsg)"
+    # a sentinel inside a folder that is NOT its own repo root (git would walk up to a parent repo) is refused
+    $parent = Join-Path $tmp 'parent-repo'; git init --quiet $parent 2>$null | Out-Null
+    $inner = Join-Path $parent 'bus'; New-Item -ItemType Directory -Path $inner | Out-Null
+    Set-Content -LiteralPath (Join-Path $inner '.host-headroom-publisher-clone') -Value 'x'
+    $threw2 = $false; try { Publish-HostHeadroom -BusRoot $inner -Hours 2 -Root $quietRoot | Out-Null } catch { $threw2 = $_.Exception.Message -like '*not its own git repository root*' }
+    Assert $threw2 'publish refuses a sentinel folder nested in another repo (no reset --hard can reach the parent)'
     $res = Publish-HostHeadroom -BusRoot $fakeBus -Hours 2 -NoPush -Root $quietRoot
-    Assert ($res.action -eq 'written-first-publication') "first publication written ($($res.action))"
+    Assert (@($res).Count -eq 1 -and $res.action -eq 'written-first-publication') "first publication written ($(($res | ConvertTo-Json -Compress -Depth 2)))"
     $rec = Get-Content -LiteralPath (Join-Path $fakeBus "host-headroom/$($env:COMPUTERNAME.ToUpperInvariant()).json") -Raw | ConvertFrom-Json
     Assert ($rec.schema -eq 'fleet-host-headroom.v1' -and $rec.machine -eq $env:COMPUTERNAME.ToUpperInvariant()) 'record schema and machine'
     Assert ($rec.published_utc -match '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$' -or $rec.published_utc -is [datetime]) 'published_utc stamp'
