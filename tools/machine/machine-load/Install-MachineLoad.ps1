@@ -130,8 +130,10 @@ if (-not (Test-Path $Pwsh)) { Write-Host "pwsh 7 not at $Pwsh"; exit 2 }
 # run) is refused instead of being written into the task.
 $Python = $null
 foreach ($c in @(Get-Command python.exe -All -ErrorAction SilentlyContinue)) {
-    $exe = (& $c.Source -c 'import sys; print(sys.executable)' 2>$null | Select-Object -First 1)
-    if ($LASTEXITCODE -eq 0 -and $exe -and (Test-Path -LiteralPath $exe.Trim())) { $Python = $exe.Trim(); break }
+    # No Select-Object -First here: it stops the pipeline before the native exit code is set.
+    $out = @(& $c.Source -c 'import sys; print(sys.executable)' 2>$null)
+    $exe = if ($out.Count) { "$($out[0])".Trim() } else { '' }
+    if ($LASTEXITCODE -eq 0 -and $exe -and (Test-Path -LiteralPath $exe)) { $Python = $exe; break }
 }
 if (-not $Python) { Write-Host 'no runnable python.exe on PATH'; exit 2 }
 if (-not (Test-Path $UserVbs)) { Write-Host "windowless shim missing: $UserVbs (install coretemp-fleet first)"; exit 2 }
