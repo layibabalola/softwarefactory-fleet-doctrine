@@ -34,7 +34,9 @@ holding a ~74 W package limit under all-core load: power, not cores, sets their 
 what the power budget allows, every core's clock drops, and existing work slows even with idle threads left. The
 reader therefore finds the **load at which the busy clock falls below 90 % of its light-load value** (measured,
 from the machine's own history). Until the machine has been that busy, it says so and falls back to an
-**assumed** ceiling of one busy thread per physical core (16), labelled ASSUMED in the output.
+**assumed** ceiling of one busy thread per physical core (16), labelled ASSUMED in the output. If the light-load
+(0-4 busy threads) clock was never measured, or a band below the first drop was skipped, nothing above the gap is
+claimed: safe threads is the gap's low edge (0 with no light-load baseline).
 
 **Why not the `_Total % Processor Performance` counter.** It averages idle cores in and barely moves with load
 (measured: 168 % idle vs 178 % at 13 busy threads). **Why no speed probe.** A short single-thread loop lands on
@@ -67,7 +69,7 @@ ignored), MIXED-CODE (judged on the build behind the full days actually used) (m
 or, with `--live`, LIVE-STALE (newest minute over 5 min old). **Any of these makes the verdict UNKNOWN** (the
 computed one is kept only as `verdict_untrusted`) and the exit code 1. Exit 2 = the bus could not be read.
 A minute counts as sampled only if successful CPU reads covered at least 30 s of it (`cpu_secs`). A minute written in two parts is merged
-only when the parts come from different sampler runs (`sid`; rows from before `sid` count as one run per build)
+only when the parts come from different sampler runs (`sid`; a row from before `sid` is identified by its own content, so only a byte-identical copy is a replay)
 and add up to at most 75 s (one minute plus one 10 s interval: a restart); a run already merged into that
 minute, or more measured time than that, is DUPLICATED. Under `--live`, freshness and duplication are judged
 on usable minutes only. A merge keeps each extreme (the lower free memory
@@ -117,9 +119,11 @@ lines, paths or user names; those stay in the local minute files and in `summari
   untrusted pre-existing owner and a pre-lock WRITE_DAC are refused; a protected directory is born without Users
   write; the sampler matcher takes only pwsh 7 running exactly the installed script; the sampler task is SYSTEM;
   the sampler's own FleetQuiet reader (extracted from the script) honours armedUtc/untilUtc/.released with no
-  local-time shift; no time is floored with two clock reads.
+  local-time shift; the Core Temp parse (extracted) skips times in the DST gap and the repeated hour; no time is
+  floored with two clock reads; `-Status` treats the running sampler's unsigned 0x800710E0 as benign; a root
+  created by someone else between the existence check and the protected create is refused.
 
-Not unit-tested: the sampler's live CPU-delta and PID-reuse accounting and the Core Temp parse run only inside
+Not unit-tested: the sampler's live CPU-delta and PID-reuse accounting run only inside
 the elevated sampler; the install proof (the task must write a fresh row with the installed code hash) is their
 end-to-end check.
 

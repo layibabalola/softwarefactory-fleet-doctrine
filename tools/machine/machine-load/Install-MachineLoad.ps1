@@ -95,7 +95,8 @@ if ($Status) {
         if ($t.State -eq 'Disabled') { $bad += "task disabled: $n" }
         # 0 ok, 0x41301 running, 0x41303 not yet run; for the RUNNING sampler 0x800710E0 is the 5-minute restart
         # net's start refused by IgnoreNew (an instance is already up). Anything else is a failed last run.
-        $benign = @(0, 0x41301, 0x41303) + $(if ($n -eq $SamplerTask -and $t.State -eq 'Running') { @(0x800710E0) } else { @() })
+        # LastTaskResult is unsigned: 0x800710E0 without the u suffix is a negative Int32 and never matches.
+        $benign = @(0, 0x41301, 0x41303) + $(if ($n -eq $SamplerTask -and $t.State -eq 'Running') { @(0x800710E0u) } else { @() })
         if ($i.LastTaskResult -notin $benign) { $bad += ("{0} last run failed: 0x{1:X}" -f $n, $i.LastTaskResult) }
     }
     $row = Get-NewestRow
@@ -167,6 +168,9 @@ $expectedBin[$LauncherName] = $LauncherSha256.ToLowerInvariant()
 # locking in place. (C:\ProgramData lets Users create folders: a pre-planted root is the attack.)
 if (-not (Test-Path -LiteralPath $Root)) {
     New-ProtectedDirectory -Path $Root
+    # Create does not fail on a folder that appeared since Test-Path: re-check, so a race-planted root is refused.
+    $pre = @(Test-PreLockTree -Path $Root)
+    if ($pre) { $pre | ForEach-Object { "REFUSED: $_" }; Write-Host "install refused: $Root appeared with an untrusted owner, right or link while being created; inspect and remove it by hand"; exit 3 }
 } else {
     $pre = @(Test-PreLockTree -Path $Root)
     if ($pre) { $pre | ForEach-Object { "REFUSED: $_" }; Write-Host "install refused: $Root existed with an untrusted owner, right or link; inspect and remove it by hand"; exit 3 }

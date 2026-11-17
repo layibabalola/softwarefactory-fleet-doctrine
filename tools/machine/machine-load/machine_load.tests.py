@@ -108,11 +108,12 @@ class Rollup(unittest.TestCase):
         rows, dups, _ = ml.read_minutes(self.tmp, self.day)
         self.assertEqual((rows[0]["secs"], dups), (40, 1))
 
-    def test_sidless_fragments_of_one_build_are_a_replay(self):
+    def test_sidless_fragments_replay_only_when_identical(self):
         a = minute("2026-11-10T00:05:00Z"); a["n"] = 2; a["secs"] = 20
-        b = minute("2026-11-10T00:05:00Z"); b["n"] = 2; b["secs"] = 20
-        write_day(self.tmp, self.day, [a, b])
-        self.assertEqual(ml.read_minutes(self.tmp, self.day)[1], 1)
+        b = minute("2026-11-10T00:05:00Z", busy=6.0); b["n"] = 2; b["secs"] = 20     # a real restart of the same build
+        write_day(self.tmp, self.day, [a, b, dict(a)])                               # then a byte-identical replay of a
+        rows, dups, _ = ml.read_minutes(self.tmp, self.day)
+        self.assertEqual((rows[0]["secs"], dups), (40, 1))
 
     def test_restart_with_one_extra_interval_still_merges(self):
         a = minute("2026-11-10T00:05:00Z", code="old")                    # a full minute from the old run
@@ -265,8 +266,9 @@ class Helpers(unittest.TestCase):
         light, onset, seen, _, gap = ml.clock_onset([row({"0-4": 180, "4-8": 178})])
         self.assertIsNone(onset)
         self.assertEqual(seen, 8)
-        light, onset, _, _, _ = ml.clock_onset([row({"16-20": 140, "28-32": 120})])   # no light-load baseline
-        self.assertIsNone(onset)
+        light, onset, _, _, gap = ml.clock_onset([row({"16-20": 140, "28-32": 120})])   # no light-load baseline
+        self.assertEqual((onset, gap), (None, 0))                       # a gap at 0: nothing claimed safe
+        self.assertEqual(ml.clock_onset([row({"4-8": 100, "8-12": 80})])[4], 0)   # a measured drop is not ignored
         light, onset, _, _, gap = ml.clock_onset([row({"0-4": 180, "4-8": 175, "12-16": 150})])   # 8-12 unmeasured
         self.assertEqual((onset, gap), (None, 8))
 
@@ -291,7 +293,7 @@ class Headroom(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def add_days(self, machine, days, coverage=1440, busy_fn=lambda i: 4.0, code="abc"):
+    def add_days(self, machine, days, coverage=1440, busy_fn=lambda i: 2.0, code="abc"):   # idles in the 0-4 band
         data = self.tmp / f"data-{machine}-{coverage}"
         lines = []
         for day in days:
@@ -339,7 +341,22 @@ class Headroom(unittest.TestCase):
         self.assertEqual(recs["BUSY"]["verdict_untrusted"], "FULL")
         self.assertEqual(recs["BUSY"]["verdict"], "UNKNOWN")
         self.assertIn("MIXED-CODE", recs["BUSY"]["states"])
-        self.assertIn("ASSUMED", recs["BUSY"]["safe_basis"])
+        self.assertIn("ASSUMED 0: no light-load", recs["BUSY"]["safe_basis"])   # never ran below 4 busy threads
+        self.assertEqual(recs["BUSY"]["safe_threads"], 0)
+
+    def test_unreadable_bus_file_is_unavailable_not_empty(self):
+        self.add_days("BOX", [self.today - dt.timedelta(days=1)])
+        real = ml.git
+        def failing(cwd, *args, **kw):
+            if args and args[0] == "show":
+                return subprocess.CompletedProcess(args, 128, "", "fatal: bad object")
+            return real(cwd, *args, **kw)
+        ml.git = failing
+        try:
+            with self.assertRaises(ml.Unavailable):
+                self.recs(expect=["BOX"])
+        finally:
+            ml.git = real
 
     def test_old_full_day_with_recent_partial_is_stale(self):
         self.add_days("BOX", [self.today - dt.timedelta(days=6)])
@@ -361,7 +378,7 @@ class Headroom(unittest.TestCase):
     def test_duplicated_and_bus_not_refreshed_void_and_exit_1(self):
         day = self.today - dt.timedelta(days=1)
         data = self.tmp / "dup"
-        rows = full_day(day, machine="DUP")
+        rows = full_day(day, busy_fn=lambda i: 2.0, machine="DUP")
         write_day(data, day, rows + rows[:3])
         row = ml.rollup(data, day, allow={"airmypc"})
         p = self.bus / ml.BUS_DIR / "DUP" / "days-x.jsonl"
@@ -463,6 +480,13 @@ class Headroom(unittest.TestCase):
         s = ml.summarize(live, 1.0)
         self.assertEqual(s["duplicate_min"], 0)
 
+    def test_live_future_minute_is_not_fresh(self):
+        live = self.tmp / "live3"
+        future = ml.utc_now().replace(second=0, microsecond=0) + dt.timedelta(hours=1)
+        write_day(live, future.date(), [minute(future.strftime("%Y-%m-%dT%H:%M:00Z"))])
+        s = ml.summarize(live, 1.0)
+        self.assertEqual((s["minutes"], s["newest_age_s"]), (0, None))
+
     def test_live_unusable_fresh_rows_are_live_stale(self):
         me = ml.socket.gethostname().upper()
         self.add_days(me, [self.today - dt.timedelta(days=1)])
@@ -504,6 +528,24 @@ class Headroom(unittest.TestCase):
         rec = self.recs(expect=["NULLCPU"])["NULLCPU"]
         self.assertIn("INVALID-ROW", rec["states"])
         self.assertNotEqual(rec.get("verdict"), "ROOM")
+
+    def test_null_infinite_or_negative_figures_are_invalid(self):
+        d1, d2 = self.today - dt.timedelta(days=1), self.today - dt.timedelta(days=2)
+        data = self.tmp / "bad"
+        base = {}
+        for d in (d1, d2):
+            write_day(data, d, full_day(d, machine="BAD"))
+            base[d] = ml.rollup(data, d, allow={"airmypc"})
+        nullmem = json.loads(json.dumps(base[d1])); nullmem["mem"]["avail_gb_p05"] = None
+        self._push_row("BAD", base[d2]); self._push_row("BAD", nullmem)
+        rec = self.recs(expect=["BAD"])["BAD"]
+        self.assertIn("INVALID-ROW", rec["states"])
+        self.assertEqual(rec["verdict"], "UNKNOWN")
+        for mutate in (lambda r: r["mem"].__setitem__("avail_gb_p05", float("inf")),
+                       lambda r: r["cpu"].__setitem__("busy_threads_p95", -5.0)):
+            r = json.loads(json.dumps(base[d1])); mutate(r)
+            self.assertFalse(ml.valid_day_row(r, self.today))
+        self.assertTrue(ml.valid_day_row(base[d1], self.today))
 
     def test_mixed_code_uses_the_build_behind_the_used_days(self):
         d2, d1 = self.today - dt.timedelta(days=2), self.today - dt.timedelta(days=1)

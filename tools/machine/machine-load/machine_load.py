@@ -56,6 +56,9 @@ CLOCK_DROP = 0.90            # a load band whose clock is < 90 % of the light-lo
 SSH_ALIAS = {"PC-MINI1": "pc-mini1", "PC-MINI2": "pc-mini2", "PC-MINI3": "pc-mini3"}
 
 
+MAX_JOBS_PER_DAY = 2000   # HeavySlot spans walked per day (each walk is at most 1,440 minutes)
+
+
 class Unavailable(Exception):
     pass
 
@@ -150,9 +153,12 @@ def read_minutes(data_dir: Path, day: dt.date, dup_ts=None):
 
 
 def session_of(row):
-    """The sampler run that wrote a row. Rows from before the sid field (builds up to 0a6ed3d1's parent) count as
-    one legacy session per build, so two sid-less fragments of the same build in one minute are a replay."""
-    return row.get("sid") or f"legacy:{row.get('code')}"
+    """The sampler run that wrote a row. Rows from before the sid field (builds up to 0a6ed3d1's parent, only on
+    2026-11-16/17) carry no run identity; such a builds really did restart within a minute, so their identity is
+    the row's own content: a byte-identical replay is a duplicate, a different fragment merges on the time bound."""
+    if row.get("sid"):
+        return row["sid"]
+    return "legacy:" + json.dumps(row, sort_keys=True, separators=(",", ":"))
 
 
 def merge_fragments(a, b):
@@ -211,23 +217,46 @@ def _num(v):
 
 def valid_day_row(row, today):
     """A published day row the reader may use: a COMPLETED UTC day (before today; a wrong clock cannot make a
-    row stay fresh), coverage within bounds, and every figure the verdict uses present and finite."""
+    row stay fresh), and EVERY figure the verdict or the report uses present, finite and physically bounded.
+    Anything else is INVALID-ROW: ignored, never read as capacity."""
     try:
         d = dt.date.fromisoformat(str(row.get("date")))
     except ValueError:
         return False
     if d >= today:
         return False
+    lp = row.get("lp")
+    if not (_num(lp) and 1 <= lp <= 4096):
+        return False
     cov, quiet = row.get("coverage_min"), row.get("quiet_min")
     if not (_num(cov) and _num(quiet) and 0 <= quiet <= cov <= FULL_DAY):
         return False
-    need = [g(row, "cpu", "busy_threads_p95"), g(row, "cpu", "busy_threads_max"), g(row, "mem", "cov_min"),
-            g(row, "disk", "cov_min"), row.get("lp")]
-    if not all(_num(v) for v in need):
+    active = cov - quiet
+
+    def within(v, lo, hi, optional=False):
+        return (optional and v is None) or (_num(v) and lo <= v <= hi)
+
+    checks = [
+        within(g(row, "cpu", "busy_threads_p95"), 0, lp), within(g(row, "cpu", "busy_threads_max"), 0, lp),
+        within(g(row, "mem", "cov_min"), 0, active), within(g(row, "disk", "cov_min"), 0, active),
+        within(g(row, "mem", "avail_gb_p05"), 0, 1e6), within(g(row, "disk", "c_free_gb_min"), 0, 1e9),
+        within(g(row, "power", "pkg_w_p95"), 0, 1e4, optional=True),
+        within(g(row, "cpu_core_h", "machine"), 0, lp * 24), within(g(row, "cpu_core_h", "residual_pct"), -1e4, 100, optional=True),
+        within(g(row, "sampler", "cpu_s"), 0, 86400 * lp),
+    ]
+    if not all(checks):
+        return False
+    if not all(within(v, 0, lp * 24) for v in (g(row, "cpu_core_h", "projects") or {}).values()):
         return False
     hourly = row.get("hourly_utc") or {}
-    return all(isinstance(hourly.get(k), list) and len(hourly[k]) == 24 for k in ("cov", "busy_p95"))
-
+    if not all(isinstance(hourly.get(k), list) and len(hourly[k]) == 24 for k in ("cov", "busy_p95")):
+        return False
+    if not all(within(c, 0, 60) for c in hourly["cov"]) or not all(within(b, 0, lp, optional=True) for b in hourly["busy_p95"]):
+        return False
+    for band in (g(row, "cpu", "clock_by_load") or {}).values():
+        if not (isinstance(band, dict) and within(band.get("n"), 0, FULL_DAY) and within(band.get("perf_p50"), 1, 1000, optional=True)):
+            return False
+    return True
 
 def full_day(row):
     """A day row is a full day when its NON-QUIET sampled minutes cover the day: at least LOW_COVERAGE of 1,440,
@@ -308,6 +337,8 @@ def heavy_jobs(day: dt.date, minutes_by_ts, allow):
                     continue
                 if end < start or (end - start).total_seconds() > 2 * 86400:
                     continue      # any user can write the ledger: an impossible span is dropped, never walked or published
+                if sum(o["n"] for o in out.values()) >= MAX_JOBS_PER_DAY:
+                    break         # any user can write the ledger: the walk is bounded however many pairs it holds
                 if True:
                     parts = str(a.get("label", "?:?")).split(":")
                     key = f"{public_label(parts[0], allow)}:{public_kind(parts[1] if len(parts) > 1 else '?', allow)}"
@@ -465,6 +496,8 @@ def bus_rows(bus: Path, ref="refs/remotes/origin/master", misfiled=None):
         parts = f.split("/")
         owner = parts[1].upper() if len(parts) >= 3 else None
         p = git(bus, "show", f"{ref}:{f}")
+        if p.returncode != 0:
+            raise Unavailable(f"cannot read {f} at {ref}: {p.stderr.strip()[:200]}")   # never read as "no rows"
         for line in p.stdout.splitlines():
             try:
                 row = json.loads(line)
@@ -573,7 +606,9 @@ def summarize(data_dir: Path, hours: float):
     day = since.date()
     while day <= now.date():
         got, _, _ = read_minutes(data_dir, day, dup_ts)
-        rows += [x for x in got if parse_ts(x["ts"]) >= since and valid_minute(x)]   # usable minutes only
+        # usable minutes inside [since, now]: a minute stamped in the future (a clock that was ahead) is not a
+        # live observation and must never make the machine look fresh
+        rows += [x for x in got if since <= parse_ts(x["ts"]) <= now and valid_minute(x)]
         day += dt.timedelta(days=1)
     usable = {x["ts"] for x in rows}
     dups = len({ts for ts in dup_ts if ts in usable})      # duplication inside the window, among usable minutes
@@ -613,7 +648,8 @@ def summarize(data_dir: Path, hours: float):
 def clock_onset(rows):
     """Combine clock-by-load bands over days. Returns (light_clock, onset_threads|None, max_band_seen, table,
     gap_lo|None). Bands are walked in order from 0: an unmeasured band (< 10 minutes) before the first drop is a
-    gap, and gap_lo is its low edge (the onset could be anywhere in it, so nothing above it is claimed)."""
+    gap, and gap_lo is its low edge (the onset could be anywhere in it, so nothing above it is claimed). No 0-4
+    baseline at all is a gap at 0: without the light-load clock, a drop measured higher up cannot be ruled out."""
     acc = defaultdict(lambda: [0, 0.0])
     for row in rows:
         for band, v in (g(row, "cpu", "clock_by_load") or {}).items():
@@ -627,9 +663,9 @@ def clock_onset(rows):
         if key in acc and acc[key][0] >= 10:
             table.append((lo, min(hi, 32), acc[key][0], acc[key][1] / acc[key][0]))
     if not table:
-        return None, None, None, table, None
+        return None, None, None, table, 0
     if table[0][0] != 0:
-        return None, None, table[-1][1], table, None   # no light-load baseline: an onset cannot be claimed as measured
+        return None, None, table[-1][1], table, 0   # no light-load baseline: nothing at all is claimed
     light = table[0][3]
     expected_lo = table[0][1]
     for lo, hi, n, perf in table[1:]:
@@ -700,7 +736,11 @@ def headroom(bus: Path, days: int, expect, live: bool):
         busy_max = max(x["cpu"]["busy_threads_max"] or 0 for x in use)
         light, onset, seen_max, table, gap_lo = clock_onset(use)
         if onset is not None:
-            safe, basis = onset, f"clock falls below {int(CLOCK_DROP * 100)} % of its light-load value from {onset} busy threads (measured)"
+            safe, basis = onset, f"clock falls below {round(CLOCK_DROP * 100)} % of its light-load value from {onset} busy threads (measured)"
+        elif gap_lo == 0:
+            safe = 0
+            basis = ("ASSUMED 0: no light-load (0-4 busy threads) clock was measured, so no thread count is "
+                     "claimed safe")
         elif gap_lo is not None:
             safe = min(gap_lo, lp // 2)
             basis = (f"ASSUMED {safe}: the {gap_lo}-{gap_lo + 4} busy-thread band was never measured, so no onset "
@@ -708,7 +748,7 @@ def headroom(bus: Path, days: int, expect, live: bool):
         else:
             safe = lp // 2
             basis = (f"ASSUMED one busy thread per physical core ({lp // 2}); the clock never fell "
-                     f"{int((1 - CLOCK_DROP) * 100)} % up to {seen_max} busy threads in this window")
+                     f"{round((1 - CLOCK_DROP) * 100)} % up to {seen_max} busy threads in this window")
         avail = min((x["mem"]["avail_gb_p05"] for x in use if x["mem"]["avail_gb_p05"] is not None), default=None)
         disk = min((x["disk"]["c_free_gb_min"] for x in use if x["disk"]["c_free_gb_min"] is not None), default=None)
         pkg95 = max((x["power"]["pkg_w_p95"] for x in use if x["power"]["pkg_w_p95"] is not None), default=None)
@@ -765,7 +805,7 @@ def headroom(bus: Path, days: int, expect, live: bool):
             rec["live"] = live_summary(rec["machine"])
             lv = rec["live"] or {}
             age = lv.get("newest_age_s")
-            if age is None or age > 300 or lv.get("duplicate_min"):
+            if not _num(age) or age < 0 or age > 300 or lv.get("duplicate_min"):
                 rec["states"].append("LIVE-STALE")   # no usable minute in 5 min, or the live minutes are doubled
     for rec in out:
         if not fetched:

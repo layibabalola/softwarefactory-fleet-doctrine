@@ -153,6 +153,15 @@ try {
     $twice = Select-String -Path (Join-Path $PSScriptRoot 'MachineLoadSampler.ps1') -Pattern 'UtcNow\.Ticks.*UtcNow\.Ticks'
     Check 'no double clock read in a floor' ($null -eq $twice) ($twice | ForEach-Object Line)
     Check 'script name in another folder ignored' (-not (Test-SamplerCommandLine $pw "$args0 `"C:\temp\MachineLoadSampler.ps1`"" $pw))
+
+    # 14. -Status: the running sampler's 0x800710E0 is benign. LastTaskResult is unsigned, so the literal must be
+    # too: plain 0x800710E0 is a negative Int32 and never matched (every healthy machine read as a failed run).
+    $m = [regex]::Match($inst, '\{ @\((0x800710E0u?)\) \}')
+    $lit = if ($m.Success) { Invoke-Expression $m.Groups[1].Value } else { $null }
+    Check '-Status benign code matches an unsigned result' ($m.Success -and ([uint32]2147946720 -in @($lit))) "literal=$($m.Groups[1].Value)"
+
+    # 15. a root that appears between Test-Path and Create is re-checked (Create does not fail on an existing folder)
+    Check 'new root re-checked after create' ($inst -match '(?s)New-ProtectedDirectory -Path \$Root\s*\r?\n\s*#[^\n]*\r?\n\s*\$pre = @\(Test-PreLockTree -Path \$Root\)')
 }
 finally {
     Get-ChildItem -LiteralPath $base -Recurse -Force -Attributes ReparsePoint -ErrorAction SilentlyContinue | ForEach-Object { $_.Delete() }
