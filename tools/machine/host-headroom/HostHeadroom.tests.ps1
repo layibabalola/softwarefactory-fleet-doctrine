@@ -91,7 +91,7 @@ try {
     $hs2 = Read-HeavySlotWindow -Hours 1
     Assert ($hs2.gates -eq 5) "reaped and open gates are counted ($($hs2.gates))"
     Assert ([math]::Abs($hs2.occupancy_frac - (33 / 60)) -lt 0.01) "occupancy includes reaped (2 min) and open (5 min) holds ($($hs2.occupancy_frac))"
-    Assert ($hs2.max_holders -eq 2) "max holders at once is the sweep peak, t1 and t2 overlap ($($hs2.max_holders))"
+    Assert ($hs2.max_holders -eq 2) "max holders is the peak of exit-closed holds, t1 and t2 overlap ($($hs2.max_holders))"
     Assert ([math]::Abs($hs2.mean_holders - ((15 + 10 + 6 + 2 + 5) / 60)) -lt 0.02) "mean holders is holder-minutes over the window ($($hs2.mean_holders))"
     Assert ($hs2.wait_s_p90 -eq 30) "wait p90 over every gate in the window ($($hs2.wait_s_p90))"
     # an open admit older than HeavySlot's 90-min default max hold is a dead holder: it stops at 90 min
@@ -100,7 +100,19 @@ try {
     & $mod { param($f) $script:HeavySlotLedger = $f } $l3
     $hs3 = Read-HeavySlotWindow -Hours 2
     Assert ([math]::Abs($hs3.occupancy_frac - (40 / 120)) -lt 0.01) "a dead open admit is held 90 min, so 40 of the last 120 ($($hs3.occupancy_frac))"
-    # the gate verdict reads the wait, not "someone holds it" (several shared slots run at once)
+    # a reaped holder on a one-slot gate ends at the next admit, not at the (late) reap time
+    $l4 = Join-Path $tmp 'ledger4.jsonl'
+    Set-Content -LiteralPath $l4 -Encoding utf8 -Value @(
+        (@{ at = $u.AddMinutes(-330).ToString('o'); event = 'admit'; ticket = 'c1'; label = 'mlv:a:pytest'; class = 'shared'; waitedMs = 0 } | ConvertTo-Json -Compress)
+        (@{ at = $u.AddMinutes(-320).ToString('o'); event = 'exit'; ticket = 'c1' } | ConvertTo-Json -Compress)
+        (@{ at = $u.AddMinutes(-300).ToString('o'); event = 'admit'; ticket = 'd1'; label = 'mlv:b:pytest'; class = 'shared'; waitedMs = 0 } | ConvertTo-Json -Compress)
+        (@{ at = $u.AddMinutes(-290).ToString('o'); event = 'admit'; ticket = 'c2'; label = 'mlv:c:pytest'; class = 'shared'; waitedMs = 0 } | ConvertTo-Json -Compress)
+        (@{ at = $u.AddMinutes(-280).ToString('o'); event = 'exit'; ticket = 'c2' } | ConvertTo-Json -Compress)
+        (@{ at = $u.AddMinutes(-10).ToString('o'); event = 'reaped'; kind = 'held'; ticket = 'd1' } | ConvertTo-Json -Compress))
+    & $mod { param($f) $script:HeavySlotLedger = $f } $l4
+    $hs4 = Read-HeavySlotWindow -Hours 6
+    Assert ([math]::Abs($hs4.occupancy_frac - (30 / 360)) -lt 0.005) "a dead holder reaped 290 min late counts 10 min, to the next admit ($($hs4.occupancy_frac))"
+    Assert ($hs4.max_holders -eq 1 -and $hs4.dead_holders -eq 1) "one slot measured from exit-closed holds; one dead holder ($($hs4.max_holders), $($hs4.dead_holders))"    # the gate verdict reads the wait, not "someone holds it" (a long-held gate with no queue is not full)
     Assert ((Get-HeavySlotVerdict ([ordered]@{ gates = 40; occupancy_frac = 0.99; wait_s_p90 = 3 })) -eq 'ROOM') 'held 99% of the time with no wait is ROOM'
     Assert ((Get-HeavySlotVerdict ([ordered]@{ gates = 40; occupancy_frac = 0.2; wait_s_p90 = 776 })) -eq 'FULL') 'a 13-min p90 wait is FULL'
     Assert ((Get-HeavySlotVerdict ([ordered]@{ gates = 40; occupancy_frac = 0.2; wait_s_p90 = 150 })) -eq 'TIGHT') 'a 2.5-min p90 wait is TIGHT'

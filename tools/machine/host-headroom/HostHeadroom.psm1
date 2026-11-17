@@ -539,8 +539,8 @@ function Read-CoreTempWindow([double]$Hours, $Exclude = @()) {
 # peer's), so they are reported per project and as slot occupancy, never as CPU headroom.
 function Read-HeavySlotWindow([double]$Hours) {
     if (-not (Test-Path -LiteralPath $script:HeavySlotLedger)) { return $null }
-    $since = [datetime]::UtcNow.AddHours(-$Hours)
-    $admits = @{}; $gates = [System.Collections.Generic.List[object]]::new(); $reaped = 0
+    $since = [datetime]::UtcNow.AddHours(-$Hours); $nowU = [datetime]::UtcNow
+    $admits = @{}; $raw = [System.Collections.Generic.List[object]]::new(); $admitTimes = [System.Collections.Generic.List[datetime]]::new(); $reaped = 0
     foreach ($line in (Read-SharedLines $script:HeavySlotLedger)) {
         if (-not $line) { continue }   # the shared read splits on newlines: the last element is empty
         try { $e = $line | ConvertFrom-Json } catch { continue }
@@ -553,21 +553,40 @@ function Read-HeavySlotWindow([double]$Hours) {
         if ($ev -eq 'admit') {
             $label = if ($e.PSObject.Properties['label'] -and $e.label) { "$($e.label)" } else { 'unlabelled' }
             $admits[$e.ticket] = [pscustomobject]@{ at = $at; label = $label; cls = "$($e.class)"; waited = [double]($e.waitedMs ?? 0) }
-        } elseif (($ev -eq 'exit' -or $ev -like 'reap*') -and $admits.ContainsKey($e.ticket)) {
-            $a = $admits[$e.ticket]; $admits.Remove($e.ticket)
-            if ($at -lt $since) { continue }
-            $gates.Add([pscustomobject]@{ project = ConvertTo-ProjectSlug (($a.label -split ':')[0]); cls = $a.cls
-                start = $(if ($a.at -lt $since) { $since } else { $a.at }); end = $at; waitS = $a.waited / 1000 })
+            $admitTimes.Add($at)
+        } elseif (($ev -eq 'exit' -or $ev -eq 'tool-exit' -or $ev -like 'reap*') -and $admits.ContainsKey($e.ticket)) {
+            $x = $admits[$e.ticket]; $admits.Remove($e.ticket)
+            $raw.Add([pscustomobject]@{ a = $x; start = $x.at; end = $at; dead = ($ev -like 'reap*') })
         }
     }
-    # admits still open: held until now, at most 90 min (HeavySlot's default --max-hold), so an older open
-    # admit is a holder that died without an exit row, not a live hold. "The next admit closes it" is wrong:
-    # shared tickets each take one of HEAVY_SLOT_COUNT slots, and PC-MINI3 measured 16 paired holds at once.
-    $nowU = [datetime]::UtcNow
-    foreach ($a in @($admits.Values)) {
-        $s0 = if ($a.at -lt $since) { $since } else { $a.at }
-        $e0 = if (($nowU - $a.at).TotalMinutes -gt 90) { $a.at.AddMinutes(90) } else { $nowU }
-        if ($e0 -gt $s0) { $gates.Add([pscustomobject]@{ project = ConvertTo-ProjectSlug (($a.label -split ':')[0]); cls = $a.cls; start = $s0; end = $e0; waitS = $a.waited / 1000 }) }
+    # admits still open: a holder younger than HeavySlot's 90-min default --max-hold may be live (held to now)
+    foreach ($x in @($admits.Values)) { $raw.Add([pscustomobject]@{ a = $x; start = $x.at; end = $nowU; dead = $true }) }
+
+    # A reaped hold is a holder that died without an exit row; the reaper closes it late (PC-MINI3, 7 days to
+    # 2026-11-17: 36 such holds, reaped 26 to 873 min after admit). Ending it at the reap time inflated
+    # occupancy toward 100%. Measured from exit-closed holds only, every mini's gate admits ONE holder at a time,
+    # so a dead hold ends at the next admit (finding from the PC-MINI3 dashboard session). It is also capped
+    # at 90 min. If exit-closed holds ever overlap (HEAVY_SLOT_COUNT > 1), only the 90-min cap applies.
+    function Peak($set) {
+        $c = 0; $mx = 0
+        $pts = foreach ($g in $set) { [pscustomobject]@{ t = $g.start; d = 1 }; [pscustomobject]@{ t = $g.end; d = -1 } }
+        foreach ($pt in ($pts | Sort-Object t, d)) { $c += $pt.d; if ($c -gt $mx) { $mx = $c } }
+        $mx
+    }
+    $cleanPeak = Peak @($raw | Where-Object { -not $_.dead })
+    $oneSlot = $cleanPeak -le 1
+    $sortedAdmits = @($admitTimes | Sort-Object)
+    $gates = [System.Collections.Generic.List[object]]::new(); $dead = 0
+    foreach ($r in $raw) {
+        $end = $r.end
+        if ($r.dead) {
+            $cap = $r.start.AddMinutes(90); if ($end -gt $cap) { $end = $cap }
+            if ($oneSlot) { $next = $sortedAdmits | Where-Object { $_ -gt $r.start } | Select-Object -First 1; if ($next -and $next -lt $end) { $end = $next } }
+        }
+        if ($end -le $since) { continue }
+        if ($r.dead -and $r.end -lt $nowU) { $dead++ }
+        $gates.Add([pscustomobject]@{ project = ConvertTo-ProjectSlug (($r.a.label -split ':')[0]); cls = $r.a.cls
+            start = $(if ($r.start -lt $since) { $since } else { $r.start }); end = $end; waitS = $r.a.waited / 1000 })
     }
     # whole-machine occupancy: union of hold intervals
     $held = 0.0; $curS = $null; $curE = $null
@@ -576,21 +595,17 @@ function Read-HeavySlotWindow([double]$Hours) {
         if ($g.start -le $curE) { if ($g.end -gt $curE) { $curE = $g.end } } else { $held += ($curE - $curS).TotalSeconds; $curS = $g.start; $curE = $g.end }
     }
     if ($null -ne $curS) { $held += ($curE - $curS).TotalSeconds }
-    # holders at once: mean is holder-seconds over the window; max is the peak of the sweep
     $holderS = 0.0; foreach ($g in $gates) { $holderS += ($g.end - $g.start).TotalSeconds }
-    $c = 0; $maxHolders = 0
-    $pts = foreach ($g in $gates) { [pscustomobject]@{ t = $g.start; d = 1 }; [pscustomobject]@{ t = $g.end; d = -1 } }
-    foreach ($pt in ($pts | Sort-Object t, d)) { $c += $pt.d; if ($c -gt $maxHolders) { $maxHolders = $c } }
     $allWaits = @($gates | ForEach-Object { $_.waitS })
     $byProject = foreach ($grp in ($gates | Group-Object project | Sort-Object Name)) {
         [ordered]@{ project = $grp.Name; gates = $grp.Count; classes = @($grp.Group.cls | Sort-Object -Unique)
                     wait_s_p50 = Get-Pct $grp.Group.waitS 50; wait_s_p95 = Get-Pct $grp.Group.waitS 95
                     hold_s_p50 = Get-Pct ($grp.Group | ForEach-Object { ($_.end - $_.start).TotalSeconds }) 50 }
     }
-    # occupancy_frac is the time at least one ticket held the gate. With several slots that is NOT "full";
-    # what a new project feels is the wait, so the verdict reads wait_s_p90 (Get-HeavySlotVerdict).
-    [ordered]@{ gates = $gates.Count; reaped = $reaped; occupancy_frac = [math]::Round($held / ($Hours * 3600), 4)
-                mean_holders = [math]::Round($holderS / ($Hours * 3600), 2); max_holders = $maxHolders
+    # occupancy_frac: time at least one ticket held the gate. max_holders: peak of exit-closed holds (the slot
+    # count actually used). The verdict reads the wait a new job would see (Get-HeavySlotVerdict).
+    [ordered]@{ gates = $gates.Count; reaped = $reaped; dead_holders = $dead; occupancy_frac = [math]::Round($held / ($Hours * 3600), 4)
+                mean_holders = [math]::Round($holderS / ($Hours * 3600), 2); max_holders = $cleanPeak
                 wait_s_p50 = Get-Pct $allWaits 50; wait_s_p90 = Get-Pct $allWaits 90; wait_s_p99 = Get-Pct $allWaits 99
                 projects = @($byProject) }
 }

@@ -70,14 +70,14 @@ findings that shaped it, each measured on the minis:
   estimated as `min(cores, busy% x logical / 100)`. Headroom is reported in **physical cores**.
 - **HeavySlot is its own resource.** Each mini's `C:\ProgramData\HeavySlot` gate admits heavy builds and
   tests. It is reported separately (`heavy_slot_verdict`), because a project that needs the gate adds queue
-  time whatever the CPU headroom says. A `shared` ticket takes one of `HEAVY_SLOT_COUNT` slots, so several
-  hold the gate at once (PC-MINI3: up to 16, measured 2026-11-17), and `occupancy_frac` (time at least one
-  ticket held it) can read 99% while most new jobs wait under a second. The verdict therefore reads the
-  **wait**: p90 of 10 min or more is FULL, 2 min or more TIGHT, fewer than 5 gates in the window is
-  FEW-GATES. `mean_holders` and `max_holders` give the concurrency. An admit with no exit row counts as
-  held for at most HeavySlot's 90-min default max hold. (Both fixes came from the PC-MINI3 dashboard
-  session's review, 2026-11-17; its "the next admit closes it" proposal was measured and not adopted,
-  because holds overlap.) "Loaded" uses
+  time whatever the CPU headroom says. The verdict reads the **wait** a new job would see: p90 of 10 min or
+  more is FULL, 2 min or more TIGHT, fewer than 5 gates in the window is FEW-GATES. `occupancy_frac` is the
+  time at least one ticket held the gate. A holder that dies without an exit row is reaped late (PC-MINI3,
+  7 days to 2026-11-17: 36 dead holders, reaped 26 to 873 min after admit), so a dead hold ends at the next
+  admit when the gate admits one holder at a time (`max_holders`, the peak of exit-closed holds, is 1 on the
+  minis), and never later than HeavySlot's 90-min default max hold. Before this fix, dead holds ran to the
+  reap time and pushed occupancy toward 100%. (Finding and fix from the PC-MINI3 dashboard session's review,
+  2026-11-17; an intermediate commit, 88f24c9e, misread those late reaps as 16 concurrent holders.) "Loaded" uses
   HeavySlot's own admission thresholds (CPU 85%, disk idle 20%, free commit 8 GiB), so this report and the
   gate never disagree about what loaded means. Long waits are the project queueing behind the gate, not
   proof the hardware is full.
@@ -144,7 +144,7 @@ single-file plumbing commit and `-NeedCores/-NeedGB` fit query.
   "cpu": { "busy_pct_p50": 8, "busy_pct_p95": 62, "burst_frac": 0.05, "saturated_frac": 0.01,
            "freq_pct_busy_p10": 66, "phys_cores_free_p90": 6.1 },
   "canary": { "runs": 2000, "single": { "p10_ms": 250, "slowdown_p95": 1.18 }, "wide": { "slowdown_p95": 1.41 } },
-  "heavy_slot": { "gates": 189, "occupancy_frac": 0.99, "mean_holders": 2.1, "max_holders": 16, "wait_s_p90": 776,
+  "heavy_slot": { "gates": 189, "occupancy_frac": 0.99, "dead_holders": 36, "mean_holders": 0.4, "max_holders": 1, "wait_s_p90": 776,
                   "projects": [ { "project": "mlv-app", "wait_s_p95": 1400 } ] },
   "thermal": { "temp_ge90_frac": 0.02, "at_power_ceiling_frac": 0.04 },
   "projects": [ { "project": "airmypc", "cores_p95": 5.2, "ram_gb_p95": 9.8 } ],
