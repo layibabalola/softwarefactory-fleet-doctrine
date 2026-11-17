@@ -519,7 +519,7 @@ function Read-CoreTempWindow([double]$Hours, $Exclude = @()) {
     }
     if ($cpu.Count -eq 0) { return [ordered]@{ rows = 0 } }
     $T = ($dt | Measure-Object -Sum).Sum
-    $frac = { param($list, $pred) $s = 0.0; for ($i = 0; $i -lt $list.Count; $i++) { if (& $pred $list[$i]) { $s += $dt[$i] } }; [math]::Round($s / [math]::Max(1, $T), 4) }
+    $frac = { param($list, $pred) $s = 0.0; for ($i = 0; $i -lt $list.Count; $i++) { if (& $pred $list[$i]) { $s += $dt[$i] } }; [math]::Round($s / [math]::Max(1.0, $T), 4) }
     $wCeil = Get-WeightedPct $w.ToArray() $dt.ToArray() 99
     [ordered]@{
         rows              = $cpu.Count
@@ -622,7 +622,8 @@ function Get-HostHeadroomSummary {
     # (merit adjudication 2026-11-17, survivor S3 from candidate B: 24 h window with a 6 h minimum).
     $perHour = 12 * 17
     $expected = [math]::Floor([math]::Max($spanH, 0.01) * $perHour)
-    $coverage = if ($s.Count) { [math]::Round([math]::Min(1, $s.Count / [math]::Max(1, $expected)), 3) } else { 0 }
+    # 1.0, not 1: Min(1, <double>) binds Min(int,int), which made coverage read 0 or 1
+    $coverage = if ($s.Count) { [math]::Round([math]::Min(1.0, $s.Count / [math]::Max(1.0, $expected)), 3) } else { 0 }
 
     # physical-core equivalent in use: Windows fills idle physical cores before SMT siblings, so
     # busy% x logical processors, capped at the core count, approximates physical cores occupied.

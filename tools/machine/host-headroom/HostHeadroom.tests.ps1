@@ -110,6 +110,9 @@ try {
     Assert ([math]::Max(0, 2.54) -eq 3) 'control: the int overload rounds (why the module writes 0.0)'
     $modText = Get-Content -LiteralPath (Join-Path $here 'HostHeadroom.psm1') -Raw
     Assert (-not ($modText -match '\[math\]::Max\(0, \(')) 'no [math]::Max(0, <expression>) left in the module'
+    # the same binding hits Min: coverage was 0 or 1, so the 0.6 coverage gate acted at 0.5 (PC-MINI3 read 1 at 3.3 h)
+    Assert ([math]::Min(1, 0.4) -eq 0) 'control: Min(1, 0.4) binds Min(int,int) and reads 0'
+    Assert (-not ($modText -match '\[math\]::(Min|Max)\(\d+, (?!\[int\])[^)]*/')) 'no [math]::Min/Max(<int literal>, <division>) left in the module'
 
     # readers never block the appenders (HeavySlot, Core Temp and the sampler append while we read)
     $shared = Join-Path $tmp 'shared.jsonl'; Set-Content -LiteralPath $shared -Value 'a'
