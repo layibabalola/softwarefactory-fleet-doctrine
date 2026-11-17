@@ -105,7 +105,7 @@ foreach ($f in $Files) {
 }
 $manifest | ConvertTo-Json | Set-Content -Encoding utf8 (Join-Path $BinDir 'manifest.json')
 
-$user = "$env:USERDOMAIN\$env:USERNAME"
+$user = [Security.Principal.WindowsIdentity]::GetCurrent().Name   # USERDOMAIN reads WORKGROUP in an ssh session
 $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited
 $samplerPrincipal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable `
