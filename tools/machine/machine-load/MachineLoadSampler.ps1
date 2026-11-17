@@ -285,14 +285,14 @@ function Remove-OldFiles {
 $self = Get-Process -Id $PID
 $startedUtc = [DateTime]::UtcNow
 Write-Log "start code=$codeHash interval=$IntervalSec lp=$LP"
+$script:imageCpu = @{}
 $prevTick = [DateTime]::UtcNow
 $prevNet = Get-NetBytes
-$null = Read-ProcessCpu -PrevTickUtc $prevTick   # seed
+try { $null = Read-ProcessCpu -PrevTickUtc $prevTick } catch { Write-Log "fatal in seed: $($_.Exception.Message) at $($_.InvocationInfo.ScriptLineNumber)"; throw }   # seed
 $minuteStart = [DateTime]::new(([DateTime]::UtcNow.Ticks - ([DateTime]::UtcNow.Ticks % [TimeSpan]::TicksPerMinute)), [DateTimeKind]::Utc)
 $acc = $null
 function New-Acc { @{ samples = [Collections.Generic.List[hashtable]]::new(); proj = @{}; secs = 0.0; net = [long]0 } }
 $acc = New-Acc
-$script:imageCpu = @{}
 $selfCpu0 = $self.TotalProcessorTime.TotalSeconds
 $lastPrune = [DateTime]::MinValue
 
