@@ -121,16 +121,40 @@ function Resolve-WorktreeProject([string]$wt) {
 # index maps each registered worktree root to its repo's slug, so a build or test host inside any worktree
 # is attributed to its project without guessing from a folder name. Built once per process (the sampler is
 # a fresh process every 5 minutes, so new worktrees are seen within one run).
+# A main repo need not sit in the workspace either (PC-MINI2 keeps AirMyPC at C:\temp\AirMyPC), so repos are
+# found one level below the workspace AND below every top-level folder of each fixed drive, system folders
+# excluded. A main repo's own root is indexed too, under its folder's slug.
 $script:WorkspaceRoots = @('C:\!Layi Wkspc')
+$script:RepoSearchRoots = $null   # $null = workspace roots + top-level folders of fixed drives (tests override)
+$script:SystemTops = @('windows', 'program files', 'program files (x86)', 'programdata', 'users', '$recycle.bin',
+    'system volume information', 'recovery', 'perflogs', 'config.msi', 'onedrivetemp', '$windows.~ws', '$windows.~bt', '$winreagent')
 $script:WorktreeIndex = $null
+function Get-RepoSearchRoots {
+    if ($null -ne $script:RepoSearchRoots) { return @($script:RepoSearchRoots) }
+    $roots = [Collections.Generic.List[string]]::new()
+    foreach ($w in $script:WorkspaceRoots) { $roots.Add($w) }
+    foreach ($d in [IO.DriveInfo]::GetDrives()) {
+        if ($d.DriveType -ne 'Fixed' -or -not $d.IsReady) { continue }
+        foreach ($top in @(Get-ChildItem -LiteralPath $d.RootDirectory.FullName -Directory -ErrorAction SilentlyContinue)) {
+            if ($script:SystemTops -contains $top.Name.ToLowerInvariant()) { continue }
+            if ($script:WorkspaceRoots -contains $top.FullName) { continue }
+            $roots.Add($top.FullName)
+        }
+    }
+    @($roots)
+}
 function Get-WorktreeIndex {
     if ($null -ne $script:WorktreeIndex) { return $script:WorktreeIndex }
     $byParent = @{}
-    foreach ($ws in $script:WorkspaceRoots) {
+    foreach ($ws in Get-RepoSearchRoots) {
         foreach ($repo in @(Get-ChildItem -LiteralPath $ws -Directory -ErrorAction SilentlyContinue)) {
+            if (-not (Test-Path -LiteralPath (Join-Path $repo.FullName '.git') -PathType Container)) { continue }
+            $slug = ConvertTo-ProjectSlug $repo.Name
+            $rp = (Split-Path $repo.FullName).TrimEnd('\').ToLowerInvariant() + '\'
+            if (-not $byParent.ContainsKey($rp)) { $byParent[$rp] = @{} }
+            if (-not $byParent[$rp].ContainsKey($repo.Name.ToLowerInvariant())) { $byParent[$rp][$repo.Name.ToLowerInvariant()] = $slug }
             $wtDir = Join-Path $repo.FullName '.git\worktrees'
             if (-not (Test-Path -LiteralPath $wtDir -PathType Container)) { continue }
-            $slug = ConvertTo-ProjectSlug $repo.Name
             foreach ($g in @(Get-ChildItem -LiteralPath $wtDir -Directory -ErrorAction SilentlyContinue)) {
                 try {
                     $f = Join-Path $g.FullName 'gitdir'

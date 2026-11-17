@@ -26,11 +26,18 @@ try {
     $ws = Join-Path $tmp 'ws'; $gd = Join-Path $ws 'MLV-App\.git\worktrees\wi-x'; New-Item -ItemType Directory -Path $gd -Force | Out-Null
     $far = Join-Path $tmp 'mlvtmp\MLV-wi-x'
     Set-Content -LiteralPath (Join-Path $gd 'gitdir') -Value (($far -replace '\\', '/') + '/.git')
-    & $mod { param($w) $script:WorkspaceRoots = @($w); $script:WorktreeIndex = $null } $ws
+    & $mod { param($w) $script:WorkspaceRoots = @($w); $script:RepoSearchRoots = @($w); $script:WorktreeIndex = $null } $ws
     Assert ((Resolve-PathProject "$far\artifacts\bin\testhost.exe --port 1") -eq 'mlv-app') 'a worktree outside the workspace resolves via the repo worktree index'
     Assert ((Resolve-PathProject ("X:/elsewhere/" + (Split-Path $far -Leaf) + "/x.exe")) -ne 'mlv-app') 'the index matches the full worktree root, not a bare folder name'
     Assert ($null -eq (Resolve-PathProject (Join-Path $tmp 'mlvtmp\other-folder\x.exe'))) 'an unregistered sibling folder is not attributed'
-    & $mod { $script:WorkspaceRoots = @('C:\!Layi Wkspc'); $script:WorktreeIndex = $null }    Assert ((Resolve-PathProject 'python -m pytest "C:\!Layi Wkspc\Adobe Document Cloud Ingester\tests"') -eq 'adobe-ingester') 'adobe slug'
+    # a main repo outside the workspace (PC-MINI2: C:\temp\AirMyPC) is found under a search root, with its worktrees
+    $sr = Join-Path $tmp 'driveTop'; $main = Join-Path $sr 'AirMyPC'; New-Item -ItemType Directory -Path (Join-Path $main '.git\worktrees\AirMyPC-wi-a') -Force | Out-Null
+    Set-Content -LiteralPath (Join-Path $main '.git\worktrees\AirMyPC-wi-a\gitdir') -Value ((Join-Path $sr 'AirMyPC-wi-a\.git') -replace '\\', '/')
+    & $mod { param($w, $s) $script:WorkspaceRoots = @($w); $script:RepoSearchRoots = @($w, $s); $script:WorktreeIndex = $null } $ws $sr
+    Assert ((Resolve-PathProject "$sr\AirMyPC-wi-a\artifacts\bin\testhost.exe") -eq 'airmypc') 'a worktree of a main repo outside the workspace resolves'
+    Assert ((Resolve-PathProject "$main\src\App\dotnet.exe") -eq 'airmypc') 'a main repo outside the workspace resolves by its folder'
+    Assert ((Resolve-PathProject "$far\x.exe") -eq 'mlv-app') 'workspace worktrees still resolve with extra search roots'
+    & $mod { $script:WorkspaceRoots = @('C:\!Layi Wkspc'); $script:RepoSearchRoots = $null; $script:WorktreeIndex = $null }    Assert ((Resolve-PathProject 'python -m pytest "C:\!Layi Wkspc\Adobe Document Cloud Ingester\tests"') -eq 'adobe-ingester') 'adobe slug'
     Assert ((Resolve-PathProject 'C:\!Layi Wkspc\MLV-App\build\x.exe') -eq 'mlv-app') 'mlv slug'
     Assert ($null -eq (Resolve-PathProject 'C:\Windows\system32\svchost.exe -k netsvcs')) 'system process has no project'
     Assert ((Resolve-Family 'MsMpEng.exe') -eq 'defender') 'defender family'

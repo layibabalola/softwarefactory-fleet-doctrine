@@ -74,7 +74,7 @@ findings that shaped it, each measured on the minis:
 - **Attribution.** Claude and Codex CLIs carry no project path in their command lines, and Win32_Process
   has no working directory. A path inside a **linked worktree** resolves through the index every workspace
   repo keeps in `.git\worktrees\*\gitdir`, wherever the worktree lives (`C:\abwt`, `C:\temp` and `C:\mlvtmp`
-  on the three minis, measured 2026-11-17), never from a folder name. A process's project comes from its
+  on the three minis, measured 2026-11-17), never from a folder name. Main repos are found one level below the workspace and below each top-level folder of every fixed drive (PC-MINI2 keeps AirMyPC at `C:\temp\AirMyPC`). A process's project comes from its
   own path, else its **working folder** (read
   from the process's PEB; ported from candidate A's `MachineLoadNative.cs`, PR #99, as a merit survivor),
   else its nearest ancestor's, else the most common project among its descendants (a CLI is attributed by the git, pwsh and pytest children it
