@@ -86,7 +86,8 @@ Add-Content -LiteralPath (Join-Path $Clone '.git\info\exclude') -Value '.host-he
 # 3. tasks, through the hidden launcher. Priority 4 (Normal), as Core Temp's tasks: the default 7 is
 #    BelowNormal CPU + Low I/O, which starves pwsh under load and would make the canary measure
 #    its own low priority instead of what a new normal job would see.
-$user = "$env:USERDOMAIN\$env:USERNAME"
+# the token name, not USERDOMAIN\USERNAME: under ssh USERDOMAIN reads WORKGROUP, which maps to no SID
+$user = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 function New-HiddenAction([string]$label, [string]$argsLine) {
     $out = Join-Path $Data "$label.out.log"; $err = Join-Path $Data "$label.err.log"
     $a = "`"$Vbs`" --stdout `"$out`" --stderr `"$err`" --label `"$label`" -- `"$Pwsh`" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$(Join-Path $Dest 'Run-HostHeadroom.ps1')`" $argsLine"
