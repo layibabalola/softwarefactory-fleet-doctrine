@@ -13781,3 +13781,60 @@ They took the persisted PATH past the length at which `cmd.exe` children stop fi
 **Cleanup of what has already leaked** is per machine and the owner's call: by hand from the `-Check` list until `tools/Repair-MachinePath.ps1 -Apply` (held in this revision) lands in its follow-up PR (`doctrine/pattern-path-defense-2026-11.md`).
 
 **Reply surface:** your own spec, as `PATH-DEFENSE: ADOPTED (<where the env vars are set>)` or `PATH-DEFENSE: DISTINGUISHED (<reason>)`.
+
+## agent-bridge, 2026-11-17, PC-MINI1 - fleet headroom dashboard on every machine; Ultra-Magnus and Virtual-TEN added; HeavySlot dead-holder fix
+
+*Uncarded append for the owner's 2026-11-16 asks: "I'd prefer a visualizer", "make the dashboard viewable from
+any mini", and "what about adding Ultra-Magnus and Virtual-TEN". Tool: `tools/machine/host-headroom`, PR 100,
+commit `5aa37108`. Diagnostic only; nothing gates on it.*
+
+- **Dashboard on every machine.** The PC-MINI3 dashboard session built the page on 2026-11-16, on PC-MINI3 only
+  and from an untracked draft. It is now ported into the tool with credit, and installed from that commit on
+  PC-MINI1, PC-MINI2, PC-MINI3, ULTRA-MAGNUS and VIRTUAL-TEN.
+  - Task `\Fleet\HostHeadroom Dashboard` runs every 10 minutes. It writes the machine's own card, reads each
+    peer's `card.json` over ssh as a file read, and renders `%LOCALAPPDATA%\HostHeadroom\dashboard\index.html`.
+    There is no server.
+  - Desktop link: "Fleet Headroom". Rebuild now: `pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Build-FleetDashboard.ps1" -Open`.
+  - Bachelor's suspended-project footprint is re-measured only with `-RefreshFootprint`, never by the task
+    (Bachelor is benchmarking). A machine without a copy takes the newest one a peer holds.
+- **HeavySlot dead holders (measured, PC-MINI3, 7 days).** 36 holders died without an exit row and were reaped
+  26 to 873 minutes after admit. Counting each until its reap pushed occupancy toward 100%. With exit-closed
+  holds only, at most one holder held the gate at a time.
+  - Fix: a dead hold now ends at the next admit, and at most 90 minutes after its own admit.
+  - The gate verdict now reads the p90 wait a new job sees. FULL means 10 minutes or more; PC-MINI3 measures
+    about 12.7 minutes.
+  - The finding is the PC-MINI3 session's. An intermediate commit (`88f24c9e`) misread the late reaps as
+    concurrent holders; `e37647a1` corrects it.
+- **`[math]::Max(0, <double>)` binds `Max(int,int)` in PowerShell and rounds the double to a whole number.**
+  `[math]::Max(0, 2.54)` returns 3. It had rounded free RAM and sample lateness. Write `0.0`. A test now refuses
+  the pattern in the module.
+- **VM and host (measured 2026-11-17).** VIRTUAL-TEN is a VMware Workstation 17.5 guest on ULTRA-MAGNUS
+  (16 vCPUs, 64 GB). ULTRA-MAGNUS is an i9-13900KS (8 performance and 16 efficiency cores, 32 threads, 128 GB),
+  and the Hyper-V hypervisor is not running on it.
+  - **Temperature comes only from the host.** A guest cannot read the CPU's sensors.
+  - **The host's counters already include the guest**, which runs as `vmware-vmx.exe`. Under Hyper-V that would
+    be false: the host is itself a partition, and only `Hyper-V Hypervisor Logical Processor\% Total Run Time`
+    sees the guests.
+  - **The guest's canary is its only direct measure of host contention.** A Windows guest reports no steal time.
+  - **A placement on the guest is limited by, and charged to, the host.**
+  - **Efficiency cores** make "cores free" overstate performance-core room on ULTRA-MAGNUS.
+- **Core Temp logging on ULTRA-MAGNUS.** Core Temp 1.20 was running there with `EnLog=0`. The minis' Core Temp
+  telemetry bundle (1.21, adapter and supervisor) is now installed, and the feed was proven fresh
+  (`hwinfo-log-adapter.csv`, supervisor `healthy=True`). Before the install, every CT-Log and the ini were copied,
+  hash-checked, into a dated `pre-fleet-telemetry-*` subfolder, because the supervisor prunes top-level CT-Logs
+  older than 12 hours.
+  - The first window on ULTRA-MAGNUS (74 thermal rows) read as follows.
+    - CPU: p95 92 °C, with 9.5% of rows at or above 90 °C.
+    - Power: package p99 246 W, at the power ceiling in 10.8% of rows.
+    - Memory: 21.7 GB available of 128 GB, which is 2.3 GB above the 15% reserve. Most of it is held by the guest.
+  - Read: ULTRA-MAGNUS has cores free but little memory and thermal room. Placing more work on VIRTUAL-TEN
+    spends that same room.
+- **Two traps in that bundle, for whoever owns it:**
+  1. It is Bachelor's chain byte-for-byte, so its supervisor and register script hardcode one OS user's
+     profile path and task name. On a machine signed in as another user, the register step refuses (exit 8).
+     ULTRA-MAGNUS runs locally edited copies, with the bundle originals kept beside them.
+  2. In `Install-CoreTempTelemetry.ps1`, a PowerShell `switch -Wildcard` runs every case that matches. So
+     `CoreTemp.ini` hits both its "keep existing" case and `Core Temp\*`, and an existing ini is replaced
+     (with a `.bak`). Add `break` to the first case.
+- **Publishers stay disabled on all five** until PR 100 is reviewed and merged. Records will go to
+  `heartbeats/host-headroom/<MACHINE>.json`.
