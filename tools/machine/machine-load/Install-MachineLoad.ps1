@@ -125,8 +125,15 @@ if ($Remove) {
 
 # ---------------- install ----------------
 if (-not (Test-Path $Pwsh)) { Write-Host "pwsh 7 not at $Pwsh"; exit 2 }
-$Python = (Get-Command python.exe -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch 'WindowsApps' } | Select-Object -First 1).Source
-if (-not $Python) { Write-Host 'python.exe (not the Store alias) not on PATH'; exit 2 }
+# Resolve the interpreter python itself reports (sys.executable), so a Python install-manager or
+# Store alias on PATH resolves to the real python.exe, and a Store "install me" stub (which does not
+# run) is refused instead of being written into the task.
+$Python = $null
+foreach ($c in @(Get-Command python.exe -All -ErrorAction SilentlyContinue)) {
+    $exe = (& $c.Source -c 'import sys; print(sys.executable)' 2>$null | Select-Object -First 1)
+    if ($LASTEXITCODE -eq 0 -and $exe -and (Test-Path -LiteralPath $exe.Trim())) { $Python = $exe.Trim(); break }
+}
+if (-not $Python) { Write-Host 'no runnable python.exe on PATH'; exit 2 }
 if (-not (Test-Path $UserVbs)) { Write-Host "windowless shim missing: $UserVbs (install coretemp-fleet first)"; exit 2 }
 $launcherSrc = $LauncherSources | Where-Object { (Test-Path $_) -and (Get-FileHash -Algorithm SHA256 $_).Hash -eq $LauncherSha256 } | Select-Object -First 1
 if (-not $launcherSrc) { Write-Host "no $LauncherName matching the pinned SHA-256 $LauncherSha256"; exit 2 }
