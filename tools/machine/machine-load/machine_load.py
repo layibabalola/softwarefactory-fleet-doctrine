@@ -216,6 +216,13 @@ def _num(v):
 
 
 def valid_day_row(row, today):
+    try:
+        return _valid_day_row(row, today)
+    except (TypeError, AttributeError, KeyError, ValueError):
+        return False      # a shape the checks below did not foresee is invalid, never a reader crash
+
+
+def _valid_day_row(row, today):
     """A published day row the reader may use: a COMPLETED UTC day (before today; a wrong clock cannot make a
     row stay fresh), and EVERY figure the verdict or the report uses present, finite and physically bounded.
     Anything else is INVALID-ROW: ignored, never read as capacity."""
@@ -236,22 +243,40 @@ def valid_day_row(row, today):
     def within(v, lo, hi, optional=False):
         return (optional and v is None) or (_num(v) and lo <= v <= hi)
 
+    # shape first: every section the reader indexes is a dict, every key it indexes is present (null only where
+    # the reader handles null), so a malformed row is INVALID-ROW, never a reader crash
+    sections = ("cpu", "mem", "disk", "power", "cpu_core_h", "sampler", "hourly_utc")
+    if not all(isinstance(row.get(s), dict) for s in sections):
+        return False
+    if "pkg_w_p95" not in row["power"] or "residual_pct" not in row["cpu_core_h"]:
+        return False
+    if not isinstance(row["cpu_core_h"].get("projects"), dict) or not all(isinstance(row["hourly_utc"].get(k), list) for k in ("cov", "busy_p95")):
+        return False
+    if not isinstance(row["cpu"].get("clock_by_load"), (dict, type(None))):
+        return False
+    if not isinstance(row.get("heavy_jobs"), (dict, type(None))):
+        return False
+
     checks = [
         within(g(row, "cpu", "busy_threads_p95"), 0, lp), within(g(row, "cpu", "busy_threads_max"), 0, lp),
         within(g(row, "mem", "cov_min"), 0, active), within(g(row, "disk", "cov_min"), 0, active),
         within(g(row, "mem", "avail_gb_p05"), 0, 1e6), within(g(row, "disk", "c_free_gb_min"), 0, 1e9),
         within(g(row, "power", "pkg_w_p95"), 0, 1e4, optional=True),
-        within(g(row, "cpu_core_h", "machine"), 0, lp * 24), within(g(row, "cpu_core_h", "residual_pct"), -1e4, 100, optional=True),
+        # a restart split may sum to 75 s in a minute (FULL_MINUTE_SECS), so integrated CPU is bounded by that, not 60 s
+        within(g(row, "cpu_core_h", "machine"), 0, lp * 24 * FULL_MINUTE_SECS / 60), within(g(row, "cpu_core_h", "residual_pct"), -1e4, 100, optional=True),
         within(g(row, "sampler", "cpu_s"), 0, 86400 * lp),
     ]
     if not all(checks):
         return False
-    if not all(within(v, 0, lp * 24) for v in (g(row, "cpu_core_h", "projects") or {}).values()):
+    if not all(within(v, 0, lp * 24 * FULL_MINUTE_SECS / 60) for v in row["cpu_core_h"]["projects"].values()):
         return False
-    hourly = row.get("hourly_utc") or {}
+    hourly = row["hourly_utc"]
     if not all(isinstance(hourly.get(k), list) and len(hourly[k]) == 24 for k in ("cov", "busy_p95")):
         return False
-    if not all(within(c, 0, 60) for c in hourly["cov"]) or not all(within(b, 0, lp, optional=True) for b in hourly["busy_p95"]):
+    if not all(within(c, 0, 60) for c in hourly["cov"]):
+        return False
+    # an hour with sampled minutes has a measured busy figure; null only for an hour with none
+    if not all(within(b, 0, lp, optional=(c == 0)) for c, b in zip(hourly["cov"], hourly["busy_p95"])):
         return False
     for band in (g(row, "cpu", "clock_by_load") or {}).values():
         if not (isinstance(band, dict) and within(band.get("n"), 0, FULL_DAY) and within(band.get("perf_p50"), 1, 1000, optional=True)):
@@ -315,7 +340,7 @@ def heavy_jobs(day: dt.date, minutes_by_ts, allow):
     out = defaultdict(lambda: {"n": 0, "dur": [], "busy": []})
     if not HEAVYSLOT_LEDGER.is_file():
         return None
-    admits = {}
+    admits, walked = {}, 0
     try:
         with HEAVYSLOT_LEDGER.open(encoding="utf-8", errors="replace") as fh:
             for line in fh:
@@ -337,24 +362,26 @@ def heavy_jobs(day: dt.date, minutes_by_ts, allow):
                     continue
                 if end < start or (end - start).total_seconds() > 2 * 86400:
                     continue      # any user can write the ledger: an impossible span is dropped, never walked or published
-                if sum(o["n"] for o in out.values()) >= MAX_JOBS_PER_DAY:
-                    break         # any user can write the ledger: the walk is bounded however many pairs it holds
-                if True:
-                    parts = str(a.get("label", "?:?")).split(":")
-                    key = f"{public_label(parts[0], allow)}:{public_kind(parts[1] if len(parts) > 1 else '?', allow)}"
-                    o = out[key]
-                    o["n"] += 1
-                    o["dur"].append((end - start).total_seconds())
-                    # walk only this UTC day's minutes (bounded at 1,440 whatever the ledger says)
-                    t = max(start, dt.datetime.combine(day, dt.time(), dt.timezone.utc)).replace(second=0, microsecond=0)
-                    busy = []
-                    while t <= end:
-                        m = minutes_by_ts.get(t.strftime("%Y-%m-%dT%H:%M:00Z"))
-                        if m is not None and g(m, "cpu", "busy_threads") is not None:
-                            busy.append(g(m, "cpu", "busy_threads"))
-                        t += dt.timedelta(minutes=1)
-                    if busy:
-                        o["busy"].append(sum(busy) / len(busy))
+                walked += 1
+                if walked > MAX_JOBS_PER_DAY:
+                    # any user can write the ledger: the walk is bounded, and a truncated day publishes no job
+                    # figures at all (partial counts or percentiles would read as the whole day's)
+                    return None
+                parts = str(a.get("label", "?:?")).split(":")
+                key = f"{public_label(parts[0], allow)}:{public_kind(parts[1] if len(parts) > 1 else '?', allow)}"
+                o = out[key]
+                o["n"] += 1
+                o["dur"].append((end - start).total_seconds())
+                # walk only this UTC day's minutes (bounded at 1,440 whatever the ledger says)
+                t = max(start, dt.datetime.combine(day, dt.time(), dt.timezone.utc)).replace(second=0, microsecond=0)
+                busy = []
+                while t <= end:
+                    m = minutes_by_ts.get(t.strftime("%Y-%m-%dT%H:%M:00Z"))
+                    if m is not None and g(m, "cpu", "busy_threads") is not None:
+                        busy.append(g(m, "cpu", "busy_threads"))
+                    t += dt.timedelta(minutes=1)
+                if busy:
+                    o["busy"].append(sum(busy) / len(busy))
     except OSError:
         return None
     return {k: {"n": v["n"], "dur_s_p50": r(pct(v["dur"], 50), 0), "dur_s_max": r(max(v["dur"]), 0),
@@ -482,10 +509,16 @@ def git(cwd, *args, check=False):
 
 
 def bus_files(bus: Path, ref="refs/remotes/origin/master"):
-    p = git(bus, "ls-tree", "-r", "--name-only", ref, "--", BUS_DIR + "/")
+    p = git(bus, "ls-tree", "-r", "-z", ref, "--", BUS_DIR + "/")
     if p.returncode != 0:
         raise Unavailable(f"cannot list {BUS_DIR}/ at {ref}: {p.stderr.strip()[:200]}")
-    return [f for f in p.stdout.splitlines() if f.endswith(".jsonl")]
+    out = []
+    for entry in p.stdout.split("\0"):
+        meta, _, path = entry.partition("\t")
+        # blobs only: a gitlink or other non-blob entry named *.jsonl cannot be read, and must not stop the fleet
+        if path.endswith(".jsonl") and meta.split(" ")[1:2] == ["blob"]:
+            out.append(path)
+    return out
 
 
 def bus_rows(bus: Path, ref="refs/remotes/origin/master", misfiled=None):

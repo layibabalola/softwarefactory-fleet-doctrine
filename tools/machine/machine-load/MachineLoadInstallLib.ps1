@@ -50,6 +50,11 @@ function New-ProtectedDirectory {
     param([string]$Path, [string]$ReadSid = 'S-1-5-32-545')
     $ds = [Security.AccessControl.DirectorySecurity]::new()
     $ds.SetAccessRuleProtection($true, $false)
+    # Elevated, the owner is set to Administrators in the same call: under the "object creator" default-owner policy
+    # an admin token would otherwise own it as the user, and the post-create re-check would refuse a fresh install.
+    if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        $ds.SetOwner([Security.Principal.SecurityIdentifier]'S-1-5-32-544')
+    }
     $inh = [Security.AccessControl.InheritanceFlags]'ContainerInherit, ObjectInherit'
     $none = [Security.AccessControl.PropagationFlags]::None
     foreach ($s in 'S-1-5-18', 'S-1-5-32-544') {

@@ -140,6 +140,32 @@ class Rollup(unittest.TestCase):
         self.assertEqual(jobs["airmypc:gate"]["n"], 1)
         self.assertEqual(jobs["airmypc:gate"]["dur_s_max"], 3600)
 
+    def test_restart_split_at_full_load_is_a_valid_day(self):
+        rows = full_day(self.day, busy_fn=lambda i: 32.0)
+        extra = minute(rows[0]["ts"], busy=32.0); extra.update({"secs": 10.1, "n": 1})
+        extra["cpu_s"] = {k: v * 10.1 / 60 for k, v in extra["cpu_s"].items()}
+        write_day(self.tmp, self.day, rows + [extra])           # a pre-sid restart split: merged, not a replay
+        row = ml.rollup(self.tmp, self.day, allow={"airmypc"})
+        self.assertEqual(row["duplicate_min"], 0)
+        self.assertGreater(row["cpu_core_h"]["machine"], 32 * 24)
+        self.assertTrue(ml.valid_day_row(row, self.day + dt.timedelta(days=1)))
+
+    def test_truncated_heavy_ledger_publishes_no_job_figures(self):
+        led = self.tmp / "ledger.jsonl"
+        lines = []
+        for i in range(4):
+            lines.append(json.dumps({"at": f"2026-11-10T0{i}:00:00Z", "event": "admit", "ticket": f"t{i}", "label": "airmypc:gate"}))
+            lines.append(json.dumps({"at": f"2026-11-10T0{i}:05:00Z", "event": "exit", "ticket": f"t{i}"}))
+        led.write_text("\n".join(lines) + "\n")
+        old, cap = ml.HEAVYSLOT_LEDGER, ml.MAX_JOBS_PER_DAY
+        ml.HEAVYSLOT_LEDGER, ml.MAX_JOBS_PER_DAY = led, 3
+        try:
+            self.assertIsNone(ml.heavy_jobs(self.day, {}, ml.load_projects()))   # 4 pairs > cap 3: no partial n
+            ml.MAX_JOBS_PER_DAY = 4
+            self.assertEqual(ml.heavy_jobs(self.day, {}, ml.load_projects())["airmypc:gate"]["n"], 4)
+        finally:
+            ml.HEAVYSLOT_LEDGER, ml.MAX_JOBS_PER_DAY = old, cap
+
     def test_concurrent_samplers_counted(self):
         a = minute("2026-11-10T00:05:00Z"); b = minute("2026-11-10T00:05:00Z")
         write_day(self.tmp, self.day, [a, b])
@@ -344,6 +370,14 @@ class Headroom(unittest.TestCase):
         self.assertIn("ASSUMED 0: no light-load", recs["BUSY"]["safe_basis"])   # never ran below 4 busy threads
         self.assertEqual(recs["BUSY"]["safe_threads"], 0)
 
+    def test_non_blob_jsonl_entry_is_skipped(self):
+        self.add_days("BOX", [self.today - dt.timedelta(days=1)])
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.bus, env=CLEAN_ENV, capture_output=True, text=True).stdout.strip()
+        run("git", "update-index", "--add", "--cacheinfo", f"160000,{sha},{ml.BUS_DIR}/EVIL/evil.jsonl", cwd=self.bus)
+        run("git", "commit", "-qm", "gitlink", cwd=self.bus); run("git", "push", "-q", "origin", "HEAD:master", cwd=self.bus)
+        recs = self.recs(expect=["BOX"])                       # a planted gitlink is not a row file: no exit 2
+        self.assertEqual(recs["BOX"]["states"], [])
+
     def test_unreadable_bus_file_is_unavailable_not_empty(self):
         self.add_days("BOX", [self.today - dt.timedelta(days=1)])
         real = ml.git
@@ -542,7 +576,17 @@ class Headroom(unittest.TestCase):
         self.assertIn("INVALID-ROW", rec["states"])
         self.assertEqual(rec["verdict"], "UNKNOWN")
         for mutate in (lambda r: r["mem"].__setitem__("avail_gb_p05", float("inf")),
-                       lambda r: r["cpu"].__setitem__("busy_threads_p95", -5.0)):
+                       lambda r: r["cpu"].__setitem__("busy_threads_p95", -5.0),
+                       lambda r: r["hourly_utc"].__setitem__("busy_p95", [None] * 24),   # measured hours, no figure
+                       lambda r: r["cpu_core_h"].__setitem__("projects", None),
+                       lambda r: r["cpu_core_h"].__setitem__("projects", []),
+                       lambda r: r.pop("power"),
+                       lambda r: r["power"].pop("pkg_w_p95"),
+                       lambda r: r["cpu_core_h"].pop("residual_pct"),
+                       lambda r: r["cpu"].__setitem__("clock_by_load", [1]),
+                       lambda r: r.__setitem__("heavy_jobs", [1]),
+                       lambda r: r.__setitem__("hourly_utc", [1]),
+                       lambda r: r["cpu_core_h"].__setitem__("projects", [1])):
             r = json.loads(json.dumps(base[d1])); mutate(r)
             self.assertFalse(ml.valid_day_row(r, self.today))
         self.assertTrue(ml.valid_day_row(base[d1], self.today))
