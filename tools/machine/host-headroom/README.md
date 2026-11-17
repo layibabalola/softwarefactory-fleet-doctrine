@@ -11,19 +11,22 @@ not make one, and nothing may gate on it without a ruling.
 ## Run it
 
 ```powershell
+# Every path here is fully qualified, so each command works from any folder (C:\Windows\System32 included).
+# The installed copy exists on every machine the tool is installed on; the bus checkout path is the canonical one.
+
 # fleet view from the published records (reads origin/master; never pulls a checkout)
-pwsh -NoProfile -File tools\machine\host-headroom\Get-FleetHostHeadroom.ps1 [-Fit] [-Json]
+pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Get-FleetHostHeadroom.ps1" [-Fit] [-Json]
 
 # compute now on every mini over the ssh mesh, e.g. the last 24 h
-pwsh -NoProfile -File tools\machine\host-headroom\Get-FleetHostHeadroom.ps1 -Live -Hours 24 -Fit
+pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Get-FleetHostHeadroom.ps1" -Live -Hours 24 -Fit
 
 # install or upgrade on one machine, from a reviewed commit (elevated; an ssh key login is elevated)
-pwsh -NoProfile -File tools\machine\host-headroom\Install-HostHeadroom.ps1 -Commit <sha>
-pwsh -NoProfile -File tools\machine\host-headroom\Install-HostHeadroom.ps1 -Status    # read-only
-pwsh -NoProfile -File tools\machine\host-headroom\Install-HostHeadroom.ps1 -Uninstall # tasks only; keeps data
+pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Commit <sha>
+pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Status    # read-only
+pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Uninstall # tasks only; keeps data
 
 # tests (no Pester, no elevation, temp folder only)
-pwsh -NoProfile -File tools\machine\host-headroom\HostHeadroom.tests.ps1
+pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\HostHeadroom.tests.ps1"
 ```
 
 `-Fit` takes each project's largest p95 footprint on any machine (cores, RAM) and marks every machine

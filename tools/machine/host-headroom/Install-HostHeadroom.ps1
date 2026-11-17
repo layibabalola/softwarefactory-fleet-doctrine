@@ -3,9 +3,9 @@
   (an ssh key login of an admin account is already elevated): the sampler task runs at Highest so it
   can read other processes' command lines for attribution.
 
-    pwsh -NoProfile -File Install-HostHeadroom.ps1 -Commit <reviewed sha> [-BusRemote <url>]   # install / upgrade
-    pwsh -NoProfile -File Install-HostHeadroom.ps1 -Status                                      # read-only check
-    pwsh -NoProfile -File Install-HostHeadroom.ps1 -Uninstall                                   # remove tasks; keeps data
+    pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Commit <reviewed sha> [-BusRemote <url>]   # install / upgrade
+    pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Status                                      # read-only check
+    pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Uninstall                                   # remove tasks; keeps data
 
   What it creates:
     %USERPROFILE%\.claude\machine\host-headroom\   installed copy of the tool + installed-from.json

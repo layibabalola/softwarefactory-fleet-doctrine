@@ -1,5 +1,5 @@
 # Tests for tools/machine/host-headroom. No Pester, no elevation; writes only under a temp folder.
-#   pwsh -NoProfile -File tools/machine/host-headroom/HostHeadroom.tests.ps1
+#   pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\HostHeadroom.tests.ps1"
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $PSCommandPath
 $pass = 0; $fail = 0

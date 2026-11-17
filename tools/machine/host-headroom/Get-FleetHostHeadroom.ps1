@@ -2,9 +2,9 @@
   Fleet headroom view. Read-only. Answers: how much room does each machine have, and would a
   given project fit there without slowing the projects already on it?
 
-    pwsh -NoProfile -File Get-FleetHostHeadroom.ps1                    # published records (bus origin/master)
-    pwsh -NoProfile -File Get-FleetHostHeadroom.ps1 -Live -Hours 24    # compute now on each mini over ssh
-    pwsh -NoProfile -File Get-FleetHostHeadroom.ps1 -Fit               # project footprint vs each machine's room
+    pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Get-FleetHostHeadroom.ps1"                    # published records (bus origin/master)
+    pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Get-FleetHostHeadroom.ps1" -Live -Hours 24    # compute now on each mini over ssh
+    pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Get-FleetHostHeadroom.ps1" -Fit               # project footprint vs each machine's room
     ... -Json                                                          # machine-readable
 
   Published mode reads heartbeats/host-headroom/*.json at origin/master of a bus clone (after a fetch), so it
