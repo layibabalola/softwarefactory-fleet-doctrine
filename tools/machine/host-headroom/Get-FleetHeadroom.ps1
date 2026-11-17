@@ -40,7 +40,7 @@ function Add-Row($name, $status, $rec, [string]$note, $ageH) {
 }
 
 if ($Live) {
-    $targets = @($Hosts)
+    $targets = @($Hosts | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })   # pwsh -File passes "a,b" as one string
     foreach ($h in $targets) {
         $cmd = "pwsh -NoProfile -NonInteractive -File `"$RemoteBusRoot\tools\machine\host-headroom\Get-HostHeadroom.ps1`" -Json"
         $out = & ssh -o BatchMode=yes -o ConnectTimeout=10 $h $cmd 2>$null
