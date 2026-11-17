@@ -79,7 +79,11 @@ function Get-CodeHash([string]$Dir) {
 function Test-LockedTree([string]$Path) {
     # returns a list of problems; empty = only SYSTEM/Administrators can change anything under $Path
     $bad = @()
-    $writeRights = [Security.AccessControl.FileSystemRights]'Write, Modify, FullControl, CreateFiles, AppendData, WriteData, Delete, DeleteSubdirectoriesAndFiles, ChangePermissions, TakeOwnership, WriteAttributes, WriteExtendedAttributes'
+    # Atomic write bits only: the composite names (Write, Modify, FullControl) also carry read and
+    # Synchronize bits, so OR-ing them in flagged a correct read-only ACE as writable.
+    # WriteData/CreateFiles 0x2, AppendData 0x4, WriteEA 0x10, DeleteChild 0x40, WriteAttributes 0x100,
+    # Delete 0x10000, WRITE_DAC 0x40000, WRITE_OWNER 0x80000, GENERIC_ALL 0x10000000, GENERIC_WRITE 0x40000000.
+    $writeRights = 0x2 -bor 0x4 -bor 0x10 -bor 0x40 -bor 0x100 -bor 0x10000 -bor 0x40000 -bor 0x80000 -bor 0x10000000 -bor 0x40000000
     foreach ($item in @(Get-Item -Force $Path) + @(Get-ChildItem -Force -Recurse $Path)) {
         $acl = Get-Acl -LiteralPath $item.FullName
         $owner = ([Security.Principal.NTAccount]$acl.Owner).Translate([Security.Principal.SecurityIdentifier]).Value
@@ -88,7 +92,7 @@ function Test-LockedTree([string]$Path) {
             if ($ace.AccessControlType -ne 'Allow') { continue }
             $sid = try { $ace.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value } catch { "$($ace.IdentityReference)" }
             if ($sid -in $AdminSids) { continue }
-            if (($ace.FileSystemRights -band $writeRights) -ne 0) { $bad += "$($ace.IdentityReference) can write ($($ace.FileSystemRights)) on $($item.FullName)" }
+            if (([long][int]$ace.FileSystemRights -band [long]$writeRights) -ne 0) { $bad += "$($ace.IdentityReference) can write ($($ace.FileSystemRights)) on $($item.FullName)" }
         }
     }
     return $bad
