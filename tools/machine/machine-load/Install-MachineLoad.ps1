@@ -51,6 +51,12 @@ $Registry = Join-Path $env:USERPROFILE '.claude\machine\SCHEDULED-TASK-REGISTRY.
 $AdminSids = @('S-1-5-18', 'S-1-5-32-544')   # SYSTEM, Administrators
 
 function Test-Elevated { ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) }
+function ConvertTo-Utc($v) {
+    # ConvertFrom-Json already turns ISO-8601 strings into DateTime; re-parsing its local-format string would
+    # shift it by the UTC offset (a 6 h error that made the staleness check and the proof's "after" test lie).
+    if ($v -is [datetime]) { if ($v.Kind -eq 'Unspecified') { return [DateTime]::SpecifyKind($v, 'Utc') } return $v.ToUniversalTime() }
+    return [DateTime]::Parse([string]$v, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal)
+}
 function Get-SamplerState {
     $p = Join-Path $DataDir 'sampler-state.json'
     if (Test-Path $p) { try { return Get-Content -Raw $p | ConvertFrom-Json } catch { } }
@@ -84,15 +90,15 @@ if ($Status) {
         $t = Get-ScheduledTask -TaskPath $TaskPath -TaskName $n -ErrorAction SilentlyContinue
         if (-not $t) { $bad += "task missing: $n"; continue }
         $i = $t | Get-ScheduledTaskInfo
-        '{0,-24} state={1} last={2:u} result=0x{3:X} next={4:u}' -f $n, $t.State, $i.LastRunTime, $i.LastTaskResult, $i.NextRunTime
+        '{0,-24} state={1} last={2:u} result=0x{3:X} next={4:u}' -f $n, $t.State, $i.LastRunTime.ToUniversalTime(), $i.LastTaskResult, $i.NextRunTime.ToUniversalTime()
         if ($t.State -eq 'Disabled') { $bad += "task disabled: $n" }
         # 0 ok, 0x41301 running, 0x41303 not yet run; anything else is a failed last run
         if ($i.LastTaskResult -notin 0, 0x41301, 0x41303) { $bad += ("{0} last run failed: 0x{1:X}" -f $n, $i.LastTaskResult) }
     }
     $row = Get-NewestRow
     if (-not $row) { $bad += 'no minute rows' } else {
-        $age = [int]([DateTime]::UtcNow - [datetime]::Parse($row.ts).ToUniversalTime()).TotalSeconds
-        "newest row $($row.ts) age ${age}s code=$($row.code) busy=$($row.cpu.busy_threads) sampler ws=$($row.sampler.ws_mb)MB"
+        $age = [int]([DateTime]::UtcNow - (ConvertTo-Utc $row.ts)).TotalSeconds
+        "newest row $((ConvertTo-Utc $row.ts).ToString('yyyy-MM-ddTHH:mm:ssZ')) age ${age}s code=$($row.code) busy=$($row.cpu.busy_threads) sampler ws=$($row.sampler.ws_mb)MB"
         if ($age -gt 180) { $bad += "newest row is ${age}s old (STALE)" }
     }
     $rc = Join-Path $UserDir 'publish-receipt.json'
@@ -101,7 +107,7 @@ if ($Status) {
         'last publish: ' + ($r | ConvertTo-Json -Compress)
         if ($r.exit -ne 0) { $bad += "last publish exited $($r.exit)" }
         # the publisher runs daily; a receipt over 50 h old means at least one daily run left none
-        $rage = ([DateTime]::UtcNow - [datetime]::Parse($r.utc).ToUniversalTime()).TotalHours
+        $rage = ([DateTime]::UtcNow - (ConvertTo-Utc $r.utc)).TotalHours
         if ($rage -gt 50) { $bad += ("last publish receipt is {0:N0} h old" -f $rage) }
     } else { 'last publish: none yet' }
     $bad | ForEach-Object { "PROBLEM: $_" }
@@ -246,7 +252,7 @@ $s = $null
 while ([DateTime]::UtcNow -lt $deadline) {
     Start-Sleep -Seconds 10
     $s = Get-SamplerState
-    if ($s -and $s.code -eq $expected -and [datetime]::Parse($s.written_utc).ToUniversalTime() -gt $before -and (Get-Process -Id $s.pid -ErrorAction SilentlyContinue)) { $ok = $true; break }
+    if ($s -and $s.code -eq $expected -and (ConvertTo-Utc $s.written_utc) -gt $before -and (Get-Process -Id $s.pid -ErrorAction SilentlyContinue)) { $ok = $true; break }
 }
 $t = Get-ScheduledTask -TaskPath $TaskPath -TaskName $SamplerTask | Get-ScheduledTaskInfo
 $receipt = [ordered]@{

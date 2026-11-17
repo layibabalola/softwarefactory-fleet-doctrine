@@ -83,6 +83,9 @@ try {
     Check 'other executable ignored' (-not (Test-SamplerCommandLine 'C:\Users\u\pwsh.exe' "$args0 `"C:\ProgramData\MachineLoad\bin\MachineLoadSampler.ps1`"" $pw))
     Check 'trailing arguments ignored' (-not (Test-SamplerCommandLine $pw "$args0 C:\ProgramData\MachineLoad\bin\MachineLoadSampler.ps1 -RunMinutes 5" $pw))
     Check 'other script ignored' (-not (Test-SamplerCommandLine $pw "$args0 `"C:\ProgramData\MachineLoad\bin\Other.ps1`"" $pw))
+    # 7. the sampler floors a time with ONE clock read (two UtcNow reads stamped the first minute one early)
+    $twice = Select-String -Path (Join-Path $PSScriptRoot 'MachineLoadSampler.ps1') -Pattern 'UtcNow\.Ticks.*UtcNow\.Ticks'
+    Check 'no double clock read in a floor' ($null -eq $twice) ($twice | ForEach-Object Line)
     Check 'script name in another folder ignored' (-not (Test-SamplerCommandLine $pw "$args0 `"C:\temp\MachineLoadSampler.ps1`"" $pw))
 }
 finally {

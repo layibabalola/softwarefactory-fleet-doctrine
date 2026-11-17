@@ -302,7 +302,10 @@ $script:imageCpu = @{}
 $prevTick = [DateTime]::UtcNow
 $prevNet = Get-NetBytes
 try { $null = Read-ProcessCpu -PrevTickUtc $prevTick } catch { Write-Log "fatal in seed: $($_.Exception.Message) at $($_.InvocationInfo.ScriptLineNumber)"; throw }   # seed
-$minuteStart = [DateTime]::new(([DateTime]::UtcNow.Ticks - ([DateTime]::UtcNow.Ticks % [TimeSpan]::TicksPerMinute)), [DateTimeKind]::Utc)
+# ONE clock read: flooring UtcNow with a second UtcNow call subtracts a few ms too much, lands on hh:mm-1:59.99x,
+# and stamped the first fragment after every start one minute early (merging it into the previous run's minute).
+$t0 = [DateTime]::UtcNow
+$minuteStart = [DateTime]::new($t0.Ticks - ($t0.Ticks % [TimeSpan]::TicksPerMinute), [DateTimeKind]::Utc)
 $acc = $null
 function New-Acc { @{ samples = [Collections.Generic.List[hashtable]]::new(); proj = @{}; secs = 0.0; net = [long]0 } }
 $acc = New-Acc
