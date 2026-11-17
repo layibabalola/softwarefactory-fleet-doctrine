@@ -25,6 +25,11 @@ pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machi
 pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Status    # read-only
 pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\Install-HostHeadroom.ps1" -Uninstall # tasks only; keeps data
 
+# the dashboard: open it on ANY machine the tool is installed on (Desktop link "Fleet Headroom")
+start "$env:LOCALAPPDATA\HostHeadroom\dashboard\index.html"
+pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Build-FleetDashboard.ps1" -Open                    # rebuild now
+pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Build-FleetDashboard.ps1" -RefreshFootprint -Open  # re-measure Bachelor's suspended projects
+
 # tests (no Pester, no elevation, temp folder only)
 pwsh -NoProfile -File "C:\!Layi Wkspc\softwarefactory-fleet-doctrine\tools\machine\host-headroom\HostHeadroom.tests.ps1"
 ```
@@ -97,6 +102,49 @@ findings that shaped it, each measured on the minis:
   dates and unpadded seconds parsed explicitly.
 - **Scope.** Host CPU, memory, disk, power and the HeavySlot gate. Provider quota (Claude/Codex usage) is
   not covered; `capacity-control/` owns that, which is also why this is not called "fleet-usage".
+
+## Dashboard (every machine, every 10 minutes)
+
+Task `\Fleet\HostHeadroom Dashboard` (hidden-launcher chain, like the others) runs `Run-HostHeadroom.ps1 -Mode
+Dashboard`. On each machine it:
+
+1. writes that machine's own card, `%LOCALAPPDATA%\HostHeadroom\dashboard\card.json` (`Collect-HostCard.ps1`):
+   the sampler's 7-day summary, a 24 h CPU series, HeavySlot figures, installed toolchains, GPU, free disk and
+   whether it is a VM guest or a VM host;
+2. reads every peer's `card.json` over ssh (a file read; hosts and VM relations in `fleet-hosts.json`), so
+   no machine recomputes another's summary and the sampling cost does not grow with the number of viewers;
+3. renders `dashboard\index.html`, one self-contained page (no server, nothing listens on a port), which the
+   Desktop link "Fleet Headroom" opens. The page reloads every 5 minutes. A card over 30 min old is marked
+   stale; a machine without the tool shows as "not installed".
+
+The page shows one card per machine (cores free, RAM free, HeavySlot busy, CPU sparkline, canary, temperature,
+power, toolchains), the projects suspended on the footprint source (Bachelor) with their estimated demand,
+a placement plan, and a project-by-machine fit grid with the reasons for each verdict. The suspended-project
+footprint is measured on Bachelor only with `-RefreshFootprint`, never by the task, because Bachelor is held
+for benchmarking; machines without a copy take the newest one a peer holds.
+
+Page design, footprint method and placement rules come from the PC-MINI3 dashboard session (2026-11-16),
+ported here with credit. Its HeavySlot math is replaced by the sampler's, which now applies the same rule.
+
+## Virtual machines and their host (Ultra-Magnus and Virtual-TEN)
+
+Virtual-TEN is a VMware guest on Ultra-Magnus (measured 2026-11-17: `VMware Virtual Platform`, 16 vCPUs,
+64 GB; Ultra-Magnus is an i9-13900KS, 8 performance + 16 efficiency cores, 32 threads, 128 GB, with the
+Hyper-V hypervisor not running). That decides how each is measured:
+
+- **Temperature lives only on the host.** A guest cannot read the CPU's sensors, so Core Temp runs on
+  Ultra-Magnus (it is installed there but its logging was off: `EnLog=0`) and the guest's card points at it.
+  Enable logging with the Core Temp telemetry bundle the minis use; the sampler then reads its feed.
+- **The host's CPU counters are the truth for both.** Under VMware Workstation the guest runs as
+  `vmware-vmx.exe` processes on the host, so Ultra-Magnus's `% Processor Time` already includes everything
+  Virtual-TEN does, and its card lists the running guest. (Under Hyper-V this would be false: the host is
+  itself a partition and only `Hyper-V Hypervisor Logical Processor\% Total Run Time` sees the guests.)
+- **A guest's own CPU % is of its vCPUs, not of the machine.** It cannot see the host's contention (Windows
+  guests report no steal time), so the guest's **canary** is the direct measure of how much the host slows it.
+- **A placement on the guest is charged to the host.** The dashboard limits a guest's room to the smaller of
+  its free vCPUs and its host's free cores, and charges whatever it places on the guest to the host too.
+- **Hybrid cores.** The physical-core estimate assumes symmetric cores; on Ultra-Magnus 16 of the 24 are
+  efficiency cores, so "cores free" overstates performance-core room. The canary still measures real slowdown.
 
 ## Verdict (first-cut thresholds; every reason that fired is listed in the record)
 

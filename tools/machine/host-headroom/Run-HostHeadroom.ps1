@@ -3,11 +3,12 @@
     -Mode Sample   one 5-minute sampling pass (task "HostHeadroom Sampler", every 5 min)
     -Mode Publish  7-day summary, pushed to host-headroom/<MACHINE>.json on change or when stale
     -Mode Summary  print the summary as JSON (read-only; what the fleet reader's -Live calls)
+    -Mode Dashboard  rebuild this machine's card and the fleet dashboard page (task "HostHeadroom Dashboard", every 10 min)
   Every run appends one receipt line to %LOCALAPPDATA%\HostHeadroom\runs.jsonl, success or not.
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Sample', 'Publish', 'Summary')][string]$Mode = 'Summary',
+    [ValidateSet('Sample', 'Publish', 'Summary', 'Dashboard')][string]$Mode = 'Summary',
     [double]$Hours = 168,
     [string]$BusRoot = (Join-Path $env:LOCALAPPDATA 'HostHeadroom\bus'),
     [switch]$NoPush
@@ -24,6 +25,7 @@ try {
         'Sample'  { Invoke-HostHeadroomSampler; $receipt.ok = $true }
         'Publish' { $r = Publish-HostHeadroom -BusRoot $BusRoot -Hours $Hours -NoPush:$NoPush; $receipt.result = $r; $receipt.ok = $true }
         'Summary' { Get-HostHeadroomSummary -Hours $Hours | ConvertTo-Json -Depth 8 -Compress; $receipt.ok = $true }
+        'Dashboard' { $receipt.result = ((& (Join-Path $PSScriptRoot 'Build-FleetDashboard.ps1')) -join ' '); $receipt.ok = $true }
     }
 } catch {
     $receipt.error = "$($_.Exception.Message)"; $code = 1

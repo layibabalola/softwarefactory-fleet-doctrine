@@ -10,7 +10,8 @@
   What it creates:
     %USERPROFILE%\.claude\machine\host-headroom\   installed copy of the tool + installed-from.json
     %LOCALAPPDATA%\HostHeadroom\                   samples (14 days), receipts, the publisher's own bus clone
-    Tasks \Fleet\HostHeadroom Sampler   (every 5 min)  and  \Fleet\HostHeadroom Publisher (every 6 h)
+    Tasks \Fleet\HostHeadroom Sampler (every 5 min), \Fleet\HostHeadroom Publisher (every 6 h) and
+    \Fleet\HostHeadroom Dashboard (every 10 min: this machine's card + the fleet page, Desktop link "Fleet Headroom")
   Both tasks start through the fleet's hidden launcher (wscript -> launch-windowless.vbs ->
   pairprog-hidden-task-launcher.exe), the chain Core Temp telemetry uses: no console window, ever.
 #>
@@ -24,7 +25,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $TaskPath = '\Fleet\'
-$Sampler = 'HostHeadroom Sampler'; $Publisher = 'HostHeadroom Publisher'
+$Sampler = 'HostHeadroom Sampler'; $Publisher = 'HostHeadroom Publisher'; $Dashboard = 'HostHeadroom Dashboard'
 $Dest = Join-Path $env:USERPROFILE '.claude\machine\host-headroom'
 $Data = Join-Path $env:LOCALAPPDATA 'HostHeadroom'
 $Clone = Join-Path $Data 'bus'
@@ -32,13 +33,15 @@ $Vbs = Join-Path $env:USERPROFILE '.claude\ops\launch-windowless.vbs'
 $Launcher = Join-Path $env:LOCALAPPDATA 'PairProg\bin\pairprog-hidden-task-launcher.exe'
 $WScript = Join-Path $env:WINDIR 'System32\wscript.exe'
 $Pwsh = (Get-Command pwsh -ErrorAction Stop).Source
-$Files = 'HostHeadroom.psm1', 'Run-HostHeadroom.ps1', 'Get-FleetHostHeadroom.ps1', 'README.md'
+$Files = 'HostHeadroom.psm1', 'Run-HostHeadroom.ps1', 'Get-FleetHostHeadroom.ps1', 'README.md',
+    'Build-FleetDashboard.ps1', 'Collect-HostCard.ps1', 'Measure-SuspendedFootprint.ps1', 'dashboard.template.html', 'fleet-hosts.json'
+$Link = Join-Path ([Environment]::GetFolderPath('Desktop')) 'Fleet Headroom.url'
 
 function Show-Status {
     $o = [ordered]@{ machine = $env:COMPUTERNAME }
     $from = Join-Path $Dest 'installed-from.json'
     $o.installed = if (Test-Path -LiteralPath $from) { (Get-Content -LiteralPath $from -Raw | ConvertFrom-Json).commit } else { $null }
-    foreach ($n in $Sampler, $Publisher) {
+    foreach ($n in $Sampler, $Publisher, $Dashboard) {
         $t = Get-ScheduledTask -TaskPath $TaskPath -TaskName $n -ErrorAction SilentlyContinue
         $i = if ($t) { $t | Get-ScheduledTaskInfo } else { $null }
         $o[$n] = if ($t) { "{0}; last {1:yyyy-MM-dd HH:mm} result {2}; RunLevel {3}" -f $t.State, $i.LastRunTime, $i.LastTaskResult, $t.Principal.RunLevel } else { 'ABSENT' }
@@ -48,6 +51,9 @@ function Show-Status {
     $newest = Get-ChildItem -LiteralPath $Data -Filter 'samples-*.jsonl' -ErrorAction SilentlyContinue | Sort-Object LastWriteTimeUtc | Select-Object -Last 1
     $o.newest_sample_age_s = if ($newest) { [math]::Round(([datetime]::UtcNow - $newest.LastWriteTimeUtc).TotalSeconds) } else { $null }
     $o.publisher_clone = Test-Path -LiteralPath (Join-Path $Clone '.host-headroom-publisher-clone')
+    $page = Join-Path $Data 'dashboard\index.html'
+    $o.dashboard_page_age_s = if (Test-Path -LiteralPath $page) { [math]::Round(([datetime]::UtcNow - (Get-Item -LiteralPath $page).LastWriteTimeUtc).TotalSeconds) } else { $null }
+    $o.desktop_link = Test-Path -LiteralPath $Link
     [pscustomobject]$o | Format-List
 }
 
@@ -57,7 +63,8 @@ $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIden
 if (-not $isAdmin) { [Console]::Error.WriteLine('Install-HostHeadroom needs an elevated shell (RunLevel Highest tasks). Run it over ssh from another mini, or elevated.'); exit 3 }
 
 if ($Uninstall) {
-    foreach ($n in $Sampler, $Publisher) { Unregister-ScheduledTask -TaskPath $TaskPath -TaskName $n -Confirm:$false -ErrorAction SilentlyContinue }
+    Remove-Item -LiteralPath $Link -ErrorAction SilentlyContinue
+    foreach ($n in $Sampler, $Publisher, $Dashboard) { Unregister-ScheduledTask -TaskPath $TaskPath -TaskName $n -Confirm:$false -ErrorAction SilentlyContinue }
     "removed tasks; data kept at $Data and $Dest"; exit 0
 }
 
@@ -98,13 +105,19 @@ $common = @{ Hidden = $true; StartWhenAvailable = $true; AllowStartIfOnBatteries
 $sSet = New-ScheduledTaskSettingsSet @common -ExecutionTimeLimit (New-TimeSpan -Minutes 8) -Priority 4
 $pSet = New-ScheduledTaskSettingsSet @common -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -Priority 4
 $sTrig = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
+$dSet = New-ScheduledTaskSettingsSet @common -ExecutionTimeLimit (New-TimeSpan -Minutes 8) -Priority 4
+$dTrig = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(2) -RepetitionInterval (New-TimeSpan -Minutes 10) -RepetitionDuration (New-TimeSpan -Days 3650)
 $pTrig = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(20) -RepetitionInterval (New-TimeSpan -Hours 6) -RepetitionDuration (New-TimeSpan -Days 3650)
 Register-ScheduledTask -TaskPath $TaskPath -TaskName $Sampler -Action (New-HiddenAction 'host-headroom-sampler' '-Mode Sample') -Trigger $sTrig -Principal $principal -Settings $sSet -Force | Out-Null
 Register-ScheduledTask -TaskPath $TaskPath -TaskName $Publisher -Action (New-HiddenAction 'host-headroom-publisher' "-Mode Publish -BusRoot `"$Clone`"") -Trigger $pTrig -Principal $principal -Settings $pSet -Force | Out-Null
+Register-ScheduledTask -TaskPath $TaskPath -TaskName $Dashboard -Action (New-HiddenAction 'host-headroom-dashboard' '-Mode Dashboard') -Trigger $dTrig -Principal $principal -Settings $dSet -Force | Out-Null
+# the page lives on this machine; the link opens it in the default browser (file://, no server, nothing listens)
+$pageUrl = 'file:///' + ((Join-Path $Data 'dashboard\index.html') -replace '\\', '/')
+[IO.File]::WriteAllText($Link, "[InternetShortcut]`r`nURL=$pageUrl`r`n", [Text.Encoding]::ASCII)
 
 # 4. prove the registration matches the contract (a registration is not a firing: -Status shows runs)
 $bad = @()
-foreach ($n in $Sampler, $Publisher) {
+foreach ($n in $Sampler, $Publisher, $Dashboard) {
     $t = Get-ScheduledTask -TaskPath $TaskPath -TaskName $n
     if ($t.Actions[0].Execute -ne $WScript) { $bad += "${n}: Execute is $($t.Actions[0].Execute)" }
     if ($t.Principal.RunLevel -ne 'Highest') { $bad += "${n}: RunLevel $($t.Principal.RunLevel)" }

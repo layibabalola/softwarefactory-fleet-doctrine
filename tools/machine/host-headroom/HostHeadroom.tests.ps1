@@ -185,7 +185,50 @@ try {
     Assert ($rec.published_utc -match '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$' -or $rec.published_utc -is [datetime]) 'published_utc stamp'
     $text = Get-Content -LiteralPath (Join-Path $fakeBus "heartbeats/host-headroom/$($env:COMPUTERNAME.ToUpperInvariant()).json") -Raw
     Assert ($text -notmatch '(?i)[a-z]:\\\\' -and $text -notmatch [regex]::Escape($env:USERNAME)) 'law 4: no paths or user name in the record'
-} finally {
+
+    # 9. dashboard: renders from fixture cards (no ssh, no collection); a VM carries its host; template is ASCII
+    $tpl = Get-Content -LiteralPath (Join-Path $here 'dashboard.template.html') -Raw
+    Assert (@([IO.File]::ReadAllBytes((Join-Path $here 'dashboard.template.html')) | Where-Object { $_ -gt 127 }).Count -eq 0) 'ascii: dashboard.template.html (git show copies it as text)'
+    Assert ($tpl.Contains('/*__DATA__*/null')) 'template has the data placeholder'
+    Assert (-not $tpl.Contains("'SATURATED'")) 'template uses the sampler verdicts (FULL), not SATURATED'
+    $hostsCfg = Get-Content -LiteralPath (Join-Path $here 'fleet-hosts.json') -Raw | ConvertFrom-Json
+    Assert ((@($hostsCfg.hosts | Where-Object { $_.alias -eq 'virtual-ten' }).vm_on) -eq 'ULTRA-MAGNUS') 'fleet-hosts: virtual-ten is a VM on ULTRA-MAGNUS'
+    $fx = Join-Path $tmp 'cards'; New-Item -ItemType Directory -Path $fx | Out-Null
+    $mk = { param($m, $cores, $free) [ordered]@{ schema = 'fleet-host-card.v1'; machine = $m; collectedUtc = [datetime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+            summary = [ordered]@{ span_hours = 30; window_hours = 168; hardware = [ordered]@{ cores = $cores; ram_gb = 64; cpu_model = 'x' }
+                cpu = [ordered]@{ phys_cores_free_p90 = $free; busy_pct_p95 = 40 }; headroom = [ordered]@{ verdict = 'ROOM'; reasons = @(); ram_gb_free = 40 }
+                heavy_slot = [ordered]@{ occupancy_frac = 0.1; wait_s_p90 = 5 }; canary = [ordered]@{ wide = [ordered]@{ slowdown_p95 = 1.1 } }; thermal = $null }
+            series = @(); tools = @('node', 'python', 'dotnet'); virtualization = [ordered]@{ role = 'none'; guests_running = @() } } }
+    (& $mk 'ULTRA-MAGNUS' 24 6) | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $fx 'ULTRA-MAGNUS.card.json') -Encoding utf8
+    (& $mk 'VIRTUAL-TEN' 16 12) | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $fx 'VIRTUAL-TEN.card.json') -Encoding utf8
+    '{"schema":"fleet-suspended-footprint.v1","machine":"BACHELOR","measuredUtc":"2026-11-17T01:40:00Z","suspendedUtc":"2026-10-25","heavySlot":{"before":{"nonMlvSlotHoursPerDay":12}},"projects":{"Conjugal":{"sessions":3,"sessionHours":40,"needs":["dotnet","node"]}}}' |
+        Set-Content -LiteralPath (Join-Path $fx 'suspended-footprint.json') -Encoding utf8
+    $outDash = Join-Path $tmp 'dash'
+    $msg = & (Join-Path $here 'Build-FleetDashboard.ps1') -CardsFrom $fx -OutDir $outDash
+    $page = Get-Content -LiteralPath (Join-Path $outDash 'index.html') -Raw
+    Assert ($msg -match '2 hosts' -and -not $page.Contains('/*__DATA__*/null')) "dashboard built from fixtures ($msg)"
+    $fleet = Get-Content -LiteralPath (Join-Path $outDash 'fleet.json') -Raw | ConvertFrom-Json
+    $vt = $fleet.hosts | Where-Object machine -eq 'VIRTUAL-TEN'
+    Assert ($vt.vmOn -eq 'ULTRA-MAGNUS') 'the guest card carries its host (vmOn), so placements are charged to both'
+    Assert ($fleet.footprint.machine -eq 'BACHELOR') 'the footprint is embedded'
+    if (Get-Command node -ErrorAction SilentlyContinue) {
+        $js = $page.Substring($page.IndexOf('<script>') + 8); $js = $js.Substring(0, $js.IndexOf('</script>'))
+        $jsf = Join-Path $tmp 'page.js'; [IO.File]::WriteAllText($jsf, $js)
+        node --check $jsf 2>&1 | Out-Null
+        Assert ($LASTEXITCODE -eq 0) 'the rendered page script parses (node --check)'
+        # run the planner headless: a guest with 12 free vCPUs on a host with 6 free cores is limited by the host
+        $harness = Join-Path $tmp 'plan.mjs'
+        $planJs = $js.Replace('render();', '').Replace("try { const t = localStorage.getItem('fleet-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) { }", '')
+        [IO.File]::WriteAllText($harness, $planJs + @"
+
+const caps = DATA.hosts.map(capacity).filter(Boolean);
+const vt = caps.find((c) => c.name === 'VIRTUAL-TEN'), um = caps.find((c) => c.name === 'ULTRA-MAGNUS');
+const f = fit({ needs: [], threadsHi: 8, slot: 0, ramGB: 2 }, vt, undefined, um);
+console.log(JSON.stringify({ cls: f.cls, why: f.why }));
+"@)
+        $res = (node $harness 2>&1) -join ''
+        Assert ($res -match '"cls":"bad"' -and $res -match 'the host') "a guest placement is limited by its host's free cores ($res)"
+    }} finally {
     Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
 "`n$pass passed, $fail failed"
