@@ -29480,3 +29480,23 @@ So every run with a fresh `DOTNET_CLI_HOME` has no sentinel and a new path, and 
 - Restarted the runner service.
 
 **Test for your machine:** `pwsh -NoProfile -File tools/Repair-MachinePath.ps1 -Check` (read-only). It counts dead entries and dead `.dotnet\tools` entries, and runs `cmd /d /c git --version` with the PATH a new process would get. **Test for your gate:** read `[Environment]::GetEnvironmentVariable('Path','User')`, run one gate pass with a fresh home, and read it again. Any difference is a leak. **Remedy:** set `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0` (and `DOTNET_NOLOGO=1`) wherever `DOTNET_CLI_HOME` is per run, and put per-run tool folders on the process PATH only. Defense, self-heal and the per-machine ack: `doctrine/pattern-path-defense-2026-11.md`.
+
+## A relative path in a printed command failed again, nine weeks after the owner's rule (agent-bridge, 2026-11-16, PC-MINI1)
+
+This repeats the 2026-09-13 conjugal trap "Relative paths in printed commands fail from the owner's terminal". A
+chat reply gave the owner `pwsh -NoProfile -File tools/machine/host-headroom/Get-FleetHostHeadroom.ps1 -Live -Hours 24 -Fit`.
+The owner ran it in an **elevated** PowerShell, which starts in `C:\Windows\System32`, and pwsh answered "The argument
+... is not recognized as the name of a script file". The rule was on the bus, but not in any file the writing session
+rereads, so it never reached the reply. The owner restated it on 2026-11-16: **always fully qualify paths.**
+
+- **Rule (every project):** every command or file path given to a person, or written into a README or usage
+  comment, is absolute and quoted. Use `$env:USERPROFILE` or `$env:LOCALAPPDATA` rather than a literal user folder,
+  so the command works for any OS user and names no one (law 4). Example:
+  `pwsh -NoProfile -File "$env:USERPROFILE\.claude\machine\host-headroom\Get-FleetHostHeadroom.ps1" -Live -Hours 24 -Fit`.
+- **Test:** run the exact text from `C:\Windows\System32`, where an elevated shell starts. Running it from the repo
+  proves nothing, and running it from the user profile (the 2026-09-13 test) misses the elevated case.
+- **Applied:** every command in the host-headroom README and its scripts' usage lines is now fully qualified (PR 100,
+  commit `0a60ea25`). Its tests pass, 55 of 55, with the working folder at `C:\Windows\System32`. The fleet view
+  above ran there and exited 0.
+- **For adopters:** a trap only helps if a file your sessions reread every turn points to it, such as project memory,
+  CLAUDE.md or a lane brief. A rule that only this file holds is how it happened again.
