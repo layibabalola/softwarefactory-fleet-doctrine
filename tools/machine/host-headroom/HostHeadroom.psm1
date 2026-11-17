@@ -403,7 +403,7 @@ function Invoke-HostHeadroomSampler {
         $rec = [ordered]@{
             schema    = $script:SampleSchema
             ts        = ConvertTo-UtcStamp $now
-            late_s    = [math]::Round([math]::Max(0, ($now - $last).TotalSeconds - $IntervalSec), 1)
+            late_s    = [math]::Round([math]::Max(0.0, ($now - $last).TotalSeconds - $IntervalSec), 1)   # 0.0: Max(0, <double>) binds Max(int,int) and rounds
             lp        = $hw.logical_processors
             cores     = $hw.cores
             elevated  = $elevated
@@ -560,12 +560,13 @@ function Read-HeavySlotWindow([double]$Hours) {
                 start = $(if ($a.at -lt $since) { $since } else { $a.at }); end = $at; waitS = $a.waited / 1000 })
         }
     }
-    # admits still open: held until now, at most 3 h (HeavySlot's default max hold is 90 min, so an
-    # older open admit is a holder that died without an exit row, not a live hold)
+    # admits still open: held until now, at most 90 min (HeavySlot's default --max-hold), so an older open
+    # admit is a holder that died without an exit row, not a live hold. "The next admit closes it" is wrong:
+    # shared tickets each take one of HEAVY_SLOT_COUNT slots, and PC-MINI3 measured 16 paired holds at once.
     $nowU = [datetime]::UtcNow
     foreach ($a in @($admits.Values)) {
         $s0 = if ($a.at -lt $since) { $since } else { $a.at }
-        $e0 = if (($nowU - $a.at).TotalHours -gt 3) { $a.at.AddHours(3) } else { $nowU }
+        $e0 = if (($nowU - $a.at).TotalMinutes -gt 90) { $a.at.AddMinutes(90) } else { $nowU }
         if ($e0 -gt $s0) { $gates.Add([pscustomobject]@{ project = ConvertTo-ProjectSlug (($a.label -split ':')[0]); cls = $a.cls; start = $s0; end = $e0; waitS = $a.waited / 1000 }) }
     }
     # whole-machine occupancy: union of hold intervals
@@ -575,12 +576,31 @@ function Read-HeavySlotWindow([double]$Hours) {
         if ($g.start -le $curE) { if ($g.end -gt $curE) { $curE = $g.end } } else { $held += ($curE - $curS).TotalSeconds; $curS = $g.start; $curE = $g.end }
     }
     if ($null -ne $curS) { $held += ($curE - $curS).TotalSeconds }
+    # holders at once: mean is holder-seconds over the window; max is the peak of the sweep
+    $holderS = 0.0; foreach ($g in $gates) { $holderS += ($g.end - $g.start).TotalSeconds }
+    $c = 0; $maxHolders = 0
+    $pts = foreach ($g in $gates) { [pscustomobject]@{ t = $g.start; d = 1 }; [pscustomobject]@{ t = $g.end; d = -1 } }
+    foreach ($pt in ($pts | Sort-Object t, d)) { $c += $pt.d; if ($c -gt $maxHolders) { $maxHolders = $c } }
+    $allWaits = @($gates | ForEach-Object { $_.waitS })
     $byProject = foreach ($grp in ($gates | Group-Object project | Sort-Object Name)) {
         [ordered]@{ project = $grp.Name; gates = $grp.Count; classes = @($grp.Group.cls | Sort-Object -Unique)
                     wait_s_p50 = Get-Pct $grp.Group.waitS 50; wait_s_p95 = Get-Pct $grp.Group.waitS 95
                     hold_s_p50 = Get-Pct ($grp.Group | ForEach-Object { ($_.end - $_.start).TotalSeconds }) 50 }
     }
-    [ordered]@{ gates = $gates.Count; reaped = $reaped; occupancy_frac = [math]::Round($held / ($Hours * 3600), 4); projects = @($byProject) }
+    # occupancy_frac is the time at least one ticket held the gate. With several slots that is NOT "full";
+    # what a new project feels is the wait, so the verdict reads wait_s_p90 (Get-HeavySlotVerdict).
+    [ordered]@{ gates = $gates.Count; reaped = $reaped; occupancy_frac = [math]::Round($held / ($Hours * 3600), 4)
+                mean_holders = [math]::Round($holderS / ($Hours * 3600), 2); max_holders = $maxHolders
+                wait_s_p50 = Get-Pct $allWaits 50; wait_s_p90 = Get-Pct $allWaits 90; wait_s_p99 = Get-Pct $allWaits 99
+                projects = @($byProject) }
+}
+
+# A new project's heavy job waits behind the gate as long as the jobs already queued do. First-cut bounds:
+# p90 wait of 10 min or more is FULL, 2 min or more TIGHT. Fewer than 5 gates in the window cannot say.
+function Get-HeavySlotVerdict($Slot) {
+    if (-not $Slot) { return 'NO-GATE' }
+    if ($Slot.gates -lt 5 -or $null -eq $Slot.wait_s_p90) { return 'FEW-GATES' }
+    if ($Slot.wait_s_p90 -ge 600) { 'FULL' } elseif ($Slot.wait_s_p90 -ge 120) { 'TIGHT' } else { 'ROOM' }
 }
 
 # ---------------------------------------------------------------- summary and verdict
@@ -645,7 +665,7 @@ function Get-HostHeadroomSummary {
     $thermal = Read-CoreTempWindow -Hours $Hours -Exclude $quiet
 
     $satFrac = [math]::Round($sat / $n, 4); $burstFrac = [math]::Round($burst / $n, 4); $loadedFrac = [math]::Round($loaded / $n, 4)
-    $memFree = if ($avail.Count) { [math]::Round([math]::Max(0, (Get-Pct $avail 5) - $hw.ram_gb * $RamReservePct / 100), 1) } else { $null }
+    $memFree = if ($avail.Count) { [math]::Round([math]::Max(0.0, (Get-Pct $avail 5) - $hw.ram_gb * $RamReservePct / 100), 1) } else { $null }
     $freeP50 = if ($physUsed.Count) { [math]::Round($cores - (Get-Pct $physUsed 50), 1) } else { $null }
     $freeP90 = if ($physUsed.Count) { [math]::Round($cores - (Get-Pct $physUsed 90), 1) } else { $null }
     $wideSlow = $canary.wide.slowdown_p95; $singleSlow = $canary.single.slowdown_p95
@@ -669,7 +689,7 @@ function Get-HostHeadroomSummary {
         if ($thermal -and $thermal.rows -and $thermal.temp_ge90_frac -ge 0.05) { Bump 1 "temp-ge90-frac:$($thermal.temp_ge90_frac)" }
         $verdict = @('ROOM', 'TIGHT', 'FULL')[$script:rank]
     }
-    $slotVerdict = if (-not $slot) { 'NO-GATE' } elseif ($slot.occupancy_frac -ge 0.5) { 'FULL' } elseif ($slot.occupancy_frac -ge 0.25) { 'TIGHT' } else { 'ROOM' }
+    $slotVerdict = Get-HeavySlotVerdict $slot
 
     [ordered]@{
         schema           = $script:Schema
@@ -789,5 +809,5 @@ function Publish-HostHeadroom {
 }
 
 Export-ModuleMember -Function Invoke-HostHeadroomSampler, Get-HostHeadroomSummary, Publish-HostHeadroom, Get-HostHardware,
-    Get-ProcessSnapshot, Get-UsageDelta, Resolve-PathProject, Resolve-Family, ConvertTo-ProjectSlug, Read-HeavySlotWindow,
+    Get-ProcessSnapshot, Get-UsageDelta, Resolve-PathProject, Resolve-Family, ConvertTo-ProjectSlug, Read-HeavySlotWindow, Get-HeavySlotVerdict,
     Read-CoreTempWindow, Read-HostHeadroomSamples, Read-SharedLines, Add-SharedLine, Resolve-WorktreeProject, Invoke-HostHeadroomCanary, Get-Pct, Get-WeightedPct, Get-QuietWindows, Test-InWindows, ConvertTo-UtcDate

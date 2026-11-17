@@ -68,9 +68,16 @@ findings that shaped it, each measured on the minis:
   `% Processor Time`; utility is recorded only as a work measure.
 - **SMT.** 32 logical processors on 16 cores: Windows fills idle cores first, so physical cores in use is
   estimated as `min(cores, busy% x logical / 100)`. Headroom is reported in **physical cores**.
-- **HeavySlot is its own resource.** Each mini's `C:\ProgramData\HeavySlot` gate serialises heavy builds and
-  tests. Its occupancy and per-project wait are reported separately (`heavy_slot_verdict`), because a
-  project that needs the gate adds queue time linearly whatever the CPU headroom says. "Loaded" uses
+- **HeavySlot is its own resource.** Each mini's `C:\ProgramData\HeavySlot` gate admits heavy builds and
+  tests. It is reported separately (`heavy_slot_verdict`), because a project that needs the gate adds queue
+  time whatever the CPU headroom says. A `shared` ticket takes one of `HEAVY_SLOT_COUNT` slots, so several
+  hold the gate at once (PC-MINI3: up to 16, measured 2026-11-17), and `occupancy_frac` (time at least one
+  ticket held it) can read 99% while most new jobs wait under a second. The verdict therefore reads the
+  **wait**: p90 of 10 min or more is FULL, 2 min or more TIGHT, fewer than 5 gates in the window is
+  FEW-GATES. `mean_holders` and `max_holders` give the concurrency. An admit with no exit row counts as
+  held for at most HeavySlot's 90-min default max hold. (Both fixes came from the PC-MINI3 dashboard
+  session's review, 2026-11-17; its "the next admit closes it" proposal was measured and not adopted,
+  because holds overlap.) "Loaded" uses
   HeavySlot's own admission thresholds (CPU 85%, disk idle 20%, free commit 8 GiB), so this report and the
   gate never disagree about what loaded means. Long waits are the project queueing behind the gate, not
   proof the hardware is full.
@@ -137,7 +144,8 @@ single-file plumbing commit and `-NeedCores/-NeedGB` fit query.
   "cpu": { "busy_pct_p50": 8, "busy_pct_p95": 62, "burst_frac": 0.05, "saturated_frac": 0.01,
            "freq_pct_busy_p10": 66, "phys_cores_free_p90": 6.1 },
   "canary": { "runs": 2000, "single": { "p10_ms": 250, "slowdown_p95": 1.18 }, "wide": { "slowdown_p95": 1.41 } },
-  "heavy_slot": { "occupancy_frac": 0.12, "projects": [ { "project": "airmypc", "wait_s_p95": 0.3 } ] },
+  "heavy_slot": { "gates": 189, "occupancy_frac": 0.99, "mean_holders": 2.1, "max_holders": 16, "wait_s_p90": 776,
+                  "projects": [ { "project": "mlv-app", "wait_s_p95": 1400 } ] },
   "thermal": { "temp_ge90_frac": 0.02, "at_power_ceiling_frac": 0.04 },
   "projects": [ { "project": "airmypc", "cores_p95": 5.2, "ram_gb_p95": 9.8 } ],
   "attribution": { "unattributed_frac": 0.31, "families_cores_p95": { "defender": 2.1, "llm-cli": 0.9 } },

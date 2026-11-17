@@ -91,6 +91,25 @@ try {
     $hs2 = Read-HeavySlotWindow -Hours 1
     Assert ($hs2.gates -eq 5) "reaped and open gates are counted ($($hs2.gates))"
     Assert ([math]::Abs($hs2.occupancy_frac - (33 / 60)) -lt 0.01) "occupancy includes reaped (2 min) and open (5 min) holds ($($hs2.occupancy_frac))"
+    Assert ($hs2.max_holders -eq 2) "max holders at once is the sweep peak, t1 and t2 overlap ($($hs2.max_holders))"
+    Assert ([math]::Abs($hs2.mean_holders - ((15 + 10 + 6 + 2 + 5) / 60)) -lt 0.02) "mean holders is holder-minutes over the window ($($hs2.mean_holders))"
+    Assert ($hs2.wait_s_p90 -eq 30) "wait p90 over every gate in the window ($($hs2.wait_s_p90))"
+    # an open admit older than HeavySlot's 90-min default max hold is a dead holder: it stops at 90 min
+    $l3 = Join-Path $tmp 'ledger3.jsonl'
+    Set-Content -LiteralPath $l3 -Value (@{ at = $u.AddMinutes(-170).ToString('o'); event = 'admit'; ticket = 'd1'; label = 'mlv:dead:pytest'; class = 'shared'; waitedMs = 0 } | ConvertTo-Json -Compress) -Encoding utf8
+    & $mod { param($f) $script:HeavySlotLedger = $f } $l3
+    $hs3 = Read-HeavySlotWindow -Hours 2
+    Assert ([math]::Abs($hs3.occupancy_frac - (40 / 120)) -lt 0.01) "a dead open admit is held 90 min, so 40 of the last 120 ($($hs3.occupancy_frac))"
+    # the gate verdict reads the wait, not "someone holds it" (several shared slots run at once)
+    Assert ((Get-HeavySlotVerdict ([ordered]@{ gates = 40; occupancy_frac = 0.99; wait_s_p90 = 3 })) -eq 'ROOM') 'held 99% of the time with no wait is ROOM'
+    Assert ((Get-HeavySlotVerdict ([ordered]@{ gates = 40; occupancy_frac = 0.2; wait_s_p90 = 776 })) -eq 'FULL') 'a 13-min p90 wait is FULL'
+    Assert ((Get-HeavySlotVerdict ([ordered]@{ gates = 40; occupancy_frac = 0.2; wait_s_p90 = 150 })) -eq 'TIGHT') 'a 2.5-min p90 wait is TIGHT'
+    Assert ((Get-HeavySlotVerdict ([ordered]@{ gates = 3; occupancy_frac = 0.2; wait_s_p90 = 900 })) -eq 'FEW-GATES') 'three gates cannot say'
+    Assert ((Get-HeavySlotVerdict $null) -eq 'NO-GATE') 'no ledger is NO-GATE'
+    # PowerShell binds [math]::Max(0, <double>) to Max(int,int): the module must not round free RAM or lateness
+    Assert ([math]::Max(0, 2.54) -eq 3) 'control: the int overload rounds (why the module writes 0.0)'
+    $modText = Get-Content -LiteralPath (Join-Path $here 'HostHeadroom.psm1') -Raw
+    Assert (-not ($modText -match '\[math\]::Max\(0, \(')) 'no [math]::Max(0, <expression>) left in the module'
 
     # readers never block the appenders (HeavySlot, Core Temp and the sampler append while we read)
     $shared = Join-Path $tmp 'shared.jsonl'; Set-Content -LiteralPath $shared -Value 'a'
