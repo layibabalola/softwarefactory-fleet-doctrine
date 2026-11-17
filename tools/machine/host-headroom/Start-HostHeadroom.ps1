@@ -14,7 +14,8 @@
 # Read-only on the machine: it never kills, throttles or changes anything; it runs BelowNormal.
 [CmdletBinding()]
 param([switch]$Run, [switch]$Once, [switch]$Install, [switch]$Uninstall, [switch]$Status, [switch]$Publish,
-    [string]$DataDir, [string]$BusRoot, [string[]]$WorkspaceRoot = @('C:\!Layi Wkspc'), [int]$WindowSeconds = 300)
+    [string]$DataDir, [string]$BusRoot, [string[]]$WorkspaceRoot = @('C:\!Layi Wkspc'), [int]$WindowSeconds = 300,
+    [string[]]$AddProjectRule = @())   # with -Install: '<substring>=<project>' rules appended to projects.json
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'HostHeadroom.psm1') -Force
 $TaskName = 'Fleet-HostHeadroom'
@@ -28,6 +29,16 @@ function Log([string]$m) {
 }
 
 if ($Install) {
+    if ($AddProjectRule.Count) {
+        $cfg = Join-Path $DataDir 'projects.json'
+        $have = @(); if (Test-Path -LiteralPath $cfg) { try { $have = @((Get-Content -LiteralPath $cfg -Raw | ConvertFrom-Json).rules) } catch { } }
+        foreach ($r in $AddProjectRule) {
+            $i = $r.LastIndexOf('='); if ($i -lt 1) { throw "-AddProjectRule '$r' is not '<substring>=<project>'" }
+            $m = $r.Substring(0, $i); $p = $r.Substring($i + 1)
+            if (-not ($have | Where-Object { $_.match -eq $m })) { $have += [pscustomobject]@{ match = $m; project = $p } }
+        }
+        [IO.File]::WriteAllText($cfg, (@{ rules = @($have) } | ConvertTo-Json -Depth 4), [Text.UTF8Encoding]::new($false))
+    }
     $pw = (Get-Command pwsh).Source
     $extra = if ($Publish) { ' -Publish' } else { '' }
     $arg = "--headless `"$pw`" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Run$extra"
@@ -38,6 +49,8 @@ if ($Install) {
     $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $t1, $t2 -Settings $settings -Principal $principal -Force `
         -Description 'Fleet host-headroom sampler (softwarefactory-fleet-doctrine tools/machine/host-headroom). Read-only; diagnostic only.' | Out-Null
+    # A reinstall (new code path or -Publish) replaces a running sampler; otherwise the old one keeps the mutex.
+    Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" | Where-Object { $_.CommandLine -like "*Start-HostHeadroom.ps1*-Run*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     Start-ScheduledTask -TaskName $TaskName
     Write-Output "INSTALLED $TaskName (publish=$([bool]$Publish)); data in $DataDir. Check with -Status after 5 minutes."
     return
