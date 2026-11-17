@@ -68,6 +68,14 @@ class Rollup(unittest.TestCase):
         self.assertEqual(row["duplicate_min"], 5)
         self.assertEqual(row["unparseable_rows"], 1)
 
+    def test_restart_overlap_is_not_a_duplicate(self):
+        a = minute("2026-11-10T00:05:00Z"); a["n"] = 2
+        b = minute("2026-11-10T00:05:00Z", busy=9.0); b["n"] = 4
+        write_day(self.tmp, self.day, [a, b])
+        row = ml.rollup(self.tmp, self.day, allow=set())
+        self.assertEqual((row["coverage_min"], row["duplicate_min"]), (1, 0))
+        self.assertEqual(row["cpu"]["busy_threads_max"], 9.0)   # the fuller half is kept
+
     def test_nothing_private_travels(self):
         rows = full_day(self.day, proj={"secret-client-repo": 100, "airmypc": 50, "~claude": 10})
         write_day(self.tmp, self.day, rows)

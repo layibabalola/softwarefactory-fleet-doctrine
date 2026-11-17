@@ -39,6 +39,7 @@ DEFAULT_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "MachineL
 HEAVYSLOT_LEDGER = Path(r"C:\ProgramData\HeavySlot\ledger.jsonl")
 BANDS = [(0, 4), (4, 8), (8, 12), (12, 16), (16, 20), (20, 24), (24, 28), (28, 33)]
 FULL_DAY = 1440
+FULL_MINUTE_SAMPLES = 6     # 10 s sampling
 LOW_COVERAGE = 1200          # minutes; a day with less is reported, never trusted as a typical day
 QUIET_THREADS_FRACTION = 0.10  # FleetQuiet WaitQuiet treats CPU < 10 % as quiet
 MEM_RESERVE_GB = 16.0
@@ -84,7 +85,7 @@ def public_label(label, allow):
 def read_minutes(data_dir: Path, day: dt.date):
     """Rows for one UTC day, de-duplicated by minute. Returns (rows, duplicate_minutes, unparseable)."""
     path = data_dir / f"minute-{day.isoformat()}.jsonl"
-    rows, seen, dups, bad = [], set(), 0, 0
+    by_ts, dups, bad = {}, 0, 0
     if not path.is_file():
         return rows, 0, 0
     with path.open(encoding="utf-8", errors="replace") as fh:
@@ -100,12 +101,17 @@ def read_minutes(data_dir: Path, day: dt.date):
             if row.get("schema") != MINUTE_SCHEMA or not str(row.get("ts", "")).startswith(day.isoformat()):
                 bad += 1
                 continue
-            if row["ts"] in seen:
-                dups += 1
+            prev = by_ts.get(row["ts"])
+            if prev is None:
+                by_ts[row["ts"]] = row
                 continue
-            seen.add(row["ts"])
-            rows.append(row)
-    rows.sort(key=lambda x: x["ts"])
+            # A restart splits one minute between the old and the new sampler (their sample counts add up to
+            # about one minute's worth). Two samplers running at once each write a near-full minute.
+            if (prev.get("n") or 0) + (row.get("n") or 0) > FULL_MINUTE_SAMPLES + 1:
+                dups += 1
+            if (row.get("n") or 0) > (prev.get("n") or 0):
+                by_ts[row["ts"]] = row
+    rows = sorted(by_ts.values(), key=lambda x: x["ts"])
     return rows, dups, bad
 
 
