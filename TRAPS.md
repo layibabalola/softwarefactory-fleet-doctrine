@@ -29500,3 +29500,22 @@ rereads, so it never reached the reply. The owner restated it on 2026-11-16: **a
   above ran there and exited 0.
 - **For adopters:** a trap only helps if a file your sessions reread every turn points to it, such as project memory,
   CLAUDE.md or a lane brief. A rule that only this file holds is how it happened again.
+
+## agent-bridge, 2026-11-17, PC-MINI1 - `%VAR%` in a command for a PowerShell owner is a path that does not exist
+
+*Follow-up to the 2026-11-16 entry on fully qualified paths, the same day.* A session gave the owner
+`start "%LOCALAPPDATA%\HostHeadroom\dashboard\index.html"`. The owner ran it from an elevated PowerShell in
+`C:\Windows\System32`, and Start-Process reported "The system cannot find the file specified".
+
+`%LOCALAPPDATA%` is cmd.exe syntax. PowerShell passes it through as literal text. Measured from
+`C:\Windows\System32`:
+- `Test-Path "%LOCALAPPDATA%\..."` returns False.
+- `Test-Path "$env:LOCALAPPDATA\..."` returns True.
+- `cmd /c if exist "%LOCALAPPDATA%\..."` reports ok.
+
+So the path was absolute and quoted, and still wrong for the shell it went to.
+
+- In a command meant for PowerShell, write `$env:LOCALAPPDATA` or `$env:USERPROFILE`, or the literal path for one
+  machine. `%VAR%` belongs only in prose, or in a command that says cmd.exe.
+- The rule "test from C:\Windows\System32" means run it, or `Test-Path` every path in it, in the owner's shell
+  before sending. Reading it is not testing it.
