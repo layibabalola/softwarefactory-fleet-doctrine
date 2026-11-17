@@ -93,8 +93,10 @@ if ($Status) {
         $i = $t | Get-ScheduledTaskInfo
         '{0,-24} state={1} last={2:u} result=0x{3:X} next={4:u}' -f $n, $t.State, $i.LastRunTime.ToUniversalTime(), $i.LastTaskResult, $i.NextRunTime.ToUniversalTime()
         if ($t.State -eq 'Disabled') { $bad += "task disabled: $n" }
-        # 0 ok, 0x41301 running, 0x41303 not yet run; anything else is a failed last run
-        if ($i.LastTaskResult -notin 0, 0x41301, 0x41303) { $bad += ("{0} last run failed: 0x{1:X}" -f $n, $i.LastTaskResult) }
+        # 0 ok, 0x41301 running, 0x41303 not yet run; for the RUNNING sampler 0x800710E0 is the 5-minute restart
+        # net's start refused by IgnoreNew (an instance is already up). Anything else is a failed last run.
+        $benign = @(0, 0x41301, 0x41303) + $(if ($n -eq $SamplerTask -and $t.State -eq 'Running') { @(0x800710E0) } else { @() })
+        if ($i.LastTaskResult -notin $benign) { $bad += ("{0} last run failed: 0x{1:X}" -f $n, $i.LastTaskResult) }
     }
     $row = Get-NewestRow
     if (-not $row) { $bad += 'no minute rows' } else {
