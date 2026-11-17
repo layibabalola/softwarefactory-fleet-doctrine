@@ -65,7 +65,8 @@ function Stop-Sampler {
     # by pid, verified by command line; never by name pattern alone
     # only pwsh 7 itself, running exactly an installed sampler script (this or the earlier per-user bin)
     foreach ($w in @(Get-CimInstance Win32_Process -Filter "Name='pwsh.exe'" -ErrorAction SilentlyContinue)) {
-        if ($w.ExecutablePath -eq $Pwsh -and "$($w.CommandLine)" -match '-File\s+"[A-Za-z]:\\[^"]*\\MachineLoad\\bin\\MachineLoadSampler\.ps1"\s*$') {
+        if ($w.ExecutablePath -eq $Pwsh -and "$($w.CommandLine)" -match '-File\s+("[A-Za-z]:\\[^"]*\\MachineLoad\\bin\\MachineLoadSampler\.ps1"|[A-Za-z]:\\\S*\\MachineLoad\\bin\\MachineLoadSampler\.ps1)\s*$') {
+            # quoted or not: the b4bc3fe6 build launched it unquoted, and missing it left the old sampler holding the mutex
             Stop-Process -Id $w.ProcessId -Force -ErrorAction SilentlyContinue; "stopped sampler pid $($w.ProcessId)"
         }
     }
