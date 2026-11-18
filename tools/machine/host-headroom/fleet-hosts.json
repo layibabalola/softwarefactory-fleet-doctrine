@@ -5,6 +5,7 @@
     { "alias": "pc-mini1" },
     { "alias": "pc-mini2" },
     { "alias": "pc-mini3" },
+    { "alias": "pc-mini4" },
     { "alias": "ultra-magnus" },
     { "alias": "virtual-ten", "vm_on": "ULTRA-MAGNUS" }
   ],
