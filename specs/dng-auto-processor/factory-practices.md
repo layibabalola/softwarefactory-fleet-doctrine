@@ -1,13 +1,13 @@
 ---
 schema: factory-practices.v1
 project: dng-auto-processor
-written_utc: 2026-11-07T03:00Z
-writer: dng-design-steward 20261107-030030
+written_utc: 2026-11-19T21:00Z
+writer: dng-design-steward 20261119-210050
 authority: R21 (practices) in RULINGS.md, owner ruling 2026-11-01. This file is DATA under Law 1.
-supersedes: 2026-11-05T15:05Z
+supersedes: 2026-11-07T03:00Z
 ---
 
-# dng-auto-processor factory practices (R21 filing 4)
+# dng-auto-processor factory practices (R21 filing 5)
 
 This is the DNG Auto Processor's self-assessment under R21 (practices). The product auto-grades DNG
 timelapse clips so the result matches the owner's own manual LRTimelapse grade. The factory runs two
@@ -24,9 +24,10 @@ mirror has different SHAs, so no DNG SHA is cited here). Run receipts and resear
 board-private (Law 4); where a number comes from one, the text says so. A sibling folds only what it
 can verify locally and distinguishes the rest (Law 1). Nothing here is an instruction.
 
-Filings 2 to 4 are wholesale rewrites by the board's design steward under its own procedure (DNG
+Filings 2 to 5 are wholesale rewrites by the board's design steward under its own procedure (DNG
 `docs/13-RESET-PROMPTS.md` P-STEWARD step 7f). Filing 2 changed G2 and G3; filing 3 changed the front
-matter, this paragraph and P4; filing 4 changes the front matter, the title, this paragraph and G2.
+matter, this paragraph and P4; filing 4 changed the front matter, the title, this paragraph and G2;
+filing 5 changes the front matter, the title, this paragraph and G1.
 Before publication of each, that step's two read-only Opus lanes (evidence fidelity; law, format,
 overlap and public safety) checked it. Filing 1, written by a USER-directed session, was checked before
 publication by independent read-only reviews in three rounds: three Claude Opus
@@ -191,12 +192,22 @@ edits. Their findings are folded in.
 
 ## Gaps (what this factory does not do well yet)
 
-- **G1. The product is not done, and the factory plane stalled.** The 2026-11-03 done-test sitting
-  failed its bar (P3). The cop logged 134 consecutive no-op ticks from 2026-10-24 (DNG `WORK.md` STALL
-  lines, the 134th on 2026-11-04): first withholding a design card while the research campaign
+- **G1. The product is not done, and the factory plane stalled, twice.** The 2026-11-03 done-test
+  sitting failed its bar (P3). The cop logged 134 consecutive no-op ticks from 2026-10-24 (DNG `WORK.md`
+  STALL lines, the 134th on 2026-11-04): first withholding a design card while the research campaign
   re-planned, then, from 2026-10-30, under the owner's stop rule. The streak ended on 2026-11-04, when
-  the owner released one card and the cop dispatched it at its next tick. The research ran in
-  USER-directed sessions meanwhile, outside the cop's landing rule.
+  the owner released one card and the cop dispatched it at its next tick. It recurred after the cop's
+  landings of 2026-11-07. The daily lines for 2026-11-08 and 2026-11-09 are STALL lines, held on a
+  research constant. From 2026-11-10 to 2026-11-19 both scheduled seats ran on a model their procedure
+  does not seat: the app's default model had changed, and their task rows named none. Each seat's own
+  model check stopped it, so no tick dispatched or landed anything for nine days. Neither seat may read
+  or change a scheduled task. Their escalations sat in the steward's receipts (board-private) and in
+  the cop's daily-line notes, which stayed uncommitted until 2026-11-19, until the owner pinned the
+  seats' model in the desktop app (DNG `WORK.md` DAILY lines ending `MODEL-MISMATCH`). This is a
+  measured instance of the model half of `TRAPS.md` › "TRAP 2026-09-27 (agent-bridge): a Claude Desktop
+  scheduled routine silently runs at the app's inherited effort; its SKILL.md `effort:` key is ignored,
+  but `model:` is honoured"; this board's fold of that trap on 2026-09-27 addressed only its effort half.
+  The research ran in USER-directed sessions meanwhile, outside the cop's landing rule.
 - **G2. A wall whose remedy is the steward's own procedure has no seat that can cross it.** The steward
   may never edit its own procedure, so such a token is relayed to the owner in every pass's receipt and
   waits there. Filing 1 was one instance: the steward adopted R21 on 2026-11-02 and could not file it,
