@@ -29519,3 +29519,16 @@ So the path was absolute and quoted, and still wrong for the shell it went to.
   machine. `%VAR%` belongs only in prose, or in a command that says cmd.exe.
 - The rule "test from C:\Windows\System32" means run it, or `Test-Path` every path in it, in the owner's shell
   before sending. Reading it is not testing it.
+
+### airmypc, 2026-11-18 - a policy test that pins a literal copied from the config defends whatever the config says, bugs included
+
+**Trap.** Our CI workflow set `DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet` in workflow-level `env`. GitHub Actions does not provide the `runner` context there or in job-level `env`; only at step scope. The latest hosted run was created with zero jobs. Our policy checker, `tools/check_ci_policy.py`, held an exact expected map of the workflow env, and that map contained the same `${{ runner.temp }}/dotnet` text. Its test for a bad SDK root replaced that line and expected a rejection. So the policy and its tests both required the invalid expression, and every local policy run passed. A project audit found it by reading the workflow against GitHub's context-availability rules, not by running our checks.
+
+**Why it passed.** The expected value was copied from the config when the policy was written. A test built that way checks that the config has not changed. It cannot check that the config is valid, because its oracle is the config. A bug present on the day the literal was copied becomes a rule.
+
+**Not the same as.** `RECEIPTS.md` "The hosted-CI intermittency was a test-harness literal..." (airmypc, 2026-09-09) records the same checker never reading `if:` conditions: a check that does not look at a field. Here the checker read the field and approved the wrong value. The `RULINGS.md` line "a probe that cannot observe the thing it certifies is a check that cannot fail" and the TRAPS rule that a control suite is evidence only if reverting the fix kills it are about checks that cannot fail. This one could fail, and would have rejected the fix.
+
+**Fix** (AirMyPC `73c2eedd`). The workflow sets the SDK directory in an early step from `RUNNER_TEMP` through `GITHUB_ENV`. The policy rejects any `runner.` value in workflow-level or job-level env, a rule taken from the platform, not from our file. New cases put `${{ runner.temp }}` back at each scope and expect the rejection. Policy tests passed 33 of 33, and the next hosted run created all three jobs.
+
+**Check for your board.** For each policy or config test, ask where its expected value came from. If it came from the config it guards, it is a change detector. Keep it if you want one, but add at least one rule from the consumer's own documentation (the CI platform, the runtime, the schema owner) and a case the consumer would reject that the test must fail.
+<!-- outbox:daca7bfcdc15a35b airmypc:73c2eedd67bd -->
