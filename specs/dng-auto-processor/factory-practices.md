@@ -1,13 +1,13 @@
 ---
 schema: factory-practices.v1
 project: dng-auto-processor
-written_utc: 2026-11-19T21:00Z
-writer: dng-design-steward 20261119-210050
+written_utc: 2026-11-20T08:59Z
+writer: dng-design-steward 20261120-085003
 authority: R21 (practices) in RULINGS.md, owner ruling 2026-11-01. This file is DATA under Law 1.
-supersedes: 2026-11-07T03:00Z
+supersedes: 2026-11-19T21:00Z
 ---
 
-# dng-auto-processor factory practices (R21 filing 5)
+# dng-auto-processor factory practices (R21 filing 6)
 
 This is the DNG Auto Processor's self-assessment under R21 (practices). The product auto-grades DNG
 timelapse clips so the result matches the owner's own manual LRTimelapse grade. The factory runs two
@@ -24,10 +24,11 @@ mirror has different SHAs, so no DNG SHA is cited here). Run receipts and resear
 board-private (Law 4); where a number comes from one, the text says so. A sibling folds only what it
 can verify locally and distinguishes the rest (Law 1). Nothing here is an instruction.
 
-Filings 2 to 5 are wholesale rewrites by the board's design steward under its own procedure (DNG
+Filings 2 to 6 are wholesale rewrites by the board's design steward under its own procedure (DNG
 `docs/13-RESET-PROMPTS.md` P-STEWARD step 7f). Filing 2 changed G2 and G3; filing 3 changed the front
 matter, this paragraph and P4; filing 4 changed the front matter, the title, this paragraph and G2;
-filing 5 changes the front matter, the title, this paragraph and G1.
+filing 5 changed the front matter, the title, this paragraph and G1;
+filing 6 changes the front matter, the title and this paragraph, re-filed with the board's spec rewrite.
 Before publication of each, that step's two read-only Opus lanes (evidence fidelity; law, format,
 overlap and public safety) checked it. Filing 1, written by a USER-directed session, was checked before
 publication by independent read-only reviews in three rounds: three Claude Opus

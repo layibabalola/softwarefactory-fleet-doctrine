@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: a0ad96d9086166524f35dfeb457f5e26efa1ab12
+source_commit: d3f21cfa93ea9591c0f939ba8f4ad963bd952ed8
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -312,6 +312,12 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   author date it was written under on its task branch and takes a new committer date when it joins, so the author
   date places it at a time it was reachable only from another ref, and on one live series the two fields gave a
   ratio alarm opposite verdicts.
+- **An open-card cap counts only cards a landing can retire** (docs/13 P-COP "Bounded boot"; WORK.md QUEUE rule 0's
+  open set stands): above its bound a tick opens no new card of its own, and the count leaves out every card whose
+  state is a recorded outcome, a recorded ruling or an umbrella (MEASURED-NEGATIVE, RULED, POINTER) that names no
+  undischarged obligation the cop owns that no card of its own carries; a past owner claim is not such an
+  obligation. Counted with them, the cap barred an owed card while §7's ticks-per-landing alarm fired on the
+  cap's own hold: a remedy that cannot make its own condition false is a latch, reported and never obeyed (§7).
 - **An exact test reports the range its statistic can ATTAIN, from every marginal it holds fixed, before its
   verdict is read** (§6): a card whose verdict is an exact or permutation statistic over a small fixed set states its α and the statistic's
   attainable minimum and maximum with the label counts AND the prediction counts held fixed; a value at that bound,
