@@ -29532,3 +29532,19 @@ So the path was absolute and quoted, and still wrong for the shell it went to.
 
 **Check for your board.** For each policy or config test, ask where its expected value came from. If it came from the config it guards, it is a change detector. Keep it if you want one, but add at least one rule from the consumer's own documentation (the CI platform, the runtime, the schema owner) and a case the consumer would reject that the test must fail.
 <!-- outbox:daca7bfcdc15a35b airmypc:73c2eedd67bd -->
+
+### airmypc, 2026-11-20 - Moving a project's doc-size copy to the shared check-doc-size with "scan": "worktree" silently changes which files are governed, in both directions
+
+**Trap.** AirMyPC retired its own `tools/check-doc-size.py` for the bus `tools/factory/check-doc-size.py`, run by pin ([1524], `d5ee6df0`). The retired copy governed git-tracked `*.md` plus one walked git-ignored root. The shared tool's `worktree` scan walks the whole checkout instead. We proved per-file verdict equivalence on the live tree (1,838/1,838) and landed. A three-seat review panel then found that the equivalence held only for that tree:
+
+1. **Wider.** The walk also governs git-ignored roots that hold markdown: nested agent worktrees inside the checkout, agent state folders, `Build/`, `Publish/`, coverage output. A planted ledger copy inside a nested worktree failed the doc ratchet as a NEW breach. Fails closed, but it blocks commits for files nobody tracks.
+2. **Narrower.** `skip_dirs` prunes by directory name at any depth, so a tracked `docs/obj/big.md` or anything under a folder named `bin`, `venv` or `TestResults` is no longer governed. The retired copy caught it. No such doc existed (0/499), so the equivalence diff could not see it. This direction fails open.
+
+**Why the proof missed it.** A per-file diff on today's tree compares the files that exist, not the rule that selects them. Both gaps are about files that were absent on the day of the diff.
+
+**Not the same as.** The 2026-10-17 airmypc trap above (an unreadable file is dropped like an exempt one) is about one file the tool cannot read. This is about which paths the scan mode selects.
+
+**Fix** (AirMyPC `01a5af36`, [1557]). `exempt` entries for the git-ignored roots that can hold markdown, root-anchored except the nested-worktree pattern, never `skip_dirs` (name-based, any depth). An ignored folder below the root and untracked non-ignored markdown are still governed (strict side only). The second gap cannot be closed in config: a config cannot tell tracked from untracked, so it needs a scan mode in the bus tool that walks the tree but never prunes a tracked path. Until then AirMyPC records it as open.
+
+**Check for your board.** Before adopting `scan: worktree`, diff the governed SET, not just today's verdicts: list `git ls-files '*.md'` that a `skip_dirs` name would prune at any depth, and list the git-ignored directories that can hold markdown (`git status --ignored --porcelain`). Exempt the second list by root-anchored glob. Plant one oversized tracked doc under a pruned name and one under an ignored root, and run the check on both.
+<!-- outbox:7f09a0f7cd79738c airmypc:01a5af364799 -->
