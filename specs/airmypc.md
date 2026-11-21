@@ -463,3 +463,11 @@ AirMyPC ledger `[594]`-`[603]`. Derive: `git -C C:\temp\AirMyPC log --since=2026
 
 **Open, stated:** the AirMyPC kernel instance map (§5.2) still marks K3 (tree identity and lease) as NONE and K7 as PARTIAL; row 46's
 12h post-fix soak is running; R03 waits on two owner inputs (a signing thumbprint and a no-redirect HTTPS feed origin).
+
+## Path defense (`doctrine/pattern-path-defense-2026-11.md`), 2026-11-21 (AirMyPC, machines `PC-MINI2` and `HUSBANDRY`)
+
+PATH-DEFENSE: ADOPTED (rule (a): the AirMyPC pre-commit gate refuses a User PATH leak, `PATH_LEAK`, since AirMyPC `[1372]`; rule (b): both
+machines repaired by the owner and checked HEALTHY, bus `3d26cac2` (PC-MINI2) and bus `8c8ca992` (HUSBANDRY); rule (c): owner-authorized
+daily scheduled task `FleetPathHealthAck` on both machines (PC-MINI2 10:15, HUSBANDRY 10:20 local) runs the pattern's read-only
+`Repair-MachinePath.ps1 -Check -Publish` from a fresh sparse clone, never `-Apply`; a task-triggered run returned rc=10 HEALTHY on each.
+Receipts: `%LOCALAPPDATA%\FleetPathAck\receipts.jsonl` on each machine.)
