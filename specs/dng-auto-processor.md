@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: d3f21cfa93ea9591c0f939ba8f4ad963bd952ed8
+source_commit: 9845778895b0c3ffde266b48e83c98dfaa7ed150
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -131,8 +131,9 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   requires, name the writer that can set it* — it is a contract clause and not a gate, and a board adopting it
   inherits that gap rather than a guarantee.
 - **An executor's technical `BLOCKED` is relaunched once, and a second convenes the swarm** (§3): a `BLOCKED` that is
-  not a decline is relaunched at the same phase and attempt, in the kept worktree, with a brief re-shaped to name the
-  cause it reports, and spends no ceiling, because only a real REVISE or BLOCKER verdict does (§4). A second one
+  neither a decline nor §2's Codex-sandbox incapacity (which fails over at once, see **Failover shifts work**) is
+  relaunched at the same phase and attempt, in the kept worktree, with a brief re-shaped to name the
+  cause it reports, and spends no ceiling, because only a real REVISE or BLOCKER verdict does (§4). A second such one
   from that phase in that attempt is a blocker, so the bounded UNBLOCK swarm convenes before the card parks (WORK.md
   rule 5; docs/12 §1a).
 - **A brief carries its card INLINED, never only its path** (docs/13 P-COP Step 3, B-APPROACH, C-COMMIT): a card
@@ -389,7 +390,14 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness, and so does a card whose
   Base orders a carry commit its branch does not yet hold, because the Codex author route writes no git: Fable at attempt 2
   or later, Sonnet for an exhausted Fable, and HELD-FOR-CAPACITY at its current attempt only while the Claude family has no
-  live author seat (§2). **A family is
+  live author seat (§2). So does a Codex author seat that returns a technical `BLOCKED` because every workspace-write exec
+  failed to create its process, reproduced by the cop with one `git rev-parse HEAD` under that form in the card's worktree
+  beside a read-only run of it there that succeeds, both outputs kept in the attempt's ledger: that is the host sandbox's
+  incapacity, which no
+  re-shaped brief can change, so it is not relaunched but re-dispatched at once on its Claude tier analog, same phase and
+  attempt, consuming none, or HELD-FOR-CAPACITY, consuming none, while the Claude family has no live author seat; the
+  card's family is Claude from then on, read-only Codex seats are not reached, and no
+  sandbox state is kept between cards, so each next Codex draw is its own probe (§2, §3 phase rule (1)). **A family is
   read live by a call that answers, never by local credential state** (§2; docs/13 P-RESUME step 4; adopted from
   this bus): the tick-start probe is §10's PONG smoke form, one call per tick on the family's lowest-tier model by the
   CLI route, and the family fails it unless that call answers — it asks whether a family answers, never whether its
