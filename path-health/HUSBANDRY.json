@@ -1,0 +1,27 @@
+{
+  "schema": "fleet-path-health.v1",
+  "machine": "HUSBANDRY",
+  "published_utc": "2026-11-21T10:39:59Z",
+  "tool_commit": "3d26cac2d31598c39f2fd61afc34396751025e31",
+  "verdict": "HEALTHY",
+  "findings": [],
+  "notes": [],
+  "total_chars": 1245,
+  "user": {
+    "chars": 441,
+    "segments": 10,
+    "dead": 0,
+    "duplicates": 0,
+    "empty": 0,
+    "dead_dotnet_tools": 0
+  },
+  "machine_scope": {
+    "chars": 803,
+    "segments": 20,
+    "dead": 0,
+    "duplicates": 0,
+    "dead_dotnet_tools": 0
+  },
+  "cmd_where_git": "PASS",
+  "runners": []
+}
