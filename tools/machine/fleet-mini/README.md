@@ -70,12 +70,22 @@ read-only check and the dry run; they do not run `-Apply` elevated.
 
 ## New mini, in order (owner)
 
-1. Windows set up and signed in; plug in the HDMI emulator or capture device.
-2. Install the toolchain (`winget install Git.Git Microsoft.PowerShell GitHub.cli OpenJS.NodeJS
-   Python.Python.3.14 Microsoft.DotNet.SDK.10 Tailscale.Tailscale TeamViewer.TeamViewer`), then
+**Read [`ONBOARDING.md`](ONBOARDING.md) first.** It is the first-contact procedure (a fresh install has no
+sshd, so nothing can reach it yet) and the table of thirteen traps one onboarding hit, each turned into a rule.
+The steps below are the short form; where they differ, ONBOARDING.md wins.
+
+1. Windows set up and signed in; plug in the HDMI emulator or capture device. Set the home LAN's network
+   profile to **Private** (a Public profile blocks inbound ssh on the LAN).
+2. Install the toolchain (`winget install Git.Git GitHub.cli OpenJS.NodeJS.LTS Python.PythonInstallManager
+   Microsoft.DotNet.SDK.10 Tailscale.Tailscale TeamViewer.TeamViewer`, then `py install 3.14`), PowerShell 7 as
+   the **machine MSI** (`winget install Microsoft.PowerShell --installer-type wix --scope machine`; the default
+   pick can be the Store copy, which leaves no `C:\Program Files\PowerShell\7`), then
    `npm install -g @anthropic-ai/claude-code @openai/codex`, and sign in to each.
-3. Enable OpenSSH server (`Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0`), clone the
-   doctrine bus, and run `Initialize-FleetMini.ps1 -Apply` from an elevated pwsh.
+3. Enable the **built-in** OpenSSH server with `dism.exe /Online /Add-Capability
+   /CapabilityName:OpenSSH.Server~~~~0.0.1.0` from the elevated console (`Add-WindowsCapability` can fail with
+   "Class not registered"; never fall back to the GitHub preview MSI), widen firewall rule
+   `OpenSSH-Server-In-TCP` to `-Profile Any`, clone the doctrine bus, and run `Initialize-FleetMini.ps1 -Apply`
+   from an elevated pwsh.
 4. Do the owner items it prints: Smart App Control, Autologon, TeamViewer unattended access, the ssh
    key mesh.
 5. From any other fleet machine, run `Test-FleetMini.ps1 -Hosts <new alias>` and expect exit 0.
