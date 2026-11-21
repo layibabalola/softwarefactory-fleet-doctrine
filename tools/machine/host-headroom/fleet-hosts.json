@@ -1,0 +1,12 @@
+{
+  "schema": "fleet-dashboard-hosts.v1",
+  "note": "ssh aliases the dashboard reads cards from. vm_on names the physical host a guest runs on, so a placement on the guest is charged to the host too. footprint_source is the machine whose suspended projects the planner places; it is measured only on request (-RefreshFootprint), never by the 10-minute task.",
+  "hosts": [
+    { "alias": "pc-mini1" },
+    { "alias": "pc-mini2" },
+    { "alias": "pc-mini3" },
+    { "alias": "ultra-magnus" },
+    { "alias": "virtual-ten", "vm_on": "ULTRA-MAGNUS" }
+  ],
+  "footprint_source": "bachelor"
+}
