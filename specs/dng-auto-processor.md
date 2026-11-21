@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 9845778895b0c3ffde266b48e83c98dfaa7ed150
+source_commit: 33ad760c2da6179769a4535c60ea983fd93e0dfb
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -389,7 +389,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   return an error; two models of one provider are never
   cross-family; a card needing the network first takes a Claude-hosted seat, which is not darkness, and so does a card whose
   Base orders a carry commit its branch does not yet hold, because the Codex author route writes no git: Fable at attempt 2
-  or later, Sonnet for an exhausted Fable, and HELD-FOR-CAPACITY at its current attempt only while the Claude family has no
+  or later where a Fable seat can run (below), Sonnet for an exhausted Fable, and HELD-FOR-CAPACITY at its current attempt only while the Claude family has no
   live author seat (§2). So does a Codex author seat that returns a technical `BLOCKED` because every workspace-write exec
   failed to create its process, reproduced by the cop with one `git rev-parse HEAD` under that form in the card's worktree
   beside a read-only run of it there that succeeds, both outputs kept in the attempt's ledger: that is the host sandbox's
@@ -457,7 +457,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   with none, the tier is dark for that launch. Every launch records its tier beside the resolved id, a resumed
   instrument run keeps the id it recorded, and every seat start names its effort, because a CLI's default effort is
   not high, and a pinned id never moves on its own.
-  Claude seats launch by alias; the Fable pin stays the USER's.
+  Claude seats launch by alias; the Fable pin stays the USER's, and a Fable seat runs only on a launch that names the
+  pin, serves it and grants every tool its deliverable needs, every other launch rule reaching a Fable seat only through that
+  one. Any other Fable seat is unavailable for that launch and consumes no attempt and no round: an author or design seat
+  falls through as an exhausted top-tier seat does, a key or approach review is re-derived by the seat-pool rules, where
+  an empty pool holds the card for its key, and no capacity probe releases that unavailability.
 - **CLI currency upgrades on a six-hour clock with no idle gate, smokes the launch form the tick really uses —
   isolated from user hooks — and rolls back only on evidence** (§10, USER, §0; fleet R13, adopted from this bus):
   a failed smoke reinstalls the previous version only when that version passes the smoke the new one failed,
