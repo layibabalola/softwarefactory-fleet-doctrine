@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 33ad760c2da6179769a4535c60ea983fd93e0dfb
+source_commit: 7d3e38802fe5f2eb91f378cab4832cc0ab4e4d18
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -161,7 +161,8 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   start, never read off the commit's time, which a rebase rewrites — or is shown dead. **A phase that has returned
   is ready for its next step whatever the clock says**: an approach review launches once the approach seat
   returns, not only after its product has stood still for a fixed time. **Forced progress never forces an illegal act** (§3): a tick that moved
-  nothing PARKs, REOPENs or SPLITs one item unless each is derived unavailable and named.
+  nothing PARKs, REOPENs or SPLITs one item unless each is derived unavailable and named. Those availability tests
+  bound only what such a tick may be FORCED to do; none bars a SPLIT a tick makes on §4a.3's or §4b's own ground.
 - **A card is admissible before it is opened** (§4): allowlist paths are relative to the git root; MODIFY means
   `git ls-files --error-unmatch` exits 0; CREATE means it exits 1, `git check-ignore -q` exits non-zero with any
   trailing slash stripped, and the path is marked new. Never `git status --porcelain -- <path>`, whose empty
@@ -211,7 +212,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   intervening range touches the subject's own `binding.json` paths (absent or unparseable fails closed); the
   hook re-run on the rebased sha catches a disjoint break. Prefer rebase-before-review.
 - **Scope every review** (§4a): named paths, a command budget, PARTIAL allowed; a subject over the file cap is
-  split before dispatch; key 2 tiers by blast radius, never by line count; a round without two real verdicts is
+  split before dispatch, and an executor's typed `BLOCKED SPLIT` with a byte-test partition that needs no steward
+  ruling is split the same way or the card re-scoped in place to its first landable part, each later part OWED on a
+  QUEUE line until the byte test releases it; one whose card contradicts itself parks for the steward's ruling (§7a),
+  which may re-scope it in place the same way, each later part opened as a SPLIT successor when the byte test
+  releases it; key 2 tiers by blast radius, never by line count; a round without two real verdicts is
   HELD and spends no attempt. **A void-on-RED clause is scoped to the subject AS COMMITTED, and the
   discriminator is the TREE a command ran against, never its exit code**: where the same rules ORDER an
   adversarial key to revert production files or mutate the line a finding names, those acts produce a red
@@ -439,7 +444,11 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   refused for that file's absence before its own commit adds it. **A lock file that the factory's own mandated restore — or any build that restores — rewrites is never the
   card's byte**: no seat stages it, no allowlist check counts it, and a git operation that refuses a dirty tree, a
   rebase or a removal, is preceded by reverting exactly that path (for a removal, after the census has captured
-  it), which loses nothing a restore does not rewrite; a card whose allowlist names that file is untouched. A
+  it), which loses nothing a restore does not rewrite; a card whose allowlist names that file is untouched. **A
+  card's own `--locked-mode` restore step yields to that rule** (§10): it runs once and is saved; when its only errors
+  are NU1004 on lock files outside the allowlist, a plain restore and a lock diff confined to the named packages'
+  entries meet it (the drift stays unstaged for the next git-writing seat to revert), and anything else is BLOCKED;
+  the locked restore stays CI's. A
   removal is never otherwise forced on an item worktree: a mandated setup step that dirties the copy the commit,
   rebase and cleanup rules refuse to touch is a permanent latch, and the cleanup rule's own "stop if a defect
   report names this worktree" makes REPORTING it the act that makes the latch permanent. The cop's refutation
