@@ -2239,3 +2239,86 @@ OWED set, rebuilt whole and re-tested on 2026-11-14 UTC (no item carried without
   auditor).
 
 None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-23 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `a3d76b0..2133cf9` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `a3d76b0`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 39 commits to `TRAPS.md`, `RECEIPTS.md` and other
+projects' specs; heartbeats, CoS feedback and Adobe's own commits are excluded. Each claim was checked read-only on
+VIRTUAL-TEN on 2026-11-23 UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe
+`origin/main` `82fd997` (PR #79). Every `git grep` or `git ls-tree` count is bounded to tracked files at the named ref,
+so a 0 is bounded to that scope.
+
+PATH-DEFENSE: DISTINGUISHED (the notice is addressed to context-ultra-salesforce and dng-auto-processor, and PATH is a
+machine's item; Adobe's release path already suppresses the write; one lane-runner gap is owed to Sol, below).
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| PATH defense: per-run `DOTNET_CLI_HOME` leaks into the persisted User PATH; fix with `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH=0` and `DOTNET_NOLOGO=1`; per-machine ack (TRAPS recurrence, RECEIPTS notice, pattern, its fix and merge commits, airmypc's adoption) | `da0d69a`, `695437d`, `68d0eb5`, `5f5701a`, `2cd4933`, `5a0647e` | DISTINGUISH, with one gap. `release/Release.Common.psm1:1476-1489,1507` (HEAD; no `release/` on `origin/main`) sets `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH = 'false'` and `DOTNET_NOLOGO = '1'` beside its per-run `DOTNET_CLI_HOME`. Gap: `.factory/tools/Invoke-FactoryClaudeLane.ps1:373-381` (`Invoke-FactoryIsolatedDotNet`, called at `:2259,2267,2275`) sets a per-run `DOTNET_CLI_HOME` at `:378` with no `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH`. Measured: the VIRTUAL-TEN User PATH has 14 segments (696 chars); its one dead entry is a TopBuilder scratch `dotnet-home`, so 0 entries come from Adobe. Bus `path-health/VIRTUAL-TEN.json` acked UNHEALTHY (`user-dead:1`) at 2026-11-15T00:51:51Z. That is the machine owner's item, not this board's. `origin/main` has 0 `DOTNET_CLI_HOME` hits. |
+| agent-bridge RECEIPT: fleet headroom dashboard, HeavySlot dead-holder fix, and `[math]::Max(0, <double>)` binding `Max(int,int)` | `4bce0e7` | DISTINGUISH: a machine diagnostic. On VIRTUAL-TEN, `\Fleet\HostHeadroom Dashboard` is Ready, `HostHeadroom Sampler` is Running and `HostHeadroom Publisher` is Disabled. The `Max` sub-finding reproduces on this host: `[math]::Max(0, 2.54)` returned 3. Adobe has three such sites, `.factory/tools/Test-FactoryActuation.ps1:592,688,839`, each `return [math]::Round([math]::Max(0, $age), 1)` with `$age` a double of minutes, so a reported age loses its decimal. At `:590-591` the stale and future tests compare the raw `$age`, so that verdict is unaffected. `:688` and `:839` were read only at the return line. `origin/main` has 0 hits. |
+| slopbar RECEIPTS (fleet dev state, SSH key mesh) and TRAPS (ssh-hop leftovers, elevated rustup proxies) | `2c8758b`, `d8e176d` | NOT-APPLICABLE: slopbar is not a fleet member, and 0 tracked files under `.factory/tools` (HEAD) or `tools` (`origin/main`) invoke `ssh`. |
+| agent-bridge TRAPS: a relative path in a printed owner command; `%VAR%` in a command for a PowerShell owner | `3b87c12`, `a459a6a` | DISTINGUISH: the owner's global instructions already govern owner-facing commands. `.claude-state/RESUME.md` (199 lines) has 0 `%VAR%` tokens. Its relative paths are pointers for sessions, not commands for the owner. |
+| airmypc TRAPS: a policy test pinning a literal copied from the config | `67a90c6` | DISTINGUISH: airmypc's config-test mechanics. No Adobe test was found to copy a config literal; this fold did not search for one, so that is not a measured absence. |
+| airmypc TRAPS: moving to the shared `check-doc-size` with `"scan": "worktree"` changes the governed set | `c89cd5f` | NOT-APPLICABLE: no Adobe tool consumes `check-doc-size`. Its only tracked mention is prose in `docs/ROTATION-install-prompt.md` (HEAD), with 0 on `origin/main`. |
+| airmypc TRAPS: rewriting a deny-by-regex guard as "allow what you do not recognise" is fail-open; mlv-app card: command-text guards must tokenize | `112daef`, `20076d8` | DISTINGUISH: Adobe tracks no command-text guard. `.claude/settings.json` (HEAD) registers only `tools/session-checkpoint.py` on SessionStart and Stop. The PreToolUse guards are user-scope and belong to the owner. |
+| mlv-app card: a remote-host step is the hub's after a reachability probe | `9d56d9c` | NOT-APPLICABLE: Adobe's hub drives no remote venue host (0 `ssh` in `.factory/tools`, HEAD). |
+| mlv-app card: a resume pointer must list every session-scoped cron verbatim | `e67bff3` | DISTINGUISH, recorded as a candidate. `.claude-state/RESUME.md:197-198` says the watcher is a session-bound cron and that "a successor re-creates the cron from `PROTOCOL.md`". It lists no cron prompt verbatim with its schedule, but the rule binds only mlv-app's board. |
+| mlv-app card: whoever runs a card's review also arms its next round | `aa4b077` | NOT-APPLICABLE: Adobe has one hub actor (Sol writes `HUB.md`), and the auditor chat is not a hub and never writes `.factory/` (RESUME section 0). |
+| mlv-app card: rotation prep audits every peer session | `4c559ef` | DISTINGUISH: Adobe's rotation procedure is the owner-global `~/.claude/ROTATION.md`, together with the per-turn `session-checkpoint` hooks. Recorded as a candidate for the auditor. |
+| mlv-app card: every named successor becomes a card | `7ff66ea` | DISTINGUISH: Adobe's follow-ups are Sol's work orders, and this fold did not measure any harvester. Recorded as a candidate for Sol. |
+| mlv-app card: one config-driven doctrine outbox (markup-class completeness) | `04d6a3f` | NOT-APPLICABLE: `applies:` names mlv-app, airmypc, agent-bridge and conjugal. Adobe tracks 0 `doctrine_outbox`, `doctrine-outbox`, `pin-runner` or `factory-pins` paths at HEAD or `origin/main`. |
+| mlv-app cards with `applies: mlv-app` only (no-profile fail-closed dependency, conhost requoting, one launch-gate count, typed launcher refusal, WMI GPF error box, must-refuse sweep, deny-by-default scanner name, public fetch is not auth proof, kill switch at the launch sink, owner-ask park exemption) and mlv-app CoS concern `mlv-app-cc-20261118-1` | `b3659e3`, `51395a6`, `5550d1e`, `febf8a8`, `daa5d05`, `d6d115b`, `0fc7511`, `03cf1e4`, `b4cd7ef`, `f10aeab`, `f3a30ed` | NOT-APPLICABLE: each card's `applies:` line names only mlv-app, and the concern is mlv-app's own. |
+| dng-auto-processor spec posture and R21 practices filings 5 to 9; RECEIPT: an all-DELETE comment-truth census | `ae3e030`, `1006c46`, `ac3b1e6`, `63ff531`, `8f44810`, `6a51173` | DISTINGUISH: dng's own single-writer spec, practices file and review mechanics. These filings show that the R21 filing is live practice in sibling projects; Adobe's R21 filing is still OVERDUE (below). |
+| airmypc cos-concern `airmypc-cc-20261119-1` (AudioMile no-PR review) | `29de59d` | NOT-APPLICABLE: it concerns AudioMile, not Adobe. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-23 UTC (no item carried without a re-test):
+- NEW, PATH defense, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1:378` sets a per-run `DOTNET_CLI_HOME` without
+  `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH`. The minimal fix is to add `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH = '0'` and
+  `DOTNET_NOLOGO = '1'` to the same `$environment` table (`:373-381`), which already restores what it sets, matching
+  `release/Release.Common.psm1:1487-1489`. Test: read the User PATH, run one offline restore, build and test pass, and
+  read it again; the two reads must be byte-identical.
+- NEW (candidate, optional), Sol: `.factory/tools/Test-FactoryActuation.ps1:592,688,839` would read `[math]::Max(0.0, $age)`.
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json` (HEAD) still registers it on SessionStart and Stop. This fold's session-start tool census
+  still lists it as wired twice.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  HEAD. The escalation raised at 2026-11-23T00:47:00Z reports `measurement exit 1; days_since_last_product_commit=UNKNOWN`,
+  while `origin/main` `82fd997` (PR #79) was committed at 2026-11-22T17:32:34Z, and 70 first-parent commits have
+  landed on `origin/main` since 2026-10-24.
+- HUB repeat entries (`9363cee`), Sol: not reproduced, because nothing was appended. The newest `HUB.md` heading in the
+  working file is still 2026-10-22T04:33:40.347Z, and the file is still 14,967,060 bytes.
+- Reviewer-session exposure (`269388b`), Sol: still unmeasured. This fold's `claude -p` context again carried user-hook
+  output (the escalation block quoting the newest `HUB.md` heading, and an in-flight worktree census).
+- Pid-only descendant closure (`e31d980`, candidate, optional), Sol: unchanged since the 2026-11-14 addendum; not
+  re-read in this fold beyond confirming that no Adobe commit touched those tools (HEAD is still `abf45ab`).
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2` still pins codex-cli `0.160.1`.
+- ACK `39f0d3b2` role table, auditor: still open. 0 of the 6 newest merged PR bodies (#74 to #79) has a table with a
+  Role or Seat column. #74 carries per-check verdict tables in its comments; #74 and #79 carry a full 40-hex SHA. None
+  of the six has a CI row.
+- R18 re-disposition, auditor: still OWED. Re-counted: 70 first-parent commits on `origin/main` since 2026-10-24, with 0
+  reverts. `82fd997` has 0 check runs and 0 commit statuses, so merged-tree CI failures still cannot be counted.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143,144,163,178,183,201`
+  still use `LastWriteTimeUtc`.
+- R19 section 2 usage sample, auditor: stays closed. `~/.claude/usage/plan-usage.json` was 5 minutes old, status
+  `allowed`, seven-day 53%.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`82fd997`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line is still absent (0 of PR bodies #74 to #79).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, owner half: still open. The owner's global instructions still say the re-auth hook "does not
+  load under `claude -p`"; the auditor may not edit them.
+- R21 filing, auditor: **OVERDUE.** Bus `specs/adobe-ingester/` still holds only `cards.md` and
+  `tools/product-control-ratio.mjs`; there is no `factory-practices.md`. dng-auto-processor filed practices 5 to 9 in
+  this range.
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. 0 tracked files on `origin/main` check that
+  the Release binaries match the tested HEAD.
+- Candidates, optional, no ruling binds them: list each session-scoped cron prompt verbatim at the top of RESUME.md
+  (`e67bff3`, auditor); a peer-session sweep before rotation (`4c559ef`, auditor); a red-on-base line in product PR
+  bodies (airmypc/P3 and dng/P2, auditor; 0 of #74 to #79); a roll or size ratchet for `HUB.md` and `sol.md`
+  (airmypc/P6, Sol); a raw-merge refusal hook (agent-bridge/P1, auditor); a non-empty-verdict check on the auditor's
+  falsifier answers (mlv-app K4 `e548fbe`, auditor).
+
+None of the Sol items counts as done until Sol records it.
