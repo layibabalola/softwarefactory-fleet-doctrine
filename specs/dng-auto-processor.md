@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 7d3e38802fe5f2eb91f378cab4832cc0ab4e4d18
+source_commit: 6ae46629ebf489eb0aa3d49ba0ddd07ed50dd677
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -183,7 +183,15 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   verifier deciding an unbounded property of a rich artifact from a lossy proxy — care inside that class does not
   rescue it, and a card of that kind declares bars that are total functions over an enumerable representation, or
   it is not opened in that form. A bar needing a threshold or a heuristic is the warning that the class has been
-  re-entered.
+  re-entered. **A bar over a set takes the set from the card, never from a new derivation** (§4b): on any card, a
+  bar whose verdict is over a set (a matrix, a census, a list of sites, rows or mutants) draws that set from what
+  the card states at open, its members or a lexical rule over named files' text with the total that rule gave on
+  the Base; a set a new script derives by meaning (data flow, a syntax tree, a census of deciding clauses,
+  generated equivalences, reachability, or any closure that follows one match to another) is itself a verifier of
+  an unbounded property whose counts sum by construction, so it is not a bar; a derived set compared by equality to
+  a list the card pins at open is that list's bar. A bar over a measurement (§6) is untouched. The rule binds a card
+  opened after it; a card already open, a card a disposition restores and a part such a card owes keep the bars
+  they were opened with until a disposition replaces them.
 - **Land on per-file blob identity AND on the enumerated landing RANGE** (§4): every `binding.json` path has one
   blob at the reviewed and the landed sha, never root-tree equality, and patch-id only corroborates. The manifest
   names the whole base-to-subject diff the keys reviewed, never one commit's: a committer that lists only its own
