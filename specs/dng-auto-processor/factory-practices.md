@@ -1,13 +1,13 @@
 ---
 schema: factory-practices.v1
 project: dng-auto-processor
-written_utc: 2026-11-23T04:26Z
-writer: dng-design-steward 20261123-024958
+written_utc: 2026-11-23T09:06Z
+writer: dng-design-steward 20261123-085021
 authority: R21 (practices) in RULINGS.md, owner ruling 2026-11-01. This file is DATA under Law 1.
-supersedes: 2026-11-22T21:42Z
+supersedes: 2026-11-23T04:26Z
 ---
 
-# dng-auto-processor factory practices (R21 filing 10)
+# dng-auto-processor factory practices (R21 filing 11)
 
 This is the DNG Auto Processor's self-assessment under R21 (practices). The product auto-grades DNG
 timelapse clips so the result matches the owner's own manual LRTimelapse grade. The factory runs two
@@ -24,7 +24,7 @@ mirror has different SHAs, so no DNG SHA is cited here). Run receipts and resear
 board-private (Law 4); where a number comes from one, the text says so. A sibling folds only what it
 can verify locally and distinguishes the rest (Law 1). Nothing here is an instruction.
 
-Filings 2 to 10 are wholesale rewrites by the board's design steward under its own procedure (DNG
+Filings 2 to 11 are wholesale rewrites by the board's design steward under its own procedure (DNG
 `docs/13-RESET-PROMPTS.md` P-STEWARD step 7f). Filing 2 changed G2 and G3; filing 3 changed the front
 matter, this paragraph and P4; filing 4 changed the front matter, the title, this paragraph and G2;
 filing 5 changed the front matter, the title, this paragraph and G1;
@@ -32,7 +32,8 @@ filing 6 changed the front matter, the title and this paragraph, re-filed with t
 filing 7 changed the front matter, the title and this paragraph, re-filed with the board's spec rewrite;
 filing 8 changed the front matter, the title and this paragraph, re-filed with the board's spec rewrite;
 filing 9 changed the front matter, the title, this paragraph and P4, re-filed with the board's spec rewrite;
-filing 10 changes the front matter, the title, this paragraph and P2, re-filed with the board's spec rewrite.
+filing 10 changed the front matter, the title, this paragraph and P2, re-filed with the board's spec rewrite;
+filing 11 changes the front matter, the title, this paragraph and P4.
 Before publication of each, that step's two read-only Opus lanes (evidence fidelity; law, format,
 overlap and public safety) checked it. Filing 1, written by a USER-directed session, was checked before
 publication by independent read-only reviews in three rounds: three Claude Opus
@@ -132,7 +133,7 @@ edits. Their findings are folded in.
 
 ## P4. Run every parser and control on all the real inputs before freezing or spending
 
-- **Status:** PILOT (four measured instances, 2026-10-25, 2026-10-31, 2026-11-05 and 2026-11-22).
+- **Status:** PILOT (five measured instances, 2026-10-25, 2026-10-31, 2026-11-05 and two on 2026-11-22).
 - **Problem:** on 2026-10-31 a done-test driver passed a full synthetic dry run, end to end. Review then
   found its XMP parser refused 128 of 128 real owner sidecars, because masks and
   Look blocks repeat keys the synthetic files never repeat; and its strict completeness check failed 5
@@ -149,7 +150,14 @@ edits. Their findings are folded in.
   be 0, without running it on those packets. The executor's prototype found one pair in the forbidden
   class (a packet the committed tests pin as refused, against itself) and 9 pairs that fit no class,
   so the bar could not pass on its own fixtures whatever the implementation did. The card parked before
-  any product edit, for a ruling that fixed the exempt subsets from the packets' bytes.
+  any product edit, for a ruling that fixed the exempt subsets from the packets' bytes. Later that day a
+  second card from the same steward required each of three coverage rows to turn RED under a one-line
+  mutation of one parsing stage at every integration point the card names, including one where an
+  earlier check, in production order, refuses those inputs before that stage runs. The cop's probe arm
+  bypassed that stage's comparison: 10 tests turned RED and the three rows at that integration point
+  stayed GREEN, so no implementation could meet the bar except through a mutation that changes the
+  test's own oracle. The card parked for a ruling, which bound the stage's proof to the points where the
+  stage decides in production order and witnessed the other point by the check that refuses first.
 - **Mechanism:** before a freeze, run every known-answer control and must-fail mutant once on
   non-official seeds (feasibility). Before a bulk run, run every parser and gate read-only on the full
   real roster, plus one real sample of each expensive arm. A refusal there is a code defect, not a clip
@@ -158,7 +166,13 @@ edits. Their findings are folded in.
 - **Evidence:** board-private research records for the first two instances; the third is a
   board-private factory card ledger and its independent disposition, which recomputed the measured
   numbers above; the fourth is a board-private factory card ledger (the executor's prototype output) and
-  the design steward's reproduction of it against the code the card pinned.
+  the design steward's reproduction of it against the code the card pinned; the fifth is a board-private
+  factory card ledger (the cop's probe arm log and the executor's mutant logs) and the design steward's
+  re-run of one of those mutants on a scratch copy of the pinned code.
+- **Prior art:** bus `TRAPS.md` › "Conjugal, 2026-09-22 — A DECLARED BAR CAN BE CHECKABLE, CHECKED, AND
+  FALSE OF EVERY CORRECT IMPLEMENTATION", which asks whether a bar is satisfiable by a correct
+  implementation before it is declared. The fourth and fifth instances are that class on a factory
+  card's bar; P4 adds running the bar on the card's own fixtures and inputs before the card is bound ready.
 - **Portable core:** a synthetic dry run proves the plumbing, not the parsers. A threshold set without
   measuring attainable behaviour, or measured on a population other than the one the gate scores, is a
   guess the gate will falsify after the freeze.
