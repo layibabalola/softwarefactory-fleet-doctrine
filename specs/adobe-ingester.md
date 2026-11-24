@@ -2322,3 +2322,57 @@ OWED set, rebuilt whole and re-tested on 2026-11-23 UTC (no item carried without
   falsifier answers (mlv-app K4 `e548fbe`, auditor).
 
 None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-24 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `2133cf9..76cfbe4` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `2133cf9`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 4 commits to other projects' specs; heartbeats, metrics,
+path-health, a coordination note, CoS feedback and Adobe's own commit `6741a8c` are excluded. Each claim was checked
+read-only on VIRTUAL-TEN on 2026-11-24 UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`)
+and Adobe `origin/main` `82fd997` (PR #79, still the newest merged PR). Every `git grep` count is bounded to tracked
+files at the named ref, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| mlv-app card: two hub actors (a hub chat and an unattended tick) must claim a round under one lock before arming it | `15a03fc` | DISTINGUISH: the card binds a hub with both actors. Adobe's one hub writer is Sol (`HUB.md`); the unattended `AdobeIngesterFactory-SolExec` task is Disabled (`Get-ScheduledTask`, measured), and the auditor chat never writes `.factory/` (RESUME section 0). No round has been armed since the newest `HUB.md` heading, 2026-10-22T04:33:40.347Z. Same basis as `aa4b077` in the 2026-11-23 addendum. Re-open if SolExec is re-enabled while a Sol Desktop thread can also arm. |
+| mlv-app card: after a rotation a hub chat treats every brief item as UNKNOWN until it has re-read the rulings and the pending list | `e11defa` | ALREADY-HELD for the re-derive half: `.claude-state/RESUME.md:9` (a status value found there is a defect; derive instead), `:61` ("What were we doing" is DERIVED, never narrated) and `:164` (blocking items first, re-derived, never remembered). The double-arm half is NOT-APPLICABLE for the reason in the row above. |
+| dng-auto-processor spec posture §4b: a bar over a set takes the set from the card at open, never from a new derivation; R21 practices filing 10 (P2 second instance) | `b7edde8` | DISTINGUISH: dng's own single-writer spec and card mechanics. Adobe's work orders are Sol's, and this fold did not measure whether any open Adobe bar is set-shaped. |
+| dng-auto-processor R21 practices filing 11 (P4 fifth instance: a bar no correct implementation can meet) | `a06435b` | DISTINGUISH: dng's own practices file. It is more evidence that R21 filing is live practice in siblings; Adobe's R21 filing is still OVERDUE (below). |
+
+OWED set, rebuilt whole and re-tested on 2026-11-24 UTC (no item carried without a re-test):
+- PATH defense, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1:378` still sets a per-run `DOTNET_CLI_HOME` with 0
+  `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH` hits in the file. Fix unchanged from the 2026-11-23 addendum.
+- Candidate, optional, Sol: `.factory/tools/Test-FactoryActuation.ps1:592,688,839` still read `[math]::Max(0, $age)`.
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json:6,13` (HEAD) still register it. This fold's session-start tool census still lists it as wired twice.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  `$Root`. `origin/main` has 70 first-parent commits since 2026-10-24.
+- HUB repeat entries (`9363cee`), Sol: not reproduced; the newest `HUB.md` heading is still 2026-10-22T04:33:40.347Z
+  and the file is still 14,967,060 bytes.
+- Reviewer-session exposure (`269388b`), Sol: still unmeasured. This fold's `claude -p` context again carried user-hook
+  output (a CoS-asks census, an in-flight worktree census and a doctrine-sync notice).
+- Pid-only descendant closure (`e31d980`, candidate, optional), Sol: unchanged; HEAD is still `abf45ab`.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2` still pins codex-cli `0.160.1`.
+- ACK `39f0d3b2` role table, auditor: still open; no PR has merged since #79, so 0 of #74 to #79 still carry a Role or
+  Seat table.
+- R18 re-disposition, auditor: still OWED. 70 first-parent commits on `origin/main` since 2026-10-24, with 0 reverts.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143,144,163,178,183,201`
+  still use `LastWriteTimeUtc`.
+- R19 section 2 usage sample, auditor: stays closed. `~/.claude/usage/plan-usage.json` was written at
+  2026-11-24T06:45:40Z, status `allowed`, seven-day 73%.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`82fd997`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line is still absent (0 of PR bodies #74 to #79).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, owner half: still open (owner's global instructions; the auditor may not edit them).
+- R21 filing, auditor: **OVERDUE.** Bus `specs/adobe-ingester/` still holds only `cards.md` and `tools/`; there is no
+  `factory-practices.md`. dng-auto-processor filed practices 10 and 11 in this range.
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. No PR has merged since #79; a bounded `git grep`
+  on `origin/main` for "Release binaries" and "stale release" found 0 files.
+- Candidates, optional, no ruling binds them: unchanged from the 2026-11-23 addendum (`e67bff3`, `4c559ef`,
+  airmypc/P3 and dng/P2, airmypc/P6, agent-bridge/P1, mlv-app K4 `e548fbe`).
+
+None of the Sol items counts as done until Sol records it.
