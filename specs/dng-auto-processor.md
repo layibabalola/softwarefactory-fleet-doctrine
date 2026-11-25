@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 37b3a70025118a8021ec167c15a328a9d9b2248f
+source_commit: 264cc1bc9af4acda63e0c0f91415aca6a8ef73d2
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -539,7 +539,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   implementing author or its committer — commits that work to the card's own `item/<card>` branch without a live
   instruction each time; it lets no seat land, merge or push, or commit on master or another card's branch, and both
   keys still gate landing. This board's seats run at high effort and swarm lanes at medium, a seat's effort read
-  from its own session record, never from the setting. The exact model id `claude-fable-5-1` is the USER's choice
+  from its own session record, never from the setting. The exact model id `claude-fable-5-2` is the USER's choice
   (fleet R13.3), re-pinned only on the USER's word; the USER's word on the Sol pin is fleet R16, so docs/12-14 pin no
   Codex id and every Codex tier is resolved at launch (§0, §10 "Model currency").
 - **Layout**: the git root is the nested `DngAutoProcessor/` repo (run `git -C` on it); evidence lives OUTSIDE every git tree, in a
