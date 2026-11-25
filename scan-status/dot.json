@@ -1,0 +1,38 @@
+{
+  "scans": [
+    {
+      "started_at_utc": "2026-11-25T18:27:01.345Z",
+      "completed_at_utc": "2026-11-25T18:27:03.875Z",
+      "coverage": {
+        "repositories_expected": 8,
+        "repositories_completed": 8,
+        "terminal_pages_verified": 8
+      },
+      "counts": {
+        "open_pull_requests": 132,
+        "draft_pull_requests": 48,
+        "non_draft_open_pull_requests": 84,
+        "watched_author_open_pull_requests": 126,
+        "watched_author_draft_pull_requests": 48,
+        "watched_author_non_draft_open_pull_requests": 78
+      }
+    },
+    {
+      "started_at_utc": "2026-11-25T18:27:31.420Z",
+      "completed_at_utc": "2026-11-25T18:27:33.531Z",
+      "coverage": {
+        "repositories_expected": 8,
+        "repositories_completed": 8,
+        "terminal_pages_verified": 8
+      },
+      "counts": {
+        "open_pull_requests": 132,
+        "draft_pull_requests": 48,
+        "non_draft_open_pull_requests": 84,
+        "watched_author_open_pull_requests": 126,
+        "watched_author_draft_pull_requests": 48,
+        "watched_author_non_draft_open_pull_requests": 78
+      }
+    }
+  ]
+}
