@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 6ae46629ebf489eb0aa3d49ba0ddd07ed50dd677
+source_commit: 37b3a70025118a8021ec167c15a328a9d9b2248f
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -410,7 +410,15 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   re-shaped brief can change, so it is not relaunched but re-dispatched at once on its Claude tier analog, same phase and
   attempt, consuming none, or HELD-FOR-CAPACITY, consuming none, while the Claude family has no live author seat; the
   card's family is Claude from then on, read-only Codex seats are not reached, and no
-  sandbox state is kept between cards, so each next Codex draw is its own probe (§2, §3 phase rule (1)). **A family is
+  sandbox state is kept between cards, so each next Codex draw is its own probe (§2, §3 phase rule (1)). **A Codex
+  author seat is launched with TEMP, TMP and TMPDIR at a folder the USER owns, and every path outside its worktree that
+  its brief orders written takes its own `--add-dir`** (§10 "Codex author route"): a seat otherwise inherits the
+  launching session's TEMP, and where that is the Windows system Temp the sandbox setup cannot grant its write ACE, so
+  every in-sandbox shell fails (`setup refresh had errors`) and each write rests on an auto-reviewed escalation the
+  reviewer may refuse. The machine build queue root carries no sandbox grant, so a brief that routes a seat's build
+  through the queue says the queue is not writable from the sandbox: the cop builds through the queue, before the
+  launch, any subject the seat only measures, and a seat that must still build may make ONE escalated call of the
+  queue command and returns `BLOCKED build queue not writable from the sandbox` if it is refused. **A family is
   read live by a call that answers, never by local credential state** (§2; docs/13 P-RESUME step 4; adopted from
   this bus): the tick-start probe is §10's PONG smoke form, one call per tick on the family's lowest-tier model by the
   CLI route, and the family fails it unless that call answers — it asks whether a family answers, never whether its
