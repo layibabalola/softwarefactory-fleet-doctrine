@@ -1,5 +1,5 @@
 # DNG Auto Processor — factory spec (one writer: the `dng-design-steward` seat, docs/13 P-STEWARD step 7d; a posture change made anywhere else reaches this file as a census item of that seat's next pass)
-source_commit: 264cc1bc9af4acda63e0c0f91415aca6a8ef73d2
+source_commit: d564fffc48e6e4cba94e77eda658474b73ba0426
 
 **Machine:** ULTRAMAGNUS (personal box). **Project root:** the workspace root above the nested repo (outside git).
 **Product:** auto-grading pipeline for DNG timelapse clips emulating the operator's LRTimelapse
@@ -61,7 +61,7 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   before the launch); re-read a card before any launch, landing or rewrite, and stand down if it changed; every
   launch json, brief, progress log, scratch file and verdict a dispatched seat writes carries its agentId in its
   name (`<kind>.<model>.<agentId>.<ext>`), because a derived seat name collides by construction; fixed-name slot
-  files are copied before a rewrite, never renamed, save the one whose presence is itself a state (the `return.md` slot
+  files are copied before a rewrite, never renamed, save those whose presence is itself a state (the `return.md` slot
   rule below). **A peer that advances a PHASE changes no state
   line — it writes a launch json — so a launch also re-derives the card's phase first, and stands down when the
   derivation no longer names that launch**: a state line is blind to a routine overlap, a host re-entering on a
@@ -142,8 +142,8 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   bytes the seat actually read.
 - **Phases are read from the ledger, first match wins; `return.md` is a slot** (§3): before a phase rewrites a
   fixed-name file, copy it byte-identical to `<name>.<phase>.<agentId>.<ext>`; renaming the writer's file moves
-  the slot and changes the derivation. **The one exception is a fixed-name file whose PRESENCE is a state, and it
-  is moved, never copied**: a compute card's completion record is its finished signal, and a phase that writes one
+  the slot and changes the derivation. **The exceptions are fixed-name files whose PRESENCE is a state, and they
+  are moved, never copied**: a compute card's completion record is its finished signal, and a phase that writes one
   runs only on a seat that can write it. Before any launch of such a phase — a later one, or a finished phase's work
   run again, which is then a new phase — the earlier record is moved to that seat-named name, after the launch's one
   re-derivation and before its launch record, which would otherwise read the old record as its own phase's output; a
@@ -151,7 +151,19 @@ section it cites, or when its `KERNEL:` block differs from the one docs/13 P-STE
   its writer's phase's output, read per phase, so a seat that froze and was relaunched is covered by its relaunch's
   record. Finished is then read off the record once no launched phase is still without its output, never off the
   newest launch record; and a launch that writes no such record (a disposition, a key) moves none, so the record stays
-  and the card reads finished again once that launch has its own output. **A launch json is read by its `phase` FIELD, never its filename**, so it
+  and the card reads finished again once that launch has its own output. The second exception is the approach
+  step's slot when that step is launched again in its attempt, before any review of it exists (a relaunch after a
+  technical block, or any other): the earlier seat's approach note and typed return would read as the new seat's at once, so each is
+  moved to the seat-named name its copy would take, the note first and the return last, after the launch's one
+  re-derivation and before its launch record, standing down if a peer moved one first. Each moved return is the
+  output of the one launch record its seat name carries and of no other, so that seat reads returned and never
+  frozen; every other launch record of the step reads its output per phase, as everywhere, but off the slot alone
+  (the relaunched seat's own return, its own completion signal, or its own approach note static past the bound), so a
+  seat that froze before the relaunch is still covered by the relaunch's output. A launch that dies between the
+  moves and its record leaves each older seat that returned with its output and the slot empty: where every older
+  seat returned, the step is ready at the attempt and its next launch carries the re-shaped brief naming each moved
+  return's cause; where one froze, that seat is read as it was before the launch. Once-only relaunch and decline counts read the moved returns as well as the slot;
+  only a return in the slot orders a relaunch. **A launch json is read by its `phase` FIELD, never its filename**, so it
   takes the instance name like every other seat file, and a fixed name an older attempt wrote reads the same way;
   a phase machine that looks files up by fixed name while its naming rule forbids fixed names makes every launch
   record either invisible or a file two peers are aimed at. The rule that sends a finished author to its commit
