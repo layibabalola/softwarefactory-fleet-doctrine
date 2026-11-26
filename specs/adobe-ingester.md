@@ -2376,3 +2376,57 @@ OWED set, rebuilt whole and re-tested on 2026-11-24 UTC (no item carried without
   airmypc/P3 and dng/P2, airmypc/P6, agent-bridge/P1, mlv-app K4 `e548fbe`).
 
 None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-26 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `76cfbe4..3104926` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `76cfbe4`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 2 commits to dng-auto-processor's spec and practices.
+Adobe's own commits `3562426` (the 2026-11-24 addendum), `6c5e618` (a TRAPS entry), `054e268` and `3104926` (R21
+practices filing 1 and its correction) are excluded. Each claim was checked read-only on VIRTUAL-TEN on 2026-11-26
+UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe `origin/main` `82fd997`
+(PR #79, still the newest merged PR). Every `git grep` count is bounded to tracked files at the named ref, so a 0 is
+bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| dng-auto-processor spec posture: a Codex author seat runs with TEMP, TMP and TMPDIR at a USER-owned folder and one `--add-dir` per write path outside its worktree; the build queue is not writable from the sandbox; R21 practices filing 12 | `7e36080` | DISTINGUISH: dng's own launch mechanics for Codex author seats started by its cop. Adobe's Codex lanes, Sol and Luna, run in Codex Desktop (`.claude-state/RESUME.md` section 0), not as seats launched from a CLI session. The auditor's falsifier `.claude-state/tools/codex-auditor.ps1` (untracked) runs a read-only sandbox per its header (lines 2-3) and has 0 `TEMP`, `TMPDIR` or `--add-dir` hits. Re-open if an Adobe Codex run fails with `setup refresh had errors`. |
+| dng-auto-processor spec posture: the exact Fable id follows the USER's re-pin to `claude-fable-5-2`; R21 practices filing 13 | `51aeb7f` | DISTINGUISH: dng's own USER pin under fleet R13.3. Adobe tracked files have one `claude-fable-5-1` hit at HEAD, `.factory/prompts/sol.md:2530`, which quotes a past 429 incident record and is not a pin, and 0 hits on `origin/main`. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-26 UTC (no item carried without a re-test):
+- PATH defense, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1:378` still sets a per-run `DOTNET_CLI_HOME` with 0
+  `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH` hits in the file. Fix unchanged from the 2026-11-23 addendum.
+- Candidate, optional, Sol: `.factory/tools/Test-FactoryActuation.ps1:592,688,839` still read `[math]::Max(0, $age)`.
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json:6,13` (HEAD) still register it. This fold's session-start tool census still lists it as wired twice.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  `$Root`. `origin/main` has 70 first-parent commits since 2026-10-24.
+- HUB repeat entries (`9363cee`), Sol: not reproduced; the newest `HUB.md` heading is still 2026-10-22T04:33:40.347Z
+  and the file is still 14,967,060 bytes.
+- Reviewer-session exposure (`269388b`), Sol: still unmeasured. This fold's `claude -p` context again carried user-hook
+  output (a CoS-asks census, a rotation notice, an in-flight worktree census and a doctrine-sync notice).
+- Pid-only descendant closure (`e31d980`, candidate, optional), Sol: unchanged; HEAD is still `abf45ab`.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2` still pins codex-cli `0.160.1`.
+- ACK `39f0d3b2` role table, auditor: still open; no PR has merged since #79, so 0 of #74 to #79 still carry a Role or
+  Seat table.
+- R18 re-disposition, auditor: still OWED. 70 first-parent commits on `origin/main` since 2026-10-24, with 0 reverts.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143,144,163,178,183,201`
+  still use `LastWriteTimeUtc`.
+- R19 section 2 usage sample, auditor: stays closed. `~/.claude/usage/plan-usage.json` was written at
+  2026-11-26T03:45:37Z, status `allowed`, seven-day 52%.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`82fd997`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line is still absent (0 of PR bodies #74 to #79; no
+  new PR merged).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, owner half: still open (owner's global instructions; the auditor may not edit them).
+- R21 filing, auditor: **CLOSED.** Bus `specs/adobe-ingester/factory-practices.md` now exists at `origin/master`
+  (R21 filing 1, `054e268`, written 2026-11-26T02:45Z, corrected by `3104926`). Later filings follow R21's own cadence.
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. No PR has merged since #79; a bounded `git grep`
+  on `origin/main` for "Release binaries" and "stale release" found 0 files.
+- Candidates, optional, no ruling binds them: unchanged from the 2026-11-23 addendum (`e67bff3`, `4c559ef`,
+  airmypc/P3 and dng/P2, airmypc/P6, agent-bridge/P1, mlv-app K4 `e548fbe`).
+
+None of the Sol items counts as done until Sol records it.
