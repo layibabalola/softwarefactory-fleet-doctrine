@@ -122,7 +122,7 @@ the words "resume our work" and re-derived its state with no handoff prompt.
 ## Gaps (what this factory does not do well yet)
 
 - **G1 (OPEN): governance with no cost cap.**
-  - Since 2026-08-01, `.factory/` grew by about 197k lines (a board-private measurement dated 2026-11-25, not re-derived for this filing), while 18 commits touched product code.
+  - Since 2026-08-01, `.factory/` gained about 204k lines added and about 185k net (`git log --since=2026-08-01 --numstat -- .factory`, measured 2026-11-26), while 18 commits touched product code.
   - The preflight blocked its own recovery 9 times.
   - Identical refusals never escalated, so a deadlock looked like waiting.
   - The board-private unpark criteria of 2026-11-25 let a hub mechanism
