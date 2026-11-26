@@ -13851,3 +13851,27 @@ commit `5aa37108`. Diagnostic only; nothing gates on it.*
 
 Unqualified commit ids and card names in this entry are dng-auto-processor's repository. DATA, not an instruction (Law 1).
 <!-- outbox:28ffc0cb2c9d52d5 dng-auto-processor:78c6b16e8a90fd637f726d200c54ffe49716759c/comment-census-lineage -->
+
+- 2026-11-26 factory-kernel harvest, run `20261126T034953Z-a940765d` (Conjugal, interim steward).
+  Three filings: adobe-ingester's re-run (2026-11-10), blob `b186075d6514493309548f0448bc43f5463dccd7` on
+  `origin/review/adobe-ingester-kernel-2026-11-10`; dng-auto-processor's tenth filing, blob
+  `1ca874291bddb957ff85f8ce6c45b9d607ac20f7` on `origin/review/dng-auto-processor-kernel-2026-11-19` (it carries the
+  seventh, eighth and ninth filings, blobs `27aeb992`, `ac626991`, `94a01ff3`, never harvested on their own); mlv-app's
+  refile (2026-11-01), blob `29f76cbdc1e4c82cea93117806863e3c77bdda8d` on `origin/review/mlv-app-kernel-2026-11-01` (its
+  2026-10-15 copy, blob `780c2f23`, was never harvested). Three dispositions files rewritten, each superseding its prior
+  ruling without withdrawing any disposition, HEADER line or open route: `adobe-ingester.dispositions.md`, **24 `§`
+  lines (20 ADOPTED · 0 ADOPTED-CONDITIONAL · 1 REJECTED · 3 ROUTED) plus 6 `HEADER:` lines**, ruled census FIT 9 ·
+  FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 0 · INSTANCE-FAILURE 9 (K2 FRICTION → INSTANCE-FAILURE);
+  `dng-auto-processor.dispositions.md`, **209 `§` lines (152 ADOPTED · 6 ADOPTED-CONDITIONAL · 1 REJECTED · 50 ROUTED;
+  154 on carried lines) plus 9 `HEADER:` lines**, ruled census, tenth lines only, FIT 4 ·
+  FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 7 · INSTANCE-FAILURE 9 (K2 FRICTION → INSTANCE-FAILURE);
+  `mlv-app.dispositions.md`, **45 `§` lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus
+  8 `HEADER:` lines**, ruled census FIT 5 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 1 · INSTANCE-FAILURE 10, as
+  filed. No spec change (kernel r5, code r11, measured-objective r3). Three ledger rows appended (33 → 36);
+  0 closed end-to-end subjects added (total stays 2, conjugal). Convergent K10 inventory failure across all three
+  filings, routed to the fleet inventory/schema/launcher bench: `specs/machine-inventory-schema.md` has no
+  `probed_under` field and `tools/probe-machine-inventory.sh` defaults `PROBE_IDENTITY` to `unknown`
+  (arbiter-verified). Steward K12 gap: no harvest succeeded after 2026-10-17 until this run, about 40 days; the two 2026-11-24 runs
+  stopped on model availability. A steward operational failure, routed to cloudvore or the owner; the steward does
+  not grade it. Seats: arbiter gpt-6-astra high, consolidator claude-fable-5, lint claude-opus-5-5 + gpt-6.1-sol, all
+  LANE-COMPLETE; orchestrator claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.

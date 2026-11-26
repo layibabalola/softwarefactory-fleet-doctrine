@@ -1143,3 +1143,74 @@ census family, so no copy is landed with this row. The arbiter's two instance NO
 ledger's.
 
 Derived, not asserted. Re-run: `python tools/harvest-status.py factory-kernel` and `PYTHONUTF8=1 python tools/kernel-e2e.py --json`.
+
+## 2026-11-26 — harvest 20261126T034953Z-a940765d (adobe-ingester re-run 2026-11-10, blob b186075d; dng-auto-processor tenth filing, blob 1ca87429; mlv-app refile 2026-11-01, blob 29f76cbd)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-26 | 20261126T034953Z-a940765d | adobe-ingester | b186075d6514493309548f0448bc43f5463dccd7 | r5 unchanged | code@r11 unchanged | 0 closed end-to-end; 3 reported product deliveries | 9 | 0 | 0 | 0 | 0 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+| 2026-11-26 | 20261126T034953Z-a940765d | dng-auto-processor | 1ca874291bddb957ff85f8ce6c45b9d607ac20f7 | r5 unchanged | code@r11; measured-objective@r3 unchanged; instance map r10 | 0 closed end-to-end; 3 route landings; tenth-window census only | 4 | 0 | 0 | 0 | 7 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+| 2026-11-26 | 20261126T034953Z-a940765d | mlv-app | 29f76cbdc1e4c82cea93117806863e3c77bdda8d | r5 unchanged | code@r11 unchanged | 0 closed end-to-end; 3 reported deliveries; S3 identity link only | 5 | 0 | 0 | 0 | 1 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `PYTHONUTF8=1 python tools/kernel-e2e.py --json`. Before this run: `closed_end_to_end: 2`
+(conjugal), `ledger_rows: 33`, `ledger_totals: FIT 183 · FRICTION 87 · BREAK 5 · N/A 0 · UNEXERCISED 105`
+(orchestrator's run at bus base `31049268`; the arbiter's own `kernel-e2e.py --json` refused in its sandbox because its
+child attempted a prohibited fetch, and its re-run of the unchanged logic with `--no-fetch` on that child returned the
+same baseline). After these rows: 36 rows; 201 FIT · 87 FRICTION · 5 BREAK · 0 N/A · 113 UNEXERCISED (183+9+4+5 = 201;
+105+0+7+1 = 113; FRICTION, BREAK and N/A do not move, because the three rows add 0 to each); closed end-to-end stays 2
+(conjugal). The rows add INSTANCE-FAILURE lines to health only, never to ledger totals: adobe-ingester 9 (K1, K2, K5,
+K9, K10, K11, K12; P:code determinism-class, human-gates), dng-auto-processor 9 (K2, K9, K10, K11; P:code
+subject-identity, claims-audit, resource-terminals, delivery-target, dispatch-preflight), mlv-app 10 (K2, K3, K4, K5,
+K8, K10, K11, K12; P:code subject-identity, acceptance-evidence). Zero unresolved BREAKs. harvest-status before this
+run: 10 filings, open=3 (adobe-ingester STALE, dng-auto-processor STALE, mlv-app STALE).
+
+**Steward K12 accountability.** No factory-kernel harvest ran between 2026-10-17 and 2026-11-24 (Conjugal harvest
+`receipts.jsonl`; the cause before 2026-11-24 was not traced in this run). The two runs of 2026-11-24
+(20261124T043646Z-e8289681 and 20261124T052139Z-b74f9897) stopped because the signed-in Codex account could not serve
+`gpt-6-astra` (the second run's probes also refused `gpt-5.6-sol`); that is model availability, not demonstrated quota
+exhaustion. This run's probes at 2026-11-26T03:52Z found
+`gpt-6-astra` and `gpt-6.1-sol` available. Model availability explains the two failed runs, not the silence before
+them. Filings waited: dng-auto-processor's seventh to tenth (from 2026-10-23), mlv-app's 2026-10-15 and 2026-11-01, and
+adobe-ingester's 2026-11-10. This is a steward operational failure. The steward does not grade it and writes no
+disposition on itself: it is routed to a non-steward arbiter (cloudvore, the arbiter of record for Conjugal's filings)
+or the owner. dng-auto-processor's historical K12 FIT for the 2026-10-16 harvest stays true for that harvest only.
+
+**§5 criterion 1 — projects with at least one closed end-to-end subject: still 1 of the 5 the kernel requires**
+(conjugal); this harvest adds 0 closed subjects. adobe-ingester's three reported deliveries fail role separation (K1)
+and pre-work binding (K5); dng-auto-processor declared no kernel subject in the window; mlv-app claims none end-to-end,
+and S3 gets identity-link credit only.
+**Coverage — 1 fleet project has NEVER filed:** `salesforce-tools`. `kernel-e2e.py` `never_filed` also lists
+`adversarialllm`; that is the case-sensitivity defect in its roster, not a nonfiler: AdversarialLLM has filed and is
+HARVESTED.
+**Kernel §7 item 5 is stale and is not edited here.** The arbiter observed that "The kernel has never been run end to
+end" no longer matches the ledger's 2 closed subjects. It is NOT edited in this harvest: no concrete BREAK or two-profile
+FRICTION establishes a §5 amendment. The factual reconciliation is routed to the steward with the existing independent
+Conjugal adjudication; the line is not presented as accurate, and it supplies no ground for finalisation.
+
+**What this round changed: nothing in the spec.** Kernel r5 unchanged at 2,867 of 3,500 words (`6821c4c3`); `code.md`
+unchanged at r11 (`a31b27a7`); `measured-objective.md` unchanged at r3 (`4e8bcacc`). No BREAK was submitted or
+established, and no two-profile FRICTION exists. Two FRICTION lines were reclassified INSTANCE-FAILURE (adobe-ingester
+K2, against `code` Human gates: the register was not reachable from the product checkout; dng-auto-processor
+tenth-filing K2, against `code` Human gates and Resource terminals: the escalation stayed in receipts reported as
+reaching no one). adobe-ingester's P1 (a
+fail-closed gate blocking its own repair) is routed to a `code` bounded-gate-repair bench, not adopted. Cross-filing:
+all three filings fail current account-bound inventory (K10), routed to the fleet inventory/schema/launcher bench
+(`specs/machine-inventory-schema.md` omits `probed_under`; `tools/probe-machine-inventory.sh` defaults `PROBE_IDENTITY`
+to `unknown`); adobe-ingester and dng-auto-processor keep K9 failures while mlv-app's K9 is UNEXERCISED, which is not
+corroborating failure; adobe-ingester's K8 FIT and mlv-app's K8 failure concern different implementations and neither
+defeats the other. Bus-side blobs, spec pins and the ledger baseline are VERIFIED; filer-repository and machine-local
+facts remain ATTRIBUTED and UNVERIFIED.
+Per-file line counts: `adobe-ingester.dispositions.md`, rewritten for blob `b186075d` and superseding its ruling on blob
+`efe2ed91` (6 `§` + 5 `HEADER:` lines, none withdrawn): 24 `§` lines (20 ADOPTED · 0 ADOPTED-CONDITIONAL · 1 REJECTED ·
+3 ROUTED) plus 6 `HEADER:` lines (4 ADOPTED · 2 REJECTED · 0 ROUTED); ruled census FIT 9 · FRICTION 0 · BREAK 0 ·
+N/A 0 · UNEXERCISED 0, INSTANCE-FAILURE 9 separately (filed FIT 9 · FRICTION 1, INSTANCE-FAILURE 8).
+`dng-auto-processor.dispositions.md`, rewritten for blob `1ca87429` and superseding its ruling on blob `cce576ba`
+(46 `§` + 10 `HEADER:` lines, none withdrawn): 209 `§` lines (152 ADOPTED · 6 ADOPTED-CONDITIONAL · 1 REJECTED ·
+50 ROUTED), of which 55 answer the tenth filing and 154 answer the carried ninth (54), eighth (52) and seventh (48)
+filings, blobs `94a01ff3`, `ac626991` and `27aeb992`, never harvested on their own; plus 9 `HEADER:` lines (7 ADOPTED ·
+0 REJECTED · 2 ROUTED); ruled census, tenth-filing lines only, FIT 4 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 7,
+INSTANCE-FAILURE 9 separately (filed FIT 4 · FRICTION 1 · UNEXERCISED 7, INSTANCE-FAILURE 8). `mlv-app.dispositions.md`,
+rewritten for blob `29f76cbd` and superseding its ruling on blob `d39b6f71` (24 `§` + 5 `HEADER:` lines, none
+withdrawn; the 2026-10-15 copy, blob `780c2f23`, was never harvested and its carried items are answered here): 45 `§`
+lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus 8 `HEADER:` lines (7 ADOPTED · 0 REJECTED ·
+1 ROUTED); ruled census FIT 5 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 1, INSTANCE-FAILURE 10 separately, as filed.
