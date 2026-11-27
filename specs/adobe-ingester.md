@@ -2430,3 +2430,67 @@ OWED set, rebuilt whole and re-tested on 2026-11-26 UTC (no item carried without
   airmypc/P3 and dng/P2, airmypc/P6, agent-bridge/P1, mlv-app K4 `e548fbe`).
 
 None of the Sol items counts as done until Sol records it.
+
+## Fold addendum, 2026-11-27 (headless doctrine fold; MEASURED dispositions, no new rule)
+
+Range: bus `3104926..a211b12` (Adobe cursor `.codex-state/doctrine/last-seen.json` was `3104926`). Binding: none (no
+commit to `RULINGS.md` or `specs/fleet-*` in range). Sibling: 5 commits. Excluded: Adobe's own `17f2710` (the
+2026-11-26 addendum) and the heartbeat and path-health commits up to `ec5d21d`. Each claim was checked read-only on
+VIRTUAL-TEN on 2026-11-27 UTC against Adobe HEAD `abf45ab` (branch `agent/software-factory-hardening`) and Adobe
+`origin/main` `5d56e32` (PR #81; PR #80 `1b9fa68` also merged since the last fold). Every `git grep` count is bounded
+to tracked files at the named ref, so a 0 is bounded to that scope.
+
+| Ruling | Bus sha | Disposition and evidence |
+|---|---|---|
+| factory-kernel harvest `20261126T034953Z-a940765d`: Adobe's 2026-11-10 re-run filing (blob `b186075d`) answered; ruled FIT 9, INSTANCE-FAILURE 9 (K1, K2, K5, K9, K10, K11, K12, P:code determinism-class and human-gates); K2 FRICTION reclassified INSTANCE-FAILURE; P1 routed to a `code` bounded-gate-repair bench | `196b495` | ADOPT the ruling as received: `adjudications/factory-kernel/adobe-ingester.dispositions.md` at bus `origin/master` binds `b186075d`. No Adobe text cures any INSTANCE-FAILURE line yet. Re-measured for the two PRs merged since the filing: PR #80 and #81 bodies carry 0 kernel profile or acceptance-contract lines (their 6 "profile" hits are the product's profile directory), so K5 still fails; a bounded `git grep` on `origin/main` for `RESUME.md` or `.claude-state` finds 1 file, an ADR, and no tracked bootstrap pointer, so K9 still fails. The K10 half routed to fleet tooling is still open on the bus: `tools/probe-machine-inventory.sh:77` defaults `PROBE_IDENTITY` to `unknown`. The new lines enter the OWED set below. |
+| factory-kernel harvest `20261127T063423Z-087a16a8`: dng-auto-processor's eleventh filing; one new route on `tools/check-account-parity.py` stale-input false alignment | `8cfa4ed` | NOT-APPLICABLE: dng's filing. Adobe does not call that tool: 0 `check-account-parity` hits at HEAD, on `origin/main` and in `.claude-state/tools`. Adobe's drift check is `~/.claude/hooks/check-account-drift.ps1`. |
+| context-ultra-salesforce TRAPS: a usage guard keyed on plan percentages is blind on a spend-only plan; only the provider's structured 429 record proves a limit was hit | `94ea54d` | DISTINGUISH trap 1 as latent, record trap 2 as a candidate. Adobe's auditor gates (`.claude-state/tools/Invoke-DoctrineLoop.ps1:139`, `Invoke-AuditorWake.ps1:319`) read `~/.claude/usage/plan-usage.json` and require level `ok`. Its writer, `~/.claude/hooks/usage-probe.ps1:57,61`, takes the maximum of the five-hour and seven-day windows and yields `ok` when both are absent, so it would be blind on a spend-only plan. No such plan was measured: 0 of the last 200 samples in `%APPDATA%\Claude\plan-usage-history.json` (3 orgs) carry an empty `u`, and the 2026-11-27T18:45:34Z probe read a seven-day window (0.0%). Trap 2 applies: `usage-probe.ps1:64` matches the phrases `usage limit`, `limit reached` and `rate limit` in raw CLI output when no `rate_limit_event` arrives. A slopbar `get_usage` sweep was not run (permission denied in this headless run). |
+| dng-auto-processor spec posture: the APPROACH slot is moved on a same-attempt relaunch; R21 practices filing 14 | `6cb51ed` | DISTINGUISH: this is dng's own phase-slot mechanics in its single-writer spec. Adobe's work orders and slots belong to Sol (`.factory/`), and its product route does not use dng's fixed-name slot files. |
+| conjugal card: a filter-stopped K6 key spends its one post-filter attempt on the declared cross-family fallback key, not on an identical re-run | `a211b12` | DISTINGUISH: Adobe declares no fallback key. Its falsifier `.claude-state/tools/codex-auditor.ps1` has 0 `fallback`, `filter` or `cyber` hits, and no filter-stopped key on an Adobe subject has been measured. Re-open if an Adobe Codex key ends with no verdict on a filter stop. |
+
+OWED set, rebuilt whole and re-tested on 2026-11-27 UTC (no item carried without a re-test):
+- PATH defense, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1:378` still sets a per-run `DOTNET_CLI_HOME`, and the
+  file has 0 `DOTNET_ADD_GLOBAL_TOOLS_TO_PATH` hits. Fix unchanged from the 2026-11-23 addendum.
+- Candidate, optional, Sol: `.factory/tools/Test-FactoryActuation.ps1:592,688,839` still read `[math]::Max(0, $age)`.
+- R16.3, Sol: `.factory/tools/Invoke-FactoryClaudeLane.ps1` still has 0 `effort` hits.
+- R16.5, Sol: `.factory/tools/Test-FactoryActuation.ps1:2268,2277` still carry `gpt-5.6-sol` and `gpt-5.6-luna`.
+- R19.1, Sol: `.factory/prompts/sol.md:2426,5814` still name `gpt-6-astra`.
+- `43e29cc` and `83dd546`, Sol: `tools/session-checkpoint.py:15` still sets `AUTO_RESUME_ENABLED = True`, and
+  `.claude/settings.json:6,13` (HEAD) still register it. This fold's session-start tool census still lists it as wired twice.
+- Product throughput walker, Sol: `.factory/tools/Test-ProductThroughput.ps1:205` still walks `--first-parent` from
+  `$Root`. `origin/main` has 72 first-parent commits since 2026-10-24.
+- HUB repeat entries (`9363cee`), Sol: not reproduced. `HUB.md` is still 14,967,060 bytes, so it has had no append
+  since the last fold.
+- Reviewer-session exposure (`269388b`), Sol: still unmeasured. This fold's `claude -p` context again carried user-hook
+  output (a CoS-asks census, an in-flight worktree census, a doctrine-sync notice and an account-drift line).
+- Pid-only descendant closure (`e31d980`, candidate, optional), Sol: unchanged; HEAD is still `abf45ab`.
+- Kernel ruling `196b495`, K1, K5, K9 and K11 on the direct product route, auditor: new. K1 needs acceptance decided by
+  a seat other than the producing session. K5 needs a profile line (`code@r11`) and an acceptance contract bound
+  before work, which #80 and #81 lack. K9 needs a tracked bootstrap pointer on `origin/main`. K11 needs PR-thread
+  publication soon after the merge. K12 (filing cadence): the newest Adobe filing ref is still
+  `origin/review/adobe-ingester-kernel-2026-11-10`.
+- Kernel ruling `196b495`, K10, auditor and fleet tooling: no Adobe inventory records `probed_under`. Adobe's half is to
+  pass `PROBE_IDENTITY` when it probes; the default stays on the fleet bench.
+- Falsifier pin, auditor: `.claude-state/tools/codex-auditor.ps1:2` still pins codex-cli `0.160.1`.
+- ACK `39f0d3b2` role table, auditor: still open. #80 and #81 merged and carry a "3-seat adversarial code review" row,
+  but 0 of #74 to #81 carry a Role or Seat table.
+- R18 re-disposition, auditor: still OWED. 72 first-parent commits on `origin/main` since 2026-10-24, with 0 reverts.
+- Auditor-wake transcript liveness (`91ac131`), auditor: `.claude-state/tools/Invoke-AuditorWake.ps1:143,144,163,178,183,201`
+  still use `LastWriteTimeUtc`.
+- R19 section 2 usage sample, auditor: stays closed. `~/.claude/usage/plan-usage.json` was written at
+  2026-11-27T18:45:34Z, status `allowed`, seven-day 0.0%.
+- Usage-probe structural test (`94ea54d`, candidate, optional), auditor: in `~/.claude/hooks/usage-probe.ps1`, line 61
+  should yield `unknown` when both windows are absent, and line 64 should parse only the structured 429 record
+  (`isApiErrorMessage`, `apiErrorStatus: 429`, `rate_limit_info.status`), not phrases. The file is user-scope and
+  shared across projects, so changing it is the owner's call.
+- Integration-ref declaration (`8a01c92`): stays closed. `origin/main` (`5d56e32`) is still the product ref.
+- `696439b` (candidate), auditor, optional: the `Adversary pass` line is still absent (0 of PR bodies #74 to #81).
+- Open-set rebuild (`a0250ea`), auditor: `.claude-state/tools/doctrine-fold-prompt.md:24` still says only "read the
+  latest fold addendum". This fold rebuilt the set anyway.
+- Print-mode hook note, owner half: still open (owner's global instructions; the auditor may not edit them).
+- airmypc/P2 Release-worker staleness, auditor (product PR): still OWED. A bounded `git grep` on `origin/main`
+  (`5d56e32`) for "Release binaries" and "stale release" found 0 files.
+- Candidates, optional, no ruling binds them: unchanged from the 2026-11-23 addendum (`e67bff3`, `4c559ef`,
+  airmypc/P3 and dng/P2, airmypc/P6, agent-bridge/P1, mlv-app K4 `e548fbe`).
+
+None of the Sol items counts as done until Sol records it.
