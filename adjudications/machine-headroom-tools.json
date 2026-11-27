@@ -1,0 +1,1002 @@
+{
+  "slug": "machine-headroom-tools",
+  "question": "Owner request 2026-11-16 (per-machine usage to a central location; headroom without hurting existing throughput): which of three rival tools (A machine-load, B host-headroom-20261116, C tools/host-headroom) is the fleet's one tool, and what survives from the others?",
+  "proposedBy": "neutral-merit-adjudicator",
+  "note": "Proposer owns none of the candidates (anti-gerrymandering guard not applicable). Probes build their own worlds in temp dirs from temp exports of each branch, or read live task/process/data state read-only on all three minis over the ssh mesh. Nothing on any mini was changed.",
+  "cwd": "<merit-dir>",
+  "candidates": [
+    {
+      "id": "A",
+      "owner": "machine-load author",
+      "invocation": "origin/machine/machine-load-20261116 (PR 99) tools/machine/machine-load; tasks \\Fleet\\MachineLoad Sampler/Publisher"
+    },
+    {
+      "id": "B",
+      "owner": "host-headroom-20261116 author",
+      "invocation": "origin/machine/host-headroom-20261116 (no PR) tools/machine/host-headroom Start-HostHeadroom.ps1; task \\Fleet-HostHeadroom"
+    },
+    {
+      "id": "C",
+      "owner": "tools/host-headroom author",
+      "invocation": "origin/tools/host-headroom (PR 100) tools/machine/host-headroom HostHeadroom.psm1; tasks \\Fleet\\HostHeadroom Sampler/Publisher"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "M1-quiet",
+      "weight": "MUST",
+      "statement": "Excludes owner quiet windows read in the REAL FleetQuiet record format (windows\\<id>.json, armedUtc/untilUtc; .released history).",
+      "incident": "coretemp-fleet RESULTS.md 2026-11-15: thermal trials run all-core saturation at the 74 W cap inside FleetQuiet windows, and the unquiet 050413Z-stacked run was contaminated by background work; counting a trial as project load reads a mini as FULL and teaches a false slowdown curve.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "quiet",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "REAL_FORMAT_EXCLUDED=True"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "quiet",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "REAL_FORMAT_EXCLUDED=True"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "quiet",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "REAL_FORMAT_EXCLUDED=True"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "M2-throughput",
+      "weight": "MUST",
+      "statement": "Answers the throughput question: at the SAME utilisation, a measured slowdown of running work turns ROOM into TIGHT/FULL.",
+      "incident": "Owner request 2026-11-16 (\"without negatively impacting throughput\"); RESULTS.md: all minis hold the ~74 W cap, so power not cores sets speed, and one trial did 21 % less work at the same 74 W; utilisation alone cannot see it.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "thru",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT_FLAT=ROOM VERDICT_SLOW=(TIGHT|FULL|SATURATED)"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "thru",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT_FLAT=ROOM VERDICT_SLOW=(TIGHT|FULL|SATURATED)"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "thru",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT_FLAT=ROOM VERDICT_SLOW=(TIGHT|FULL|SATURATED)"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "M3-heavyslot",
+      "weight": "MUST",
+      "statement": "An idle-CPU machine whose HeavySlot gate is held 70 % of the time with 20-min waits is not reported as plain ROOM (verdict or a surfaced gate verdict says so).",
+      "incident": "Measured 2026-11-16 on PC-MINI3: CPU p95 ~28 % while HeavySlot jobs waited up to 43 min (slot held 70 % of the day); a new heavy project queues behind every incumbent whatever the CPU says.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "gate",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT=(TIGHT|FULL|SATURATED)|GATE_FLAG=yes"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "gate",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT=(TIGHT|FULL|SATURATED)|GATE_FLAG=yes"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "gate",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT=(TIGHT|FULL|SATURATED)|GATE_FLAG=yes"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "M4-nolock",
+      "weight": "MUST",
+      "statement": "Reading the HeavySlot ledger never makes HeavySlot's own append (AppendData, FileShare ReadWrite|Delete) fail. Negative control: a FileShare.Read holder must block it.",
+      "incident": "heavy-slot.ps1 Add-LedgerLine swallows a failed append as a WARN, so a reader holding FileShare.Read silently drops admit/exit lines (and so corrupts every duty/wait figure); TRAPS 2026-08-08: a locked file blocked the next build.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "lock",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "APPEND_FAILURES=0 "
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "lock",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "APPEND_FAILURES=0 "
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "lock",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "APPEND_FAILURES=0 "
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "M5-failclosed",
+      "weight": "MUST",
+      "statement": "Missing or insufficient data never reads as room: no data and ~2 h of data both give UNKNOWN/INSUFFICIENT/UNEVALUABLE.",
+      "incident": "heartbeats/README.md: a board that never installed the duty and one whose task stopped both look like a quiet board; RULINGS 2026-08-30 test 4: silence has been read as health too many times on this bus.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "failclosed",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT",
+            "stdoutAbsent": "=ROOM"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "failclosed",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT",
+            "stdoutAbsent": "=ROOM"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "failclosed",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT",
+            "stdoutAbsent": "=ROOM"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "M6-law4",
+      "weight": "MUST",
+      "statement": "A record built from this machine's REAL local data carries no path, user name, image or script name (public bus).",
+      "incident": "Bus README law 4 and CI-COST-CONTROL.md: the bus is public by owner decision; heartbeats/README warns literal paths are machine facts with an expiry date.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "privacy",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "LEAKS=0"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "privacy",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "LEAKS=0"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "privacy",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "LEAKS=0"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "M7-ownclone",
+      "weight": "MUST",
+      "statement": "The installed publisher pushes from a repository it owns, never from (or via worktrees/refs of) the clone a person works in.",
+      "incident": "Owner rule for this duty (\"never pushes from a checkout a person uses\"); TRAPS lane-collision entries: three writers on one tree/index produced foreign work-block adoption and pushes blocked by a peer's byte-identical write.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "checkout",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "SHARES_PERSON_CLONE=False"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "checkout",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "SHARES_PERSON_CLONE=False"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "checkout",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "SHARES_PERSON_CLONE=False"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "M8-prereview",
+      "weight": "MUST",
+      "statement": "While the tool is unmerged, no installed publisher on any mini is armed to push to master.",
+      "incident": "Owner rule: nothing to master before review; RULINGS ratify-before-publish; CI-COST-CONTROL: repeated intermediate publication was the dominant avoidable cost (Aug 2026, $50 cap hit).",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "prereview",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "ARMED_HOSTS=0"
+          },
+          "timeoutMs": 300000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "prereview",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "ARMED_HOSTS=0"
+          },
+          "timeoutMs": 300000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "prereview",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "ARMED_HOSTS=0"
+          },
+          "timeoutMs": 300000
+        }
+      }
+    },
+    {
+      "id": "M9-launch",
+      "weight": "MUST",
+      "statement": "Scheduled launch is windowless AND keeps the script's exit code (wscript /wait shim or the GUI launcher; not bare pwsh, not conhost --headless).",
+      "incident": "TRAPS 2026-09-02: bare pwsh under an Interactive principal flashed a console every fire for two days; TRAPS 2026-10-20: conhost --headless returns 0 for exit 7 and orphans the child on stop.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "launch",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "LAUNCH=hidden-exitcode"
+          },
+          "timeoutMs": 300000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "launch",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "LAUNCH=hidden-exitcode"
+          },
+          "timeoutMs": 300000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "launch",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "LAUNCH=hidden-exitcode"
+          },
+          "timeoutMs": 300000
+        }
+      }
+    },
+    {
+      "id": "M10-runtime",
+      "weight": "MUST",
+      "statement": "Installed and producing data now on all three minis: task present and enabled, principal resolves to a SID (not WORKGROUP\\\\user), newest data < 10 min old, one data location.",
+      "incident": "USERDOMAIN reads WORKGROUP under ssh (all three authors hit it 2026-11-16); RULINGS test 7: a MUST tie breaks on runtime availability; a registration is not a firing (F-HOOK-01).",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "runtime",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "HOSTS_OK=3 of 3"
+          },
+          "timeoutMs": 300000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "runtime",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "HOSTS_OK=3 of 3"
+          },
+          "timeoutMs": 300000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "runtime",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "HOSTS_OK=3 of 3"
+          },
+          "timeoutMs": 300000
+        }
+      }
+    },
+    {
+      "id": "M11-tests",
+      "weight": "MUST",
+      "statement": "The candidate's own test suite passes from a temp export of its branch.",
+      "incident": "RULINGS 2026-08-30: a ruling with no re-runnable evidence is an opinion with a timestamp.",
+      "probes": {
+        "A": {
+          "args": [
+            "-I",
+            "<merit-dir>\\srcA\\tools\\machine\\machine-load\\machine_load.tests.py"
+          ],
+          "cmd": "%USERPROFILE%\\AppData\\Local\\Python\\bin\\python.exe",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "\\bOK\\b"
+          },
+          "timeoutMs": 300000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\srcB\\tools\\machine\\host-headroom\\HostHeadroom.tests.ps1"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": " passed, 0 failed"
+          },
+          "timeoutMs": 300000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\srcC\\tools\\machine\\host-headroom\\HostHeadroom.tests.ps1"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": " passed, 0 failed"
+          },
+          "timeoutMs": 300000
+        }
+      }
+    },
+    {
+      "id": "M12-synthcap",
+      "weight": "MUST",
+      "statement": "Any synthetic load the sampler generates stays at or below half the physical cores (8 of 16).",
+      "incident": "Owner rule 2026-10-07: synthetic load capped at half the cores; saturation/load runs deferred while projects are active (coretemp README).",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "synthcap",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "SYNTH_THREADS_MAX=[0-8] "
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "synthcap",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "SYNTH_THREADS_MAX=[0-8] "
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "synthcap",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "SYNTH_THREADS_MAX=[0-8] "
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "S1-power",
+      "weight": "SHOULD",
+      "statement": "Reads package power from the REAL Core Temp adapter feed (dd.MM.yyyy local rows) so time at the power cap is visible.",
+      "incident": "RESULTS.md 2026-11-15: power, not temperature, sets the minis' speed (74 W limit); Core Temp throttle columns never fire.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "power",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "POWER_ROWS=[1-9]"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "power",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "POWER_ROWS=[1-9]"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "power",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "POWER_ROWS=[1-9]"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "S2-cli-attrib",
+      "weight": "SHOULD",
+      "statement": "A CLI-like process with no path in its command line, cwd in a project, is attributed to that project (case 2, a child naming the project, is recorded as evidence).",
+      "incident": "Claude/Codex CLIs carry no project path in their command lines; measured 2026-11-16 that attribution otherwise collapses into unattributed/agent-cli buckets.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "attrib",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CASE1_CWD_ONLY=agent-bridge"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "attrib",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CASE1_CWD_ONLY=agent-bridge"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "attrib",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CASE1_CWD_ONLY=agent-bridge"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "S3-first-verdict",
+      "weight": "SHOULD",
+      "statement": "After 12 h of perfect data, the verdict the CENTRAL record would carry is already a real verdict.",
+      "incident": "All three tools were installed 2026-11-16 and at 01:23Z on 11-17 every one still reported INSUFFICIENT/UNKNOWN on every mini (live census); the owner has no answer until this clears.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "timeverdict",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT_AFTER_12H=(ROOM|TIGHT|FULL|SATURATED)"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "timeverdict",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT_AFTER_12H=(ROOM|TIGHT|FULL|SATURATED)"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "timeverdict",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "VERDICT_AFTER_12H=(ROOM|TIGHT|FULL|SATURATED)"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "S4-ci-cost",
+      "weight": "SHOULD",
+      "statement": "A record push to master does not start the sealed disposition-intake matrix (its push paths-ignore covers the record path).",
+      "incident": "CI-COST-CONTROL.md: Aug 2026 Actions hit the $50 cap; repeated intermediate publication, not storage, was the dominant avoidable cost.",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "ci",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CI_TRIGGERED=False"
+          },
+          "timeoutMs": 240000
+        },
+        "B": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "ci",
+            "-Cand",
+            "B"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CI_TRIGGERED=False"
+          },
+          "timeoutMs": 240000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "ci",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CI_TRIGGERED=False"
+          },
+          "timeoutMs": 240000
+        }
+      }
+    },
+    {
+      "id": "S5-cost",
+      "weight": "SHOULD",
+      "statement": "Measured sampler CPU under 2 CPU-seconds per minute (~0.1 % of a 32-thread mini) over 5 min on pc-mini2. B: UNMEASURED, not installed on any mini at probe time.",
+      "incident": "The owner question is about not slowing existing work; a monitor is itself load on the machine it measures (coretemp telemetry was budgeted the same way).",
+      "probes": {
+        "A": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "cost",
+            "-Cand",
+            "A"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CPU_S_PER_MIN=[01](\\.\\d+)?(\\s|$)"
+          },
+          "timeoutMs": 420000
+        },
+        "C": {
+          "args": [
+            "-NoProfile",
+            "-File",
+            "<merit-dir>\\probes.ps1",
+            "-Prop",
+            "cost",
+            "-Cand",
+            "C"
+          ],
+          "cmd": "pwsh",
+          "expect": {
+            "exitCode": 0,
+            "stdoutMatches": "CPU_S_PER_MIN=[01](\\.\\d+)?(\\s|$)"
+          },
+          "timeoutMs": 420000
+        }
+      }
+    }
+  ]
+}

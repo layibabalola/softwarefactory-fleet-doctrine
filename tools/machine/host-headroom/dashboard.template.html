@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="300">
+<title>Fleet Headroom</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #16181d; --ink-2: #4a5160; --ink-3: #7b8394; --line: #e3e6ec; --track: #e9ecf1;
+  --good: #1f9d63; --warn: #c98a06; --bad: #d1435b; --accent: #3b6fe0; --accent-soft: rgba(59,111,224,.14);
+  --good-soft: rgba(31,157,99,.12); --warn-soft: rgba(201,138,6,.14); --bad-soft: rgba(209,67,91,.12);
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1115; --panel: #171a21; --ink: #e8eaf0; --ink-2: #b3b9c6; --ink-3: #7f8797; --line: #262b35; --track: #252a34;
+  --good: #3cc489; --warn: #e3a92b; --bad: #f0697f; --accent: #6f9bff; --accent-soft: rgba(111,155,255,.16);
+  --good-soft: rgba(60,196,137,.14); --warn-soft: rgba(227,169,43,.15); --bad-soft: rgba(240,105,127,.14);
+} }
+:root[data-theme="dark"] {
+  --bg: #0f1115; --panel: #171a21; --ink: #e8eaf0; --ink-2: #b3b9c6; --ink-3: #7f8797; --line: #262b35; --track: #252a34;
+  --good: #3cc489; --warn: #e3a92b; --bad: #f0697f; --accent: #6f9bff; --accent-soft: rgba(111,155,255,.16);
+  --good-soft: rgba(60,196,137,.14); --warn-soft: rgba(227,169,43,.15); --bad-soft: rgba(240,105,127,.14);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; margin-bottom: 20px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 15px; margin: 32px 0 12px; color: var(--ink-2); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.sub { color: var(--ink-3); font-size: 13px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.card.held { border-style: dashed; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.spread { justify-content: space-between; }
+.name { font-weight: 650; font-size: 16px; }
+.muted { color: var(--ink-3); font-size: 12px; }
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+.chip.good { background: var(--good-soft); color: var(--good); } .chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); } .chip.info { background: var(--accent-soft); color: var(--accent); }
+.chip.tool { background: transparent; border-color: var(--line); color: var(--ink-2); font-weight: 500; }
+.chip.tool.miss { color: var(--ink-3); text-decoration: line-through; opacity: .7; }
+.rings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 14px 0 6px; text-align: center; }
+.ring svg { width: 86px; height: 86px; display: block; margin: 0 auto; }
+.ring .lbl { font-size: 11.5px; color: var(--ink-2); margin-top: 2px; }
+.ring .sub2 { font-size: 11px; color: var(--ink-3); }
+.spark { margin-top: 10px; }
+.spark svg { width: 100%; height: 54px; display: block; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px 10px; margin-top: 10px; }
+.stat .v { font-family: var(--mono); font-size: 13px; } .stat .k { font-size: 11px; color: var(--ink-3); }
+.tools { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 4px; }
+.note { margin-top: 10px; font-size: 12px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 8px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11.5px; color: var(--ink-3); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+td.num { font-family: var(--mono); white-space: nowrap; }
+.scroll { overflow-x: auto; }
+.bar { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; min-width: 80px; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.plan { display: grid; gap: 10px; }
+.plan .card { display: grid; grid-template-columns: minmax(160px, 1fr) minmax(120px, auto) 3fr; gap: 12px; align-items: start; }
+@media (max-width: 720px) { .plan .card { grid-template-columns: 1fr; } }
+.arrow { font-weight: 650; font-size: 15px; }
+.cell { border-radius: 8px; padding: 8px 10px; font-size: 12px; min-width: 150px; }
+.cell.good { background: var(--good-soft); } .cell.warn { background: var(--warn-soft); } .cell.bad { background: var(--bad-soft); }
+.cell b { display: block; font-size: 12.5px; margin-bottom: 2px; }
+.cell.good b { color: var(--good); } .cell.warn b { color: var(--warn); } .cell.bad b { color: var(--bad); }
+ul.why { margin: 4px 0 0; padding-left: 16px; color: var(--ink-2); font-size: 12.5px; }
+details { margin-top: 28px; } summary { cursor: pointer; color: var(--ink-2); font-weight: 600; }
+details p, details li { color: var(--ink-2); font-size: 13px; max-width: 900px; }
+.err { color: var(--bad); }
+.toggle { margin-left: auto; background: var(--panel); border: 1px solid var(--line); color: var(--ink-2); border-radius: 8px; padding: 4px 10px; cursor: pointer; font: inherit; font-size: 12px; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const DATA = /*__DATA__*/null;
+// ---- placement policy (diagnostic only; every number below is a stated assumption, shown on the page)
+const P = {
+  slotBudget: 0.70, slotHard: 0.85, coreReserve: 2, slotWaitWarnS: 600,
+  aggThreads: [6, 10],          // busy threads all suspended projects used together (bachelor package power before vs after)
+  agentsP90: 8,                 // Claude sessions running at once on bachelor, p90, 10/10-10/24
+  agentRamGB: 0.8,              // one coding-agent session
+  buildPeakGB: { cargo: 6, cmake: 4, qmake: 4, nvcc: 4, dotnet: 3, node: 2, make: 2, python: 1 },
+};
+const $ = (h) => { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const n = (v, d = 1) => (v === null || v === undefined || Number.isNaN(+v)) ? '\u2013' : (+v).toFixed(d).replace(/\.0+$/, '');
+const pct = (v) => (v === null || v === undefined) ? '\u2013' : Math.round(v * 100) + '%';
+const ago = (iso) => { if (!iso) return 'unknown'; const m = (Date.now() - Date.parse(iso)) / 60000; return m < 1 ? 'just now' : m < 90 ? Math.round(m) + ' min ago' : m < 2880 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
+const when = (iso) => iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '\u2013';
+
+function ring(frac, cls, big, small) {
+  const r = 34, c = 2 * Math.PI * r, f = Math.max(0, Math.min(1, frac ?? 0));
+  const col = { good: 'var(--good)', warn: 'var(--warn)', bad: 'var(--bad)', none: 'var(--ink-3)' }[cls];
+  return `<svg viewBox="0 0 86 86" role="img" aria-label="${esc(big)} ${esc(small)}">
+    <circle cx="43" cy="43" r="${r}" fill="none" stroke="var(--track)" stroke-width="8"/>
+    <circle cx="43" cy="43" r="${r}" fill="none" stroke="${col}" stroke-width="8" stroke-linecap="round"
+      stroke-dasharray="${(f * c).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 43 43)"/>
+    <text x="43" y="44" text-anchor="middle" font-size="17" font-weight="650" fill="var(--ink)">${esc(big)}</text>
+    <text x="43" y="60" text-anchor="middle" font-size="10" fill="var(--ink-3)">${esc(small)}</text></svg>`;
+}
+function spark(series) {
+  if (!series || series.length < 3) return `<div class="muted">CPU history: collecting (${(series || []).length * 10} min so far)</div>`;
+  // short history: stretch what exists (at least 6 h) instead of a sliver at the right edge of 24 h
+  const k0 = Math.min(series[0][0], 143 - 35), spanH = Math.round((143 - k0 + 1) / 6);
+  const W = 300, H = 54, x = (k) => ((k - k0) / (143 - k0)) * W, y = (v) => H - 3 - (Math.min(100, v) / 100) * (H - 6);
+  const band = series.map((p) => `${x(p[0]).toFixed(1)},${y(p[2]).toFixed(1)}`).join(' ') + ' ' + [...series].reverse().map((p) => `${x(p[0]).toFixed(1)},${y(0).toFixed(1)}`).join(' ');
+  const line = series.map((p) => `${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join(' ');
+  const last = series[series.length - 1];
+  return `<div class="row spread"><span class="muted">CPU busy, last ${spanH} h (line = 10-min mean, shade = peak)</span><span class="muted">now ${n(last[1], 0)}%</span></div>
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="CPU busy over 24 hours">
+      <line x1="0" x2="${W}" y1="${y(75)}" y2="${y(75)}" stroke="var(--line)" stroke-dasharray="3 3"/>
+      <polygon points="${band}" fill="var(--accent-soft)"/>
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+// ---- capacity of one host, from its card
+function capacity(h) {
+  const s = h.summary; if (!s || h.error) return null;
+  const span = s.span_hours ?? 0;
+  return {
+    name: h.machine, cores: s.hardware?.cores, ramGB: s.hardware?.ram_gb,
+    coresFree: s.cpu?.phys_cores_free_p90 ?? s.headroom?.phys_cores_free_p90, ramFree: s.headroom?.ram_gb_free,
+    slot: h.slot?.d7?.duty ?? s.heavy_slot?.occupancy_frac, slotWait: h.slot?.d7?.waitP90s ?? s.heavy_slot?.wait_s_p90,
+    verdict: s.headroom?.verdict, reasons: s.headroom?.reasons || [], span, vmOn: h.vmOn || null, stale: !!h.stale,
+    tools: new Set(h.tools || []),
+    confidence: span >= 72 ? 'medium' : span >= 24 ? 'low-medium' : 'low',
+  };
+}
+// ---- what each suspended project needs, from the source host's footprint
+function demands(fp) {
+  if (!fp) return [];
+  const ps = Object.entries(fp.projects || {}).map(([name, p]) => ({ name, ...p }));
+  const total = ps.reduce((a, p) => a + (p.sessionHours || 0), 0) || 1;
+  const slotDay = (fp.heavySlot?.before?.nonMlvSlotHoursPerDay ?? 0) / 24;
+  return ps.map((p) => {
+    const share = (p.sessionHours || 0) / total;
+    const agents = share > 0 ? Math.max(1, Math.round(P.agentsP90 * share)) : 0;
+    const peak = Math.max(0, ...(p.needs || []).map((t) => P.buildPeakGB[t] || 0));
+    return { ...p, share, idle: share === 0, threadsLo: P.aggThreads[0] * share, threadsHi: P.aggThreads[1] * share,
+      slot: slotDay * share, agents, ramGB: share > 0 ? agents * P.agentRamGB + peak : 0 };
+  }).sort((a, b) => b.share - a.share);
+}
+// A guest VM shares its host's cores: what it can take is the smaller of its own free vCPUs and the host's
+// free cores, and whatever is placed on either one is charged to both.
+function fit(d, c, extra = { threads: 0, slot: 0, ram: 0 }, host = null, hostExtra = { threads: 0 }) {
+  if (!c) return { cls: 'bad', label: 'no data', why: ['host unreachable or sampler missing'], score: -99 };
+  const missing = (d.needs || []).filter((t) => !c.tools.has(t));
+  const ownLeft = (c.coresFree ?? 0) - extra.threads - d.threadsHi;
+  const hostLeft = host ? (host.coresFree ?? 0) - hostExtra.threads - d.threadsHi : Infinity;
+  const coresLeft = Math.min(ownLeft, hostLeft);
+  const slotAfter = (c.slot ?? 0) + extra.slot + d.slot;
+  const ramLeft = (c.ramFree ?? 0) - extra.ram - d.ramGB;
+  const why = []; let cls = 'good';
+  const worse = (k) => { if (k === 'bad' || (k === 'warn' && cls === 'good')) cls = k; };
+  if (coresLeft < 0) { worse('bad'); why.push(`needs up to ${n(d.threadsHi)} cores, ${n(coresLeft + d.threadsHi)} free at p90${host && hostLeft < ownLeft ? ' on the host' : ''}`); }
+  else if (coresLeft < P.coreReserve) { worse('warn'); why.push(`leaves ${n(coresLeft)} cores spare (< ${P.coreReserve})`); }
+  else why.push(`${n(coresLeft)} cores still spare after it`);
+  if (c.vmOn) why.push(host ? `VM on ${c.vmOn}: ${hostLeft < ownLeft ? 'the host' : 'its own vCPUs'} set the limit` : `VM on ${c.vmOn}, whose card is missing: host contention unknown`);
+  if (c.vmOn && !host) worse('warn');
+  if (slotAfter > P.slotHard) { worse('bad'); why.push(`heavy slot would be busy ${pct(slotAfter)}`); }
+  else if (slotAfter > P.slotBudget) { worse('warn'); why.push(`heavy slot would be busy ${pct(slotAfter)} (budget ${pct(P.slotBudget)})`); }
+  else why.push(`heavy slot ${pct(c.slot)} \u2192 ${pct(slotAfter)}`);
+  if ((c.slotWait ?? 0) > P.slotWaitWarnS) {   // heavy jobs already queue here: more heavy work slows the projects already on it
+    worse(d.slot > 0.05 ? 'bad' : 'warn');
+    why.push(`heavy jobs here already queue ${Math.round(c.slotWait / 60)} min (p90); more would slow what runs here now`);
+  }
+  if (ramLeft < 0) { worse('bad'); why.push(`RAM short by ${n(-ramLeft)} GB`); } else why.push(`${n(ramLeft, 0)} GB RAM spare after it`);
+  if (missing.length) { worse('warn'); why.push(`install first: ${missing.join(', ')}`); }
+  if (c.verdict === 'FULL') { worse('bad'); why.push('sampler verdict FULL'); }
+  if (c.stale) { worse('warn'); why.push('this card is over 30 min old'); }
+  const score = Math.min(coresLeft / 4, (P.slotBudget - slotAfter) / 0.2, ramLeft / 16) - 0.6 * missing.length;
+  const label = cls === 'good' ? 'Good fit' : cls === 'warn' ? 'Possible' : 'Poor fit';
+  return { cls, label, why, score, missing };
+}
+function plan(ds, caps) {
+  const load = Object.fromEntries(caps.map((c) => [c.name, { threads: 0, slot: 0, ram: 0 }]));
+  const rank = { good: 2, warn: 1, bad: 0 };
+  const byName = Object.fromEntries(caps.map((c) => [c.name, c]));
+  // threads placed on a guest also load its host; a guest's fit reads its host's load, so threads placed on
+  // the host shrink the guest too
+  return ds.filter((d) => !d.idle).sort((a, b) => b.threadsHi - a.threadsHi).map((d) => {
+    const opts = caps.map((c) => ({ c, f: fit(d, c, load[c.name], c.vmOn ? byName[c.vmOn] : null, c.vmOn ? load[c.vmOn] || { threads: 0 } : undefined) }))
+      .sort((a, b) => (rank[b.f.cls] - rank[a.f.cls]) || (b.f.score - a.f.score));
+    const best = opts[0];
+    if (best) {
+      const l = load[best.c.name]; l.threads += d.threadsHi; l.slot += d.slot; l.ram += d.ramGB;
+      if (best.c.vmOn && load[best.c.vmOn]) load[best.c.vmOn].threads += d.threadsHi;
+    }
+    return { d, best, runnerUp: opts[1] };
+  });
+}
+
+function hostCard(h, needsAll) {
+  if (h.error || !h.summary) return `<div class="card"><div class="name">${esc(h.machine)}</div><p class="err">${esc(h.error || h.summaryError || 'no summary')}</p></div>`;
+  const c = capacity(h), s = h.summary;
+  const cf = c.coresFree / (c.cores || 16), rf = c.ramFree / (c.ramGB || 1);
+  const vcls = { ROOM: 'good', TIGHT: 'warn', FULL: 'bad' }[c.verdict] || 'info';
+  const virt = h.virtualization || {};
+  const vmLine = c.vmOn ? `<div class="muted">VM on ${esc(c.vmOn)} \u00b7 temperature and host contention are on that card; this card's canary is the direct measure of slowdown</div>`
+    : (virt.guests_running || []).length ? `<div class="muted">hosts VM: ${esc(virt.guests_running.join(', '))} (its load is counted here too)</div>` : '';
+  const tools = [...new Set([...needsAll, ...(h.tools || [])])].filter((t) => !['git', 'pwsh', 'npm', 'gh', 'gcc'].includes(t)).sort()
+    .map((t) => `<span class="chip tool${c.tools.has(t) ? '' : ' miss'}" title="${c.tools.has(t) ? 'installed' : 'not installed'}">${esc(t)}</span>`).join('');
+  const slotCls = c.slot == null ? 'none' : c.slot <= 0.5 ? 'good' : c.slot <= P.slotBudget ? 'warn' : 'bad';
+  return `<div class="card">
+    <div class="row spread"><span class="name">${esc(h.machine)}</span><span class="row">${c.stale ? '<span class="chip warn">stale</span>' : ''}<span class="chip ${vcls}" title="${esc(c.reasons.join(', '))}">${esc(c.verdict || 'unknown')}</span></span></div>
+    <div class="muted">${esc(s.hardware?.cpu_model)} \u00b7 ${n(s.hardware?.ram_gb, 0)} GB \u00b7 ${esc((h.gpu || []).join(', '))}</div>${vmLine}
+    <div class="rings">
+      <div class="ring">${ring(cf, cf >= 0.4 ? 'good' : cf >= 0.15 ? 'warn' : 'bad', n(c.coresFree, 0), 'of ' + c.cores)}<div class="lbl">cores free</div><div class="sub2">p90, below SMT knee</div></div>
+      <div class="ring">${ring(rf, rf >= 0.35 ? 'good' : rf >= 0.15 ? 'warn' : 'bad', n(c.ramFree, 0), 'GB')}<div class="lbl">RAM free</div><div class="sub2">after 15% reserve</div></div>
+      <div class="ring">${ring(c.slot, slotCls, pct(c.slot), '7 days')}<div class="lbl">heavy slot busy</div><div class="sub2">${h.slot ? (h.slot.heldNow ? 'held now' : 'idle now') : 'no ledger'}</div></div>
+    </div>
+    <div class="spark">${spark(h.series)}</div>
+    <div class="stats">
+      <div class="stat"><div class="v">\u00d7${n(s.canary?.wide?.slowdown_p95, 2)}</div><div class="k">canary slowdown p95</div></div>
+      <div class="stat"><div class="v">${c.slotWait == null ? '\u2013' : Math.round(c.slotWait / 60) + ' min'}</div><div class="k">heavy-job wait p90</div></div>
+      <div class="stat"><div class="v">${n(s.thermal?.temp_c_p95, 0)}\u00b0C</div><div class="k">CPU temp p95</div></div>
+      <div class="stat"><div class="v">${n(s.cpu?.busy_pct_p95, 0)}%</div><div class="k">CPU busy p95</div></div>
+      <div class="stat"><div class="v">${n(s.thermal?.package_w_p99, 0)} W</div><div class="k">package power p99</div></div>
+      <div class="stat"><div class="v">${n(h.diskFreeGB, 0)} GB</div><div class="k">C: free</div></div>
+    </div>
+    <div class="tools">${tools}</div>
+    <div class="note">Sampler history ${n(c.span)} h of a ${n(s.window_hours, 0)} h window \u2192 confidence <b>${c.confidence}</b>. Card collected ${ago(h.collectedUtc)}.</div>
+  </div>`;
+}
+function sourceCard(fp) {
+  if (!fp) return '';
+  const b = fp.heavySlot?.before || {}, a = fp.heavySlot?.after || {};
+  return `<div class="card held">
+    <div class="row spread"><span class="name">${esc(fp.machine)}</span><span class="chip info">held for benchmarking</span></div>
+    <div class="muted">${esc(fp.hardware?.cpu)} \u00b7 ${n(fp.hardware?.ramGB, 0)} GB \u00b7 projects suspended ${esc(fp.suspendedUtc)}</div>
+    <table style="margin-top:10px"><tr><th></th><th>before</th><th>after</th></tr>
+      <tr><td>package power, mean</td><td class="num">${n(b.packageWattsMean)} W</td><td class="num">${n(a.packageWattsMean)} W</td></tr>
+      <tr><td>heavy-slot hours / day (non-MLV)</td><td class="num">${n(b.nonMlvSlotHoursPerDay)}</td><td class="num">${n(a.nonMlvSlotHoursPerDay)}</td></tr>
+      <tr><td>hours queued for the slot / day</td><td class="num">${n(b.nonMlvWaitHoursPerDay)}</td><td class="num">${n(a.nonMlvWaitHoursPerDay)}</td></tr>
+      <tr><td>hottest core, mean</td><td class="num">${n(b.hottestCoreCMean, 0)}\u00b0C</td><td class="num">${n(a.hottestCoreCMean, 0)}\u00b0C</td></tr>
+      <tr><td>Codex sessions / day</td><td class="num">${n(fp.codexSessionsPerDayBefore, 0)}</td><td class="num">0</td></tr></table>
+    <div class="note">Measured ${ago(fp.measuredUtc)} from the slot log and agent transcripts already on the machine. Not re-polled: it is benchmarking.</div>
+  </div>`;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (!DATA) { app.innerHTML = '<p>No data embedded. Run Build-FleetDashboard.ps1.</p>'; return; }
+  const hosts = DATA.hosts || [], fp = DATA.footprint, ds = demands(fp);
+  const caps = hosts.map(capacity).filter(Boolean);
+  const needsAll = [...new Set(ds.flatMap((d) => d.needs || []))];
+  const pl = plan(ds, caps);
+  const maxH = Math.max(1, ...ds.map((d) => d.sessionHours || 0));
+  const lowConf = caps.some((c) => c.confidence === 'low');
+  app.innerHTML = `
+  <header><h1>Fleet headroom</h1><span class="sub">built ${when(DATA.builtUtc)} on ${esc(DATA.builtOn)} (${ago(DATA.builtUtc)}) \u00b7 page reloads every 5 min, data every 10</span>
+    <button class="toggle" id="theme">Theme</button></header>
+  ${lowConf ? `<div class="card" style="border-color:var(--warn)"><b>Early data.</b> <span class="sub">The host sampler has under 24 h of history on at least one mini, so its verdict reads UNEVALUABLE and cores-free is a short-window figure. The plan below firms up as history accrues; trust it after a few days.</span></div>` : ''}
+  <h2>Machines</h2>
+  <div class="grid">${hosts.map((h) => hostCard(h, needsAll)).join('')}${sourceCard(fp)}</div>
+  <h2>Suspended on ${esc(fp?.machine || 'the source host')}</h2>
+  <div class="card scroll"><table>
+    <tr><th>Project</th><th>Agent hours, 15 days before</th><th>Busy threads</th><th>Heavy slot</th><th>RAM</th><th>Needs</th><th>Last commit</th></tr>
+    ${ds.map((d) => `<tr><td><b>${esc(d.name)}</b><div class="muted">${d.sessions} sessions</div></td>
+      <td><div class="row"><div class="bar" style="width:120px"><i style="width:${(100 * (d.sessionHours || 0) / maxH).toFixed(0)}%"></i></div><span class="num">${n(d.sessionHours, 0)} h</span></div><div class="muted">${pct(d.share)} of the suspended work</div></td>
+      <td class="num">${d.idle ? 'idle' : n(d.threadsLo) + '\u2013' + n(d.threadsHi)}</td>
+      <td class="num">${d.idle ? '\u2013' : pct(d.slot)}</td>
+      <td class="num">${d.idle ? '\u2013' : '~' + n(d.ramGB, 0) + ' GB'}</td>
+      <td>${(d.needs || []).map((t) => `<span class="chip tool">${esc(t)}</span>`).join(' ')}${(d.mayNeed || []).length ? `<div class="muted">may need: ${esc(d.mayNeed.join(', '))}</div>` : ''}</td>
+      <td class="num">${esc(d.lastCommit)}</td></tr>`).join('')}
+  </table></div>
+  <h2>Where they could go</h2>
+  <div class="plan">${pl.map(({ d, best, runnerUp }) => `<div class="card">
+      <div><div class="arrow">${esc(d.name)} \u2192 ${esc(best?.c.name || 'nowhere')}</div><div class="muted">needs ~${n(d.threadsHi)} cores, ${pct(d.slot)} slot, ~${n(d.ramGB, 0)} GB</div></div>
+      <div><span class="chip ${best?.f.cls || 'bad'}">${esc(best?.f.label || 'no host')}</span>${runnerUp ? `<div class="muted" style="margin-top:6px">next best: ${esc(runnerUp.c.name)} (${esc(runnerUp.f.label.toLowerCase())})</div>` : ''}</div>
+      <ul class="why">${(best?.f.why || []).map((w) => `<li>${esc(w)}</li>`).join('')}<li>confidence: ${best ? best.c.confidence : '\u2013'} (host history) \u00d7 low-medium (footprint)</li></ul>
+    </div>`).join('')}
+    ${ds.filter((d) => d.idle).map((d) => `<div class="card"><div><div class="arrow">${esc(d.name)}</div><div class="muted">no agent activity in the 15 days before suspension</div></div><div><span class="chip info">anywhere</span></div><ul class="why"><li>needs: ${esc((d.needs || []).join(', ') || 'nothing detected')}</li></ul></div>`).join('')}
+  </div>
+  <h2>Each project on each machine, alone</h2>
+  <div class="card scroll"><table>
+    <tr><th>Project</th>${caps.map((c) => `<th>${esc(c.name)}</th>`).join('')}</tr>
+    ${ds.filter((d) => !d.idle).map((d) => `<tr><td><b>${esc(d.name)}</b></td>${caps.map((c) => { const f = fit(d, c, undefined, c.vmOn ? caps.find((x) => x.name === c.vmOn) || null : null); return `<td><div class="cell ${f.cls}"><b>${f.label}</b>${f.why.map(esc).join('<br>')}</div></td>`; }).join('')}</tr>`).join('')}
+  </table></div>
+  <details><summary>How this is worked out, and what it cannot see</summary>
+    <ul>
+      <li><b>Host capacity</b> comes from the host-headroom sampler on each mini: physical cores free below the SMT knee at p90, memory free after a 15% reserve, and its own verdict. Heavy-slot busy and the heavy-job wait are the sampler's 7-day HeavySlot figures: a holder that died without an exit line ends at the next admit. A VM's room is the smaller of its own and its host's, and anything placed on it is charged to the host as well.</li>
+      <li><b>Project demand</b> is estimated, not measured per process. Before the suspension the source host drew ${n(fp?.heavySlot?.before?.packageWattsMean)} W against ${n(fp?.heavySlot?.after?.packageWattsMean)} W after; that gap is read as ${P.aggThreads[0]}\u2013${P.aggThreads[1]} busy threads for all suspended projects together, split by each project's share of agent session-hours. Heavy-slot demand is the ${n(fp?.heavySlot?.before?.nonMlvSlotHoursPerDay)} non-MLV slot-hours a day, split the same way. RAM is ${P.agentRamGB} GB per concurrent agent (p90 ${P.agentsP90} at once) plus the largest build in the project's toolchain (${Object.entries(P.buildPeakGB).map(([k, v]) => k + ' ' + v).join(', ')} GB).</li>
+      <li><b>Demand was throttled.</b> Those projects queued ${n(fp?.heavySlot?.before?.nonMlvWaitHoursPerDay)} hours a day for the slot on the source host, so on an emptier machine they will likely use more than the figures above.</li>
+      <li><b>Not covered:</b> Codex sessions (${n(fp?.codexSessionsPerDayBefore, 0)} a day, not attributable to a project), the projects' scheduled tasks, GPU work, and provider quota (Claude/Codex limits do not depend on which machine runs the session).</li>
+      <li><b>Rules:</b> a placement is "Good" when it leaves \u2265 ${P.coreReserve} cores spare, keeps the heavy slot \u2264 ${pct(P.slotBudget)} busy, fits in RAM and needs no installs; "Possible" when one of those is borderline or a tool must be installed first; "Poor" when cores or RAM run out, the slot passes ${pct(P.slotHard)}, heavy jobs on that machine already queue more than ${P.slotWaitWarnS / 60} min at p90 (more heavy work there directly slows the projects it already runs), or the sampler says FULL. The plan places the largest project first and charges each placement against the machine before the next.</li>
+      <li>Every machine the tool is installed on rebuilds this page every 10 minutes from its own card and its peers' cards, so it opens on any of them. Page design, footprint method and placement rules: the PC-MINI3 dashboard session (2026-11-16), ported into tools/machine/host-headroom.</li>
+      <li>Diagnostic only. It informs a move; it gates nothing. Try one project at a time and watch that machine's canary slowdown and heavy-job wait for a few days.</li>
+    </ul></details>`;
+  document.getElementById('theme').onclick = () => {
+    const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark ? 'light' : 'dark'; try { localStorage.setItem('fleet-theme', r.dataset.theme); } catch (e) { }
+  };
+}
+try { const t = localStorage.getItem('fleet-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) { }
+render();
+</script>
+</body>
+</html>
