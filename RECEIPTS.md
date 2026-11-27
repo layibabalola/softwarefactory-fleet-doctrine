@@ -13875,3 +13875,18 @@ Unqualified commit ids and card names in this entry are dng-auto-processor's rep
   stopped on model availability. A steward operational failure, routed to cloudvore or the owner; the steward does
   not grade it. Seats: arbiter gpt-6-astra high, consolidator claude-fable-5, lint claude-opus-5-5 + gpt-6.1-sol, all
   LANE-COMPLETE; orchestrator claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.
+
+- 2026-11-27 factory-kernel harvest, run `20261127T063423Z-087a16a8` (Conjugal, interim steward).
+  One filing: dng-auto-processor's eleventh, blob `b170251fbabd8c53c035e87b66550a20d21a8ae8` on
+  `origin/review/dng-auto-processor-kernel-2026-11-27` (it carries no earlier filing and supersedes the tenth, blob
+  `1ca87429`). `dng-auto-processor.dispositions.md` rewritten, superseding its prior ruling without withdrawing any of
+  its 209 `§` lines, 9 `HEADER:` lines or open routes: **78 `§` lines (54 ADOPTED · 2 ADOPTED-CONDITIONAL · 1 REJECTED ·
+  21 ROUTED) plus 13 `HEADER:` lines** (11 ADOPTED · 0 REJECTED · 2 ROUTED); ruled census FIT 5 · FRICTION 0 · BREAK 0 ·
+  N/A 0 · UNEXERCISED 6 · INSTANCE-FAILURE 10 (filed FIT 4 · UNEXERCISED 6 · INSTANCE-FAILURE 11). One reclassification:
+  P:code human-gates INSTANCE-FAILURE → FIT, scoped to channel naming (recorded as a REJECTED line); the failed push delivery stays K2 and U15 evidence, and K2 stays INSTANCE-FAILURE under its own escalation duty. No spec change (kernel r5, code r11, measured-objective r3). One ledger row
+  appended (36 → 37; FIT 201 → 206, UNEXERCISED 113 → 119); 0 closed end-to-end subjects added (total stays 2,
+  conjugal). One new route: fleet account-parity tooling (`tools/check-account-parity.py`) on stale-input false
+  alignment; K10 stays convergent and routed to the fleet inventory/schema/launcher bench. dng's K12 FIT is recorded as
+  filed, not as steward credit; the steward's operational failure of about 40 days stays routed to cloudvore or the
+  owner. Seats: arbiter gpt-6-astra high, consolidator claude-fable-5, lint claude-opus-5-5 + gpt-6.1-sol, all
+  LANE-COMPLETE; orchestrator claude-opus-5-5. Written before landing: the runner commits and fills `spec_commit`.

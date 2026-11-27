@@ -1214,3 +1214,48 @@ rewritten for blob `29f76cbd` and superseding its ruling on blob `d39b6f71` (24 
 withdrawn; the 2026-10-15 copy, blob `780c2f23`, was never harvested and its carried items are answered here): 45 `§`
 lines (38 ADOPTED · 1 ADOPTED-CONDITIONAL · 0 REJECTED · 6 ROUTED) plus 8 `HEADER:` lines (7 ADOPTED · 0 REJECTED ·
 1 ROUTED); ruled census FIT 5 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 1, INSTANCE-FAILURE 10 separately, as filed.
+
+## 2026-11-27 — harvest 20261127T063423Z-087a16a8 (dng-auto-processor eleventh filing, blob b170251f)
+
+| date | harvest | filing | blob | kernel | profile | subjects | FIT | FRICTION | BREAK | N/A | UNEXERCISED | unresolved BREAKs | arbiter |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2026-11-27 | 20261127T063423Z-087a16a8 | dng-auto-processor | b170251fbabd8c53c035e87b66550a20d21a8ae8 | r5 unchanged | code@r11; measured-objective@r3 unchanged; instance map code@r10 | 0 closed end-to-end; 26 mechanism landings | 5 | 0 | 0 | 0 | 6 | 0 | gpt-6-astra (read-only arbiter seat; not a steward filing) |
+
+Derived, not asserted. Re-run: `PYTHONUTF8=1 python tools/kernel-e2e.py --json`. Before this run: `closed_end_to_end: 2`
+(conjugal), `ledger_rows: 36`, `ledger_totals: FIT 201 · FRICTION 87 · BREAK 5 · N/A 0 · UNEXERCISED 113`
+(orchestrator's run at bus base `94ea54d1`; the arbiter's re-run of the unchanged logic with `--no-fetch` on its child
+returned the same baseline). After this row: 37 rows; 206 FIT · 87 FRICTION · 5 BREAK · 0 N/A · 119 UNEXERCISED (201+5 =
+206; 113+6 = 119; FRICTION, BREAK and N/A do not move, because the row adds 0 to each); closed end-to-end stays 2
+(conjugal). The row adds 10 INSTANCE-FAILURE lines to health only, never to ledger totals: K2, K8, K9, K10, K11; P:code
+subject-identity, claims-audit, resource-terminals, delivery-target, dispatch-preflight. Zero unresolved BREAKs.
+harvest-status before this run: 10 filings, open=1 (dng-auto-processor STALE).
+
+**Steward K12 accountability: unchanged.** The steward operational failure of about 40 days recorded in the 2026-11-26
+section stays routed to cloudvore or the owner; the steward does not grade it. dng-auto-processor's K12 FIT in this
+filing is recorded as filed, on the verified tenth-blob disposition, and is not steward performance credit; the
+seven-day wait of the tenth filing and the 34-day wait of the seventh stay recorded.
+
+**Coverage — 1 fleet project has NEVER filed:** `salesforce-tools`. `kernel-e2e.py` `never_filed` also lists
+`adversarialllm`; that is the case-sensitivity defect in its roster, not a nonfiler: AdversarialLLM has filed and is
+HARVESTED. This harvest adds 0 closed end-to-end subjects: the fleet total stays 2, both conjugal, in one qualifying
+project. dng-auto-processor declared no kernel subject in the window; its 26 route landings are mechanism evidence only.
+
+**What this round changed: nothing in the spec.** Kernel r5 unchanged at 2,867 words (`6821c4c3`); `code.md` unchanged
+at r11 (`a31b27a7`); `measured-objective.md` unchanged at r3 (`4e8bcacc`). No BREAK was submitted or established, no
+cross-profile FRICTION exists, and existing requirements cover the accepted instance failures. One verdict was
+reclassified: dng-auto-processor's P:code human-gates, filed INSTANCE-FAILURE, is ruled FIT scoped to channel naming
+alone, because the quoted requirement is naming an owner-facing channel, which the filing establishes; the failed
+delivery (21 of 21 pushes not sent, as attributed) stays K2 and U15 evidence, and no FRICTION or REPLACES is invented. dng's K2 stays INSTANCE-FAILURE, retained under K2's own escalation duty rather than under the Human gates naming requirement cited for it in the 2026-11-26 section.
+Kernel §7 item 5 stays factually stale and is not edited; its existing reconciliation route stays open. Cross-filing:
+K10 is convergent with adobe-ingester, mlv-app, cloudvore and agent-bridge, and stays with the fleet
+inventory/schema/launcher bench and project dispatch maintainers; it concerns implementing existing text, not a kernel
+amendment. One singular new route: fleet account-parity tooling, `tools/check-account-parity.py`, with dng dispatch
+maintainers, on stale-input false alignment (the filing attributes an aligned result printed while the desktop and CLI
+were on different accounts; the bus checker compares stored identifiers without a freshness check and always exits zero,
+and its identity with the hook installed on the dng machine is unverified). dng's K9 failure is convergent with adobe-ingester, agent-bridge and airmypc (durable resumption; their continuity maintainers' benches). dng's K8 failure, like mlv-app's, diverges from adobe-ingester's and cloudvore's successful parking, and its K9 failure from cloudvore's and magic-lantern's scoped FIT, without a contradictory invariant; no profile wins. Bus-side blobs, spec pins and the ledger baseline are VERIFIED;
+filer-repository and machine-local facts remain ATTRIBUTED and UNVERIFIED.
+Per-file line counts: `dng-auto-processor.dispositions.md`, rewritten for blob `b170251f` and superseding its ruling on
+blob `1ca87429` (209 `§` + 9 `HEADER:` lines, none withdrawn; every open route stays open): 78 `§` lines (54 ADOPTED · 2
+ADOPTED-CONDITIONAL · 1 REJECTED · 21 ROUTED) plus 13 `HEADER:` lines (11 ADOPTED · 0 REJECTED · 2 ROUTED); no carried
+lines; ruled census FIT 5 · FRICTION 0 · BREAK 0 · N/A 0 · UNEXERCISED 6, INSTANCE-FAILURE 10 separately (filed FIT 4 ·
+UNEXERCISED 6, INSTANCE-FAILURE 11).
