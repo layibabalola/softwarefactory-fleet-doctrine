@@ -1,8 +1,8 @@
 {
   "schema": "fleet-path-health.v1",
   "machine": "PC-MINI2",
-  "published_utc": "2026-11-26T16:15:04Z",
-  "tool_commit": "9a77aa519c1338856311bbbed1a50ec51d55f41f",
+  "published_utc": "2026-11-27T16:15:04Z",
+  "tool_commit": "1102b6372fce1705ac8114072700c0ae87235213",
   "verdict": "HEALTHY",
   "findings": [],
   "notes": [],
