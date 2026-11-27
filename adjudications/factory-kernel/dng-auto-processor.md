@@ -1,221 +1,378 @@
 project: dng-auto-processor
-kernel: fleet-factory-kernel r4
-profile: measured-objective@r2
-instance: DngAutoProcessor/docs/14-ORCHESTRATION.md (instance map below; the KERNEL line is DOGFOOD-PENDING because docs/12, docs/13 and docs/14 are steward-only under docs/14 §7a)
-subjects: 0 closed end-to-end. 1 in-flight and claimed for nothing (DNG-SELF-TARGET-BUCKET-TIER, RUNNING, phase APPROACH, dispatched 2026-09-15T19:27:21Z). Retrospective, pre-kernel, NOT counted: S1-S02B-BACKUP-MOVE, Q3-L1A-FALLBACK-TIER-POLICY, Q3-DEFAULT-FLIP-CAP20, T1F1-INPUT-IDENTITY, S3B-SCORE-SEQUENCE-DESTINATION-CONTAINMENT.
-window: 2026-09-12T00:00Z .. 2026-09-15T20:00Z
+kernel: fleet-factory-kernel r5
+profile: code@r11 (primary) + measured-objective@r3 — kernel §6's row as harvested (M1)
+instance: docs/KERNEL-INSTANCE-MAP.md on nested-repo master (written by card KERNEL-DOGFOOD-INSTANCE-MAP under docs/14 §0's kernel entry, landed `db197676`; KERNEL line DOGFOOD, ## Instance map). The map's own first line still declares code@r10 (## Instance map)
+subjects: 0 end-to-end under the kernel, and 0 declared inside this window — no `k5-declaration.json` was written after 2026-11-19T21:00Z (K5). Reported as mechanism evidence and never counted: 26 landings on this board's own two-key route, none declaring a profile; 24 have a receipt committed on master, and 2 had theirs only in the main checkout's working copy at the window's end (## Subjects)
+window: 2026-11-19T21:00Z .. 2026-11-27T04:50Z (this pass's start; nested-repo master `9615de06`, whose newest commit is 2026-11-26T13:48:54Z)
 health: assurance=UNSATISFIED operability=PRESSURED
 providers: none (no lane cleared a sentinel for this filing)
-posture: UNCOMPUTED — model review contributed to this filing (an adversary lane and two census lanes); no R9 tool run produced the required line, and an absent run is not a computed posture
+posture: not computed — model review contributed (the route's approach reviews, its keys and the cop's adjudication probes), and the R9 tool is one PROMPT K names, which docs/13 P-STEWARD step 7e forbids the filing seat to run (U6, ROUTED; HEADER: posture; unchanged)
+written: dng-design-steward 20261127-045007 (docs/13 P-STEWARD step 7e), from this board's own cards, receipts and ledgers; it ran no subject
+supersedes: the tenth filing, blob `1ca874291bddb957ff85f8ce6c45b9d607ac20f7` on `origin/review/dng-auto-processor-kernel-2026-11-19`, answered by the bus's `adjudications/factory-kernel/dng-auto-processor.dispositions.md` (commit `196b495f`, `filing_blob: 1ca87429…`)
 
-First filing by this board, and the first exercise of `measured-objective` by any board — every HARVESTS.md row is
-`code@rN` or `hardware-in-loop@rN`. The profile already names this project a bench and its status `BENCHED`; that was a
-forward reference, not a harvested row.
+Eleventh filing by this board. It is a re-run on PROMPT K §6's weekly cadence: the tenth copy is more than a week old
+and this pass's census was not empty. The kernel (r5, blob `6821c4c3`), `profiles/code.md` (r11, blob `a31b27a7`) and
+`profiles/measured-objective.md` (r3, blob `4e8bcacc`) are unchanged since the tenth filing (the newest bus commit
+touching any of the three is `a0a1325f`, 2026-10-13), and the `KERNEL:` line below is byte-identical to the tenth
+filing's.
 
-**It claims nothing from the running card.** One dispatched card is the weakest position on this ledger: two of eight rows
-reached a LATER state (airmypc S2 ACCEPTED; cloudvore S1/S2 DELIVERED) and still scored zero. K1, K5, K6 and K7 therefore
-read UNEXERCISED, on five cited precedents. No retrospective credit is sought for any landed card — refused six times in
-this corpus, and taking it after citing the refusals would be self-refuting.
+**The tenth filing is answered, and with it the ninth, eighth and seventh that it carried.** The bus's dispositions file
+now binds `filing_blob: 1ca87429…` (`filing_ref: origin/review/dng-auto-processor-kernel-2026-11-19`; commit `196b495f`,
+the harvest of 2026-11-26). It holds 209 `§` lines and 9 `HEADER:` lines, and it answers the carried filings as §C9, §C8
+and §C7 against the tenth blob. So this filing carries no earlier filing verbatim; it supersedes the tenth. No finding of
+the tenth filing, or of the filings it carried, is without a disposition, so none is carried here as undisposed. Every
+disposition that routes work to this board is answered under `## Answers to the tenth filing's dispositions`, with what
+this board did since. Each clause and profile line below cites the § id that ruled it and the ruled verdict. Findings new
+in this window are this filing's own and wait for the next harvest. The seat that writes it is `dng-design-steward`. It
+works from this board's own cards, receipts and ledgers, and it ran no subject.
 
-**The story this board can actually tell is §O1, not the running card:** it has been landing product subjects with
-cross-family acceptance keys all along, and the kernel cannot see them. `S1-S02B-BACKUP-MOVE`, self-labelled "(lane S,
-Product)", landed to master `92e31e27` on 2026-09-09 (3 Core files, +728/-45) with `key1 ACCEPT (codex sol) · key2 ACCEPT
-(opus)` — two families — and a receipt. On its face K1, K6 and K7. It fails exactly one clause, K5, because it landed five
-days before the kernel existed. Cloudvore's situation, reproduced on a second board.
+`assurance=UNSATISFIED`: no subject was declared or accepted under the kernel, and the product's own bar produced no
+acceptance either. WORK.md's SCOREBOARD has no line inside the window (its newest is still `20260918-1356`).
+`operability=PRESSURED`, kept from the tenth filing, for new causes. The factory plane was busy: 26 landings. The cop's
+daily-ledger lines on master at the window's end (`9615de06`) read `landed=2` (dated 2026-11-19, `ci=failure`), `landed=11` (2026-11-21, `ticks=24`),
+`landed=0` (2026-11-22), `landed=2` (2026-11-23), `landed=2` (2026-11-24), `landed=6` (2026-11-25) and `landed=1`
+(2026-11-26 07:1xZ); master holds no daily line dated 2026-11-20. Every one names `model=claude-opus-5-5`. The pressure
+came from elsewhere: one quota event and two account rotations, each followed by a USER-directed P-RESUME (K8,
+K9); 17 `OWNER-DEFECT:` lines raised by the cop inside the window, 16 of them closed on master within it; hosted CI red
+on master at two seams, each found only after the mirror push (P:code delivery-target); and an owner-facing push channel
+that delivered nothing (P:code human-gates). 8 commits of the window change docs/12, docs/13 or docs/14 (`2f5b4819`,
+`28046186`, `33ad760c`, `ca0e7582`, `ea0ef951`, `c61689e1`, `97b2b9f1`, `d564fffc`); none changes the instance map. 28
+steward receipts were begun inside the window before this one: 21 end `VERDICT: ACTED`, 4 `NO-WORK-DEFERRED-ON-LOAD`, and
+3 carry no VERDICT line (each ended mid-pass, as its successor's receipt records). All 28 name `claude-opus-5-5`, and none
+is BLOCKED.
 
-`assurance=UNSATISFIED` is deliberate: the code-review surface is strong and its refusals receipted (§K4), but of ~20
-landing receipts exactly ONE carries a held-out-fold score and it predates this window. `operability=PRESSURED`: 31 cards
-landed or closed against a 57 h product stall (WORK.md:33), five consecutive capacity deaths on one card, and a rotation
-that left both scheduled seats disabled pending a USER step.
-
-Unqualified paths are DngAutoProcessor's (`C:\code\DngAutoProcessor - Claude\DngAutoProcessor`); doctrine paths are
-qualified. Carries forward every undisposed finding from the never-filed 2026-09-14 draft (`5b204ca`, kernel r2 / profile
-r1) per PROMPT K §6. Re-measurement at r4 REFUTED three of them (K2, K10, and the K7 counterexample); each withdrawal is
-stated in its line rather than quietly dropped.
-
-## Census predicate
-
-WORK.md is NOT the card ledger; one card = one file in `packets/`, and its QUEUE says so: "DERIVE the open set, never
-trust this line: it is every card in packets/ whose state is not LANDED, CLOSED, DONE, DONE-FAIL or SPLIT."
-
-`git ls-files packets/ | wc -l` → **39**. First token of each card's first `^state:` line: **17 LANDED, 14 CLOSED, 2 DONE,
-2 PARKED, 2 DONE-FAIL, 1 SPLIT, 1 RUNNING**; LANDED + CLOSED = **31**. Caveat: the mechanical predicate scores
-`Q1-Q01-DECOMPOSITION` DONE because its line reads `state: Q1a DONE ... · Q1b DONE · CLOSED`; corrected by hand to CLOSED.
-Cross-check against WORK.md's own open-set derivation: 39−17−14−2−2−1 = 3 = 1 RUNNING + 2 PARKED, matching its "Measured
-19:29Z it is 3". **A stale 38/30 is in circulation** — WORK.md:41 still says "measured 0 of 38 in packets/", true earlier
-the same day and wrong once card 39 opened.
-
-**Product vs factory — two predicates, because they disagree.** *(a) By card self-label + Core/App touch over the 31
-LANDED+CLOSED:* **8 product, 15 factory, 8 ambiguous**. Three self-label product on line 1: `S2-SAMPLER-SILENT-DROP.md`
-"(lane S, Core product defect)"; `S1-S02B-BACKUP-MOVE.md` "(lane S, Product)"; `Q3-L1A-FALLBACK-TIER-POLICY.md` "(lane Q,
-product)". *(b) By delivered bytes (`git show --stat` per landed SHA) over the 17 LANDED:* **5 product** — Q3-L1A
-`221daf03`, S1-S02B `92e31e27`, S3-SCORE-SEQUENCE-NO-SOURCE-WRITE `7be9d886`, T4-TIMING-DEADLINE-ARMING `ba56fad7`,
-T5-FASTGATE-DETERMINISTIC-SEAM `bee40232`. (b) is stricter because labels over-claim: `S2A-SAMPLER-COUNTS-WITNESSED` is
-titled "Core product" and landed only a test file.
-
-Under either predicate **this board has landed real product work**; any claim it had not is false. Two facts belong beside
-that, against interest: exactly one landed card changed the numbers the grading pipeline emits (Q3-DEFAULT-FLIP-CAP20) and
-it delivered its product bytes OUTSIDE version control; and the one landed Core grading-policy file is inert —
-`RulesEngine.cs:555` reads "nothing calls `Services.FallbackTierExposurePolicy.Resolve` yet".
+Unqualified paths and commit ids are this board's repository. Evidence kept outside it is named by description, never by
+path, as before (bus law 4). Doctrine paths are qualified. At the window's end, by master's card state lines:
+`packets/SATURATION-OFFSET-FLAG.md` is HELD (landing only, keys FINAL ACCEPT, held on a research constant's bytes), as at
+the tenth filing's end; `packets/TWEAK-PROP-BASELINE.md` is HELD; `packets/STILLS-SKIP-SURFACE-K2.md` and
+`packets/STILLS-SKIP-SURFACE-K1B-STATED-WAITS-BATCH-PASS.md` are READY; `packets/STILLS-SKIP-SURFACE-K1.md`,
+`packets/STILLS-SKIP-SURFACE-K1B.md` and `packets/TWEAK-PROP-WRITER-DIGEST.md` are PARKED; and four pointer cards opened in
+the window are OPEN (`FOLDER-DROP-STILLS`, `STILL-EDIT-MODE`, `TWEAK-PROPAGATION`, `WB-LOW`). The main checkout's working
+copy differs from master on 7 card state lines and holds one card master does not (K11). This filing withholds none of
+them.
 
 ## Subjects
 
-**S1 `DNG-SELF-TARGET-BUCKET-TIER` — IN FLIGHT. Reported, not counted, and no inference drawn from it.**
-`packets/DNG-SELF-TARGET-BUCKET-TIER.md:2`: `state: RUNNING · attempt 1 of 3 · phase APPROACH · author codex gpt-5.6-sol`.
-Opened `5945e41c` 2026-09-15T18:56:32Z, dispatched 19:27:21Z. It is the third card in a continuing
-`RulesEngine.cs`/exposure-policy line (Q3-DEFAULT-FLIP-CAP20 → Q3-L1A-FALLBACK-TIER-POLICY → this), which is why it is
-reported at all; subject-matter continuity is on disk. It is NOT offered as reform, correction or improvement.
-- **K3 identity** — `git rev-parse <branch>`; `git rev-parse "<sha>^{tree}"`; `git merge-base master <branch>`;
-  `git diff --name-only "<base>..<sha>"` (`tools/ratify.ps1:87-92`, `ratify-subject.v1`). Eval set pinned by repo commit
-  `b8c88dab`; the packet states the gap itself — "metrics/eval-set.json carries no revision field, so the commit SHA is
-  its only identifier".
-- **K5 declaration** — the packet carries `## Acceptance profile — DECLARED BEFORE THE WORK (K5); do not edit after
-  measuring`, pinning control SCOREBOARD line `20260912-2117` and four criteria that must ALL hold (`fit < 0.54`,
-  `shape <= 0.235`, `median|dTemp| <= 587`, `evaluable == 90`), plus a pre-commitment against the losing-arm dodge: "A
-  losing arm is DONE with its numbers recorded." **No acceptance receipt exists and none is claimed.** The declaration
-  also names no profile and no version, so K5's "and profile version" half is unmet in form as well as unreached in fact.
-- **K4 negative check** — the packet refuses two mechanisms in advance on measured grounds: "`ExifWeightMultiplier` is 0
-  and SceneFingerprint.cs:271 multiplies the whole term by it, so populating EXIF alone is a guaranteed no-op. Not this
-  card." Three of docs/12 §5's four premises are recorded REFUTED against the repo before any byte was written.
+**Kernel subjects: none.** No rule, tool or hook reads `k5-declaration.json` (IF13), and none orders one written. In this
+window nobody wrote one (IF15): a case-insensitive file-name search of the evidence ledgers (depth 6) for `k5-decl*`
+modified after the window opened returns 0 (4 older files match). None of the 26 window receipts names a kernel or profile
+revision.
 
-**Retrospective landings — labelled RETROSPECTIVE, counted as zero.** S1-S02B-BACKUP-MOVE (`92e31e27`, 2026-09-09, product,
-cross-family keys), Q3-L1A-FALLBACK-TIER-POLICY (`221daf03`, 2026-09-11, product), Q3-DEFAULT-FLIP-CAP20 (`4d9b736b`,
-2026-09-13), T1F1-INPUT-IDENTITY (`a4ce5008`, 2026-09-13), S3B (`3a3c9bf1`, 2026-09-12). All closed under this project's
-own workflow; none declared a profile in the kernel's pre-work form, because for four of the five the kernel did not exist.
-They are cited below only as evidence about MECHANISMS, never as closed subjects.
+**The 26 landings on this board's own route, reported and never counted.** Receipts are
+`metrics/ratify/<task>/attempt<n>/receipt.json`. The last two rows' receipts were in the main checkout's working copy and
+not on master at the window's end (K11); their landed commits are on master. The columns are those of the tenth filing's
+table. Models are the receipts' `seats` rows as written (aliases kept); a range of more than one commit shows its count.
+
+| Task / attempt | Landed | Author → approach review → key 1 / key 2 (final round) | Earlier rounds | Receipt `cross_family` |
+|---|---|---|---|---|
+| E0-V1-ENGINE-REAUTHOR / 2 | `cff8b22a` (2) | claude-sonnet-5-5, Fable retry at attempt 2 → gpt-6.2-sol BLOCKER 3/3/1 → gpt-6.2-sol ACCEPT 0/0/2 / claude-opus-5-5 ACCEPT 0/0/2 | gpt-6.2-sol BLOCKER 2/3/1 / claude-opus-5-5 ACCEPT 0/0/1 | FULL |
+| E0-V1-STAGE-CORE / 1 | `c176c63c` | gpt-6.2-sol → fable REVISE 0/1/10 → claude-fable-5-2 ACCEPT 0/0/3 / opus ACCEPT 0/0/1 | — | FULL |
+| ADOBE-KILL-LIVE-STUB-CI-INTERMITTENT / 1 | `a7209d45` | claude-sonnet-5-5 → gpt-6.2-sol REVISE 0/2/1 → gpt-6.2-sol REVISE 0/1/3 / opus ACCEPT 0/0/1 | — | FULL |
+| E0-V1-STAGE-WIRING / 1 | `e014843c` | gpt-6.2-sol → fable ACCEPT 0/0/7 → fable ACCEPT 0/0/1 / opus ACCEPT 0/0/2 | — | FULL |
+| E0-V1-STAGE-MINORS / 1 | `262b3789` | claude-sonnet-5-5 → gpt-6.2-sol REVISE 0/2/2 → gpt-6.2-sol ACCEPT 0/0/0 / opus ACCEPT 0/0/1 | — | FULL |
+| ADOBE-KILL-LIVE-STUB-CI-INTERMITTENT-MINORS / 1 | `967db159` | claude-sonnet-5-5 (APPROACH re-dispatched from gpt-6.2-sol on a sandbox BLOCKED) → gpt-6.2-sol BLOCKER 1/4/1 → gpt-6.2-sol BLOCKER 1/3/0 / opus ACCEPT 0/0/5 | — | FULL |
+| ADOBE-HELD-STUB-DEADLINE-WITNESSES / 1 | `1df62d65` | sonnet (after an APPROACH failover from gpt-6.2-sol) → gpt-6.2-sol (verdict not in `seats`) → gpt-6.2-sol BLOCKER 1/2/2 / opus ACCEPT 0/0/7 | — | absent |
+| STILL-EDIT-TARGET / 2 | `7eddf05f` (2) | sonnet (APPROACH re-dispatched from gpt-6.2-sol), Fable at attempt 2 → gpt-6.2-sol BLOCKER 2/3/2 → gpt-6.2-sol ACCEPT 0/0/0 / opus ACCEPT 0/0/2 | gpt-6.2-sol BLOCKER 1/3/0 / opus ACCEPT 0/0/6 | absent |
+| STILL-EDIT-KEY / 1 | `64412086` | gpt-6.2-sol (APPROACH relaunched once) → fable REVISE 0/2/6 → fable ACCEPT 0/0/3 / opus ACCEPT 0/0/2 | — | absent |
+| ADOBE-HELD-STUB-COMMENT-CENSUS-BATCH-PASS / 1 | `b9f5df15` | claude-sonnet-5-5 → gpt-6.2-sol REVISE 0/7/1 → gpt-6.2-sol BLOCKER 2/0/1 / opus ACCEPT 0/0/0 | — | absent |
+| STILLS-AUTO-SETTINGS / 1 | `7531d4f8` | claude-sonnet-5-5 → gpt-6.2-sol BLOCKER 2/0/2 → gpt-6.2-sol BLOCKER 8/2/0 / opus ACCEPT 0/0/2 | — | absent |
+| STILLS-SKIP-REPORT / 2 | `e752afeb` (2) | gpt-6.2-sol → opus ACCEPT 0/0/5 → claude-fable-5-1 ACCEPT 0/0/3 / opus ACCEPT 0/0/4 | claude-fable-5-1 ACCEPT 0/0/1 / opus REVISE 0/1/2 | absent |
+| STILLS-AUTO-MODEL / 2 | `9486301e` (2) | claude-sonnet-5-5 (attempt 2: a Fable seat UNAVAILABLE, then gpt-6.2-sol provider-refused with no subject, then a Sonnet failover) → gpt-6.2-sol BLOCKER 3/5/1 → gpt-6.2-sol ACCEPT 0/0/5 / opus ACCEPT 0/0/2 | gpt-6.2-sol BLOCKER 2/7/1 / opus REVISE 0/1/3 | absent |
+| STILL-EDIT-SOURCE-STATED-MUTANTS-BATCH-PASS / 1 | `746c43fa` (9) | claude-sonnet-5-5 → gpt-6.2-sol REVISE 0/3/2 → gpt-6.2-sol ACCEPT 0/0/1 / claude-opus-5-5 ACCEPT 0/0/1 | — | absent |
+| STILLS-SKIP-SURFACE-CLAIM-SITES-BATCH-PASS / 1 | `0dd53647` (5) | claude-sonnet-5-5 → gpt-6.2-sol BLOCKER 1/4/1 → gpt-6.2-sol REVISE 0/2/4 / claude-opus-5-5 ACCEPT 0/0/5 | — | absent |
+| WB-LOW-SOLVER / 1 | `d1b7c3ad` | gpt-6.2-sol → opus BLOCKER 1/0/4 → claude-fable-5-1 ACCEPT / opus ACCEPT 0/0/1 | — | absent |
+| STILL-EDIT-PACKET-STATED-SWEEP-BATCH-PASS / 1 | `665cf8f0` (8) | claude-sonnet-5-5 (FROZEN; its bytes adopted by a relaunched Sonnet seat after re-verification) → gpt-6.2-sol (3 MAJOR and 1 MINOR adopted) → gpt-6.2-sol ACCEPT 0/0/1 / opus ACCEPT 0/0/0 | — | absent |
+| WB-LOW-KEY / 1 | `072d0c54` | gpt-6.2-sol → opus ACCEPT 0/0/3 → claude-fable-5-1 ACCEPT / opus ACCEPT 0/0/2 | — | absent |
+| STILL-EDIT-ORCHESTRATION / 2 | `ffb2041d` (3) | sonnet at attempt 1; at attempt 2 a Fable seat ruled UNAVAILABLE (`t3: PIN-UNHONOURED`) whose commit was inherited, then gpt-6.2-sol adopting it → gpt-6.2-sol BLOCKER 3/7/0 → claude-fable-5-1 ACCEPT 0/0/2 / opus ACCEPT 0/0/3 | gpt-6.2-sol BLOCKER 2/8/0 / opus REVISE 0/2/4 | absent |
+| CAP-SHIP-TARGET-EXPOSURE-CAP-DEFAULT / 1 (part A) | `40d7570f` | gpt-6.2-sol → claude-fable-5-2 BLOCKER 1 / MAJOR 1 / MINOR 3 → claude-fable-5-2 ACCEPT 0 / opus ACCEPT 0 | — | absent |
+| CAP-SHIP-TARGET-EXPOSURE-CAP-DEFAULT-A3 / 1 | `2cd106b0` | gpt-6.2-sol → claude-fable-5-2 ACCEPT 0/0/3 → claude-fable-5-2 ACCEPT 0/0/1 / claude-opus-5-5 ACCEPT 0 | — | absent |
+| CAP-SHIP-TARGET-EXPOSURE-CAP-DEFAULT-A2 / 1 | `008973d2` | claude-sonnet-5-5 → gpt-6.2-sol BLOCKER 1 / MAJOR 1 → gpt-6.2-sol REVISE 0/1/0 / claude-opus-5-5 ACCEPT 0 | — | absent |
+| CAP-SHIP-TARGET-EXPOSURE-CAP-DEFAULT-B / 1 | `c742e1a7` | gpt-6.2-sol → opus ACCEPT 0/0/1 → claude-fable-5-2 ACCEPT 0/0/2 / claude-opus-5-5 ACCEPT 0/0/1 | — | absent |
+| STILL-EDIT-WIRING-CANCEL-OUTCOME-BATCH-PASS / 1 | `dcdd1199` (3) | claude-sonnet-5-5 → gpt-6.2-sol REVISE 0/2/1 → gpt-6.2-sol REVISE 0/1/2 / claude-opus-5-5 ACCEPT 0/0/1 | — | absent |
+| STILLS-SKIP-SURFACE-K1-STATED-SITES-BATCH-PASS / 2 | `e2ac7add` (4) | claude-sonnet-5-5 at attempt 1 (frozen once, adopted), claude-fable-5-2 at attempt 2 → gpt-6.2-sol (verdict not in `seats`) → gpt-6.2-sol BLOCKER / claude-opus-5-5 ACCEPT | gpt-6.2-sol BLOCKER / claude-opus-5-5 ACCEPT | absent |
+| TWEAK-PROP-WRITER-DIGEST-DECLARED-SEAM-BATCH-PASS / 1 | `9615de06` (2) | claude-sonnet-5-5 (APPROACH relaunched from gpt-6.2-sol) → gpt-6.2-sol BLOCKER 1/2 → gpt-6.2-sol REVISE 0/3/2 / claude-opus-5-5 ACCEPT 0/0/2 | — | absent |
+
+Every receipt's `surplusProductPaths` is empty (26 of 26). 14 receipts have `reviewedSha` equal to `landedSha`; the other
+12 record a cop rebase of the reviewed commit, with per-file blob identity and an unchanged patch-id (`patchIdStable` is on
+all 26). 25 record a Release build at the subject (24 with `--warnaserror` in the text, one naming the CI workflow's
+Release step); the 26th, ADOBE-KILL-LIVE-STUB-CI-INTERMITTENT-MINORS, records only its hook's build. 25 record a mirror
+sync with exit or rc 0, and 1 (ADOBE-HELD-STUB-DEADLINE-WITNESSES) records none. Sonnet committer seats appear in 10 receipts, 2 of which state that the
+committer wrote no product byte. 8 of the 26 ranges are
+test-only (U7 below). On 10 of the 26, a final-round key 1 that did not ACCEPT was set aside to land (the
+independence-provenance bench, below).
+
+**Off-route landings: none.** The window's master history is 145 commits, all first-parent, none a merge: 57 touch a
+product directory (`DngAutoProcessor.*/`), 63 are cop ticks, 16 are steward chores or `docs(steward)` commits, 2 are cop
+parks, 2 are `chore(work)` routing commits and 5 are `docs(13)` or `docs(14)` commits. Each of the 57 lies inside one of
+the 26 landed ranges (`git -C <repo> rev-list <landedOnto>..<landedSha>` per receipt, `baseSha` where a receipt has no `landedOnto`
+(E0-V1-ENGINE-REAUTHOR, E0-V1-STAGE-CORE)). 24 receipt files were added on
+master in the window:
+`git -C <repo> log --diff-filter=A --name-only --format= 0fc688d9..9615de06 -- 'metrics/ratify/*/*/receipt.json' | sort -u | grep -c .` (24).
+
+**The window's seams.**
+- *Quota event and rotations.* A P-RESUME receipt of 2026-11-24 17:40Z (kept in the board's evidence ledger,
+  USER-directed "resume our work") records that the account the CLI used had exhausted its weekly limit: the cop's run of
+  17:17Z "ended at its first assistant turn" with the weekly-limit message. The usage watch had written three
+  rotation-prep notes earlier that day (95%, 97% and 99% of the weekly all-models window, 07:04Z to 09:03Z), each
+  addressed to the next working session and each marked acted on at the 17:40Z P-RESUME. Master has no cop commit between
+  `c7b869df` (09:22Z) and `5c6de352` (19:37Z) that day; whether the ticks between ran is not recorded on master. The same
+  receipt records the parity hook reporting the desktop and CLI aligned while they were on different accounts, a
+  fail-open it traces to a stale stamp. It re-created the four scheduled seats on the account then in use, each SKILL.md
+  restored byte-identical from its backup. A second P-RESUME receipt (2026-11-25 16:45Z, USER-directed) records a further
+  account change. On that account the cop and the steward had already run from 12:24Z on September-era registrations, the
+  usage watch was missing and was re-created, and the cop's registration carried a pre-2026-09-22 cadence, which produced
+  one observed peer overlap at 15:13Z ("stood down: a peer cop session already owns…"); the cron was corrected in place.
+  → K8, K9, K10.
+- *Owner-facing push.* docs/14's status digest ("Push on exception, write always") is the register's push channel to the
+  owner. It is a per-account task that P-RESUME does not re-create. Its evidence ledger holds no receipt dated between
+  2026-10-23 03:05Z and 2026-11-25 12:24Z. From then to 2026-11-26 16:05Z it wrote 29 receipts: 21 attempted a push, and
+  each records the tool's reply "Mobile push not sent (Remote Control inactive)"; 8 attempted none. None
+  records a delivered push. → K2, P:code human-gates, U15.
+- *Hosted CI after the push.* The 2026-11-19 daily line reads `ci=failure` ("CI RED Adobe"). ADOBE-KILL-LIVE-STUB-CI-
+  INTERMITTENT's scope names the master CI run red on 1 of 3898 tests; it and two follow-ups landed test-only repairs, and
+  its receipt keeps the limit that "the CI runner's real trigger was inferred, never reproduced naturally". On 2026-11-26
+  a card the cop opened (`packets/FOLDER-DROP-STILLS-MAINFORM-CI-NONINTERACTIVE.md`, in the working copy only at the window's end) records
+  master CI FAILURE on the runs for `e2ac7add` and `9615de06`, the same five rows failing in both,
+  while "the local hook passes them" (the card's title). → P:code delivery-target, U10's residual.
+- *Bookkeeping off master.* At the window's end the receipts of `e2ac7add` and `9615de06` exist only in the main
+  checkout's working copy, so master's state lines still read READY for both cards; 7 card state lines and one new card
+  differ between master and that working copy. This pass's census records the same of the cop's later bookkeeping and of
+  one drafted CLOSED line. → K11.
+- *Steward passes.* 3 of the 28 steward receipts carry no VERDICT line (2026-11-20 21:03Z, 2026-11-24 08:49Z,
+  2026-11-26 14:49Z); each successor records that the pass ended mid-pass, and takes up its unfinished work. No
+  receipt was begun between 2026-11-24 08:49Z and 20:50Z, or between 2026-11-26 14:49Z and this pass (2026-11-27 04:50Z).
+  → U16.
+
+**Owner interruptions recorded in the window, and what the register says of each.** (1) 2026-11-24, a USER-directed
+P-RESUME after the quota event; the receipt calls CLI re-alignment "a USER act (credentials)", so the register required
+it. (2) 2026-11-25, a second USER-directed P-RESUME and a USER-directed step-2b adjudication of retained session
+obligations. (3) 2026-11-25, the USER's re-pin of the exact Fable id, recorded verbatim with the two rejected alternatives
+in docs/14 §0 (`97b2b9f1`); the register makes an exact pin "its owner's decision" (R13.3), so it was required. (4)
+2026-11-25, the USER's "Yes" to carding CAP-SHIP-TARGET-EXPOSURE-CAP-DEFAULT (`353466dc`), routed on 2026-09-30 and never
+carded before; its four parts landed the same day. This filing did not establish whether the register required that
+word.
+
+## Answers to the tenth filing's dispositions
+
+The ruled verdicts are adopted on every line below: §K2's reclassification (FRICTION to INSTANCE-FAILURE) is this
+filing's K2, and every other ruled verdict matches the tenth filing's. The routes the dispositions send to this board's
+benches are answered here: done, not done, or re-answered on this window's evidence. Every disposition not named here is
+either an ADOPTED or ADOPTED-CONDITIONAL line, which asks nothing further of this board, or one of the 36 §C9, §C8
+or §C7 lines ROUTED to one of the nine benches answered below, whose answer is that bench's line here; each stands as
+ruled.
+
+- **§A:U7 (ADOPTED-CONDITIONAL, dng outcome-reporting bench), the O2 denominator across a tenth window: 18 of 26.** The
+  predicate is unchanged: a delivered range touching a feature assembly, meaning a `DngAutoProcessor.*/` directory holding
+  a `.csproj`, test projects excluded. The feature assemblies on master are `DngAutoProcessor.App`, `DngAutoProcessor.Core`
+  and `DngAutoProcessor.CorpusBridge`. 17 ranges touch `DngAutoProcessor.Core` (STILLS-SKIP-SURFACE-CLAIM-SITES-BATCH-PASS
+  also `DngAutoProcessor.App`), 1 touches `DngAutoProcessor.App` without Core (STILLS-SKIP-SURFACE-K1-STATED-SITES-BATCH-PASS);
+  the other 8 touch `DngAutoProcessor.Tests` only (the four ADOBE ranges, CAP-SHIP parts A, A2 and A3, and E0-V1-STAGE-MINORS).
+  Earlier windows read 4 of 11, 6 of 14, 3 of 11, 7 of 15, 12 of 17, 12 of 23, 1 of 1 and 6 of 9 (as the tenth filing
+  lists them, the last being the ninth filing's), then 1 of 3 (the tenth filing's). Assembly contact
+  is not proof of a changed emitted grade (the condition), and this filing does not claim it.
+- **§A:U8 and §U8 (ROUTED, dng measured-objective outcome bench), the emitted-grade effect: not done; not derived.** No
+  SCOREBOARD line falls in the window. The grading-path landings are default-off or not deployed: `WbTrimLowKelvinFloor`
+  (WB-LOW P1 and P2), the still-edit mode (STILL-EDIT parts P1 to P6, default off or with no production caller) and `ApplyClipCueOffsets` (E0-V1-STAGE-WIRING, whose
+  receipt reads "landing on master is not a deployment"). CAP-SHIP part B moves the `TargetExposureMaxLoopStops` code
+  fallback from 3.0 to 2.0; its receipt says the USER's Default.dngrules and e0-v1 are untouched, that key-absent saved
+  engines now load 2.0, and that deploy stays USER-gated. Whether the owner's saved engine emits a different grade is not
+  measured.
+- **§A:independence-provenance (ROUTED, dng independence-provenance bench), the contribution records, for this window.**
+  - **Keys from a non-producing provider: 25 of 26.** On each, one final-round key comes from a provider that no
+    `Authored-By:` trailer in the range names and that holds no seat in the receipt which produced a subject byte. That is
+    a gpt-6.2-sol key 1 on the 16 Claude-authored subjects, where Sol's seats are approach reviews, keys, APPROACH seats that
+    returned BLOCKED and one implement seat its provider refused with no subject. And it is Claude keys on the 9 subjects
+    whose commits carry `Authored-By: gpt-6.2-sol`; on all 9 a Sonnet committer seat committed the bytes, and of the 10
+    receipts with a committer seat, 2 state that it "wrote no product byte". Limit: a batch-pass receipt lists only its
+    closing card's seats, so the producers of the carried predecessor commits in a multi-commit range are read from those
+    commits' trailers only.
+  - **The exception, STILL-EDIT-ORCHESTRATION (`ffb2041d`).** Its range carries a Sonnet commit (attempt 1), a commit by
+    a Fable seat the register ruled UNAVAILABLE (`t3: PIN-UNHONOURED`; the commit was "inherited"), and a gpt-6.2-sol
+    commit that adopted it after verification. Its final-round keys are claude-fable-5-1 and opus, both from a family that
+    produced bytes of the subject. Under §U11's reading ("A model family producing any part of the declared subject cannot
+    supply its independent model key"), no seated model family qualifies for this subject. Its receipt has no
+    `cross_family` field and records no notice of this.
+  - **Same model as approach reviewer and key 1: 21 of 26.** On 4 of the other 5 (CAP-SHIP part B, STILLS-SKIP-REPORT,
+    WB-LOW-KEY, WB-LOW-SOLVER) the approach reviewer is Opus, the model of key 2. A `cross_family` field is on 6 of the 26
+    receipts (each `FULL`, each noting the same-model notice where it applies); the other 20 have none.
+  - **Substituted seats.** No key seat was substituted across families. Author seats moved across families on 6 subjects,
+    each recorded in the receipt at the act and each under docs/14 text: three APPROACH seats from gpt-6.2-sol to Sonnet
+    on a sandbox or pin BLOCKED, under the Codex-sandbox failover rule (`28046186`) or §3's relaunch rules
+    (ADOBE-KILL-LIVE-STUB-CI-INTERMITTENT-MINORS, STILL-EDIT-TARGET, TWEAK-PROP-WRITER-DIGEST-DECLARED-SEAM-BATCH-PASS); one
+    "APPROACH failover" to Sonnet (ADOBE-HELD-STUB-DEADLINE-WITNESSES); STILLS-AUTO-MODEL's attempt-2 author (Fable
+    UNAVAILABLE, then a provider-refused Sol seat, then a Sonnet failover, "no attempt consumed by either move"); and
+    STILL-EDIT-ORCHESTRATION's (above).
+  - **Re-grading: 10 of 26.** A final-round key 1 (gpt-6.2-sol in every case) that did not ACCEPT was set aside by the cop's
+    docs/14 §4b adjudication: BLOCKER on ADOBE-HELD-STUB-COMMENT-CENSUS-BATCH-PASS, ADOBE-HELD-STUB-DEADLINE-WITNESSES,
+    ADOBE-KILL-LIVE-STUB-CI-INTERMITTENT-MINORS, STILLS-AUTO-SETTINGS and STILLS-SKIP-SURFACE-K1-STATED-SITES-BATCH-PASS;
+    REVISE on ADOBE-KILL-LIVE-STUB-CI-INTERMITTENT, CAP-SHIP part A2, STILLS-SKIP-SURFACE-CLAIM-SITES-BATCH-PASS,
+    STILL-EDIT-WIRING-CANCEL-OUTCOME-BATCH-PASS and TWEAK-PROP-WRITER-DIGEST-DECLARED-SEAM-BATCH-PASS. Each receipt records
+    the adjudication: a measurement, a mutation arm or a probe that refuted the finding, or docs/14 §4 guard (2), under
+    which key 2 had graded the same item below MAJOR. On three of them (STILLS-AUTO-SETTINGS, STILLS-SKIP-SURFACE-CLAIM-SITES-
+    BATCH-PASS, STILLS-SKIP-SURFACE-K1-STATED-SITES-BATCH-PASS) the refuting probe or adjudicator seat is an Opus seat,
+    Opus being key 2's model on all 26.
+  - Not done: the contribution analysis this bench asks for, and the §C7 residual that "the unidentified FACTORY-D2
+    regrader remains unresolved".
+- **§A:a.u4 (ROUTED, delivered-pipeline delayed-outcome fixture): none to bring.** No subject was accepted under the
+  kernel, and no SCOREBOARD line falls in the window.
+- **§A:U6, §U6 and HEADER: posture (ROUTED, dng authorised posture-computation seat): not done.** No register-authorised
+  seat computed R9 for this filing, and none of the window's 8 docs commits authorises one.
+- **§A:U9 and §U9 (ROUTED, dng doctrine-consumer stewardship): not done.** WORK.md's routing line of 2026-10-09
+  (`DNG-DOCTRINE-CONSUMER-FOLDSET-20261009`) still has no card in `packets/` naming it.
+- **§A:stale-map and HEADER: revisions and map (ROUTED, dng instance-map maintainer), with §Instance-map (ADOPTED;
+  the refresh "stays routed to its maintainer"): not done.**
+  `git -C <repo> log 0fc688d9..9615de06 -- docs/KERNEL-INSTANCE-MAP.md` prints nothing. The §C8 and §C7 stale-map routes
+  (record the drill receipts; reconcile the scoreboard caller and drill evidence with stale NONE rows) are not done either.
+- **§A:resource-terminals (ADOPTED): exercised this window**, reported on that line.
+- **§K2 (REJECTED; reclassified INSTANCE-FAILURE): adopted.** The ruling's ground, that `code` Human gates and Resource
+  terminals require an owner-facing channel and continued eligible work, is measured this window on K2 and on the new
+  P:code human-gates line. This board changed no register text to name or repair that channel (no added line in the
+  window's docs/12-14 diff names one).
+- **§K10 (ADOPTED; routed to fleet tooling and dng dispatch maintainers, model pinning to its authorised scheduler owner):
+  done in part.** Actual-launcher verification landed for one family: docs/14 §10 (`33ad760c`, 2026-11-21) runs a Fable
+  seat only where its pin is named, served (its run's `modelUsage`) and its tools granted, and otherwise records
+  `t3: PIN-UNHONOURED`. That record appears in one window receipt (STILL-EDIT-ORCHESTRATION) and in the first state line of eight cards on master at the
+  window's end (`9615de06`): six read `t3: PIN-UNHONOURED` (STILL-EDIT-ORCHESTRATION, STILL-EDIT-PACKET-DATA-MODEL-BATCH-PASS,
+  STILL-EDIT-SOURCE-LEXICAL-SEAM-BATCH-PASS, STILLS-SKIP-SURFACE-K1, STILLS-SKIP-SURFACE-K1B, TWEAK-PROP-BASELINE),
+  `packets/LR-JITTER.md` reads `t3: UNAVAILABLE anthropic PIN-UNHONOURED`, and `packets/TWEAK-PROP-WRITER-DIGEST.md` names
+  it in prose. Not done: an account-bound inventory (no file on master outside the instance map names
+  `probed_under`). Model pinning: every steward receipt and cop daily line of the window names `claude-opus-5-5`; across
+  both rotations the pin was carried by restoring each task's SKILL.md byte-identical from its backup (the two P-RESUME
+  receipts). The 2026-11-22 resume drill records that P-RESUME itself "still carries no model for any seat".
+- **§U10 (ADOPTED): closed here**, as the tenth filing said it would be. The causal residual stays with §C8:U10 and
+  §C7:U10 (ROUTED, dng hosted-CI causality bench, below): not done.
+- **§U11 (ROUTED, dng independence-provenance bench): not done.** No independent CI, human or third-class key was tested,
+  and no subject was separately declared. This window's instance is STILL-EDIT-ORCHESTRATION (above).
+- **§U12 and §U14 (ROUTED, dng owner/register bench): not done.** For U14, no window landing was made outside the cop's
+  tick: all 26 receipts name a cop claim or a scheduled cop tick as `landedBy`, or (the two working-copy receipts) their
+  card's state line does.
+- **§U13 (ROUTED, dng scheduler-forensics bench): not done.** The window adds the scheduler facts of ## Subjects and U16.
+- **§U15 (ROUTED, dng escalation-delivery bench): measured, not repaired.** The send witness exists and shows
+  non-delivery: 21 of 21 attempted pushes are recorded "not sent (Remote Control inactive)". One reserved decision reached
+  the owner another way, as a question that the research writer's session put to the USER in chat; its answer is recorded verbatim with the
+  rejected alternatives (`97b2b9f1`), which witnesses receipt but no send.
+- **§C9:K2 and §C8:K2 (ADOPTED-CONDITIONAL, dng reserved-hold bench):** nothing owed; this window's reserved holds are on K2.
+- **HEADER: prior routes (ADOPTED):** every route it lists stays open as answered above.
 
 ## Clauses
 
-K1 | UNEXERCISED | "A candidate is never accepted on evidence whose only author is its producer" | No subject was accepted under this kernel in this window, so no acceptance receipt establishes the observable. Precedent applied to ourselves: `mlv-app.dispositions.md:18`, "REJECTED(unexercised) | No accepted subject establishes the observable". Reported without credit: the mechanism exists and is derived, not conventional — docs/14 §2 "key 2 is always an Anthropic model and never the author's model. Opus is the cop and the default key 2, so Opus never authors a reviewed subject"; §4 "A tick may not edit its own governing document, and the hook enforces it"; §4a.1 voids a key's ACCEPT if that key's own log carries a RED | PROOF: a subject accepted under a declared profile whose receipts name one actor for production and acceptance
+K1 | UNEXERCISED | "A candidate is never accepted on evidence whose only author is its producer" | §K1 ADOPTED (UNEXERCISED); kept. No kernel subject existed. Reported without credit: key 2 is an Opus seat on 26 of 26 landings, and no commit in any delivered range has an `Authored-By:` trailer naming Opus. One commit (`e014843c`) carries an Opus `Co-Authored-By:` trailer, which its receipt attributes to the cop's commit brief and not to authorship ("no Opus product byte"). On four landings an Opus probe or adjudicator seat also ruled on key 1's findings | PROOF: a kernel subject accepted here on receipts naming one actor for production and acceptance
 
-K2 | FIT | "Each project keeps one register of what needs the owner and what does not" | The observable needs no accepted subject: it asks for the register's path and one decision taken without asking. Register: docs/14 §0 "Standing authority (restated in every seat payload)" holds USER rulings verbatim as {question, selected label, rejected alternatives}; the switch is WORK.md RULES rule 3, "The factory is frozen. No new tool, standard, lane, gate, or scheduled task without the USER saying 'unfreeze'." Decision taken WITHOUT asking, carrying its own provenance: the per-file blob-identity landing check, docs/14 §4 — "authored by the cop out of authority in `8db84a2c` and RATIFIED here after independent re-derivation". FENCE: this establishes that a register exists and was used, not that it is complete; no audit of owner-reserved actions against it was run | PROOF: an owner-reserved action taken with no §0 entry authorising it — **WITHDRAWN: the 2026-09-14 draft filed K2 as BREAK ("authority split across four files, no single register"). Re-measured at r4 that is wrong, and the BREAK is withdrawn.**
+K2 | INSTANCE-FAILURE | "Escalation goes to the owner for decisions reserved by that register" | Moved from the tenth filing's FRICTION to INSTANCE-FAILURE, adopting §K2's ruling. This window's evidence: the register's owner-facing push channel left no receipt for the 33 days to 2026-11-25 12:24Z, though its rule says it "always writes its run receipt", and that span holds the tenth window's nine-day model hold; once it ran, 21 of 21 attempted pushes returned "not sent (Remote Control inactive)" (## Subjects). One reserved decision of this window, the exact Fable pin, was raised as the steward's standing USER line from its 2026-11-21 receipt; meanwhile work proceeded under docs/14 §10's fall-through (`33ad760c`: "consuming no attempt and no round"). It was answered on 2026-11-25 only when the research writer's session put it to the USER in chat (`97b2b9f1`). Each of the two rotations was followed by a USER-directed P-RESUME (2026-11-24 17:40Z, 23 minutes after the failed cop run; 2026-11-25 16:45Z); no artifact this filing read records how the owner learned of either | no replacement | PROOF: a reserved hold here whose escalation reached the owner through a channel the register names, with its send and its receipt witnessed
 
-K3 | BREAK | "One claimant holds a subject at a time, under a lease that expires." | The identity half is satisfied (above, S1). The lease half is refused here on measured grounds, not omitted: docs/14 §3:145 "Ticks overlap by construction; make overlap harmless, never add a lease"; §5:414 "No leases, heartbeats, hubs, chronicles." Expiry is replaced by an evidence-based liveness sensor — a seat with no ledger write, no child process of its host and no API connection across 90 s of 10-s polls is FROZEN; a seat whose host cannot be derived is DARK after 3 hours. The claim is still written before acting: §3 "claim on disk before acting — the card's RUNNING/owner line and its launch json are written BEFORE the launch". The kernel mandates a MECHANISM where the invariant it wants is that a stale claim be detectable and releasable | REPLACES: "under a lease that expires" -> "under a claim whose staleness is decidable by an observer other than the claimant" | PROOF: a stale claim here that the liveness sensor cannot release — a case where only an expiry timer would have worked
+K3 | FIT | "under a claim an observer other than the claimant can decide stale and release; an expiring lease is one such mechanism" | §K3 ADOPTED (FIT); kept. Exercised on seats the cop, not the claimant, decided: STILL-EDIT-PACKET-STATED-SWEEP-BATCH-PASS's IMPLEMENT seat, "FROZEN" (last write 10:41:48Z, read frozen at 19:27:55Z), relaunched with its bytes adopted after re-verification; STILLS-SKIP-SURFACE-K1-STATED-SITES-BATCH-PASS's attempt-1 author, "committed … then FROZEN; adopted"; the 2026-11-26 01:2xZ STALL line, which names a live seat's return as the blocker while that seat's suite holds the dispatch hold; and the 2026-11-25 15:13Z cop run that "stood down" because a peer cop session owned the tick. The instance map's K3 row is still NONE for an identity held by one claimant at a time with an atomic claim | PROOF: a claim here still held after its seat was dead, with no observer able to release it
 
-K4 | FIT | "Never exit code, output size or silence." | The observable asks for one receipt and one negative case checked, neither of which requires an accepted subject. docs/14 §10 "Success is `test ! -e \"<wt>\"` and no `<reg>`, never an exit code; the receipt says so"; §5 "Every scheduled seat writes a receipt on EVERY run, including a run that does nothing" — "A seat that can exit silently makes 'did nothing' and 'was blocked' the same observation." NEGATIVE CASES, on disk: `metrics/ratify/6f4a60e/receipt.json:105` records the factory refusing its own green — "scoreboardOk:true is a check that cannot fail for this subject - the gate0 scoreboard is architecturally incapable of exercising the changed code path ... Recorded so the green is not read as evidence of correctness." `metrics/ratify/b83f6e0/receipt.json` is `"verdict": "REVISE"` with two BLOCKERs (vacuous pass; proxy instead of literal) **while that subject's `gate0.json` was GREEN on build, tests and scoreboard**. `tools/scoreboard.ps1:311` refuses to print on zero evaluable rows: "Left unguarded, this prints a fabricated median|dExp|=0 ... and still exits 0 (GREEN), defeating the file's own fail-closed guarantee." FENCE: this is FIT for the refusal mechanism only; it establishes nothing about completion handling on an accepted subject, and IF4 below records the one place the instance violates its own rule | PROOF: a landed card whose only completion evidence is a return code
+K4 | FIT | "Work is complete only on positive evidence it was asked to produce" | §K4 ADOPTED (FIT); kept. This window's refused evidence: E0-V1-STAGE-WIRING's first committer returned RED-HOOK on 1 of 3947 tests and the commit was refused until a second committer's hook read 3947/0; STILLS-AUTO-SETTINGS's key-1 BLOCKER 8/2/0 was neither accepted nor dismissed on its word, but probed on the subject's bytes (10 refuted); WB-LOW-SOLVER's APPROACH returned MEASURED-NEGATIVE on its card's 0.5 K bar, which went to a steward ruling; ADOBE-HELD-STUB-DEADLINE-WITNESSES records its acceptance as owed on the next mirror CI run. Counter-observations, kept rather than credited: 10 landings set aside a final-round key-1 non-ACCEPT (above), and two landings that passed every local check turned master CI red (P:code delivery-target) | PROOF: a card here closed DONE on a return code or a file's presence alone
 
-K5 | UNEXERCISED | "Before work starts, a subject declares its profile and profile version." | No subject both declared and was accepted in this window. The retrospective landings could not have declared: four of five predate the kernel's existence (§O1). S1 declared criteria pre-work but names no profile or version and has not been accepted. Precedent applied to ourselves: `magic-lantern_dannephoto.dispositions.md:21`, "No subject declared the profile before work. **No retrospective credit.**" | PROOF: S1's four declared criteria evaluated against an unedited control, with the receipt bound to the same identity
+K5 | UNEXERCISED | "Before work starts, a subject declares its profile and profile version." | §K5 ADOPTED (UNEXERCISED); kept. 0 `k5-declaration.json` dated inside the window (IF15). 0 of 26 window receipts name `code@r`, `measured-objective@r` or the kernel | PROOF: a subject accepted here whose acceptance receipt names a different identity or profile than its declaration
 
-K6 | UNEXERCISED | "Every acceptance includes a key from an independence class other than the producer's." | No acceptance occurred under this kernel, so no acceptance supplies the key observable (`mlv-app.dispositions.md:23`). Reported without credit, because it bears on §O1: the pre-kernel landing `S1-S02B-BACKUP-MOVE` recorded `key1 ACCEPT (codex sol) · key2 ACCEPT (opus)` — genuinely two families — and Q3-DEFAULT-FLIP-CAP20 likewise. Against interest: in 2 of 3 later receipts (T1F1, S3B) BOTH keys are Anthropic (`claude-sonnet-5` + `claude-opus-5`), so independence there rests entirely on the author seat being Codex; the receipts say so themselves — `"cross_family": "AVAILABLE (Codex author; Fable approach review; Anthropic keys)"` — and docs/14:102 concedes "Two models of one provider are still never called cross-family" | PROOF: an accepted subject here whose keys and producer share one backend
+K6 | UNEXERCISED | "Every acceptance includes a key from an independence class other than the producer's." | §K6 ADOPTED (UNEXERCISED); kept. No kernel subject was accepted. Reported without credit: 25 of 26 landings carry a final-round key from a provider that wrote no subject byte; STILL-EDIT-ORCHESTRATION carries none, both families having produced bytes of it (independence-provenance bench) | PROOF: an accepted subject here whose keys and producer share one provider
 
-K7 | UNEXERCISED | "Acceptance and delivery are separate states." | Nothing was accepted, so nothing could fail to deliver (`mlv-app.dispositions.md:24`). Reported without credit: the delivery target is nested-repo `master` via `git merge --ff-only <exact sha>` after re-checking base and per-file blob identity, "never root-tree equality" (docs/14 §4). Instance gap recorded separately at IF9: there is no typed `CLOSURE_INCOMPLETE` state, so an accepted-but-undelivered card is discoverable only by a human reading the open-card list | PROOF: an accepted card here that never landed and that the next tick names unprompted
+K7 | UNEXERCISED | "Acceptance and delivery are separate states." | §K7 ADOPTED (UNEXERCISED); kept. Nothing was accepted under the kernel. Reported without credit: SATURATION-OFFSET-FLAG has held keys FINAL ACCEPT, not landed, since the 2026-11-06 claim its state line names, and is still HELD; three window landings name an acceptance or a deployment owed after delivery (ADOBE-HELD-STUB-DEADLINE-WITNESSES on the next mirror CI run; WB-LOW-KEY "research-side acceptance owed after landing"; E0-V1-STAGE-WIRING "landing on master is not a deployment"). No typed `CLOSURE_INCOMPLETE` exists here (IF9) | PROOF: an accepted subject here that never landed and that the next tick names unprompted
 
-K8 | FRICTION | "rotating or parking the work that needs inference, never failing the factory closed" | The observable is "what happened to in-flight work at the last quota event", which needs no accepted subject. The factory never failed closed: docs/14 §4:263 "A capacity death consumes no attempt. An executor or key that dies on a 429, a session limit, a provider outage or a host restart yields `HELD-FOR-CAPACITY`" — it "keeps its attempt number, and retains whatever partial work exists on its branch"; §3 "Its worktree is left exactly as it is". Live event INSIDE the window, WORK.md:40: the CLI account hit its monthly spend limit 14:43Z 2026-09-15 and nothing stopped — "No route in the factory needs the claude CLI today ... so nothing is blocked." WORK.md:70: "B3/Q3/T5 executors died on the weekly limit ~00:39Z = HELD-FOR-CAPACITY ...; Q3 WIP captured at C:\DngAutoJobs\evidence\NEXT-STEPS\attempt1\q3-wip-capture". **The measured cost, which is why this is FRICTION:** `packets/Q2-LEVER-ARMS.md` records "the 5th consecutive capacity death (HELD-FOR-CAPACITY ×4 before it)" on ONE card; `packets/T1-ACCEPTANCE-REPAIRS.md` records "the assigned Fable key 2 returned 429 five times ... only ONE real round was ever completed". And rotation, the kernel's first-named remedy, was measured UNAVAILABLE: "the limiting authority is claude-fable-5-1 CREDIT DEPLETION, not Anthropic capacity ... **waiting for, or forcing, an account rotation does not restore this seat.**" Parking was the only remedy left, and review stopped until an owner re-tiered the seat | REPLACES: "rotating or parking the work that needs inference" -> "rotating or parking; where the depletion is per-model credit rather than per-account quota, rotation is not a remedy and the register must name who re-tiers the seat" | PROOF: a per-model credit depletion here that an account rotation restored — **CORRECTION: a claim that "three quota events in five days each failed this factory CLOSED" was put to this lane. It did not survive measurement; see `## Untested` U2.**
+K8 | INSTANCE-FAILURE | "Running out of quota means rotating or parking the work that needs inference, never failing the factory closed." | Moved from UNEXERCISED (§K8 ADOPTED UNEXERCISED "for reset-driven reopening") on a changed quote: earlier filings quoted K8's reset sentence and filed this board's earlier quota events (2026-10-19 weekly limit, 2026-10-30 session limit) against it; this line quotes its quota sentence. On 2026-11-24 the cop's 17:17Z run ended at its first turn on the weekly-limit message (P-RESUME receipt). The detector had fired, but only toward a later session: the register's usage watch tripped three times that day (95%, 97% and 99% of the weekly all-models window, 07:04Z to 09:03Z), and each time wrote a rotation-prep note addressed to the next working session (which it tells to inform the USER in chat), not to the owner; each note records that it was acted on only at the 17:40Z USER-directed P-RESUME. The 19:23Z cop tick's note (evidence ledger) fired s7 alarms on the cop itself: scheduler `lastRunAt` 17:17:05Z, "no receipt or commit exists for the 11:11Z-17:11Z fires", and, with READY cards present, "the cop was dark for 10 h of the window"; it names the account's run capacity as the limiting authority and calls that "a correlate and not a read of the cause". No seat wrote a park or a typed terminal for it, and master has no cop commit from 09:22Z to 19:37Z that day. The instance map's own K8 row is NONE: "a full Claude outage holds the whole queue, work that needs no inference included". The scheduled seats ran again after a USER-directed P-RESUME at 17:40Z re-registered them on the account then in use (## Subjects). An IMPLEMENT seat in flight that day (STILL-EDIT-PACKET-STATED-SWEEP-BATCH-PASS, last write 10:41:48Z) was read FROZEN at the 19:23Z tick, and its bytes were adopted after re-verification. The reset sentence held: no reset opened anything. Honest compliance was possible: a park or terminal record needs no inference, and nothing in this instance writes one | no replacement | PROOF: a quota event here at which the exhausted seat's work was parked with its resume condition and actor recorded, or rotated, with no owner step
 
-K9 | FRICTION | "A fresh session on a new account, with empty memory, resumes from the project's tree and the bus alone." | docs/13 `P-RESUME` is written as derivation rules, re-confirms the two scheduled seats on the account in use, re-creates any a rotation stranded, and writes a receipt to `C:\DngAutoJobs\evidence\RESUME\<UTC>.md`. It deliberately refuses a one-shot verdict — step 7: "A seat is alive only when its next run leaves its own receipt ... the scheduler showing it enabled proves nothing." Measured cost: the observable asks for "the resumability gate's command and its last passing output", and there is no command that returns resumable/not-resumable — the gate is a seven-step procedure a person reads. The last rotation still cost an owner interruption: WORK.md:70 records both seats re-created "byte-identical but DISABLED" with "USER STEP PENDING" | REPLACES: "Resumability is gated at landing seams" -> "Resumability is gated by a command whose output is the gate; a procedure a person must read is a checklist, not a gate" | PROOF: a fresh-account session resuming a RUNNING card here with no owner step
+K9 | INSTANCE-FAILURE | "A fresh session on a new account, with empty memory, resumes from the project's tree and the bus alone." | §K9 ADOPTED (INSTANCE-FAILURE); kept, and now exercised twice. After the 2026-11-24 rotation the seats ran again only after a USER-directed P-RESUME, which restored each SKILL.md from a backup outside the tree. After the 2026-11-25 change the cop and steward resumed on their own, from registrations already on that account, but the usage watch was missing and the cop carried a superseded cadence until a USER-directed P-RESUME repaired both. The resume drills read rotation-readiness 7 of 10 (2026-11-22) and 6 of 10 (2026-11-25). The first names as biggest gap that P-RESUME carries no model for any seat; the second, that P-RESUME step 1's mandatory reading (about 1.2 MB) "cannot be performed as written by a cold seat" | no replacement | PROOF: a rotation here after which every scheduled seat the register authorises ran again with no owner step
 
-K10 | INSTANCE-FAILURE | "Provider and model inventory is machine-scoped and probe-derived, and it records the account it was derived under." | The obligation arose — this project dispatches to two provider families every tick — and honest compliance was available, but there is no machine-readable inventory in the repo: the only register is the docs/14 §2 prose seat table. `grep -ci 'parity' docs/14-ORCHESTRATION.md` → **0**. Parity exists only as machine-level hooks outside the project (`~/.claude/hooks/parity-sessionstart.ps1`), consumed by docs/13 P-RESUME step 1 but named nowhere in the operating contract. No `probed_under` field exists anywhere. The nearest in-repo mechanisms are §2's unnamed "tick-start probe" and §10's PONG smoke, which measure liveness, not inventory | no replacement — **NARROWED: the 2026-09-14 draft filed K10 as a kernel BREAK on probe ambiguity. Kernel r4 already added "Missing, `unknown` or mismatched account identity makes the inventory stale; re-probe under the current account before provider work", which answers it. This is an instance failure, not a kernel defect, and the BREAK is withdrawn.**
+K10 | INSTANCE-FAILURE | "Provider and model inventory is machine-scoped and probe-derived, and it records the account it was derived under." | §K10 ADOPTED (INSTANCE-FAILURE); kept. There is still no machine-readable inventory and no `probed_under` in the repo (the instance map's K10 row). This window measured the account half failing: the parity hook derived the desktop account from a stale stamp and printed an aligned result while the desktop and CLI were on different accounts (2026-11-24 P-RESUME receipt). The model half moved: docs/14 §10 now checks the served id of every Fable seat at launch (`33ad760c`; ## Answers, §K10) | no replacement | PROOF: an in-repo inventory whose `probed_under` names the current account
 
-K11 | FIT | "R1–R9 apply to every report a factory makes about itself, including dogfood filings under this kernel." | This filing withdraws three of its predecessor's BREAKs, refuses retrospective credit, reports `providers: none` and `posture: UNCOMPUTED` rather than asserting lines it did not compute, marks K1/K5/K6/K7 UNEXERCISED against its own interest, and reports two claims put to it as REFUTED (U1, U2). The project applies the same rule internally: docs/14 §4b requires every BLOCKER/MAJOR to survive a mutation kill-test — "A finding whose mutation is caught by the existing suite is refuted" — and receipts carry the count against the key, e.g. S3B's `"refutedAgainstKey": 2`. FENCE: IF1 below records one live K11 failure in this repo, so this FIT is for the rule and this filing, not for a clean record | PROOF: any claim in this filing that its cited path does not support
+K11 | INSTANCE-FAILURE | "R1–R5, R7, R8 and R9 apply to every report a factory makes about itself" | §K11 ADOPTED (INSTANCE-FAILURE); kept. Unchanged: the two OWNER-DEFECT-CLOSED lines dated 2026-09-23 14:05Z still stand with no correction line beside them. New this window, two location failures and one false self-report. At the window's end the receipts of the last two landings, 7 card state lines and one new card existed only in the main checkout's working copy, about 15 h after the later landing (`9615de06`, receipt `landedUtc` 2026-11-26T14:05:29Z), so a fresh clone of master taken at the window's end read both cards READY (the two receipts, the 7 state lines and the new card were committed to master in `2b46e2d8`, 2026-11-27T05:05:55Z, after this window). 3 steward receipts end with no VERDICT line, and only their successors record why. The parity hook's aligned line was false (K10). On ci, the 2026-11-26 16:05Z status digest reports that the cop's later daily line reads `ci=success` while the hosted run reads failure; this filing read that daily line only through the digest's report, because it was not on master at the window's end. This filing takes no credit for the window's landings and asserts no posture it did not compute | no replacement | PROOF: a correction line beside that CLOSED line in the board's ledger
 
-K12 | UNEXERCISED | "Every project that runs the kernel files what happened" | This is the first filing; no `dng-auto-processor.dispositions.md` exists and no HARVESTS.md row names this project, so the observable ("showing it `HARVESTED`") cannot exist before the steward answers. `grep -c 'factory-kernel' docs/14-ORCHESTRATION.md` → **0**; `grep -c 'DOGFOOD' docs/14-ORCHESTRATION.md` → **0** | PROOF: harvest-status reporting this filing HARVESTED
+K12 | FIT | "The steward harvests every filing and answers each one." | §K12 ADOPTED; FIT now on a current harvest. The tenth filing was answered on 2026-11-26 (`196b495f`): 209 `§` lines and 9 `HEADER:` lines bound to blob `1ca87429`, with the seventh to ninth filings answered as §C7 to §C9. Cost, recorded rather than credited: the tenth waited 7 days from its push, and the seventh 34 days (2026-10-23 to 2026-11-26). Per HEADER: carried coverage, the earlier blobs are not thereby marked HARVESTED on their own. FENCE: the filing seat may not run `tools/harvest-status.py`, so the harvested state is read from the artifacts that tool reads | PROOF: a finding of the tenth filing with no disposition line
 
-## Profile lines — first exercise of measured-objective
+## Profile lines
 
-P:measured-objective subject-identity | BREAK | "git tree of the pipeline plus digests of the evaluation set and the scorer" | Those three components do not close over this domain's inputs. The scorer runs against a base engine held OUTSIDE every git tree the identity covers: `tools/ratify.ps1:139`, `-BaseEngine 'C:\DngAutoJobs\factory-100-current-20260801\engine-current-colour-v3.dngrules'` — an absolute path in no repository (`git rev-parse` there: "not a git repository"), 3045 bytes, sha256 `ccb03575ec7b88ea238518f4160cfe53ca07ce9010d5efbfdb92c5da96825b93` measured 2026-09-15. That file is not a side input: it is where this board's single most product-consequential landing DELIVERED. Q3-DEFAULT-FLIP-CAP20's card records it — "THE PRODUCT BYTES, outside the repository ... carries exactly cap20's three Config lines (a32a065a…/2,941 B → ccb03575…/3,045 B, verified at landing)" — and my independent hash today reproduces its recorded post-landing digest exactly. So a subject's real product bytes can live entirely outside the stated identity, and `subject.json` (17 of 17 receipts: `{schema, sha, base, branch, itemId, files, generatedUtc}`) carries no digest of engine, eval set or scorer. The card's prose recorded the transition by hand; no schema did | REPLACES: "git tree of the pipeline plus digests of the evaluation set and the scorer" -> "... plus digests of every out-of-git input the pipeline or scorer resolves at run time, and of every out-of-git artifact the subject delivers to, including base engines, profiles and decoders" | PROOF: two candidates with the same stated identity and different external engine bytes recording the same score
+P:code subject-identity | INSTANCE-FAILURE | "its identity is K3's `sha256` of that OID's lowercase hexadecimal text, with no trailing newline" | §P:code subject-identity ADOPTED (INSTANCE-FAILURE); kept. Every window receipt binds the delivered commit to the reviewed one, by `reviewedSha` equal to `landedSha` (14 of 26) or by a recorded rebase with per-file blob identity and an unchanged `patchIdStable` (12 of 26). 0 of 26 records a tree OID or its K3 `sha256`, reviewed or delivered | no replacement | PROOF: a receipt here recording each subject's tree OID and K3 digest, reviewed and delivered alike
 
-P:measured-objective resource-terminals | BREAK | "a partial fold is not a score" | The profile states the rule but gives it no representation a receipt can carry, so a partial fold is recorded with the same token as a full one. Measured, **16 of 16**: every `gate0.json` under `metrics/ratify/<sha7>/` is `partialRun:true, clipsScored:2, totalEvalSetClips:10, verdict:GREEN` — a 20% fold, and `GREEN` is exactly what a 10-of-10 run would emit. `tools/scoreboard.ps1:289` additionally records `"SKIP 5 (isolation proof)"` on a partial run, so the leave-one-project-out leak proof is not re-derived at the gate. Stated in the instance's favour: it knows, and says so in a code comment (`ratify.ps1:134-136`, the subset is "never the baseline of record") — but a naming convention in a comment is not a typed terminal, and nothing downstream reads it | REPLACES: "a partial fold is not a score" -> "a partial fold is a typed terminal: the receipt carries fold coverage and a verdict token distinct from a full-fold pass, so a partial run cannot be read as a score downstream" | PROOF: a receipt here whose verdict token distinguishes a 2-of-10 run from a 10-of-10 run
+P:code claims | FIT | "observer-released claims may replace leases" | §P:code claims ADOPTED (FIT); kept. Exercised on the seats of K3: two frozen authors released and their bytes adopted by successors the cop launched, a STALL hold kept on a live seat, and one peer-owned tick stood down. In each case the observer, not the claimant, decided | PROOF: a claim here released by its own claimant's say-so, or held after its seat died with no observer able to release it
 
-P:measured-objective acceptance-evidence | FRICTION | "the declared scorer on a held-out fold the producer never tuned on, meeting a predeclared subject-specific improvement or non-regression criterion against the pinned baseline" | Exercised as an artifact property, not via an accepted subject. `tools/scoreboard.ps1:359-361` stamps output with `git rev-parse --short=7 HEAD`, and there is **no clean-worktree check anywhere in the scorer** (`grep -n 'porcelain\|diff --quiet\|dirty' tools/scoreboard.ps1` → empty), so a score can be stamped with a commit SHA while the tree that produced it was dirty — seven hex characters of `HEAD`, not the subject branch's full SHA. The cost is that every score's binding must be argued from surrounding receipts rather than read off the artifact | REPLACES: "on a held-out fold the producer never tuned on" -> "... and produced from a tree the scorer verified clean at its full commit SHA; a score from an unverified tree is UNEVALUABLE" | PROOF: a scoreboard line here that refuses to print against a dirty tree
+P:code claims-audit | INSTANCE-FAILURE | "Audit canonical state before and after: HEAD, index entries and flags, refs, reflogs, stash, tracked contents, and ignored/untracked path inventories" | §P:code claims-audit ADOPTED (INSTANCE-FAILURE); kept. 0 of 26 window receipts records a reflog or stash audit, and no window docs commit adds one | no replacement | PROOF: a key-2 run here whose receipt records the main checkout's HEAD, index entries and flags, refs, reflogs, stash, tracked contents and ignored/untracked path inventories with content hashes, before and after
 
-P:measured-objective artifact-store | INSTANCE-FAILURE | "datasets and held-out folds by manifest of blob digests, outside git when large" | The obligation arose and the remedy was already prescribed by the profile; the instance supplies a manifest of PATHS. `metrics/eval-set.json` rows are `{clip, sequencePath, manualXmpDir, reachable}` — every `sequencePath` an `I:\!5D3 RAW\...` location, with reachability standing in for identity. Exactly one receipt carries eval-set digests (`metrics/ratify/B5-VALIDATION-FOLD-SCORE/3/receipt.json`: `"eval-set-validation.json":"bb2be391"`), recorded by the cop by hand, not emitted by the scorer. **No receipt anywhere digests the scorer**: `grep -rl 'scoreboard.ps1' --include=receipt.json metrics/ratify/` → empty | no replacement
+P:code independent-key | UNEXERCISED | "a verifier from another model family (R3) whose class has not become a producer of the subject" | §P:code independent-key ADOPTED (UNEXERCISED); kept. No kernel subject was accepted. This window's records bear on the clause without exercising it: 25 of 26 landings seat a final-round key whose family wrote no byte of the subject; STILL-EDIT-ORCHESTRATION seats none, so had it been declared it would fail the clause | PROOF: a subject here whose only other-provider key comes from a class that also wrote its product bytes
 
-P:measured-objective human-gates | FIT | "changes to the scorer, the held-out fold or the baseline (moving the goalposts is owner-gated)" | Mechanised as a named review class rather than left to discipline, and exercised: `tools/ratify.ps1:215-228` makes key 1's defect class 5 "acceptance surface — any edit to `tools/scoreboard.ps1` or `metrics/eval-set.json`", and lines 225-226 make that class a BLOCKER — "Verdict ACCEPT only if no BLOCKER and no MAJOR". A run-time tamper check backs it: `tools/scoreboard.ps1:139` fails on a profile whose on-disk SHA-256 differs from its build receipt — "wrong file, stale file, or tampered". FENCE: this is FIT for the gate existing and having fired (see stress-on-the-kernel), not for owner adjudication of a goalpost change, which did not arise | PROOF: a scorer or fold edit landing inside a pipeline subject without a BLOCKER
+P:code resource-terminals | INSTANCE-FAILURE | "Before dispatch, declare any register-permitted substitution for a family-bound quorum seat" | §P:code resource-terminals ADOPTED (INSTANCE-FAILURE); kept, and exercised. Six author seats moved across families (independence-provenance bench). docs/14 now states two such routes in advance (`28046186`, the Codex-sandbox failover; `33ad760c`, the Fable fall-through), but each move is recorded in its receipt after the act, and no rule orders a per-seat declaration written before dispatch. The row's owner-facing half fails as on K8: no park record named an owner-only resume condition at the quota event | no replacement | PROOF: a rule here that orders every substituted seat's declaration written before its dispatch, and a window in which each substituted seat's launch record carries it
 
-P:measured-objective stress-on-the-kernel | FIT | "a scorer changed in the same subject as the pipeline" | The profile names this stress; this bench refused it on record, which is the strongest evidence in this section. `metrics/ratify/S2-design/ruling.md:6` is "**Verdict on the proposed design: REVISE.**", key 1 REVISE / 10 findings and key 2 BLOCKER / 17 findings; the adversary found the proposed scoreboard's refit step re-scanned and mutated the teaching store, so "the filtered arm is therefore built by a different process than the shipped baseline it is compared against". That refusal is why `tools/scoreboard.ps1` has its current leave-one-project-out form | PROOF: a subject here that changed the scorer and the pipeline together and was accepted
+P:code delivery-target | INSTANCE-FAILURE | "build the exact proposed record and run the validators and hooks that commit will face before any product push; refuse on failure" | §P:code delivery-target ADOPTED (INSTANCE-FAILURE: missing pre-push validation coverage); kept, and exercised twice. Locally the route held: 25 of 26 receipts record a Release build at the subject, and the two subjects later red on the hosted runs had passed their local hooks (`9615de06`'s receipt reads `hooks 6182/6182`; the open card says so of `e2ac7add`). The hosted validators still ran only after the mirror push, and twice found what the local checks did not: 1 of 3898 tests red on master CI at the 2026-11-19 seam, and five rows red on the hosted runs for `e2ac7add` and `9615de06` on 2026-11-26 (## Subjects) | no replacement | PROOF: a landing here whose hosted validators, or an equivalent pre-push execution, ran green before its mirror push
 
-P:measured-objective determinism-class | FRICTION | "statistical: one run proves nothing" | Held, at a cost the profile does not price: this bench's comparisons are byte-deterministic at tolerance 0, so its reproductions are repeat-and-compare rather than trend-and-interval, and Q3's byte-identity reproductions cost 14.9 and 64 fold-minutes. Carried forward from the 2026-09-14 draft, undisposed. r2's new sentence addresses timing claims and venue drift, which is a different case from a byte-deterministic bench | REPLACES: "statistical: one run proves nothing" -> "the class is declared per bench: statistical with an A/A baseline and a trend, or byte-deterministic after an identical repeat at tolerance zero" | PROOF: a repeated run on this bench that is not byte-identical
+P:code dispatch-preflight | INSTANCE-FAILURE | "the spending tool runs the project's resume gate before dispatch and retains its result, the inventory snapshot and digest, and account-parity evidence" | §P:code dispatch-preflight ADOPTED (INSTANCE-FAILURE); kept. Unchanged: docs/13 P-COP orders no resume-gate, inventory or parity read before dispatch, and the window's docs/13 diff adds none. The cop's Step 0 reads its own model and retains it only in the daily line's `model=` field. The one parity check that ran, the P-RESUME hook, was fail-open (K10) | no replacement | PROOF: a tick receipt here that retains a resume-gate result, an inventory digest and parity evidence before its first dispatch
 
-P:measured-objective independent-key | UNEXERCISED | "the held-out ground truth, plus a scorer the producer did not write for this subject" | No subject was accepted under this profile, so no acceptance supplies the key. Reported without credit: ground truth is the owner's own manual XMP grades under `manualXmpDir`, produced outside the factory entirely, and `tools/scoreboard.ps1:299` reports the held-out arm — "arm B is the leak-closed, held-out-honest measurement; arm A is reported per clip as provenance, never as the scoreboard number" | PROOF: an accepted subject here whose producer authored its scorer
+P:code human-gates | INSTANCE-FAILURE | "names an owner-facing escalation channel" | New line, on the ground of §K2's ruling. The register names one, docs/14's status digest ("Push on exception, write always"), but it is a per-account task that P-RESUME does not re-create, "so it runs only where the USER has added it". Its ledger holds no receipt for the 33 days to 2026-11-25 12:24Z (2026-10-23 03:05Z is the one before), and on the account where it then ran, 21 of 21 attempted pushes returned "not sent (Remote Control inactive)". No artifact this filing read shows the channel delivering to the owner in the window | no replacement | PROOF: a window here in which the named channel ran on every account the seats ran on and retained a delivered-push witness for each exception it sent
 
-P:measured-objective budgets | UNEXERCISED | "compute hours per evaluation; storage for folds" | No kernel subject completed an evaluation in this window, so no per-evaluation budget was accounted. Reported without credit: docs/14 §10 "Measure each other" requires per-seat model, tokens and wall time on every landing receipt, and retrospective receipts carry them (S3B's key2: "324K tok, 37.6 min") | PROOF: a completed evaluation here with no compute accounting
-
-P:measured-objective delivery-target | UNEXERCISED | "released pipeline version with its score receipt" | Deliveries end at nested-repo `master` landings plus a mirror sync; no release, tag or versioned pipeline artifact carrying a score receipt exists in the window. Carried forward from the 2026-09-14 draft, undisposed | PROOF: a release here carrying a subject and its score receipt
+P:measured-objective acceptance-evidence | UNEXERCISED | "the declared scorer on a held-out fold the producer never tuned on" | §P:measured-objective acceptance-evidence ADOPTED (UNEXERCISED); kept. No SCOREBOARD line falls inside the window. One measurement card closed in it, `packets/LR-JITTER.md` (DONE ZERO-STEP-CLIPS: no frame-to-frame Temperature or Tint step on a frozen 31-clip, 5-shoot population). It is a census, not a declared scorer on a held-out fold | PROOF: a scored run in the window that this line missed
 
 ## Instance failures
 
-IF1 | **A commit message this repo's own contents refute.** `git log -1 --format='%s' 5945e41c` reads "chore(card): open DNG-SELF-TARGET-BUCKET-TIER, **the first product card**", and `b901b7c3` repeats it. It is not the first product card: `S1-S02B-BACKUP-MOVE` landed product bytes 2026-09-09 (`92e31e27`) with two cross-family acceptance keys, and `Q3-L1A-FALLBACK-TIER-POLICY` landed 2026-09-11 (`221daf03`); both are in `packets/`, both self-label product, both predate `5945e41c`. This is the class already dispositioned in this corpus — `mlv-app.dispositions.md:41` §IF5, ADOPTED: "a commit message its own diff refutes ... A reporting failure under existing K11." Filed against ourselves, and the reason this filing never uses that phrase.
-
-IF2 | `tools/ratify.ps1` has NO recusal or author-binding check. `-Adjudicate` resolves key 2 from `-Key2Path` or a default path and validates only JSON shape and the verdict enum (`Read-Verdict`, lines 54-71); nothing records or verifies which model, session or agent produced it. The producer can write `{"verdict":"ACCEPT","findings":[],"closedSet":{"examined":[],"clean":[]}}` and the gate accepts it. The receipt's `key2Sha256` binds the BYTES, never the AUTHOR. Recusal exists only as prose inside briefs the script cannot enforce (line 216). Mitigation stated: the live route is the cop route, whose receipts DO name a model per key.
-
-IF3 | The 3-round ceiling is dead code on the route in use. `ratify.ps1:329-331` counts prior receipts by `$_.itemId`; cop-route receipts under `metrics/ratify/<TASK>/<attempt>/` carry `taskId`, so `$priorReceipts.Count` is 0 for every card-named task and `if ($verdict -eq 'REVISE' -and $round -ge 3) { $verdict = 'PARKED' }` at line 332 can never fire. No `PARKED` receipt exists anywhere. The ceiling survives only in prose (docs/13:466), enforced by a human cop.
-
-IF4 | `ratify.ps1:141` sets `$gate0.scoreboardOk = ($LASTEXITCODE -eq 0)`, and the GREEN at line 160 is three exit codes. Lines 145-151 DO read the artifact — loading the scoreboard summary and the master baseline into the receipt — but nothing compares them; the numbers are recorded and never asserted on. The project's own doctrine forbids exactly this (§10, "never an exit code"). Honest compliance was available in the two lines that already parse the JSON.
-
-IF5 | The mechanical gate has never once refused. Verdict census across `metrics/ratify/*/`: key1 6 ACCEPT / 2 REVISE / 5 BLOCKER; key2 4 ACCEPT / 2 REVISE / 3 BLOCKER; **gate0 16 GREEN / 0 RED**. Every refusal on record came from a key. Combined with the 2-of-10 fold, the gate0 score arm is a check that has never discriminated — which the factory wrote down once (`6f4a60e/receipt.json:105`) and did not generalise.
-
-IF6 | Two receipt families under `metrics/ratify/` that cannot read each other: `ratify-receipt.v1` (`<sha7>/`, written by the script — 19 directories but only 3 receipts, so `-Prepare` ran 16 times and `-Adjudicate` never did; newest 2026-09-09) and the cop landing receipt (`<TASK>/<attempt>/`, 20 receipts, all recent work). WORK.md:4 still names `tools/ratify.ps1` as the merge gate.
-
-IF7 | A Stop hook fires on every session end and cannot be doing anything: `C:\code\DngAutoProcessor - Claude\.claude\settings.json` invokes `coordination/tools/resume-seamless-gate.ps1`, which **does not exist on disk** (that directory holds only `driver-wake.ps1`, `realign-cli.ps1`, `run-hidden.vbs`). Bears on K9.
-
-IF8 | docs/14 §2's "Launch route (v1.1)" is written against two files that do not exist: it conditions the route on `tools/claude-review-capture.ps1` and `tools/codex-author-capture.ps1` existing on master, and **both are MISSING**. The ratifier's author-evidence contract (launcher-recorded session id, observed model, raw-output hash) is therefore unsatisfied, and the operating contract describes a route the repo cannot run. Bears on K1 and K6.
-
-IF9 | No typed `CLOSURE_INCOMPLETE` state exists. An accepted-but-undelivered card is discoverable only by a human reading the open-card list. Did not fire in this window (nothing was accepted), but the mechanism is absent rather than untriggered.
-
-IF10 | `ratify.ps1:80` derives `itemId` from the BRANCH NAME, and that is the sole key for round counting. Renaming a branch resets the counter. Identity is a content digest everywhere else in this factory; here it is a name.
-
-IF11 | An allowlist was widened after dispatch: `packets/Q3-L1A-FALLBACK-TIER-POLICY.md` records "**ALLOWLIST WIDENED by the cop:** DngAutoProcessor.Tests/HardenConfigLoadTests.cs". On the test radius, not the acceptance thresholds — but it is a post-dispatch scope change, and the card's pre-declared contract is the thing that makes K5's substance meaningful.
-
-## Mapping correction
-
-M1 | Kernel §6 maps this project to `measured-objective` at HIGH confidence on the bar "auto grade 'matches the manual grade per frame', scored on a held-out fold". That is the PRODUCT's bar and it is correctly stated — but it is not what this factory has been accepting against. Measured: of ~20 landing receipts, ONE carries a held-out-fold score, and only because that card was itself about producing one; the rest are code-gate receipts (build, filtered tests, two review keys), and S3B's says outright `"scoreboard not run (no evaluator change)"`. The accurate mapping is the shape mlv-app was given: **`code` (primary — what the factory actually gates on) + `measured-objective` (the product's bar, exercised at B5 and declared pre-work for the first time by S1)**. Filing it the other way would credit this board with a profile it has barely run.
-
-## Kernel text observations
-
-O1 | **The kernel's clock, and why criterion 1 is 0 — offered with both of its disqualifiers attached.** MEASURED: the kernel first existed at `a0d8d4c` = **2026-09-14T20:49:38Z** (`git log --diff-filter=A -- specs/fleet-factory-kernel.md`, sole adding commit; independently re-derived here). Every first-harvest filing's window OPENS BEFORE that instant — magic-lantern by 14d 20h, adobe-ingester r1 by 7d 20h, cloudvore by 6h 51m, airmypc by 3h 15m, mlv-app by 2h 03m, agent-bridge r1 by 15m. For any subject already in flight at 20:49:38Z, K5's pre-work declaration is not merely unmet, it is **unsatisfiable**, and the arbiters were right to refuse retrospective credit. Cloudvore is the clean case: two subjects DELIVERED, credited zero. **This board is an independent second instance**: `S1-S02B-BACKUP-MOVE` is a product subject, landed to master with two acceptance keys of different families and a receipt, failing exactly one clause because it landed five days early. **Two disqualifiers, stated because omitting either would overclaim.** (a) adobe-ingester r2's window is entirely post-kernel and still returned 0, blocked at acceptance closure on a CRLF-reframed byte binding — so the clock explains the first harvest's zero substantially, not the whole ledger. (b) Grant K5 perfectly and retroactively to all eight ledger rows and **E2E stays 0**: rows 1/3 blocked at acceptance closure, row 2 never accepted, rows 4/7 had no subject, row 5 was already accepted and failed at delivery, row 6 had producer-only acceptance as a second disqualifier, row 8's implementer exited 1. K5 is the FIRST clause each filing fails because it is evaluated at t=0; being first is not being binding, and counting first-failures as blockers is an ordering artifact. The ask is narrow: record in HARVESTS.md, per row, whether the window opened before the kernel existed, so criterion 1's zero is not read as eight independent factory failures.
-
-O2 | **No clause asks whether a factory produces anything outside itself — and the remedy is a reporting line, NOT an admission gate.** Narrowed from a stronger claim that did not survive: the kernel DOES constrain subject PROVENANCE (§184-185, "Only real work counts ... Manufactured subjects are not filed"; PROMPT-K:49-50, "Never create work so you have something to measure"). What it does not constrain is subject DOMAIN. **A domain-admission clause would make things worse, measurably:** applied to the eight rows it refuses agent-bridge r1, airmypc S1 and S2 (the row that reached ACCEPTED), cloudvore S1/S2/S3 and mlv-app S1; those boards then file `subjects: 0` under PROMPT-K:49, E2E stays 0, and the corpus shrinks from 134 verdicts to a remnant. Domain is also not the binding constraint: mlv-app's S2 `PLAY-COUNTERS-CPU` IS a product subject in its mapped profile, was admitted, ran, and closed nothing. So no gate is proposed. What survives is visibility only: a filing should state what fraction of its closed subjects changed the artifact its own profile measures. This board's numbers show why it is cheap and non-punitive — 8 of 31 by self-label, 5 of 17 landed by delivered bytes, and exactly 1 that moved the measured objective.
-
-O3 | **K5 has a form/substance gap that costs the kernel evidence it already has.** K5's observable asks for "the profile line recorded before work". This board pre-declares acceptance criteria as a matter of course and did so long before the kernel existed: 28 of 39 cards carry a pre-declared `## Contract`, `## Exit predicate`, `## Acceptance profile` or `Preregistered predicate` section; docs/14 §5 specifies the card as "≤ 3 KB: allowlist, contract, first command, expected counts, typed returns"; §6 orders "primary metric + guard metrics WITH tolerance" before measuring. Q3-DEFAULT-FLIP-CAP20 carries `Preregistered predicate (tol 0):` naming expected CSV sha256s BEFORE the run. None of it counts, because none names a profile and version. Not filed as a defect — the arbiters' refusal of retrospective credit is correct and this board is not seeking an exception. Filed because the gap is diagnostic: if the observable were "predeclared acceptance criteria bound to the subject before work, in any form", the kernel would already be able to see 28 instances on this board alone, and the zero would be measuring instrumentation rather than discipline. Counter-evidence against ourselves: IF11 records one allowlist widened after dispatch.
-
-O4 | K6 says "at least one independent key" and computes independence against the PRODUCER, so a board can satisfy it while its two reviewers share a backend — which is this board's actual shape in 2 of 3 recent receipts (both keys Anthropic; independence carried by the Codex author seat), and which its own doctrine concedes is "never called cross-family" (docs/14:102). Not filed as a defect: K6 explicitly says "A profile may require more keys". Noted because independence migrating from the key axis to the author axis is probably general, and a profile wanting key diversity must say so itself.
+Status of the earlier fifteen. No new IF number; this window's INSTANCE-FAILURE lines are the K and P lines above.
+- **IF1, IF11** (§IF1+IF11 ADOPTED): historical, unchanged.
+- **IF2** (§IF2 ADOPTED): repaired in the latent script. `tools/ratify.ps1` is still off the live landing path; no window
+  landing used it, and no window commit changes `tools/`.
+- **IF3, IF4, IF10** (§IF3+IF4+IF10 ADOPTED): LATENT, as before.
+- **IF5** (§IF5 ADOPTED): repaired in the latent script. No gate0 ran on the live route.
+- **IF6** (§IF6 ADOPTED): LIVE. WORK.md:4 still reads "Merge: tools/ratify.ps1 (gate 0 + cross-family key + adversarial Claude key)".
+- **IF7** (§IF7 ADOPTED): resolved at an earlier read, and outside git.
+- **IF8** (§IF8 ADOPTED): unchanged. `tools/claude-review-capture.ps1` and `tools/codex-author-capture.ps1` are both still absent from master.
+- **IF9** (§IF9 ADOPTED): unchanged. No file on master outside the instance map names `CLOSURE_INCOMPLETE`.
+- **IF12** (§IF12 ADOPTED): drift stands, and widens. The window's 26 receipts share 11 top-level keys of 45. `seats` is an
+  object in 11, a list keyed `phase` in 9 and a list keyed `role` in 6. The landing time is `landedUtc` in 6,
+  `landedUtcApprox` in 7 and absent in 13. The mirror record is `mirrorSync`, `mirror` or absent. `cross_family` is on 6.
+  No schema fixes the set.
+- **IF13** (§IF13 ADOPTED): unchanged. No rule, tool or hook names `k5-declaration` (on master only the instance map and
+  two cards name it).
+- **IF14** (§IF14 ADOPTED): resolved, as before. What hosted CI finds is P:code delivery-target.
+- **IF15** (§IF15 ADOPTED): unchanged for this window. 0 declarations dated inside it.
 
 ## Untested
 
-U1 | **A claim put to this lane that did not reproduce, reported against the interest of the lane that supplied it.** The claim: "a sandboxed agent CANNOT COMMIT even in a plain clone (`.git/index.lock` Permission denied)", and therefore a cross-provider fallback orchestrator can dispatch and collect but never land, making K8 undeliverable. **It did not reproduce in this seat.** `git init` + `git add` + `git commit` in a scratch repo: rc=0, commit `b27fbf3`. A plain clone of the doctrine repo: `git add` rc=0, `git commit` rc=0, commit `fa4053f`. Writing `.git/index.lock` directly in the real doctrine checkout: permitted. Three other seats committed to this bus in the same window (`def122e`, `5b204ca`, `3fce283`). The claim may hold for some other seat class, host or permission mode; as stated it is not a property of sandboxed agents here, and **no K8 BREAK is filed on it**. What would settle it: the exact seat type, cwd and permission mode under which the lock denial was observed.
+U6 | §U6 ROUTED (dng authorised posture-computation seat). The `posture:` line, unchanged. The same limit applies to `tools/harvest-status.py`.
 
-U2 | The paired claim that "three quota events in five days each failed this factory CLOSED" is contradicted by the repo's own record, so no BREAK is filed on it either. WORK.md:40 (monthly spend limit, in-window) records "nothing is blocked"; WORK.md:70 records executors dying on the weekly limit as `HELD-FOR-CAPACITY` with WIP captured to disk; `packets/T1-ACCEPTANCE-REPAIRS.md` records a card proceeding with one key and then parking. Those are K8-conformant parks. The real costs are filed as FRICTION on K8 (five consecutive capacity deaths on one card; rotation unavailable against per-model credit depletion) and as an owner interruption under K9.
+U8 | §U8 ROUTED (dng measured-objective outcome bench). Whether any assembly landing changed the grade the owner's saved engine emits. This window's grading-path landings are default-off or not deployed, and CAP-SHIP part B's fallback move reaches only key-absent engines (§A:U8 above); nothing measured it.
 
-U3 | Whether `tools/ratify.ps1` is on the live path at all. WORK.md:4 names it as the merge gate; no card-named receipt references a `<sha7>` ratify directory; the last one is 2026-09-09. If it is dormant, IF2, IF3, IF4 and IF10 are latent rather than active, and IF6 is the finding that matters. This changes the severity of four findings and could not be settled from the artifacts.
+U9 | §U9 ROUTED (dng doctrine-consumer stewardship). Not tested here; read from master WORK.md only. The doctrine-consumer fold-set routing line of 2026-10-09 is still held with no card.
 
-U4 | S1's four declared criteria have not been evaluated, so the thing this filing could most usefully have contributed — a measured-objective subject that declared its profile before work AND closed against it — does not exist. Re-run when S1 leaves APPROACH. Note for the re-run: S1 is the first subject on this ledger positioned to produce one, but airmypc S2 reached ACCEPTED and cloudvore S1/S2 reached DELIVERED and both scored zero, so being dispatched predicts nothing.
+U10 | §U10 ADOPTED. Closed here. The original seventh-window question, whether the hosted `ProgramSettingsTests` failure was environment-bound or order-dependent, stays with §C8:U10 and §C7:U10 (ROUTED, dng hosted-CI causality bench). Two new hosted-only failures fall in this window. On the first, the repair's receipt says the trigger was "inferred, never reproduced naturally". The open card on the second names the CI runner's non-interactive service session as the difference.
 
-U5 | Kernel §3 asks that kernel text not assume "a project tree that fleet tooling may write into". This project enforces that from the other side (docs/14 §7a reserves docs/12, 13, 14 to one seat; "`P-STEWARD` is the one section no seat may write"), which is why the KERNEL line is DOGFOOD-PENDING rather than written into the contract. Whether a steward-only contract can ever record an ADOPT without an owner act is untested here.
+U11 | §U11 ROUTED (dng independence-provenance bench). Whether a subject that both families produced can meet P:code independent-key in this board's two-family seating. It now has a landed instance, STILL-EDIT-ORCHESTRATION (`ffb2041d`), whose final keys both come from a producing family.
+
+U12 | §U12 ROUTED (dng owner/register bench). Whether the owner's 2026-10-29 research definition of done and its stop rule reach a factory design card. Kept; no artifact this filing read records the owner ruling on the reach itself.
+
+U13 | §U13 ROUTED (dng scheduler-forensics bench). Why the design steward's 2026-10-23 19:50Z scheduled run held for 108 h, and who cleared it on 2026-10-28. Kept; no artifact in this window records either.
+
+U14 | §U14 ROUTED (dng owner/register bench). Whether a landing made by an orchestrator session outside the cop's tick, with two keys and an evidence-ledger receipt but no `metrics/ratify/` receipt on master, is a route of this board's register or an exception to it. Kept; no such landing falls in this window (§U14 above).
+
+U15 | §U15 ROUTED (dng escalation-delivery bench). Whether a seat's escalation reaches the owner through any channel the owner reads. Measured this window, not answered. The register's push channel sent nothing that arrived (21 of 21 attempts "not sent"), and the one reserved decision that reached the owner did so through the research writer's question to the USER in chat, with a receipt witness and no send witness.
+
+U16 | New. Why three scheduled steward passes ended mid-pass with no VERDICT line (2026-11-20 21:03Z, 2026-11-24 08:49Z, 2026-11-26 14:49Z), and why no steward receipt was begun between 2026-11-24 08:49Z and 20:50Z, or between 2026-11-26 14:49Z and 2026-11-27 04:50Z. The receipts otherwise begin about six hours apart. The 2026-11-24 gap overlaps the quota event (K8); no artifact this filing read records a cause for any of the five. Belongs with U13's bench.
 
 ## Instance map
 
-KERNEL: DOGFOOD-PENDING fleet-factory-kernel r4 · profile measured-objective@r2 · ratifiers: the USER's word "unfreeze" (WORK.md RULES rule 3), then seat `dng-design-steward` (docs/14 §7a, the only seat that may edit docs/12, 13, 14), routed by an `OWNER-DEFECT:` token · instance home would be `docs/14-ORCHESTRATION.md` · since 2026-09-15
+KERNEL: DOGFOOD fleet-factory-kernel r5 · profile code@r10 + measured-objective@r3 · instance docs/KERNEL-INSTANCE-MAP.md · since 2026-10-02
 
-Not written into the repo: docs/12, docs/13 and docs/14 are steward-only under docs/14 §7a — "`P-STEWARD` is the one
-section no seat may write" — and `specs/dng-auto-processor.md` on the bus is not this lane's to write. PROMPT K §2 covers
-this case; the map lives here instead. NONE is written wherever there is no mechanism; none is invented to fill a row.
+The instance map is `docs/KERNEL-INSTANCE-MAP.md` on nested-repo master; this section points at it and keeps no table.
+Its first line declares `kernel: fleet-factory-kernel r5 · profile: code@r10 + measured-objective@r3`, and the `KERNEL:`
+line above copies its kernel revision and its profiles byte for byte. Its `since` is the UTC date of the commit that added
+the file (`TZ=UTC git log -1 --diff-filter=A --date=format-local:%Y-%m-%d --format=%cd master -- docs/KERNEL-INSTANCE-MAP.md`
+prints `2026-10-02`). The line is byte-identical to the tenth filing's `KERNEL:` line. The map was last changed by
+`db197676` (2026-10-02); no commit in this window touches it.
 
-| Clause | Mechanism in this repo |
-|---|---|
-| K1 roles | docs/14 §2 seat table; key derived from author; §4 "A tick may not edit its own governing document, and the hook enforces it"; §4a.1 voids a key's ACCEPT if its own log carries a RED |
-| K2 authority | docs/14 §0 (USER rulings verbatim) + WORK.md RULES rule 3 (the "unfreeze" switch) |
-| K3 identity | `tools/ratify.ps1:87-92` (`ratify-subject.v1`: sha, tree, base, files); per-path blob identity + `git patch-id --stable` at landing. **Lease: NONE — refused by design** (§3 "never add a lease"); replaced by the FROZEN/DARK liveness sensor |
-| K4 completion | `completion.json`, `return.md`, `binding.json`; §5 receipt on every run; `tools/verdict.schema.json`; `tools/scoreboard.ps1` fail-closed `exit 3` |
-| K5 acceptance | `packets/<ID>.md` contract + `approach.md` pre-code gate; S1's four declared criteria. **Profile name and version field: NONE** |
-| K6 keys | docs/14 §2 (key 1 = family opposite the author; key 2 = Anthropic ≠ author's model); `ratify.ps1:254` codex exec. **Enforced author-binding: NONE** (IF2) |
-| K7 delivery | `git merge --ff-only` to nested-repo master after per-file blob identity, plus a mirror sync. **Typed CLOSURE_INCOMPLETE: NONE** |
-| K8 capacity | docs/14 §4 `HELD-FOR-CAPACITY`; §2 family failover; worktree preserved. **Fallback cop: NONE** (USER chose "Not now"). **Remedy for per-model credit depletion: NONE** |
-| K9 resume | docs/13 `P-RESUME` + receipt to `C:\DngAutoJobs\evidence\RESUME\`. **Resumability-verifying command: NONE**; the hook that would be one points at a missing file (IF7) |
-| K10 inventory | **NONE in repo** — prose seat table only; no `probed_under`; `parity` appears 0 times in docs/14. Parity exists only as machine-level hooks outside the project |
-| K11 honesty | docs/14 §4b mutation kill-test; `refutedAgainstKey` counts on receipts; this filing's own withdrawals. One live failure at IF1 |
-| K12 feedback | This file. **In-repo DOGFOOD/ADOPT declaration: NONE** (`grep -c DOGFOOD docs/14` → 0; `grep -c factory-kernel docs/14` → 0) |
-
-Nine NONEs: K3 lease (by design), K5 profile-version field, K6 author-binding, K7 closure state, K8 fallback cop
-(owner-declined) and per-model-depletion remedy, K9 verifying command, K10 inventory, K12 declaration.
+REPORTED, not refreshed: the map's declared code revision (r10) is older than the fetched profile (r11). The map pins
+`profiles/code.md` at blob `5511ccb3`, and the bus tip's blob is `a31b27a7`. Its kernel and measured-objective pins,
+`6821c4c3` and `4e8bcacc`, still match. The rows the eighth filing reported as overtaken stay overtaken (§C8 and §C7
+stale-map routes). This filing measures the window against r11 on the lines above. This seat never refreshes the map;
+its K1-K12 rows belong to the card that wrote it, and the refresh is routed to the instance-map maintainer (HEADER:
+revisions and map; §A:stale-map). By its own rows, K3, K5, K6, K7, K8, K9, K10 and K11 are `NONE`, each with its nearest
+partial mechanism.
 
 ## Counts
 
-Clauses: 3 FIT · 2 FRICTION · 1 BREAK · 0 N/A · 5 UNEXERCISED · 1 INSTANCE-FAILURE
-Profile: 2 FIT · 2 FRICTION · 2 BREAK · 0 N/A · 3 UNEXERCISED · 1 INSTANCE-FAILURE
-Ledger totals (INSTANCE-FAILURE excluded per kernel §5): **5 FIT · 4 FRICTION · 3 BREAK · 0 N/A · 8 UNEXERCISED**
-Plus 11 instance failures, 1 mapping correction, 4 kernel text observations, 5 Untested.
+Clauses: 3 FIT · 0 FRICTION · 0 BREAK · 0 N/A · 4 UNEXERCISED · 5 INSTANCE-FAILURE
+Profile: 1 FIT · 0 FRICTION · 0 BREAK · 0 N/A · 2 UNEXERCISED · 6 INSTANCE-FAILURE
+Ledger totals (INSTANCE-FAILURE excluded per kernel §5): **4 FIT · 0 FRICTION · 0 BREAK · 0 N/A · 6 UNEXERCISED**; separately 11 INSTANCE-FAILURE
 
-Three BREAKs, each with a counterexample in this repo: K3 (a lease is mandated; this project refused one on measured
-grounds and replaced expiry with a liveness sensor); P:measured-objective subject-identity (the identity omits the
-out-of-git base engine the scorer resolves and one landed subject delivered to); P:measured-objective resource-terminals
-(a partial fold has no typed representation, and 16 of 16 gate verdicts are GREEN on a 2-of-10 fold).
+Moved against the tenth filing as filed: K2 FRICTION to INSTANCE-FAILURE (adopting §K2) and K8 UNEXERCISED to
+INSTANCE-FAILURE (this window's quota event). Against the tenth as ruled (4 · 0 · 0 · 0 · 7; 9 separately) the one move is
+K8, plus the new P:code human-gates line (INSTANCE-FAILURE). Every other line keeps its ruled verdict, and names its § id.
+
+The rest of this filing:
+- a status line for each of the fifteen earlier numbered instance failures;
+- answers to every route the tenth filing's dispositions send to this board's benches, each done, not done or re-answered;
+- 10 Untested: U6, U8, U9, U11, U12, U13, U14 and U15 kept, U10 closed, and U16 new.
