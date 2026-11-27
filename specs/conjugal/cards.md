@@ -361,3 +361,11 @@ mechanism: When Windows Terminal is the default terminal, a console process star
 check: Count window-show events by className over 48 h on a host whose default terminal is Windows Terminal; the CASCADIA and PseudoConsoleWindow counts must be included, and a ConsoleWindowClass-only figure is reported as a lower bound.
 supersedes: none
 evidence: measured
+
+## conjugal/filter-stopped-key-cross-family-fallback
+rule: When a provider cyber filter ends a K6 key with no verdict and the same family's earlier seat on the same subject was also filter-stopped, spend the declaration's one post-filter attempt on its declared cross-family fallback key, not on an identical re-run; the fallback runs on the same prompt bytes and keyed tree, its receipts come from the fallback CLI's own session record, and a second stop by either family parks the subject as held.
+mechanism: The filter judges the material the key reads, not the prompt alone. On a Conjugal kernel subject (a one-line dashboard fix, 2026-11-27) the Codex pre-key seat and the Codex round-1 key were both stopped after reading the same declared request-validation code, so an identical re-run would read it again. The declared Kimi fallback key (different model family from the Claude producer) ran every bar and mutant arm and returned an accept bound to the tree in about 8 minutes; the subject was delivered at identity with one K5 credit. A delivery tool that reads only one family's rollout cannot write that Outcome: its receipts (session wire log, final-answer record, verdict line, acceptance time) had to be composed by hand.
+  Measured on one Windows host: 2 filter-stopped Codex runs on that subject (0 verdict lines), 0 filter lines on the previous subject's accepted Codex key, 1 accepted fallback key with tree and porcelain unchanged.
+check: Before a post-filter attempt, count filter-stop lines in each prior seat's stderr for the subject; with two or more stops on the declared material, the fallback key is the attempt, and its Outcome cites the fallback session record's file, final-answer record and verdict-line SHA-256.
+supersedes: none
+evidence: measured
